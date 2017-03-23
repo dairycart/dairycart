@@ -1,0 +1,6 @@
+package: github.com/verygoodsoftwarenotvirus/dairycart
+import:
+- package: github.com/go-pg/pg
+  version: ^5.3.3
+- package: github.com/gorilla/mux
+  version: ^1.3.0
