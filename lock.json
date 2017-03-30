@@ -1,0 +1,50 @@
+{
+    "memo": "b9868d8c975cafb90e86f532a24c0d6552dca690c2d7c3b908a410bd487fd680",
+    "projects": [
+        {
+            "name": "github.com/go-pg/migrations",
+            "version": "v6.0.0",
+            "revision": "64f152352849d9deb5b8cf4490a9c9584bb11bb4",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/go-pg/pg",
+            "version": "v6.0.0",
+            "revision": "e8d4cc8264796f383c96909ba1be6ae9677fa2b6",
+            "packages": [
+                ".",
+                "internal",
+                "internal/parser",
+                "internal/pool",
+                "orm",
+                "types"
+            ]
+        },
+        {
+            "name": "github.com/gorilla/context",
+            "version": "v1.1",
+            "revision": "a85d2e53ba63bdea074dbbbb5983f0516974e87b",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/gorilla/mux",
+            "version": "v1.3.0",
+            "revision": "392c28fe23e1c45ddba891b0320b3b5df220beea",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/jinzhu/inflection",
+            "branch": "master",
+            "revision": "1c35d901db3da928c72a72d8458480cc9ade058f",
+            "packages": [
+                "."
+            ]
+        }
+    ]
+}
