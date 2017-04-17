@@ -1,6 +1,7 @@
 package main
 
 import (
+	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 )
 
 var db *pg.DB
+var templates = template.Must(template.ParseGlob("templates/*"))
 
 // HomeHandler serves up our basic web page
 func HomeHandler(res http.ResponseWriter, req *http.Request) {
@@ -18,11 +20,11 @@ func HomeHandler(res http.ResponseWriter, req *http.Request) {
 	if val, ok := req.Header["User-Agent"]; ok {
 		log.Printf("User-Agent: %v", val)
 	}
-	indexPage, err := ioutil.ReadFile("static/index.html")
+	indexPage, err := ioutil.ReadFile("templates/home.html")
 	if err != nil {
 		log.Printf("error occurred reading indexPage: %v\n", err)
 	}
-	res.Write(indexPage)
+	renderTemplates(res, "Dairycart", string(indexPage))
 }
 
 func main() {
