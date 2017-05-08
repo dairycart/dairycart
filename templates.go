@@ -9,7 +9,7 @@ type PageResponse struct {
 }
 
 func renderTemplates(w http.ResponseWriter, title, content string) {
-	err := templates.ExecuteTemplate(w, "indexPage", nil)
+	err := templates.ExecuteTemplate(w, "base", nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

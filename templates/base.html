@@ -1,8 +1,10 @@
-{{define "indexPage"}}
+{{define "base"}}
     <html>
-    {{template "header"}}
+        <head>
+            <title>Index</title>
+        </head>
     <body>
-        <h1>Index</h1>
+        {{ template "content" }}
     </body>
     </html>
 {{end}}
