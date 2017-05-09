@@ -38,33 +38,35 @@ type Product struct {
 	// SalePrice float32
 }
 
-// ProductsHandler is a generic product list response handler
-func ProductsHandler(res http.ResponseWriter, req *http.Request) {
-	switch method := req.Method; method {
-	case "GET":
-		var products []Product
-		err := db.Model(&products).Select()
-		if err != nil {
-			log.Printf("Error encountered querying for products: %v", err)
-		}
-		json.NewEncoder(res).Encode(products)
-	case "POST":
-		if req.Body == nil {
-			http.Error(res, "Please send a request body", http.StatusBadRequest)
-			return
-		}
+// ProductListHandler is a generic product list request handler
+func ProductListHandler(res http.ResponseWriter, req *http.Request) {
+	var products []Product
+	productsModel := db.Model(&products)
+	AddQueryParams(req.URL.Query(), productsModel)
+	err := productsModel.Select()
+	if err != nil {
+		log.Printf("Error encountered querying for products: %v", err)
+	}
+	json.NewEncoder(res).Encode(products)
+}
 
-		newProduct := &Product{}
-		err := json.NewDecoder(req.Body).Decode(newProduct)
-		if err != nil {
-			http.Error(res, "Invalid request body", http.StatusBadRequest)
-			return
-			// fmt.Fprintf(w, "Error encountered parsing request: %v", err)
-		}
+// ProductCreationHandler is a product creation handler
+func ProductCreationHandler(res http.ResponseWriter, req *http.Request) {
+	if req.Body == nil {
+		http.Error(res, "Please send a request body", http.StatusBadRequest)
+		return
+	}
 
-		err = db.Insert(newProduct)
-		if err != nil {
-			log.Printf("error inserting product into database: %v", err)
-		}
+	newProduct := &Product{}
+	err := json.NewDecoder(req.Body).Decode(newProduct)
+	if err != nil {
+		http.Error(res, "Invalid request body", http.StatusBadRequest)
+		return
+		// fmt.Fprintf(w, "Error encountered parsing request: %v", err)
+	}
+
+	err = db.Insert(newProduct)
+	if err != nil {
+		log.Printf("error inserting product into database: %v", err)
 	}
 }

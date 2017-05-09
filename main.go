@@ -42,13 +42,19 @@ func main() {
 	db = pg.Connect(dbOptions)
 	router := mux.NewRouter()
 
-	router.HandleFunc("/", HomeHandler).Methods("GET")
-	router.HandleFunc("/products", ProductsHandler).Methods("GET", "POST")
-
 	// Basic business
-	// router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
-	http.Handle("/", router)
+	router.HandleFunc("/", HomeHandler).Methods("GET")
 
+	// Products
+	router.HandleFunc("/product", ProductCreationHandler).Methods("POST")
+	router.HandleFunc("/products", ProductListHandler).Methods("GET")
+
+	// Orders
+	router.HandleFunc("/order", OrderCreationHandler).Methods("POST")
+	router.HandleFunc("/orders", OrderListHandler).Methods("GET")
+
+	// let's start servin'
+	http.Handle("/", router)
 	log.Println("Listening at port 8080")
 	http.ListenAndServe(":8080", nil)
 }
