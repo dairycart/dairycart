@@ -10,6 +10,12 @@ import (
 	"github.com/go-pg/pg/orm"
 )
 
+// ListResponse is a generic list response struct
+type ListResponse struct {
+	Count int64 `json:"count"`
+	Limit int64 `json:"limit"`
+}
+
 var (
 	validQueryFilters = map[string]bool{
 		"name": true,

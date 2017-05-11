@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+
+	"github.com/go-pg/pg/orm"
 )
 
 // Variant describes children of products with different attributes from the parent
@@ -35,19 +37,31 @@ type Product struct {
 	Length                float32 `json:"length"`
 	Quantity              int32   `json:"quantity"`
 
+	ChildOf *Product `json:"child_of,omitempty"`
 	// SalePrice float32
+}
+
+// ProductsResponse is a product response struct
+type ProductsResponse struct {
+	Count int64     `json:"count"`
+	Limit int64     `json:"limit"`
+	Data  []Product `json:"data"`
 }
 
 // ProductListHandler is a generic product list request handler
 func ProductListHandler(res http.ResponseWriter, req *http.Request) {
 	var products []Product
 	productsModel := db.Model(&products)
-	AddQueryParams(req.URL.Query(), productsModel)
+	productsModel.Apply(orm.URLFilters(req.URL.Query()))
 	err := productsModel.Select()
 	if err != nil {
 		log.Printf("Error encountered querying for products: %v", err)
 	}
-	json.NewEncoder(res).Encode(products)
+	productsResponse := &ProductsResponse{
+		Count: int64(len(products)),
+		Data:  products,
+	}
+	json.NewEncoder(res).Encode(productsResponse)
 }
 
 // ProductCreationHandler is a product creation handler

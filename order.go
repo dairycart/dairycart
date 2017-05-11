@@ -11,10 +11,10 @@ type Order struct {
 	ID int64
 }
 
-// // Customer describes a user that places an order
-// type Customer struct {
-// 	ID int64
-// }
+// Customer describes a user that places an order
+type Customer struct {
+	ID int64
+}
 
 // OrderListHandler is a generic order list request handler
 func OrderListHandler(res http.ResponseWriter, req *http.Request) {
