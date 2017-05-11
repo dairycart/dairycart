@@ -10,11 +10,21 @@ import (
 	"github.com/go-pg/pg/orm"
 )
 
+var (
+	validQueryFilters = map[string]bool{
+		"name": true,
+		"upc":  true,
+		"sku":  true,
+	}
+)
+
 // AddQueryParams takes some URL values and the result of a db.Model() call
 // and adds the appropriate conditions
 func AddQueryParams(v url.Values, q *orm.Query) {
 	for k, v := range v {
-		q.Where(fmt.Sprintf("%s = ?", k), v[0])
+		if _, ok := validQueryFilters[k]; ok {
+			q.Where(fmt.Sprintf("%s = ?", k), v[0])
+		}
 	}
 }
 
