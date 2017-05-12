@@ -8,7 +8,17 @@ import (
 
 // Order describes, well... orders.
 type Order struct {
-	ID int64
+	ID     int64       `json:"id"`
+	ShipTo Customer    `json:"ship_to"`
+	BillTo Customer    `json:"bill_to"`
+	Lines  []OrderLine `json:"lines"`
+}
+
+// OrderLine represents a product in an order
+type OrderLine struct {
+	ID       int64   `json:"id"`
+	Quantity int     `json:"quantity"`
+	Price    float32 `json:"price"`
 }
 
 // Customer describes a user that places an order

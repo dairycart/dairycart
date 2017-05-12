@@ -1,5 +1,5 @@
 {
-    "memo": "faae585586bbf6c9e98ebe6603d6ba32ed0a99f4f75971ebf79773771f6e2e06",
+    "memo": "dd37f59badab7254cfa8f6ddbd680f0acdd80deea3b5d0493cbe2467a71cc9d5",
     "projects": [
         {
             "name": "github.com/go-pg/migrations",
@@ -34,6 +34,14 @@
             "name": "github.com/gorilla/mux",
             "version": "v1.3.0",
             "revision": "392c28fe23e1c45ddba891b0320b3b5df220beea",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/imdario/mergo",
+            "version": "0.2.2",
+            "revision": "3e95a51e0639b4cf372f2ccf74c86749d747fbdc",
             "packages": [
                 "."
             ]

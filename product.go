@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/imdario/mergo"
 )
 
 // Product describes...well, a product
@@ -17,7 +18,7 @@ type Product struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	UPC         string `json:"upc"`
-	Quantity    int32  `json:"quantity"`
+	Quantity    int    `json:"quantity"`
 
 	// Pricing Fields
 	OnSale                bool    `json:"on_sale"`
@@ -117,6 +118,10 @@ func ProductUpdateHandler(res http.ResponseWriter, req *http.Request) {
 	_ = db.Model(&p).Where("sku = ?", sku).Returning("id").Select()
 
 	updatedProduct.ID = p.ID
+	if err := mergo.Merge(&p, updatedProduct); err != nil {
+		http.Error(res, "Invalid request body", http.StatusBadRequest)
+		return
+	}
 	db.Update(updatedProduct)
 
 	json.NewEncoder(res).Encode(updatedProduct)
