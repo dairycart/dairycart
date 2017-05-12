@@ -4,41 +4,44 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/go-pg/pg/orm"
 )
 
-// Variant describes children of products with different attributes from the parent
-type Variant struct {
-	ID int64
-
-	SKU   string
-	Type  string
-	Value string
-
-	HasSpecialPrice bool
-	Price           float32
-}
-
 // Product describes...well, a product
 type Product struct {
-	ID                    int64   `json:"id"`
-	SKU                   string  `json:"sku"`
-	Name                  string  `json:"name"`
-	Description           string  `json:"description"`
-	UPC                   string  `json:"upc"`
+	// Basic Info
+	ID          int64  `json:"id"`
+	SKU         string `json:"sku"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	UPC         string `json:"upc"`
+	Quantity    int32  `json:"quantity"`
+
+	// Pricing Fields
 	OnSale                bool    `json:"on_sale"`
+	Price                 float32 `json:"price"`
+	SalePrice             float32 `json:"sale_price"`
 	Taxable               bool    `json:"taxable"`
 	CustomerCanSetPricing bool    `json:"customer_can_set_pricing"`
-	Price                 float32 `json:"price"`
-	Weight                float32 `json:"weight"`
-	Height                float32 `json:"height"`
-	Width                 float32 `json:"width"`
-	Length                float32 `json:"length"`
-	Quantity              int32   `json:"quantity"`
 
-	ChildOf *Product `json:"child_of,omitempty"`
-	// SalePrice float32
+	// Product Dimensions
+	ProductWeight float32 `json:"product_weight"`
+	ProductHeight float32 `json:"product_height"`
+	ProductWidth  float32 `json:"product_width"`
+	ProductLength float32 `json:"product_length"`
+
+	// Package dimensions
+	PackageWeight float32 `json:"package_weight"`
+	PackageHeight float32 `json:"package_height"`
+	PackageWidth  float32 `json:"package_width"`
+	PackageLength float32 `json:"package_length"`
+
+	// Housekeeping
+	Active   bool       `json:"-"`
+	Created  *time.Time `json:"created"`
+	Archived *time.Time `json:"archived,omitempty"`
 }
 
 // ProductsResponse is a product response struct
@@ -50,14 +53,18 @@ type ProductsResponse struct {
 
 // ProductListHandler is a generic product list request handler
 func ProductListHandler(res http.ResponseWriter, req *http.Request) {
+	actualLimit := DetermineRequestLimits(req)
+
 	var products []Product
 	productsModel := db.Model(&products)
+
 	productsModel.Apply(orm.URLFilters(req.URL.Query()))
-	err := productsModel.Select()
+	err := productsModel.Limit(actualLimit).Select()
 	if err != nil {
 		log.Printf("Error encountered querying for products: %v", err)
 	}
 	productsResponse := &ProductsResponse{
+		Limit: int64(actualLimit),
 		Count: int64(len(products)),
 		Data:  products,
 	}

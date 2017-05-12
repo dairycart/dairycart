@@ -1,12 +1,8 @@
 package main
 
-import "net/http"
-
-// PageResponse represents an HTML page response to a request
-type PageResponse struct {
-	Title   string
-	Content string
-}
+import (
+	"net/http"
+)
 
 func renderTemplates(w http.ResponseWriter, title, content string) {
 	err := templates.ExecuteTemplate(w, "base", nil)

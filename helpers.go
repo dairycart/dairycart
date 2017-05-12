@@ -1,46 +1,20 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
-	"net/url"
-
-	"github.com/go-pg/pg/orm"
+	"strconv"
 )
 
-// ListResponse is a generic list response struct
-type ListResponse struct {
-	Count int64 `json:"count"`
-	Limit int64 `json:"limit"`
-}
+// DetermineRequestLimits determines requested limits
+func DetermineRequestLimits(req *http.Request) int {
+	var actualLimit int
+	requestedLimit := req.URL.Query().Get("limit")
+	actualLimit, err := strconv.Atoi(requestedLimit)
 
-var (
-	validQueryFilters = map[string]bool{
-		"name": true,
-		"upc":  true,
-		"sku":  true,
+	if requestedLimit == "" || err != nil {
+		actualLimit = 25
+		req.URL.Query().Set("limit", "25")
 	}
-)
 
-// AddQueryParams takes some URL values and the result of a db.Model() call
-// and adds the appropriate conditions
-func AddQueryParams(v url.Values, q *orm.Query) {
-	for k, v := range v {
-		if _, ok := validQueryFilters[k]; ok {
-			q.Where(fmt.Sprintf("%s = ?", k), v[0])
-		}
-	}
-}
-
-// GenericListHandler generalizes list handling
-func GenericListHandler(listOfThings *interface{}, res http.ResponseWriter, req *http.Request) {
-	pluralModel := db.Model(listOfThings)
-	AddQueryParams(req.URL.Query(), pluralModel)
-	err := pluralModel.Select()
-	if err != nil {
-		log.Printf("Error encountered querying for products: %v", err)
-	}
-	json.NewEncoder(res).Encode(pluralModel)
+	return actualLimit
 }
