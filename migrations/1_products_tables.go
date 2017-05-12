@@ -8,7 +8,7 @@ import (
 
 func init() {
 	migrations.Register(func(db migrations.DB) error {
-		fmt.Println("creating products table...")
+		fmt.Println("creating products tables...")
 		_, err := db.Exec(`CREATE TABLE products (
 			"id" bigserial,
 			"sku" text,
@@ -65,6 +65,7 @@ func init() {
 			FOREIGN KEY ("parent_attribute") REFERENCES "product_attributes"("id")
 		);`)
 		return err
+		fmt.Println("products tables created!")
 
 	}, func(db migrations.DB) error {
 		fmt.Println("dropping products tables...")

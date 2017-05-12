@@ -1,12 +1,14 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/go-pg/migrations"
 )
 
 func init() {
 	migrations.Register(func(db migrations.DB) error {
-		// create example product
+		fmt.Println("creating example products...")
 		_, err := db.Exec(`
 			INSERT INTO products(
 				"sku",
@@ -64,7 +66,7 @@ func init() {
 			return err
 		}
 
-		// create example product attributes
+		fmt.Println("creating example product attributes...")
 		_, err = db.Exec(`
 			INSERT INTO product_attributes ("name", "assigned_to_product") VALUES ('Color', 1), ('Size', 1);
 		`)
@@ -73,11 +75,12 @@ func init() {
 			return err
 		}
 
-		// create example product attribute values
+		fmt.Println("creating example product attribute values...")
 		_, err = db.Exec(`
 			INSERT INTO product_attribute_values ("parent_attribute", "value") VALUES(1, 'Red'), (1, 'Blue'), (1, 'Green'), (2, 'Small'), (2, 'Medium'), (2, 'Large');
 		`)
 
+		fmt.Println("example product data created!")
 		return err
 	}, func(db migrations.DB) error {
 		_, err := db.Exec("")

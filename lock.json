@@ -1,18 +1,18 @@
 {
-    "memo": "b9868d8c975cafb90e86f532a24c0d6552dca690c2d7c3b908a410bd487fd680",
+    "memo": "faae585586bbf6c9e98ebe6603d6ba32ed0a99f4f75971ebf79773771f6e2e06",
     "projects": [
         {
             "name": "github.com/go-pg/migrations",
-            "version": "v6.0.0",
-            "revision": "64f152352849d9deb5b8cf4490a9c9584bb11bb4",
+            "version": "v6.0.2",
+            "revision": "327e262afb5c632d5aada01953c4307943cb2180",
             "packages": [
                 "."
             ]
         },
         {
             "name": "github.com/go-pg/pg",
-            "version": "v6.0.0",
-            "revision": "e8d4cc8264796f383c96909ba1be6ae9677fa2b6",
+            "version": "v6.1.4",
+            "revision": "3b875f374ef54072935711e6261fa63d690f3be0",
             "packages": [
                 ".",
                 "internal",

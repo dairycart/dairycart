@@ -16,7 +16,6 @@ var templates = template.Must(template.ParseGlob("templates/*"))
 
 // HomeHandler serves up our basic web page
 func HomeHandler(res http.ResponseWriter, req *http.Request) {
-	// vars := mux.Vars(r)
 	if val, ok := req.Header["User-Agent"]; ok {
 		log.Printf("User-Agent: %v", val)
 	}
@@ -46,14 +45,17 @@ func main() {
 	router.HandleFunc("/", HomeHandler).Methods("GET")
 
 	// Products
-	router.HandleFunc("/product", ProductCreationHandler).Methods("POST")
 	router.HandleFunc("/products", ProductListHandler).Methods("GET")
+	router.HandleFunc("/product/{sku}", SingleProductHandler).Methods("GET")
+	// router.HandleFunc("/product/{sku}", ProductUpdateHandler).Methods("PUT")  // it's not ready :(
+	router.HandleFunc("/product", ProductCreationHandler).Methods("POST")
+	router.HandleFunc("/product/{sku}", ProductDeletionHandler).Methods("DELETE")
 
 	// Orders
-	router.HandleFunc("/order", OrderCreationHandler).Methods("POST")
 	router.HandleFunc("/orders", OrderListHandler).Methods("GET")
+	router.HandleFunc("/order", OrderCreationHandler).Methods("POST")
 
-	// let's start servin'
+	// serve 'em up a lil' sauce
 	http.Handle("/", router)
 	log.Println("Listening at port 8080")
 	http.ListenAndServe(":8080", nil)
