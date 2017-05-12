@@ -53,15 +53,16 @@ type ProductsResponse struct {
 
 // ProductListHandler is a generic product list request handler
 func ProductListHandler(res http.ResponseWriter, req *http.Request) {
-	actualLimit := DetermineRequestLimits(req)
-
 	var products []Product
 	productsModel := db.Model(&products)
 
+	actualLimit := LimitRequestedQuery(req, productsModel)
 	productsModel.Apply(orm.URLFilters(req.URL.Query()))
-	err := productsModel.Limit(actualLimit).Select()
+
+	err := productsModel.Select()
 	if err != nil {
 		log.Printf("Error encountered querying for products: %v", err)
+		http.Error(res, err.Error(), http.StatusInternalServerError)
 	}
 	productsResponse := &ProductsResponse{
 		Limit: int64(actualLimit),
