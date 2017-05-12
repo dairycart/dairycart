@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-pg/pg/orm"
 	"github.com/gorilla/mux"
 )
 
@@ -56,11 +55,7 @@ func ProductListHandler(res http.ResponseWriter, req *http.Request) {
 	var products []Product
 	productsModel := db.Model(&products)
 
-	actualLimit := LimitRequestedListQuery(req, productsModel)
-	SelectActiveRows(req, productsModel)
-	productsModel.Apply(orm.URLFilters(req.URL.Query()))
-
-	err := productsModel.Select()
+	pager, err := GenericListQueryHandler(req, productsModel)
 	if err != nil {
 		log.Printf("Error encountered querying for products: %v", err)
 		http.Error(res, err.Error(), http.StatusInternalServerError)
@@ -68,8 +63,9 @@ func ProductListHandler(res http.ResponseWriter, req *http.Request) {
 
 	productsResponse := &ProductsResponse{
 		ListResponse: ListResponse{
-			Limit: int64(actualLimit),
-			Count: int64(len(products)),
+			Page:  pager.Page(),
+			Limit: pager.Limit(),
+			Count: len(products),
 		},
 		Data: products,
 	}

@@ -16,14 +16,32 @@ type Customer struct {
 	ID int64
 }
 
+// OrdersResponse is a order response struct
+type OrdersResponse struct {
+	ListResponse
+	Data []Order `json:"data"`
+}
+
 // OrderListHandler is a generic order list request handler
 func OrderListHandler(res http.ResponseWriter, req *http.Request) {
 	var orders []Order
-	err := db.Model(&orders).Select()
+	ordersModel := db.Model(&orders)
+
+	pager, err := GenericListQueryHandler(req, ordersModel)
 	if err != nil {
 		log.Printf("Error encountered querying for products: %v", err)
+		http.Error(res, err.Error(), http.StatusInternalServerError)
 	}
-	json.NewEncoder(res).Encode(orders)
+
+	ordersResponse := &OrdersResponse{
+		ListResponse: ListResponse{
+			Page:  pager.Page(),
+			Limit: pager.Limit(),
+			Count: len(orders),
+		},
+		Data: orders,
+	}
+	json.NewEncoder(res).Encode(ordersResponse)
 }
 
 // OrderCreationHandler is a order creation handler
