@@ -6,19 +6,52 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-pg/pg/orm"
 	"github.com/gorilla/mux"
 	"github.com/imdario/mergo"
 )
 
+// BaseProduct is the parent product for every product
+type BaseProduct struct {
+	// Basic Info
+	ID          int64  `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+
+	// Pricing Fields
+	Taxable               bool    `json:"taxable"`
+	CustomerCanSetPricing bool    `json:"customer_can_set_pricing"`
+	BasePrice             float32 `json:"base_price"`
+
+	// Product Dimensions
+	BaseProductWeight float32 `json:"base_product_weight"`
+	BaseProductHeight float32 `json:"base_product_height"`
+	BaseProductWidth  float32 `json:"base_product_width"`
+	BaseProductLength float32 `json:"base_product_length"`
+
+	// Package dimensions
+	BasePackageWeight float32 `json:"base_package_weight"`
+	BasePackageHeight float32 `json:"base_package_height"`
+	BasePackageWidth  float32 `json:"base_package_width"`
+	BasePackageLength float32 `json:"base_package_length"`
+
+	// Housekeeping
+	Active     bool      `json:"active"`
+	CreatedAt  time.Time `json:"created"`
+	ArchivedAt time.Time `json:"-"`
+}
+
 // Product describes...well, a product
 type Product struct {
 	// Basic Info
-	ID          int64  `json:"id"`
-	SKU         string `json:"sku"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	UPC         string `json:"upc"`
-	Quantity    int    `json:"quantity"`
+	ID            int64        `json:"id"`
+	BaseProductID int64        `json:"-"`
+	BaseProduct   *BaseProduct `json:"-"`
+	SKU           string       `json:"sku"`
+	Name          string       `json:"name"`
+	Description   string       `json:"description"`
+	UPC           string       `json:"upc"`
+	Quantity      int          `json:"quantity"`
 
 	// Pricing Fields
 	OnSale                bool    `json:"on_sale"`
@@ -40,9 +73,9 @@ type Product struct {
 	PackageLength float32 `json:"package_length"`
 
 	// Housekeeping
-	Active   bool      `json:"active"`
-	Created  time.Time `json:"created"`
-	Archived time.Time `json:"-"`
+	Active     bool      `json:"active"`
+	CreatedAt  time.Time `json:"created"`
+	ArchivedAt time.Time `json:"-"`
 }
 
 // ProductsResponse is a product response struct
@@ -51,15 +84,23 @@ type ProductsResponse struct {
 	Data []Product `json:"data"`
 }
 
+func filterActiveProducts(req *http.Request, q *orm.Query) {
+	if req.URL.Query().Get("include_archived") != "true" {
+		q.Where("product.archived_at is null").Where("base_product.archived_at is null")
+	}
+}
+
 // ProductListHandler is a request handler that returns a list of products
 func ProductListHandler(res http.ResponseWriter, req *http.Request) {
 	var products []Product
-	productsModel := db.Model(&products)
+	productsModel := db.Model(&products).
+		Column("product.*", "BaseProduct")
 
-	pager, err := GenericListQueryHandler(req, productsModel)
+	pager, err := genericListQueryHandler(req, productsModel, filterActiveProducts)
 	if err != nil {
 		log.Printf("Error encountered querying for products: %v", err)
 		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	productsResponse := &ProductsResponse{
@@ -75,18 +116,21 @@ func ProductListHandler(res http.ResponseWriter, req *http.Request) {
 
 // SingleProductHandler is a request handler that returns a single product
 func SingleProductHandler(res http.ResponseWriter, req *http.Request) {
-	var p Product
-	product := db.Model(&p)
-
 	vars := mux.Vars(req)
 	sku := vars["sku"]
 
-	SelectActiveRows(req, product)
+	var p Product
+	product := db.Model(&p).
+		Column("products.*", "BaseProduct").
+		Where("sku = ?", sku)
 
-	err := product.Where("sku = ?", sku).Select()
+	filterActiveProducts(req, product)
+
+	err := product.Select()
 	if err != nil {
 		log.Printf("Error encountered querying for products: %v", err)
 		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	json.NewEncoder(res).Encode(product)
@@ -100,7 +144,8 @@ func ProductUpdateHandler(res http.ResponseWriter, req *http.Request) {
 
 	vars := mux.Vars(req)
 	sku := vars["sku"]
-	log.Printf("sku: %v", sku)
+	var existingProduct Product
+	existingProductQuery := db.Model(&existingProduct).Where("sku = ?", sku)
 
 	updatedProduct := &Product{}
 	err := json.NewDecoder(req.Body).Decode(updatedProduct)
@@ -109,9 +154,7 @@ func ProductUpdateHandler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var existingProduct Product
-	_ = db.Model(&existingProduct).Where("sku = ?", sku).Returning("id").Select()
-
+	existingProductQuery.Select()
 	updatedProduct.ID = existingProduct.ID
 	if err := mergo.Merge(updatedProduct, existingProduct); err != nil {
 		http.Error(res, "Invalid request body", http.StatusBadRequest)
@@ -144,21 +187,20 @@ func ProductCreationHandler(res http.ResponseWriter, req *http.Request) {
 
 // ProductDeletionHandler is a request handler that deletes a single product
 func ProductDeletionHandler(res http.ResponseWriter, req *http.Request) {
-	var p Product
-	product := db.Model(&p)
-
 	vars := mux.Vars(req)
 	sku := vars["sku"]
 
-	SelectActiveRows(req, product)
+	var p Product
+	product := db.Model(&p).Where("sku = ?", sku)
 
-	err := product.Where("sku = ?", sku).Select()
+	err := product.Select()
 	if err != nil {
 		log.Printf("Error encountered querying for products: %v", err)
 		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	db.Model(&p).Set("archived = now()").Set("active = false").Where("sku = ?", sku).Update(&p)
+	db.Model(&p).Set("archived_at = now()").Set("active = false").Where("sku = ?", sku).Update(&p)
 
 	json.NewEncoder(res).Encode(product)
 }

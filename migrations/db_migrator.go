@@ -29,8 +29,6 @@ func main() {
 	if verbose {
 		if newVersion != oldVersion {
 			fmt.Printf("migrated from version %d to %d\n", oldVersion, newVersion)
-		} else {
-			fmt.Printf("version is %d\n", oldVersion)
 		}
 	}
 }

@@ -13,7 +13,6 @@ func init() {
 				"name",
 				"description",
 				"base_price",
-				"base_sale_price",
 				"base_product_weight",
 				"base_product_height",
 				"base_product_width",
@@ -23,8 +22,8 @@ func init() {
 				"base_package_width",
 				"base_package_length"
 			) VALUES
-			('T-Shirt', 'This is a t-shirt. wear it, or don''t. I''m not your dad.', 12.34, 4.2, 1, 2, 3, 4, 5, 6, 7, 8),
-			('Skateboard', 'This is a skateboard. Please wear a helmet.', 99.99, null, 8, 7, 6, 5, 4, 3, 2, 1);
+			('T-Shirt', 'This is a t-shirt. wear it, or don''t. I''m not your dad.', 12.34, 1, 2, 3, 4, 5, 6, 7, 8),
+			('Skateboard', 'This is a skateboard. Please wear a helmet.', 99.99, 8, 7, 6, 5, 4, 3, 2, 1);
 		`)
 		if err != nil {
 			return err

@@ -41,6 +41,16 @@ func main() {
 	db = pg.Connect(dbOptions)
 	router := mux.NewRouter()
 
+	// // https://github.com/go-pg/pg/wiki/FAQ#how-can-i-view-queries-this-library-generates
+	// db.OnQueryProcessed(func(event *pg.QueryProcessedEvent) {
+	// 	query, err := event.FormattedQuery()
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
+
+	// 	log.Printf("%s %s", time.Since(event.StartTime), query)
+	// })
+
 	// Basic business
 	router.HandleFunc("/", HomeHandler).Methods("GET")
 

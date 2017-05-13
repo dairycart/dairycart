@@ -37,7 +37,7 @@ func OrderListHandler(res http.ResponseWriter, req *http.Request) {
 	var orders []Order
 	ordersModel := db.Model(&orders)
 
-	pager, err := GenericListQueryHandler(req, ordersModel)
+	pager, err := genericListQueryHandler(req, ordersModel, genericActiveFilter)
 	if err != nil {
 		log.Printf("Error encountered querying for products: %v", err)
 		http.Error(res, err.Error(), http.StatusInternalServerError)

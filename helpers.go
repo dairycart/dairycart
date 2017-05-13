@@ -23,7 +23,7 @@ type ListResponse struct {
 }
 
 // EnsureValidLimitInRequest determines the requested limits, and supplies a default if the request doesn't contain one
-func EnsureValidLimitInRequest(req *http.Request, q *orm.Query) {
+func ensureValidLimitInRequest(req *http.Request, q *orm.Query) {
 	requestedLimit := req.URL.Query().Get("limit")
 
 	if requestedLimit == "" {
@@ -31,18 +31,18 @@ func EnsureValidLimitInRequest(req *http.Request, q *orm.Query) {
 	}
 }
 
-// SelectActiveRows limits the rows to only active products
-func SelectActiveRows(req *http.Request, q *orm.Query) {
+// GenericActiveFilter limits the rows to only active products
+func genericActiveFilter(req *http.Request, q *orm.Query) {
 	if req.URL.Query().Get("include_archived") != "true" {
-		q.Where("archived is null")
+		q.Where("archived_at is null")
 	}
 }
 
 // GenericListQueryHandler aims to generalize retrieving a list of paginated
 // models from the database as much as possible without being dangerous.
-func GenericListQueryHandler(req *http.Request, input *orm.Query) (*orm.Pager, error) {
-	EnsureValidLimitInRequest(req, input)
-	SelectActiveRows(req, input)
+func genericListQueryHandler(req *http.Request, input *orm.Query, activeRowFilterFunc func(req *http.Request, q *orm.Query)) (*orm.Pager, error) {
+	ensureValidLimitInRequest(req, input)
+	activeRowFilterFunc(req, input)
 
 	pager := orm.NewPager(req.URL.Query(), DefaultLimit)
 	pager.Paginate(input)
