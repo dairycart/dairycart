@@ -228,21 +228,11 @@ func ProductCreationHandler(res http.ResponseWriter, req *http.Request) {
 		newProduct.BaseProduct = baseProduct
 		err = tx.Insert(baseProduct)
 		if err != nil {
-			rollbackErr := tx.Rollback()
-			if rollbackErr != nil {
-				log.Printf("\n\n\n rollbackErr: %v \n\n\n", rollbackErr)
-			}
 			return err
 		}
 
 		newProduct.BaseProductID = baseProduct.ID
 		err = tx.Insert(newProduct)
-		if err != nil {
-			rollbackErr := tx.Rollback()
-			if rollbackErr != nil {
-				log.Printf("\n\n\n rollbackErr: %v \n\n\n", rollbackErr)
-			}
-		}
 		return err
 	})
 
