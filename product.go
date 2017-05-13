@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -39,6 +40,27 @@ type BaseProduct struct {
 	Active     bool      `json:"active"`
 	CreatedAt  time.Time `json:"created"`
 	ArchivedAt time.Time `json:"-"`
+}
+
+// NewBaseProductFromProduct takes a Product object and create a BaseProduct from it
+func NewBaseProductFromProduct(p *Product) *BaseProduct {
+	bp := &BaseProduct{
+		Name:                  p.Name,
+		Description:           p.Description,
+		Taxable:               p.Taxable,
+		CustomerCanSetPricing: p.CustomerCanSetPricing,
+		BasePrice:             p.Price,
+		BaseProductWeight:     p.ProductWeight,
+		BaseProductHeight:     p.ProductHeight,
+		BaseProductWidth:      p.ProductWidth,
+		BaseProductLength:     p.ProductLength,
+		BasePackageWeight:     p.PackageWeight,
+		BasePackageHeight:     p.PackageHeight,
+		BasePackageWidth:      p.PackageWidth,
+		BasePackageLength:     p.PackageLength,
+	}
+
+	return bp
 }
 
 // Product describes...well, a product
@@ -179,9 +201,24 @@ func ProductCreationHandler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	baseProduct := NewBaseProductFromProduct(newProduct)
+	newProduct.BaseProduct = baseProduct
+	err = db.Insert(baseProduct)
+	if err != nil {
+		errorString := fmt.Sprintf("error inserting base_product into database: %v", err)
+		log.Println(errorString)
+		http.Error(res, errorString, http.StatusBadRequest)
+		return
+	}
+
+	newProduct.BaseProductID = baseProduct.ID
 	err = db.Insert(newProduct)
 	if err != nil {
-		log.Printf("error inserting product into database: %v", err)
+		db.Delete(baseProduct)
+		errorString := fmt.Sprintf("error inserting product into database: %v", err)
+		log.Println(errorString)
+		http.Error(res, errorString, http.StatusBadRequest)
+		return
 	}
 }
 
