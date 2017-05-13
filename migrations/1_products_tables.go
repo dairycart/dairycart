@@ -9,8 +9,35 @@ import (
 func init() {
 	migrations.Register(func(db migrations.DB) error {
 		fmt.Println("creating products tables...")
-		_, err := db.Exec(`CREATE TABLE products (
+		_, err := db.Exec(`CREATE TABLE base_products (
 			"id" bigserial,
+			"name" text,
+			"description" text,
+			"on_sale" boolean DEFAULT 'false',
+			"customer_can_set_pricing" boolean default 'false',
+			"base_price" decimal,
+			"base_sale_price" decimal,
+			"base_taxable" boolean DEFAULT 'false',
+			"base_product_weight" decimal,
+			"base_product_height" decimal,
+			"base_product_width" decimal,
+			"base_product_length" decimal,
+			"base_package_weight" decimal,
+			"base_package_height" decimal,
+			"base_package_width" decimal,
+			"base_package_length" decimal,
+			"active" boolean DEFAULT 'true',
+			"created" timestamp DEFAULT NOW(),
+			"archived" timestamp,
+			PRIMARY KEY ("id")
+		);`)
+		if err != nil {
+			return err
+		}
+
+		_, err = db.Exec(`CREATE TABLE products (
+			"id" bigserial,
+			"base_product_id" bigint NOT NULL,
 			"sku" text,
 			"name" text,
 			"description" text,
@@ -34,7 +61,8 @@ func init() {
 			"archived" timestamp,
     		UNIQUE ("sku"),
     		UNIQUE ("upc"),
-			PRIMARY KEY ("id")
+			PRIMARY KEY ("id"),
+			FOREIGN KEY ("base_product_id") REFERENCES "base_products"("id")
 		);`)
 		if err != nil {
 			return err
@@ -64,9 +92,9 @@ func init() {
 			PRIMARY KEY ("id"),
 			FOREIGN KEY ("parent_attribute") REFERENCES "product_attributes"("id")
 		);`)
-		return err
 		fmt.Println("products tables created!")
 
+		return err
 	}, func(db migrations.DB) error {
 		fmt.Println("dropping products tables...")
 		_, err := db.Exec(`DROP TABLE product_attribute_values`)
@@ -80,6 +108,11 @@ func init() {
 		}
 
 		_, err = db.Exec(`DROP TABLE products`)
+		if err != nil {
+			return err
+		}
+
+		_, err = db.Exec(`DROP TABLE base_products`)
 		return err
 	})
 }
