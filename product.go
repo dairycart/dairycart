@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
 	"github.com/gorilla/mux"
 	"github.com/imdario/mergo"
@@ -158,6 +159,27 @@ func SingleProductHandler(res http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(res).Encode(product)
 }
 
+// ProductExistenceHandler handles requests to check if a sku exists
+func ProductExistenceHandler(res http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
+	sku := vars["sku"]
+
+	var p Product
+	product := db.Model(&p).Where("sku = ?", sku)
+	filterActiveProducts(req, product)
+
+	productCount, err := product.Count()
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+	responseStatus := http.StatusNotFound
+	if productCount == 1 {
+		responseStatus = http.StatusOK
+	}
+	res.WriteHeader(responseStatus)
+}
+
 // ProductUpdateHandler is a request handler that can update products
 func ProductUpdateHandler(res http.ResponseWriter, req *http.Request) {
 	if req.Body == nil {
@@ -201,20 +223,30 @@ func ProductCreationHandler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	baseProduct := NewBaseProductFromProduct(newProduct)
-	newProduct.BaseProduct = baseProduct
-	err = db.Insert(baseProduct)
-	if err != nil {
-		errorString := fmt.Sprintf("error inserting base_product into database: %v", err)
-		log.Println(errorString)
-		http.Error(res, errorString, http.StatusBadRequest)
-		return
-	}
+	err = db.RunInTransaction(func(tx *pg.Tx) error {
+		baseProduct := NewBaseProductFromProduct(newProduct)
+		newProduct.BaseProduct = baseProduct
+		err = tx.Insert(baseProduct)
+		if err != nil {
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				log.Printf("\n\n\n rollbackErr: %v \n\n\n", rollbackErr)
+			}
+			return err
+		}
 
-	newProduct.BaseProductID = baseProduct.ID
-	err = db.Insert(newProduct)
+		newProduct.BaseProductID = baseProduct.ID
+		err = tx.Insert(newProduct)
+		if err != nil {
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				log.Printf("\n\n\n rollbackErr: %v \n\n\n", rollbackErr)
+			}
+		}
+		return err
+	})
+
 	if err != nil {
-		db.Delete(baseProduct)
 		errorString := fmt.Sprintf("error inserting product into database: %v", err)
 		log.Println(errorString)
 		http.Error(res, errorString, http.StatusBadRequest)

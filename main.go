@@ -56,6 +56,7 @@ func main() {
 
 	// Products
 	router.HandleFunc("/products", ProductListHandler).Methods("GET")
+	router.HandleFunc("/product/{sku}", ProductExistenceHandler).Methods("HEAD")
 	router.HandleFunc("/product/{sku}", SingleProductHandler).Methods("GET")
 	router.HandleFunc("/product/{sku}", ProductUpdateHandler).Methods("PUT")
 	router.HandleFunc("/product", ProductCreationHandler).Methods("POST")
