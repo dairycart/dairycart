@@ -94,11 +94,6 @@ func SingleProductHandler(res http.ResponseWriter, req *http.Request) {
 
 // ProductUpdateHandler is a request handler that can update products
 func ProductUpdateHandler(res http.ResponseWriter, req *http.Request) {
-
-	// TODO: This works for now, but users have to provide the entire
-	// 		 product object, instead of being able to update just parts
-	//		 of it. I consider this lame, and this should be fixed.
-
 	if req.Body == nil {
 		http.Error(res, "Please send a request body", http.StatusBadRequest)
 	}
@@ -114,11 +109,11 @@ func ProductUpdateHandler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var p Product
-	_ = db.Model(&p).Where("sku = ?", sku).Returning("id").Select()
+	var existingProduct Product
+	_ = db.Model(&existingProduct).Where("sku = ?", sku).Returning("id").Select()
 
-	updatedProduct.ID = p.ID
-	if err := mergo.Merge(&p, updatedProduct); err != nil {
+	updatedProduct.ID = existingProduct.ID
+	if err := mergo.Merge(updatedProduct, existingProduct); err != nil {
 		http.Error(res, "Invalid request body", http.StatusBadRequest)
 		return
 	}
