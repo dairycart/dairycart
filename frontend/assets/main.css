@@ -24,11 +24,10 @@ body {
     height: 7.5%;
     border-bottom: 2px solid #999;
     background-color: #03A4EC;
-
-    vertical-align: middle;
 }
 
 .header .logo{
+    margin-left: 1%;
     float: left;
     height: 100%;
 }
