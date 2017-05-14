@@ -79,7 +79,7 @@ func init() {
 			INSERT INTO product_attribute_values ("product_attribute_id", "value") VALUES(1, 'Red'), (1, 'Blue'), (1, 'Green'), (2, 'Small'), (2, 'Medium'), (2, 'Large');
 		`)
 
-		fmt.Println("example product data created!")
+		fmt.Println("example data created!")
 		return err
 	}, func(db migrations.DB) error {
 

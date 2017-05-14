@@ -91,12 +91,32 @@ func init() {
 			PRIMARY KEY ("id"),
 			FOREIGN KEY ("product_attribute_id") REFERENCES "product_attributes"("id")
 		);`)
+		if err != nil {
+			return err
+		}
+
+		_, err = db.Exec(`CREATE TABLE values_products_glue (
+			"id" bigserial,
+			"product_id" bigint,
+			"product_attribute_value_id" bigint,
+			PRIMARY KEY ("id"),
+			FOREIGN KEY ("product_id") REFERENCES "products"("id"),
+			FOREIGN KEY ("product_attribute_value_id") REFERENCES "product_attribute_values"("id")
+		);`)
+		if err != nil {
+			return err
+		}
 		fmt.Println("products tables created!")
 
 		return err
 	}, func(db migrations.DB) error {
 		fmt.Println("dropping products tables...")
-		_, err := db.Exec(`DROP TABLE product_attribute_values`)
+		_, err := db.Exec(`DROP TABLE values_products_glue`)
+		if err != nil {
+			return err
+		}
+
+		_, err = db.Exec(`DROP TABLE product_attribute_values`)
 		if err != nil {
 			return err
 		}
@@ -112,6 +132,11 @@ func init() {
 		}
 
 		_, err = db.Exec(`DROP TABLE base_products`)
+		if err != nil {
+			return err
+		}
+
+		fmt.Println("products tables dropped!")
 		return err
 	})
 }
