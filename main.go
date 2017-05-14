@@ -54,6 +54,9 @@ func main() {
 	// Basic business
 	router.HandleFunc("/", HomeHandler).Methods("GET")
 
+	// Base Products
+	router.HandleFunc("/base_product/{id}", SingleBaseProductHandler).Methods("GET")
+
 	// Products
 	router.HandleFunc("/products", ProductListHandler).Methods("GET")
 	router.HandleFunc("/product/{sku}", ProductExistenceHandler).Methods("HEAD")

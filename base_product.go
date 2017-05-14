@@ -1,6 +1,15 @@
 package main
 
-import "time"
+import (
+	"encoding/json"
+	"log"
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/go-pg/pg/orm"
+	"github.com/gorilla/mux"
+)
 
 // BaseProduct is the parent product for every product
 type BaseProduct struct {
@@ -25,6 +34,10 @@ type BaseProduct struct {
 	BasePackageHeight float32 `json:"base_package_height"`
 	BasePackageWidth  float32 `json:"base_package_width"`
 	BasePackageLength float32 `json:"base_package_length"`
+
+	// Other Tables
+	ProductAttributes []*ProductAttribute `json:"product_attributes"`
+	ChildProducts     []*Product          `json:"child_products"`
 
 	// Housekeeping
 	Active     bool      `json:"active"`
@@ -56,10 +69,39 @@ func NewBaseProductFromProduct(p *Product) *BaseProduct {
 // RetrieveBaseProductFromDB retrieves a product with a given SKU from the database
 func RetrieveBaseProductFromDB(id int64) (*BaseProduct, error) {
 	bp := &BaseProduct{}
-	product := db.Model(bp).
+	baseProduct := db.Model(bp).
 		Where("id = ?", id).
+		Relation("ChildProducts", func(q *orm.Query) (*orm.Query, error) {
+			return q.Where("base_product_id = ?", id), nil
+		}).
+		Relation("ProductAttributes", func(q *orm.Query) (*orm.Query, error) {
+			return q.Where("base_product_id = ?", id), nil
+		}).
 		Where("base_product.archived_at is null")
 
-	err := product.Select()
+	err := baseProduct.Select()
 	return bp, err
+}
+
+// SingleBaseProductHandler is a request handler that returns a single BaseProduct
+func SingleBaseProductHandler(res http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
+	id := vars["id"]
+
+	actualID, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		log.Printf("Error encountered parsing base product ID: %v", err)
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	baseProduct, err := RetrieveBaseProductFromDB(actualID)
+
+	if err != nil {
+		log.Printf("Error encountered querying for products: %v", err)
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(res).Encode(baseProduct)
 }

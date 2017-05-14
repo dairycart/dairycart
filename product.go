@@ -103,7 +103,7 @@ func RetrieveProductFromDB(sku string) (*Product, error) {
 	return p, err
 }
 
-// SingleProductHandler is a request handler that returns a single product
+// SingleProductHandler is a request handler that returns a single Product
 func SingleProductHandler(res http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	sku := vars["sku"]
@@ -173,6 +173,23 @@ func ProductUpdateHandler(res http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(res).Encode(updatedProduct)
 }
 
+// CreateProduct takes a marshalled Product object and creates an entry for it and a base_product in the database
+func CreateProduct(newProduct *Product) error {
+	err := db.RunInTransaction(func(tx *pg.Tx) error {
+		baseProduct := NewBaseProductFromProduct(newProduct)
+		newProduct.BaseProduct = baseProduct
+		err := tx.Insert(baseProduct)
+		if err != nil {
+			return err
+		}
+
+		newProduct.BaseProductID = baseProduct.ID
+		err = tx.Insert(newProduct)
+		return err
+	})
+	return err
+}
+
 // ProductCreationHandler is a product creation handler
 func ProductCreationHandler(res http.ResponseWriter, req *http.Request) {
 	if req.Body == nil {
@@ -187,19 +204,7 @@ func ProductCreationHandler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = db.RunInTransaction(func(tx *pg.Tx) error {
-		baseProduct := NewBaseProductFromProduct(newProduct)
-		newProduct.BaseProduct = baseProduct
-		err = tx.Insert(baseProduct)
-		if err != nil {
-			return err
-		}
-
-		newProduct.BaseProductID = baseProduct.ID
-		err = tx.Insert(newProduct)
-		return err
-	})
-
+	err = CreateProduct(newProduct)
 	if err != nil {
 		errorString := fmt.Sprintf("error inserting product into database: %v", err)
 		log.Println(errorString)

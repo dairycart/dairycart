@@ -14,3 +14,23 @@ type ProductAttributeValue struct {
 	CreatedAt          time.Time         `json:"created_at"`
 	ArchivedAt         time.Time         `json:"archived_at"`
 }
+
+// CreateProductAttributeValue creates a ProductAttributeValue tied to a ProductAttribute
+func CreateProductAttributeValue(productAttributeID int64, pav *ProductAttributeValue) (*ProductAttributeValue, error) {
+	pav.ProductAttributeID = productAttributeID
+	err := db.Insert(pav)
+
+	return pav, err
+}
+
+// RetrieveProductAttributeValue retrieves a ProductAttributeValue with a given ID from the database
+func RetrieveProductAttributeValue(id int64) (*ProductAttributeValue, error) {
+
+	pav := &ProductAttributeValue{}
+	productAttributeValue := db.Model(pav).
+		Where("id = ?", id).
+		Where("product_attribute_value.archived_at is null")
+
+	err := productAttributeValue.Select()
+	return pav, err
+}
