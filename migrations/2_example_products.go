@@ -50,7 +50,15 @@ func init() {
 				"package_length",
 				"quantity")
 			VALUES
-			(1, 't-shirt', 'T-Shirt', 'This is a t-shirt. wear it, or don''t. I''m not your dad.', '1234567890', 12.34, true, 4.2, 1, 2, 3, 4, 5, 6, 7, 8, 123),
+			(1, 't-shirt-small-red', 'Red T-Shirt (Small)', 'This is a t-shirt. wear it, or don''t. I''m not your dad.', null, 12.34, true, 4.2, 1, 2, 3, 4, 5, 6, 7, 8, 123),
+			(1, 't-shirt-small-green', 'Green T-Shirt (Small)', 'This is a t-shirt. wear it, or don''t. I''m not your dad.', null, 12.34, true, 4.2, 1, 2, 3, 4, 5, 6, 7, 8, 123),
+			(1, 't-shirt-small-blue', 'Blue T-Shirt (Small)', 'This is a t-shirt. wear it, or don''t. I''m not your dad.', null, 12.34, true, 4.2, 1, 2, 3, 4, 5, 6, 7, 8, 123),
+			(1, 't-shirt-medium-red', 'Red T-Shirt (Medium)', 'This is a t-shirt. wear it, or don''t. I''m not your dad.', null, 12.34, true, 4.2, 1, 2, 3, 4, 5, 6, 7, 8, 123),
+			(1, 't-shirt-medium-green', 'Green T-Shirt (Medium)', 'This is a t-shirt. wear it, or don''t. I''m not your dad.', null, 12.34, true, 4.2, 1, 2, 3, 4, 5, 6, 7, 8, 123),
+			(1, 't-shirt-medium-blue', 'Blue T-Shirt (Medium)', 'This is a t-shirt. wear it, or don''t. I''m not your dad.', null, 12.34, true, 4.2, 1, 2, 3, 4, 5, 6, 7, 8, 123),
+			(1, 't-shirt-large-red', 'Red T-Shirt (Large)', 'This is a t-shirt. wear it, or don''t. I''m not your dad.', null, 12.34, true, 4.2, 1, 2, 3, 4, 5, 6, 7, 8, 123),
+			(1, 't-shirt-large-green', 'Green T-Shirt (Large)', 'This is a t-shirt. wear it, or don''t. I''m not your dad.', null, 12.34, true, 4.2, 1, 2, 3, 4, 5, 6, 7, 8, 123),
+			(1, 't-shirt-large-blue', 'Blue T-Shirt (Large)', 'This is a t-shirt. wear it, or don''t. I''m not your dad.', null, 12.34, true, 4.2, 1, 2, 3, 4, 5, 6, 7, 8, 123),
 			(2, 'skateboard', 'Skateboard', 'This is a skateboard. Please wear a helmet.', '9876543210', 99.99, false, null, 8, 7, 6, 5, 4, 3, 2, 1, 321);
 		`)
 		if err != nil {
