@@ -69,26 +69,26 @@ func init() {
 		_, err = db.Exec(`CREATE TABLE product_attributes (
 			"id" bigserial,
 			"name" text,
-			"assigned_to_product" bigint,
+			"base_product_id" bigint,
 			"active" boolean DEFAULT 'true',
-			"created" timestamp DEFAULT NOW(),
-			"archived" timestamp,
+			"created_at" timestamp DEFAULT NOW(),
+			"archived_at" timestamp,
 			PRIMARY KEY ("id"),
-			FOREIGN KEY ("assigned_to_product") REFERENCES "products"("id")
+			FOREIGN KEY ("base_product_id") REFERENCES "base_products"("id")
 		);`)
 		if err != nil {
 			return err
 		}
 
 		_, err = db.Exec(`CREATE TABLE product_attribute_values (
-			"id" serial,
-			"parent_attribute" bigint,
+			"id" bigserial,
+			"product_attribute_id" bigint,
 			"value" text,
 			"active" boolean DEFAULT 'true',
-			"created" timestamp DEFAULT NOW(),
-			"archived" timestamp,
+			"created_at" timestamp DEFAULT NOW(),
+			"archived_at" timestamp,
 			PRIMARY KEY ("id"),
-			FOREIGN KEY ("parent_attribute") REFERENCES "product_attributes"("id")
+			FOREIGN KEY ("product_attribute_id") REFERENCES "product_attributes"("id")
 		);`)
 		fmt.Println("products tables created!")
 

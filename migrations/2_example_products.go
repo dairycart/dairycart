@@ -59,7 +59,7 @@ func init() {
 
 		fmt.Println("creating example product attributes...")
 		_, err = db.Exec(`
-			INSERT INTO product_attributes ("name", "assigned_to_product") VALUES ('Color', 1), ('Size', 1);
+			INSERT INTO product_attributes ("name", "base_product_id") VALUES ('Color', 1), ('Size', 1);
 		`)
 
 		if err != nil {
@@ -68,7 +68,7 @@ func init() {
 
 		fmt.Println("creating example product attribute values...")
 		_, err = db.Exec(`
-			INSERT INTO product_attribute_values ("parent_attribute", "value") VALUES(1, 'Red'), (1, 'Blue'), (1, 'Green'), (2, 'Small'), (2, 'Medium'), (2, 'Large');
+			INSERT INTO product_attribute_values ("product_attribute_id", "value") VALUES(1, 'Red'), (1, 'Blue'), (1, 'Green'), (2, 'Small'), (2, 'Medium'), (2, 'Large');
 		`)
 
 		fmt.Println("example product data created!")

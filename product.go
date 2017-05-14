@@ -109,7 +109,7 @@ type ProductsResponse struct {
 
 func filterActiveProducts(req *http.Request, q *orm.Query) {
 	if req.URL.Query().Get("include_archived") != "true" {
-		q.Where("product.archived_at is null").Where("base_product.archived_at is null")
+		q.Where("product.archived_at is null")
 	}
 }
 
@@ -117,7 +117,8 @@ func filterActiveProducts(req *http.Request, q *orm.Query) {
 func ProductListHandler(res http.ResponseWriter, req *http.Request) {
 	var products []Product
 	productsModel := db.Model(&products).
-		Column("product.*", "BaseProduct")
+		Column("product.*", "BaseProduct").
+		Where("base_product.archived_at is null")
 
 	pager, err := genericListQueryHandler(req, productsModel, filterActiveProducts)
 	if err != nil {
