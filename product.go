@@ -113,6 +113,63 @@ func filterActiveProducts(req *http.Request, q *orm.Query) {
 	}
 }
 
+// ProductExistsInDB will return whether or not a product with a given sku exists in the database
+func ProductExistsInDB(sku string) (bool, error) {
+	p := &Product{}
+	product := db.Model(p).
+		Where("sku = ?", sku).
+		Where("product.archived_at is null")
+
+	productCount, err := product.Count()
+	return productCount == 1, err
+}
+
+// ProductExistenceHandler handles requests to check if a sku exists
+func ProductExistenceHandler(res http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
+	sku := vars["sku"]
+
+	productExists, err := ProductExistsInDB(sku)
+	if err != nil {
+		log.Printf("Error encountered querying for products: %v", err)
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	responseStatus := http.StatusNotFound
+	if productExists {
+		responseStatus = http.StatusOK
+	}
+	res.WriteHeader(responseStatus)
+}
+
+// RetrieveProductFromDB retrieves a product with a given SKU from the database
+func RetrieveProductFromDB(sku string) (*Product, error) {
+	p := &Product{}
+	product := db.Model(p).
+		Where("sku = ?", sku).
+		Where("product.archived_at is null")
+
+	err := product.Select()
+	return p, err
+}
+
+// SingleProductHandler is a request handler that returns a single product
+func SingleProductHandler(res http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
+	sku := vars["sku"]
+
+	product, err := RetrieveProductFromDB(sku)
+
+	if err != nil {
+		log.Printf("Error encountered querying for products: %v", err)
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(res).Encode(product)
+}
+
 // ProductListHandler is a request handler that returns a list of products
 func ProductListHandler(res http.ResponseWriter, req *http.Request) {
 	var products []Product
@@ -136,49 +193,6 @@ func ProductListHandler(res http.ResponseWriter, req *http.Request) {
 		Data: products,
 	}
 	json.NewEncoder(res).Encode(productsResponse)
-}
-
-// SingleProductHandler is a request handler that returns a single product
-func SingleProductHandler(res http.ResponseWriter, req *http.Request) {
-	vars := mux.Vars(req)
-	sku := vars["sku"]
-
-	var p Product
-	product := db.Model(&p).
-		Column("products.*", "BaseProduct").
-		Where("sku = ?", sku)
-
-	filterActiveProducts(req, product)
-
-	err := product.Select()
-	if err != nil {
-		log.Printf("Error encountered querying for products: %v", err)
-		http.Error(res, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	json.NewEncoder(res).Encode(product)
-}
-
-// ProductExistenceHandler handles requests to check if a sku exists
-func ProductExistenceHandler(res http.ResponseWriter, req *http.Request) {
-	vars := mux.Vars(req)
-	sku := vars["sku"]
-
-	var p Product
-	product := db.Model(&p).Where("sku = ?", sku)
-	filterActiveProducts(req, product)
-
-	productCount, err := product.Count()
-	if err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
-		return
-	}
-	responseStatus := http.StatusNotFound
-	if productCount == 1 {
-		responseStatus = http.StatusOK
-	}
-	res.WriteHeader(responseStatus)
 }
 
 // ProductUpdateHandler is a request handler that can update products
