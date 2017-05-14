@@ -80,8 +80,7 @@ func ProductExistenceHandler(res http.ResponseWriter, req *http.Request) {
 
 	productExists, err := ProductExistsInDB(sku)
 	if err != nil {
-		log.Printf("Error encountered querying for products: %v", err)
-		http.Error(res, err.Error(), http.StatusInternalServerError)
+		informOfServerIssue(err, "Error encountered querying for product", res)
 		return
 	}
 
@@ -111,8 +110,7 @@ func SingleProductHandler(res http.ResponseWriter, req *http.Request) {
 	product, err := RetrieveProductFromDB(sku)
 
 	if err != nil {
-		log.Printf("Error encountered querying for products: %v", err)
-		http.Error(res, err.Error(), http.StatusInternalServerError)
+		informOfServerIssue(err, "Error encountered querying for product", res)
 		return
 	}
 
@@ -128,8 +126,7 @@ func ProductListHandler(res http.ResponseWriter, req *http.Request) {
 
 	pager, err := genericListQueryHandler(req, productsModel, filterActiveProducts)
 	if err != nil {
-		log.Printf("Error encountered querying for products: %v", err)
-		http.Error(res, err.Error(), http.StatusInternalServerError)
+		informOfServerIssue(err, "Error encountered querying for products", res)
 		return
 	}
 
@@ -146,19 +143,14 @@ func ProductListHandler(res http.ResponseWriter, req *http.Request) {
 
 // ProductUpdateHandler is a request handler that can update products
 func ProductUpdateHandler(res http.ResponseWriter, req *http.Request) {
-	if req.Body == nil {
-		http.Error(res, "Please send a request body", http.StatusBadRequest)
-	}
-
 	vars := mux.Vars(req)
 	sku := vars["sku"]
 	var existingProduct Product
 	existingProductQuery := db.Model(&existingProduct).Where("sku = ?", sku)
 
 	updatedProduct := &Product{}
-	err := json.NewDecoder(req.Body).Decode(updatedProduct)
-	if err != nil {
-		http.Error(res, "Invalid request body", http.StatusBadRequest)
+	bodyIsInvalid := ensureRequestBodyValidity(res, req, updatedProduct)
+	if !bodyIsInvalid {
 		return
 	}
 
@@ -192,19 +184,13 @@ func CreateProduct(newProduct *Product) error {
 
 // ProductCreationHandler is a product creation handler
 func ProductCreationHandler(res http.ResponseWriter, req *http.Request) {
-	if req.Body == nil {
-		http.Error(res, "Please send a request body", http.StatusBadRequest)
-		return
-	}
-
 	newProduct := &Product{}
-	err := json.NewDecoder(req.Body).Decode(newProduct)
-	if err != nil {
-		http.Error(res, "Invalid request body", http.StatusBadRequest)
+	bodyIsInvalid := ensureRequestBodyValidity(res, req, newProduct)
+	if bodyIsInvalid {
 		return
 	}
 
-	err = CreateProduct(newProduct)
+	err := CreateProduct(newProduct)
 	if err != nil {
 		errorString := fmt.Sprintf("error inserting product into database: %v", err)
 		log.Println(errorString)

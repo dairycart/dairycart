@@ -39,8 +39,8 @@ func OrderListHandler(res http.ResponseWriter, req *http.Request) {
 
 	pager, err := genericListQueryHandler(req, ordersModel, genericActiveFilter)
 	if err != nil {
-		log.Printf("Error encountered querying for products: %v", err)
-		http.Error(res, err.Error(), http.StatusInternalServerError)
+		informOfServerIssue(err, "Error encountered querying for orders", res)
+		return
 	}
 
 	ordersResponse := &OrdersResponse{
@@ -56,20 +56,13 @@ func OrderListHandler(res http.ResponseWriter, req *http.Request) {
 
 // OrderCreationHandler is a order creation handler
 func OrderCreationHandler(res http.ResponseWriter, req *http.Request) {
-	if req.Body == nil {
-		http.Error(res, "Please send a request body", http.StatusBadRequest)
-		return
-	}
-
 	newOrder := &Order{}
-	err := json.NewDecoder(req.Body).Decode(newOrder)
-	if err != nil {
-		http.Error(res, "Invalid request body", http.StatusBadRequest)
+	bodyIsInvalid := ensureRequestBodyValidity(res, req, newOrder)
+	if bodyIsInvalid {
 		return
-		// fmt.Fprintf(w, "Error encountered parsing request: %v", err)
 	}
 
-	err = db.Insert(newOrder)
+	err := db.Insert(newOrder)
 	if err != nil {
 		log.Printf("error inserting product into database: %v", err)
 	}

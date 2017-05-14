@@ -26,6 +26,11 @@ func HomeHandler(res http.ResponseWriter, req *http.Request) {
 	renderTemplates(res, "Dairycart", string(indexPage))
 }
 
+// notImplementedHandler is used for endpoints that haven't been implemented yet.
+func notImplementedHandler(res http.ResponseWriter, req *http.Request) {
+	res.WriteHeader(http.StatusTeapot)
+}
+
 func main() {
 	// init stuff
 	domainName := os.Getenv("DAIRYCART_DOMAIN")
@@ -47,7 +52,6 @@ func main() {
 	// 	if err != nil {
 	// 		panic(err)
 	// 	}
-
 	// 	log.Printf("%s %s", time.Since(event.StartTime), query)
 	// })
 
@@ -64,6 +68,9 @@ func main() {
 	router.HandleFunc("/product/{sku}", ProductUpdateHandler).Methods("PUT")
 	router.HandleFunc("/product", ProductCreationHandler).Methods("POST")
 	router.HandleFunc("/product/{sku}", ProductDeletionHandler).Methods("DELETE")
+
+	// Product Attribute Values
+	router.HandleFunc("/product_attributes/{attribute_id}/value", notImplementedHandler).Methods("POST")
 
 	// Orders
 	router.HandleFunc("/orders", OrderListHandler).Methods("GET")

@@ -84,6 +84,7 @@ func init() {
 			"id" bigserial,
 			"product_attribute_id" bigint,
 			"value" text,
+			"products_created" boolean,
 			"active" boolean DEFAULT 'true',
 			"created_at" timestamp DEFAULT NOW(),
 			"archived_at" timestamp,
