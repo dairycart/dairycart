@@ -1,0 +1,81 @@
+
+/*
+colors from dark to light:
+#014B6C
+#0278AC
+#0392D2
+#03A4EC  // main color  
+#03ADF9            
+*/
+
+html, body {
+    height: 100%;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+.header {
+    height: 7.5%;
+    border-bottom: 2px solid #999;
+    background-color: #03A4EC;
+
+    vertical-align: middle;
+}
+
+.header .logo{
+    float: left;
+    height: 100%;
+}
+
+.header h2{
+    color: #EEE;
+    float: left;
+
+    position: relative;    
+}
+
+.main {
+    flex: auto;
+    background-color: #EEE;
+}
+
+.footer {
+    height: 3%;
+    width: 100%;
+    
+    border-top: 2px solid #999;
+    background-color: #03A4EC;
+    color: white;
+    text-align: center;
+}
+
+.footer ul {
+    list-style-type: none;
+    margin: auto;
+    padding: 0;
+    overflow: hidden;
+}
+
+.footer li {
+    float: left;
+}
+
+.footer li a {
+    display: block;
+    color: white;
+    text-align: center;
+    vertical-align: center;
+    padding: 1rem;
+    text-decoration: none;
+}
+
+/* Change the link color to #111 (black) on hover */
+.footer li a:hover {
+    background-color: #0392D2;
+}
