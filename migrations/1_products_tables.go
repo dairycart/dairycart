@@ -24,7 +24,6 @@ func init() {
 			"base_package_height" decimal,
 			"base_package_width" decimal,
 			"base_package_length" decimal,
-			"active" boolean DEFAULT 'true',
 			"created_at" timestamp DEFAULT NOW(),
 			"archived_at" timestamp,
 			PRIMARY KEY ("id")
@@ -70,7 +69,6 @@ func init() {
 			"id" bigserial,
 			"name" text,
 			"base_product_id" bigint,
-			"active" boolean DEFAULT 'true',
 			"created_at" timestamp DEFAULT NOW(),
 			"archived_at" timestamp,
 			PRIMARY KEY ("id"),
@@ -85,7 +83,6 @@ func init() {
 			"product_attribute_id" bigint,
 			"value" text,
 			"products_created" boolean,
-			"active" boolean DEFAULT 'true',
 			"created_at" timestamp DEFAULT NOW(),
 			"archived_at" timestamp,
 			PRIMARY KEY ("id"),
@@ -99,6 +96,8 @@ func init() {
 			"id" bigserial,
 			"product_id" bigint,
 			"product_attribute_value_id" bigint,
+			"created_at" timestamp DEFAULT NOW(),
+			"archived_at" timestamp,
 			PRIMARY KEY ("id"),
 			FOREIGN KEY ("product_id") REFERENCES "products"("id"),
 			FOREIGN KEY ("product_attribute_value_id") REFERENCES "product_attribute_values"("id")
