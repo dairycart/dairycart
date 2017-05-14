@@ -41,15 +41,26 @@ func RetrieveProductAttributeValue(id int64) (*ProductAttributeValue, error) {
 	return pav, err
 }
 
+// ProductAttributeValueExists checks for the existence of a given ProductAttributeValue in the database
+func ProductAttributeValueExists(id int64) (bool, error) {
+	count, err := db.Model(&ProductAttributeValue{}).Where("id = ?", id).Where("archived_at is null").Count()
+
+	return count == 1, err
+}
+
 // ProductAttributeValueCreationHandler is a product creation handler
 func ProductAttributeValueCreationHandler(res http.ResponseWriter, req *http.Request) {
-	vars := mux.Vars(req)
-	providedAttributeID := vars["attribute_id"]
+	providedAttributeID := mux.Vars(req)["attribute_id"]
 
 	attributeID, err := strconv.ParseInt(providedAttributeID, 10, 64)
 	if err != nil {
-		errorString := fmt.Sprintf("Error encountered parsing base product ID: %v", err)
-		http.Error(res, errorString, http.StatusBadRequest)
+		respondToInvalidRequest(err, "Error encountered parsing base product ID", res)
+		return
+	}
+
+	productAttribueExists := ProductAttributeExists(attributeID)
+	if !productAttribueExists {
+		respondToInvalidRequest(err, fmt.Sprintf("No matching product attribute for ID: %d", attributeID), res)
 		return
 	}
 
@@ -59,6 +70,9 @@ func ProductAttributeValueCreationHandler(res http.ResponseWriter, req *http.Req
 		return
 	}
 	newProductAttributeValue.ProductAttributeID = attributeID
+
+	// We don't want API consumers to be able to override this value
+	newProductAttributeValue.ProductsCreated = false
 
 	_, err = CreateProductAttributeValue(newProductAttributeValue)
 	if err != nil {

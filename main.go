@@ -70,7 +70,7 @@ func main() {
 	router.HandleFunc("/product/{sku}", ProductDeletionHandler).Methods("DELETE")
 
 	// Product Attribute Values
-	router.HandleFunc("/product_attributes/{attribute_id}/value", notImplementedHandler).Methods("POST")
+	router.HandleFunc("/product_attributes/{attribute_id}/value", ProductAttributeValueCreationHandler).Methods("POST")
 
 	// Orders
 	router.HandleFunc("/orders", OrderListHandler).Methods("GET")

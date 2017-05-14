@@ -31,7 +31,7 @@ type ListResponse struct {
 func respondToInvalidRequest(err error, errorFormat string, res http.ResponseWriter) {
 	errorString := fmt.Sprintf("%s: %v", errorFormat, err)
 	log.Println(errorString)
-	http.Error(res, errorString, http.StatusBadRequest)
+	http.Error(res, errorFormat, http.StatusBadRequest)
 }
 
 // informOfServerIssue takes an error, a string format, and a response object, and
@@ -41,7 +41,7 @@ func respondToInvalidRequest(err error, errorFormat string, res http.ResponseWri
 func informOfServerIssue(err error, errorFormat string, res http.ResponseWriter) {
 	errorString := fmt.Sprintf("%s: %v", errorFormat, err)
 	log.Println(errorString)
-	http.Error(res, errorString, http.StatusInternalServerError)
+	http.Error(res, errorFormat, http.StatusInternalServerError)
 }
 
 // ensureRequestBodyValidity takes a request object and checks that:

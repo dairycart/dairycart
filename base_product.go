@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -85,21 +84,17 @@ func RetrieveBaseProductFromDB(id int64) (*BaseProduct, error) {
 
 // SingleBaseProductHandler is a request handler that returns a single BaseProduct
 func SingleBaseProductHandler(res http.ResponseWriter, req *http.Request) {
-	vars := mux.Vars(req)
-	id := vars["id"]
+	baseProductID := mux.Vars(req)["id"]
 
-	actualID, err := strconv.ParseInt(id, 10, 64)
+	actualID, err := strconv.ParseInt(baseProductID, 10, 64)
 	if err != nil {
-		log.Printf("Error encountered parsing base product ID: %v", err)
-		http.Error(res, err.Error(), http.StatusBadRequest)
+		respondToInvalidRequest(err, "Error encountered parsing base product ID: %v", res)
 		return
 	}
 
 	baseProduct, err := RetrieveBaseProductFromDB(actualID)
-
 	if err != nil {
-		log.Printf("Error encountered querying for products: %v", err)
-		http.Error(res, err.Error(), http.StatusInternalServerError)
+		informOfServerIssue(err, "Error encountered querying for base_product", res)
 		return
 	}
 

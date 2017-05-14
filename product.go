@@ -64,10 +64,7 @@ func filterActiveProducts(req *http.Request, q *orm.Query) {
 
 // ProductExistsInDB will return whether or not a product with a given sku exists in the database
 func ProductExistsInDB(sku string) (bool, error) {
-	p := &Product{}
-	product := db.Model(p).
-		Where("sku = ?", sku).
-		Where("product.archived_at is null")
+	product := db.Model(&Product{}).Where("sku = ?", sku).Where("archived_at is null")
 
 	productCount, err := product.Count()
 	return productCount == 1, err
@@ -75,8 +72,7 @@ func ProductExistsInDB(sku string) (bool, error) {
 
 // ProductExistenceHandler handles requests to check if a sku exists
 func ProductExistenceHandler(res http.ResponseWriter, req *http.Request) {
-	vars := mux.Vars(req)
-	sku := vars["sku"]
+	sku := mux.Vars(req)["sku"]
 
 	productExists, err := ProductExistsInDB(sku)
 	if err != nil {
@@ -104,8 +100,7 @@ func RetrieveProductFromDB(sku string) (*Product, error) {
 
 // SingleProductHandler is a request handler that returns a single Product
 func SingleProductHandler(res http.ResponseWriter, req *http.Request) {
-	vars := mux.Vars(req)
-	sku := vars["sku"]
+	sku := mux.Vars(req)["sku"]
 
 	product, err := RetrieveProductFromDB(sku)
 
@@ -143,8 +138,7 @@ func ProductListHandler(res http.ResponseWriter, req *http.Request) {
 
 // ProductUpdateHandler is a request handler that can update products
 func ProductUpdateHandler(res http.ResponseWriter, req *http.Request) {
-	vars := mux.Vars(req)
-	sku := vars["sku"]
+	sku := mux.Vars(req)["sku"]
 	var existingProduct Product
 	existingProductQuery := db.Model(&existingProduct).Where("sku = ?", sku)
 
@@ -201,8 +195,7 @@ func ProductCreationHandler(res http.ResponseWriter, req *http.Request) {
 
 // ProductDeletionHandler is a request handler that deletes a single product
 func ProductDeletionHandler(res http.ResponseWriter, req *http.Request) {
-	vars := mux.Vars(req)
-	sku := vars["sku"]
+	sku := mux.Vars(req)["sku"]
 
 	var p Product
 	product := db.Model(&p).Where("sku = ?", sku)
