@@ -1,0 +1,12 @@
+version: '3.2'
+
+services:
+  dairycart:
+    image: dairycart
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      DAIRYCART_DB_URL: "$DAIRYCART_DB_URL"
