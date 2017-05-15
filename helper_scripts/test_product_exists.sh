@@ -1,0 +1,1 @@
+curl --head "localhost:8080/product/skateboard"

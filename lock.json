@@ -1,6 +1,14 @@
 {
-    "memo": "dd37f59badab7254cfa8f6ddbd680f0acdd80deea3b5d0493cbe2467a71cc9d5",
+    "memo": "fa5e80fee2af101f12e9d79e1fc4ce22f6c283d15c167535a7a5047759c029fb",
     "projects": [
+        {
+            "name": "github.com/davecgh/go-spew",
+            "version": "v1.1.0",
+            "revision": "346938d642f2ec3594ed81d874461961cd0faa76",
+            "packages": [
+                "spew"
+            ]
+        },
         {
             "name": "github.com/go-pg/migrations",
             "version": "v6.0.2",
@@ -52,6 +60,22 @@
             "revision": "1c35d901db3da928c72a72d8458480cc9ade058f",
             "packages": [
                 "."
+            ]
+        },
+        {
+            "name": "github.com/pmezard/go-difflib",
+            "version": "v1.0.0",
+            "revision": "792786c7400a136282c1664665ae0a8db921c6c2",
+            "packages": [
+                "difflib"
+            ]
+        },
+        {
+            "name": "github.com/stretchr/testify",
+            "version": "v1.1.4",
+            "revision": "69483b4bd14f5845b5a1e55bca19e954e827f1d0",
+            "packages": [
+                "assert"
             ]
         }
     ]

@@ -59,18 +59,18 @@ func main() {
 	router.HandleFunc("/", HomeHandler).Methods("GET")
 
 	// Base Products
-	router.HandleFunc("/base_product/{id}", SingleBaseProductHandler).Methods("GET")
+	router.HandleFunc("/base_product/{id:[0-9]+}", SingleBaseProductHandler).Methods("GET")
 
 	// Products
 	router.HandleFunc("/products", ProductListHandler).Methods("GET")
-	router.HandleFunc("/product/{sku}", ProductExistenceHandler).Methods("HEAD")
-	router.HandleFunc("/product/{sku}", SingleProductHandler).Methods("GET")
-	router.HandleFunc("/product/{sku}", ProductUpdateHandler).Methods("PUT")
+	router.HandleFunc("/product/{sku:[a-zA-Z]+}", ProductExistenceHandler).Methods("HEAD")
+	router.HandleFunc("/product/{sku:[a-zA-Z]+}", SingleProductHandler).Methods("GET")
+	router.HandleFunc("/product/{sku:[a-zA-Z]+}", ProductUpdateHandler).Methods("PUT")
 	router.HandleFunc("/product", ProductCreationHandler).Methods("POST")
-	router.HandleFunc("/product/{sku}", ProductDeletionHandler).Methods("DELETE")
+	router.HandleFunc("/product/{sku:[a-zA-Z]+}", ProductDeletionHandler).Methods("DELETE")
 
 	// Product Attribute Values
-	router.HandleFunc("/product_attributes/{attribute_id}/value", ProductAttributeValueCreationHandler).Methods("POST")
+	router.HandleFunc("/product_attributes/{attribute_id:[0-9]+}/value", ProductAttributeValueCreationHandler).Methods("POST")
 
 	// Orders
 	router.HandleFunc("/orders", OrderListHandler).Methods("GET")

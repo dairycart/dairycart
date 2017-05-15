@@ -2,8 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -64,9 +62,7 @@ func filterActiveProducts(req *http.Request, q *orm.Query) {
 
 // ProductExistsInDB will return whether or not a product with a given sku exists in the database
 func ProductExistsInDB(sku string) (bool, error) {
-	product := db.Model(&Product{}).Where("sku = ?", sku).Where("archived_at is null")
-
-	productCount, err := product.Count()
+	productCount, err := db.Model(&Product{}).Where("sku = ?", sku).Where("archived_at is null").Count()
 	return productCount == 1, err
 }
 
@@ -89,19 +85,18 @@ func ProductExistenceHandler(res http.ResponseWriter, req *http.Request) {
 
 // RetrieveProductFromDB retrieves a product with a given SKU from the database
 func RetrieveProductFromDB(sku string) (*Product, error) {
-	p := &Product{}
-	product := db.Model(p).
+	product := &Product{}
+	err := db.Model(product).
 		Where("sku = ?", sku).
-		Where("product.archived_at is null")
+		Where("product.archived_at is null").
+		Select()
 
-	err := product.Select()
-	return p, err
+	return product, err
 }
 
 // SingleProductHandler is a request handler that returns a single Product
 func SingleProductHandler(res http.ResponseWriter, req *http.Request) {
 	sku := mux.Vars(req)["sku"]
-
 	product, err := RetrieveProductFromDB(sku)
 
 	if err != nil {
@@ -139,8 +134,8 @@ func ProductListHandler(res http.ResponseWriter, req *http.Request) {
 // ProductUpdateHandler is a request handler that can update products
 func ProductUpdateHandler(res http.ResponseWriter, req *http.Request) {
 	sku := mux.Vars(req)["sku"]
-	var existingProduct Product
-	existingProductQuery := db.Model(&existingProduct).Where("sku = ?", sku)
+	existingProduct := &Product{}
+	existingProductQuery := db.Model(existingProduct).Where("sku = ?", sku).Where("archived_at is null")
 
 	updatedProduct := &Product{}
 	bodyIsInvalid := ensureRequestBodyValidity(res, req, updatedProduct)
@@ -186,9 +181,7 @@ func ProductCreationHandler(res http.ResponseWriter, req *http.Request) {
 
 	err := CreateProduct(newProduct)
 	if err != nil {
-		errorString := fmt.Sprintf("error inserting product into database: %v", err)
-		log.Println(errorString)
-		http.Error(res, errorString, http.StatusBadRequest)
+		informOfServerIssue(err, "Error inserting product into database", res)
 		return
 	}
 }
@@ -197,17 +190,14 @@ func ProductCreationHandler(res http.ResponseWriter, req *http.Request) {
 func ProductDeletionHandler(res http.ResponseWriter, req *http.Request) {
 	sku := mux.Vars(req)["sku"]
 
-	var p Product
-	product := db.Model(&p).Where("sku = ?", sku)
+	product := &Product{}
+	err := db.Model(product).Where("sku = ?", sku).Where("archived_at is null").Select()
 
-	err := product.Select()
 	if err != nil {
-		log.Printf("Error encountered querying for products: %v", err)
-		http.Error(res, err.Error(), http.StatusInternalServerError)
+		informOfServerIssue(err, "Error deleting product from database", res)
 		return
 	}
 
-	db.Model(&p).Set("archived_at = now()").Set("active = false").Where("sku = ?", sku).Update(&p)
-
+	db.Model(product).Set("archived_at = now()").Set("active = false").Where("sku = ?", sku).Update(product)
 	json.NewEncoder(res).Encode(product)
 }

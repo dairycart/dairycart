@@ -86,11 +86,8 @@ func RetrieveBaseProductFromDB(id int64) (*BaseProduct, error) {
 func SingleBaseProductHandler(res http.ResponseWriter, req *http.Request) {
 	baseProductID := mux.Vars(req)["id"]
 
-	actualID, err := strconv.ParseInt(baseProductID, 10, 64)
-	if err != nil {
-		respondToInvalidRequest(err, "Error encountered parsing base product ID: %v", res)
-		return
-	}
+	// we can eat this error because Mux takes care of validating route params for us
+	actualID, _ := strconv.ParseInt(baseProductID, 10, 64)
 
 	baseProduct, err := RetrieveBaseProductFromDB(actualID)
 	if err != nil {

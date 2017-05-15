@@ -52,15 +52,12 @@ func ProductAttributeValueExists(id int64) (bool, error) {
 func ProductAttributeValueCreationHandler(res http.ResponseWriter, req *http.Request) {
 	providedAttributeID := mux.Vars(req)["attribute_id"]
 
-	attributeID, err := strconv.ParseInt(providedAttributeID, 10, 64)
-	if err != nil {
-		respondToInvalidRequest(err, "Error encountered parsing base product ID", res)
-		return
-	}
+	// we can eat this error because Mux takes care of validating route params for us
+	attributeID, _ := strconv.ParseInt(providedAttributeID, 10, 64)
 
 	productAttribueExists := ProductAttributeExists(attributeID)
 	if !productAttribueExists {
-		respondToInvalidRequest(err, fmt.Sprintf("No matching product attribute for ID: %d", attributeID), res)
+		respondToInvalidRequest(nil, fmt.Sprintf("No matching product attribute for ID: %d", attributeID), res)
 		return
 	}
 
@@ -74,7 +71,7 @@ func ProductAttributeValueCreationHandler(res http.ResponseWriter, req *http.Req
 	// We don't want API consumers to be able to override this value
 	newProductAttributeValue.ProductsCreated = false
 
-	_, err = CreateProductAttributeValue(newProductAttributeValue)
+	_, err := CreateProductAttributeValue(newProductAttributeValue)
 	if err != nil {
 		errorString := fmt.Sprintf("error inserting product into database: %v", err)
 		log.Println(errorString)

@@ -1,5 +1,1 @@
-if [ -f dairycart ]
-then
-    rm dairycart
-fi
-go build && clear && ./dairycart
+docker run --publish 80:8080 --name dc --env DAIRYCART_DB_URL="$DAIRYCART_DB_URL" --rm dairycart
