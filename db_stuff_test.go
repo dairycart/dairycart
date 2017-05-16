@@ -18,6 +18,10 @@ type MockDB struct {
 	CallList []string
 }
 
+func NewMockDB() *MockDB {
+	return &MockDB{}
+}
+
 func (db *MockDB) Insert(model ...interface{}) error {
 	db.CallList = append(db.CallList, "Insert")
 	// structType := reflect.ValueOf(model).Type().Name()
