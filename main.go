@@ -1,8 +1,6 @@
 package main
 
 import (
-	"html/template"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -12,19 +10,6 @@ import (
 )
 
 var db *pg.DB
-var templates = template.Must(template.ParseGlob("templates/*"))
-
-// HomeHandler serves up our basic web page
-func HomeHandler(res http.ResponseWriter, req *http.Request) {
-	if val, ok := req.Header["User-Agent"]; ok {
-		log.Printf("User-Agent: %v", val)
-	}
-	indexPage, err := ioutil.ReadFile("templates/home.html")
-	if err != nil {
-		log.Printf("error occurred reading indexPage: %v\n", err)
-	}
-	renderTemplates(res, "Dairycart", string(indexPage))
-}
 
 // notImplementedHandler is used for endpoints that haven't been implemented yet.
 func notImplementedHandler(res http.ResponseWriter, req *http.Request) {
@@ -54,9 +39,6 @@ func main() {
 	// 	}
 	// 	log.Printf("%s %s", time.Since(event.StartTime), query)
 	// })
-
-	// Basic business
-	router.HandleFunc("/", HomeHandler).Methods("GET")
 
 	// Base Products
 	router.HandleFunc("/base_product/{id:[0-9]+}", SingleBaseProductHandler).Methods("GET")
