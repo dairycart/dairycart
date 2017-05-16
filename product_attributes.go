@@ -18,8 +18,8 @@ type ProductAttribute struct {
 	ArchivedAt    time.Time    `json:"archived_at"`
 }
 
-// ProductAttributeExists checks for the existence of a given ProductAttribute in the database
-func ProductAttributeExists(db *pg.DB, id int64) bool {
+// productAttributeExists checks for the existence of a given ProductAttribute in the database
+func productAttributeExists(db *pg.DB, id int64) bool {
 	count, err := db.Model(&ProductAttribute{}).Where("id = ?", id).Where("archived_at is null").Count()
 	if err != nil {
 		log.Printf("error occurred querying for product_attribute: %v\n", err)

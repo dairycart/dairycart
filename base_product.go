@@ -65,8 +65,8 @@ func NewBaseProductFromProduct(p *Product) *BaseProduct {
 	return bp
 }
 
-// RetrieveBaseProductFromDB retrieves a product with a given SKU from the database
-func RetrieveBaseProductFromDB(db *pg.DB, id int64) (*BaseProduct, error) {
+// retrieveBaseProductFromDB retrieves a product with a given SKU from the database
+func retrieveBaseProductFromDB(db *pg.DB, id int64) (*BaseProduct, error) {
 	bp := &BaseProduct{}
 	baseProduct := db.Model(bp).
 		Where("id = ?", id).
@@ -83,14 +83,14 @@ func RetrieveBaseProductFromDB(db *pg.DB, id int64) (*BaseProduct, error) {
 }
 
 func buildSingleBaseProductHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Request) {
-	// SingleBaseProductHandler is a request handler that returns a single BaseProduct
+	// singleBaseProductHandler is a request handler that returns a single BaseProduct
 	return func(res http.ResponseWriter, req *http.Request) {
 		baseProductID := mux.Vars(req)["id"]
 
 		// we can eat this error because Mux takes care of validating route params for us
 		actualID, _ := strconv.ParseInt(baseProductID, 10, 64)
 
-		baseProduct, err := RetrieveBaseProductFromDB(db, actualID)
+		baseProduct, err := retrieveBaseProductFromDB(db, actualID)
 		if err != nil {
 			informOfServerIssue(err, "Error encountered querying for base_product", res)
 			return

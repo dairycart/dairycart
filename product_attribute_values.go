@@ -24,14 +24,14 @@ type ProductAttributeValue struct {
 	ArchivedAt         time.Time         `json:"archived_at"`
 }
 
-// CreateProductAttributeValue creates a ProductAttributeValue tied to a ProductAttribute
-func CreateProductAttributeValue(db *pg.DB, pav *ProductAttributeValue) (*ProductAttributeValue, error) {
+// createProductAttributeValue creates a ProductAttributeValue tied to a ProductAttribute
+func createProductAttributeValue(db *pg.DB, pav *ProductAttributeValue) (*ProductAttributeValue, error) {
 	err := db.Insert(pav)
 	return pav, err
 }
 
-// RetrieveProductAttributeValue retrieves a ProductAttributeValue with a given ID from the database
-func RetrieveProductAttributeValue(db *pg.DB, id int64) (*ProductAttributeValue, error) {
+// retrieveProductAttributeValue retrieves a ProductAttributeValue with a given ID from the database
+func retrieveProductAttributeValue(db *pg.DB, id int64) (*ProductAttributeValue, error) {
 	pav := &ProductAttributeValue{}
 	productAttributeValue := db.Model(pav).
 		Where("id = ?", id).
@@ -41,22 +41,22 @@ func RetrieveProductAttributeValue(db *pg.DB, id int64) (*ProductAttributeValue,
 	return pav, err
 }
 
-// ProductAttributeValueExists checks for the existence of a given ProductAttributeValue in the database
-func ProductAttributeValueExists(db *pg.DB, id int64) (bool, error) {
+// productAttributeValueExists checks for the existence of a given ProductAttributeValue in the database
+func productAttributeValueExists(db *pg.DB, id int64) (bool, error) {
 	count, err := db.Model(&ProductAttributeValue{}).Where("id = ?", id).Where("archived_at is null").Count()
 
 	return count == 1, err
 }
 
 func buildProductAttributeValueCreationHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Request) {
-	// ProductAttributeValueCreationHandler is a product creation handler
+	// productAttributeValueCreationHandler is a product creation handler
 	return func(res http.ResponseWriter, req *http.Request) {
 		providedAttributeID := mux.Vars(req)["attribute_id"]
 
 		// we can eat this error because Mux takes care of validating route params for us
 		attributeID, _ := strconv.ParseInt(providedAttributeID, 10, 64)
 
-		productAttribueExists := ProductAttributeExists(db, attributeID)
+		productAttribueExists := productAttributeExists(db, attributeID)
 		if !productAttribueExists {
 			respondToInvalidRequest(nil, fmt.Sprintf("No matching product attribute for ID: %d", attributeID), res)
 			return
@@ -72,7 +72,7 @@ func buildProductAttributeValueCreationHandler(db *pg.DB) func(res http.Response
 		// We don't want API consumers to be able to override this value
 		newProductAttributeValue.ProductsCreated = false
 
-		_, err := CreateProductAttributeValue(db, newProductAttributeValue)
+		_, err := createProductAttributeValue(db, newProductAttributeValue)
 		if err != nil {
 			errorString := fmt.Sprintf("error inserting product into database: %v", err)
 			log.Println(errorString)

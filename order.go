@@ -35,7 +35,7 @@ type OrdersResponse struct {
 }
 
 func buildOrderListHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Request) {
-	// OrderListHandler is a generic order list request handler
+	// orderListHandler is a generic order list request handler
 	return func(res http.ResponseWriter, req *http.Request) {
 		var orders []Order
 		ordersModel := db.Model(&orders)
@@ -59,7 +59,7 @@ func buildOrderListHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Re
 }
 
 func buildOrderCreationHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Request) {
-	// OrderCreationHandler is a order creation handler
+	// orderCreationHandler is a order creation handler
 	return func(res http.ResponseWriter, req *http.Request) {
 		newOrder := &Order{}
 		bodyIsInvalid := ensureRequestBodyValidity(res, req, newOrder)
