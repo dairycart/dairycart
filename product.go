@@ -61,12 +61,12 @@ func filterActiveProducts(req *http.Request, q *orm.Query) {
 }
 
 // productExistsInDB will return whether or not a product with a given sku exists in the database
-func productExistsInDB(db *pg.DB, sku string) (bool, error) {
+func productExistsInDB(db Database, sku string) (bool, error) {
 	productCount, err := db.Model(&Product{}).Where("sku = ?", sku).Where("archived_at is null").Count()
 	return productCount == 1, err
 }
 
-func buildProductExistenceHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Request) {
+func buildProductExistenceHandler(db Database) func(res http.ResponseWriter, req *http.Request) {
 	// ProductExistenceHandler handles requests to check if a sku exists
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := mux.Vars(req)["sku"]
@@ -86,7 +86,7 @@ func buildProductExistenceHandler(db *pg.DB) func(res http.ResponseWriter, req *
 }
 
 // retrieveProductFromDB retrieves a product with a given SKU from the database
-func retrieveProductFromDB(db *pg.DB, sku string) (*Product, error) {
+func retrieveProductFromDB(db Database, sku string) (*Product, error) {
 	product := &Product{}
 	err := db.Model(product).
 		Where("sku = ?", sku).
@@ -96,7 +96,7 @@ func retrieveProductFromDB(db *pg.DB, sku string) (*Product, error) {
 	return product, err
 }
 
-func buildSingleProductHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Request) {
+func buildSingleProductHandler(db Database) func(res http.ResponseWriter, req *http.Request) {
 	// SingleProductHandler is a request handler that returns a single Product
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := mux.Vars(req)["sku"]
@@ -111,7 +111,7 @@ func buildSingleProductHandler(db *pg.DB) func(res http.ResponseWriter, req *htt
 	}
 }
 
-func buildProductListHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Request) {
+func buildProductListHandler(db Database) func(res http.ResponseWriter, req *http.Request) {
 	// productListHandler is a request handler that returns a list of products
 	return func(res http.ResponseWriter, req *http.Request) {
 		var products []Product
@@ -137,7 +137,7 @@ func buildProductListHandler(db *pg.DB) func(res http.ResponseWriter, req *http.
 	}
 }
 
-func buildProductUpdateHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Request) {
+func buildProductUpdateHandler(db Database) func(res http.ResponseWriter, req *http.Request) {
 	return func(res http.ResponseWriter, req *http.Request) {
 		// ProductUpdateHandler is a request handler that can update products
 		sku := mux.Vars(req)["sku"]
@@ -163,7 +163,7 @@ func buildProductUpdateHandler(db *pg.DB) func(res http.ResponseWriter, req *htt
 }
 
 // createProduct takes a marshalled Product object and creates an entry for it and a base_product in the database
-func createProduct(db *pg.DB, newProduct *Product) error {
+func createProduct(db Database, newProduct *Product) error {
 	err := db.RunInTransaction(func(tx *pg.Tx) error {
 		baseProduct := NewBaseProductFromProduct(newProduct)
 		newProduct.BaseProduct = baseProduct
@@ -179,7 +179,7 @@ func createProduct(db *pg.DB, newProduct *Product) error {
 	return err
 }
 
-func buildProductCreationHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Request) {
+func buildProductCreationHandler(db Database) func(res http.ResponseWriter, req *http.Request) {
 	// ProductCreationHandler is a product creation handler
 	return func(res http.ResponseWriter, req *http.Request) {
 		newProduct := &Product{}
@@ -196,7 +196,7 @@ func buildProductCreationHandler(db *pg.DB) func(res http.ResponseWriter, req *h
 	}
 }
 
-func buildProductDeletionHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Request) {
+func buildProductDeletionHandler(db Database) func(res http.ResponseWriter, req *http.Request) {
 	// ProductDeletionHandler is a request handler that deletes a single product
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := mux.Vars(req)["sku"]

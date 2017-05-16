@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-
-	"github.com/go-pg/pg"
 )
 
 // Order describes, well... orders.
@@ -34,7 +32,7 @@ type OrdersResponse struct {
 	Data []Order `json:"data"`
 }
 
-func buildOrderListHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Request) {
+func buildOrderListHandler(db Database) func(res http.ResponseWriter, req *http.Request) {
 	// orderListHandler is a generic order list request handler
 	return func(res http.ResponseWriter, req *http.Request) {
 		var orders []Order
@@ -58,7 +56,7 @@ func buildOrderListHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Re
 	}
 }
 
-func buildOrderCreationHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Request) {
+func buildOrderCreationHandler(db Database) func(res http.ResponseWriter, req *http.Request) {
 	// orderCreationHandler is a order creation handler
 	return func(res http.ResponseWriter, req *http.Request) {
 		newOrder := &Order{}
