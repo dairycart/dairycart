@@ -14,7 +14,6 @@ RUN go build -o /migrator
 from postgres:9.6-alpine
 
 COPY --from=build-stage /migrator migrator
-# ENV DAIRYCART_DB_URL=postgres://ockhafwg:RDqIgwY_OZl6F2IKZzmGK3fG1AjRBD8B@stampy.db.elephantsql.com:5432/ockhafwg
 ENV DAIRYCART_DB_URL=postgres://username:password@localhost/dairycart
 CMD ["postgres"]
 CMD ["/migrator", "init"]
