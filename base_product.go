@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
 	"github.com/gorilla/mux"
 )
@@ -39,7 +40,6 @@ type BaseProduct struct {
 	ChildProducts     []*Product          `json:"child_products"`
 
 	// Housekeeping
-	Active     bool      `json:"active"`
 	CreatedAt  time.Time `json:"created"`
 	ArchivedAt time.Time `json:"-"`
 }
@@ -66,7 +66,7 @@ func NewBaseProductFromProduct(p *Product) *BaseProduct {
 }
 
 // RetrieveBaseProductFromDB retrieves a product with a given SKU from the database
-func RetrieveBaseProductFromDB(id int64) (*BaseProduct, error) {
+func RetrieveBaseProductFromDB(db *pg.DB, id int64) (*BaseProduct, error) {
 	bp := &BaseProduct{}
 	baseProduct := db.Model(bp).
 		Where("id = ?", id).
@@ -82,18 +82,20 @@ func RetrieveBaseProductFromDB(id int64) (*BaseProduct, error) {
 	return bp, err
 }
 
-// SingleBaseProductHandler is a request handler that returns a single BaseProduct
-func SingleBaseProductHandler(res http.ResponseWriter, req *http.Request) {
-	baseProductID := mux.Vars(req)["id"]
+func buildSingleBaseProductHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Request) {
+	// SingleBaseProductHandler is a request handler that returns a single BaseProduct
+	return func(res http.ResponseWriter, req *http.Request) {
+		baseProductID := mux.Vars(req)["id"]
 
-	// we can eat this error because Mux takes care of validating route params for us
-	actualID, _ := strconv.ParseInt(baseProductID, 10, 64)
+		// we can eat this error because Mux takes care of validating route params for us
+		actualID, _ := strconv.ParseInt(baseProductID, 10, 64)
 
-	baseProduct, err := RetrieveBaseProductFromDB(actualID)
-	if err != nil {
-		informOfServerIssue(err, "Error encountered querying for base_product", res)
-		return
+		baseProduct, err := RetrieveBaseProductFromDB(db, actualID)
+		if err != nil {
+			informOfServerIssue(err, "Error encountered querying for base_product", res)
+			return
+		}
+
+		json.NewEncoder(res).Encode(baseProduct)
 	}
-
-	json.NewEncoder(res).Encode(baseProduct)
 }

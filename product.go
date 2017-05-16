@@ -61,30 +61,32 @@ func filterActiveProducts(req *http.Request, q *orm.Query) {
 }
 
 // ProductExistsInDB will return whether or not a product with a given sku exists in the database
-func ProductExistsInDB(sku string) (bool, error) {
+func ProductExistsInDB(db *pg.DB, sku string) (bool, error) {
 	productCount, err := db.Model(&Product{}).Where("sku = ?", sku).Where("archived_at is null").Count()
 	return productCount == 1, err
 }
 
-// ProductExistenceHandler handles requests to check if a sku exists
-func ProductExistenceHandler(res http.ResponseWriter, req *http.Request) {
-	sku := mux.Vars(req)["sku"]
+func buildProductExistenceHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Request) {
+	// ProductExistenceHandler handles requests to check if a sku exists
+	return func(res http.ResponseWriter, req *http.Request) {
+		sku := mux.Vars(req)["sku"]
 
-	productExists, err := ProductExistsInDB(sku)
-	if err != nil {
-		informOfServerIssue(err, "Error encountered querying for product", res)
-		return
-	}
+		productExists, err := ProductExistsInDB(db, sku)
+		if err != nil {
+			informOfServerIssue(err, "Error encountered querying for product", res)
+			return
+		}
 
-	responseStatus := http.StatusNotFound
-	if productExists {
-		responseStatus = http.StatusOK
+		responseStatus := http.StatusNotFound
+		if productExists {
+			responseStatus = http.StatusOK
+		}
+		res.WriteHeader(responseStatus)
 	}
-	res.WriteHeader(responseStatus)
 }
 
 // RetrieveProductFromDB retrieves a product with a given SKU from the database
-func RetrieveProductFromDB(sku string) (*Product, error) {
+func RetrieveProductFromDB(db *pg.DB, sku string) (*Product, error) {
 	product := &Product{}
 	err := db.Model(product).
 		Where("sku = ?", sku).
@@ -94,68 +96,74 @@ func RetrieveProductFromDB(sku string) (*Product, error) {
 	return product, err
 }
 
-// SingleProductHandler is a request handler that returns a single Product
-func SingleProductHandler(res http.ResponseWriter, req *http.Request) {
-	sku := mux.Vars(req)["sku"]
-	product, err := RetrieveProductFromDB(sku)
+func buildSingleProductHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Request) {
+	// SingleProductHandler is a request handler that returns a single Product
+	return func(res http.ResponseWriter, req *http.Request) {
+		sku := mux.Vars(req)["sku"]
+		product, err := RetrieveProductFromDB(db, sku)
 
-	if err != nil {
-		informOfServerIssue(err, "Error encountered querying for product", res)
-		return
+		if err != nil {
+			informOfServerIssue(err, "Error encountered querying for product", res)
+			return
+		}
+
+		json.NewEncoder(res).Encode(product)
 	}
-
-	json.NewEncoder(res).Encode(product)
 }
 
-// ProductListHandler is a request handler that returns a list of products
-func ProductListHandler(res http.ResponseWriter, req *http.Request) {
-	var products []Product
-	productsModel := db.Model(&products).
-		Column("product.*", "BaseProduct").
-		Where("base_product.archived_at is null")
+func buildProductListHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Request) {
+	// ProductListHandler is a request handler that returns a list of products
+	return func(res http.ResponseWriter, req *http.Request) {
+		var products []Product
+		productsModel := db.Model(&products).
+			Column("product.*", "BaseProduct").
+			Where("base_product.archived_at is null")
 
-	pager, err := genericListQueryHandler(req, productsModel, filterActiveProducts)
-	if err != nil {
-		informOfServerIssue(err, "Error encountered querying for products", res)
-		return
-	}
+		pager, err := genericListQueryHandler(req, productsModel, filterActiveProducts)
+		if err != nil {
+			informOfServerIssue(err, "Error encountered querying for products", res)
+			return
+		}
 
-	productsResponse := &ProductsResponse{
-		ListResponse: ListResponse{
-			Page:  pager.Page(),
-			Limit: pager.Limit(),
-			Count: len(products),
-		},
-		Data: products,
+		productsResponse := &ProductsResponse{
+			ListResponse: ListResponse{
+				Page:  pager.Page(),
+				Limit: pager.Limit(),
+				Count: len(products),
+			},
+			Data: products,
+		}
+		json.NewEncoder(res).Encode(productsResponse)
 	}
-	json.NewEncoder(res).Encode(productsResponse)
 }
 
-// ProductUpdateHandler is a request handler that can update products
-func ProductUpdateHandler(res http.ResponseWriter, req *http.Request) {
-	sku := mux.Vars(req)["sku"]
-	existingProduct := &Product{}
-	existingProductQuery := db.Model(existingProduct).Where("sku = ?", sku).Where("archived_at is null")
+func buildProductUpdateHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Request) {
+	return func(res http.ResponseWriter, req *http.Request) {
+		// ProductUpdateHandler is a request handler that can update products
+		sku := mux.Vars(req)["sku"]
+		existingProduct := &Product{}
+		existingProductQuery := db.Model(existingProduct).Where("sku = ?", sku).Where("archived_at is null")
 
-	updatedProduct := &Product{}
-	bodyIsInvalid := ensureRequestBodyValidity(res, req, updatedProduct)
-	if !bodyIsInvalid {
-		return
+		updatedProduct := &Product{}
+		bodyIsInvalid := ensureRequestBodyValidity(res, req, updatedProduct)
+		if !bodyIsInvalid {
+			return
+		}
+
+		existingProductQuery.Select()
+		updatedProduct.ID = existingProduct.ID
+		if err := mergo.Merge(updatedProduct, existingProduct); err != nil {
+			http.Error(res, "Invalid request body", http.StatusBadRequest)
+			return
+		}
+		db.Update(updatedProduct)
+
+		json.NewEncoder(res).Encode(updatedProduct)
 	}
-
-	existingProductQuery.Select()
-	updatedProduct.ID = existingProduct.ID
-	if err := mergo.Merge(updatedProduct, existingProduct); err != nil {
-		http.Error(res, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-	db.Update(updatedProduct)
-
-	json.NewEncoder(res).Encode(updatedProduct)
 }
 
 // CreateProduct takes a marshalled Product object and creates an entry for it and a base_product in the database
-func CreateProduct(newProduct *Product) error {
+func CreateProduct(db *pg.DB, newProduct *Product) error {
 	err := db.RunInTransaction(func(tx *pg.Tx) error {
 		baseProduct := NewBaseProductFromProduct(newProduct)
 		newProduct.BaseProduct = baseProduct
@@ -171,33 +179,37 @@ func CreateProduct(newProduct *Product) error {
 	return err
 }
 
-// ProductCreationHandler is a product creation handler
-func ProductCreationHandler(res http.ResponseWriter, req *http.Request) {
-	newProduct := &Product{}
-	bodyIsInvalid := ensureRequestBodyValidity(res, req, newProduct)
-	if bodyIsInvalid {
-		return
-	}
+func buildProductCreationHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Request) {
+	// ProductCreationHandler is a product creation handler
+	return func(res http.ResponseWriter, req *http.Request) {
+		newProduct := &Product{}
+		bodyIsInvalid := ensureRequestBodyValidity(res, req, newProduct)
+		if bodyIsInvalid {
+			return
+		}
 
-	err := CreateProduct(newProduct)
-	if err != nil {
-		informOfServerIssue(err, "Error inserting product into database", res)
-		return
+		err := CreateProduct(db, newProduct)
+		if err != nil {
+			informOfServerIssue(err, "Error inserting product into database", res)
+			return
+		}
 	}
 }
 
-// ProductDeletionHandler is a request handler that deletes a single product
-func ProductDeletionHandler(res http.ResponseWriter, req *http.Request) {
-	sku := mux.Vars(req)["sku"]
+func buildProductDeletionHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Request) {
+	// ProductDeletionHandler is a request handler that deletes a single product
+	return func(res http.ResponseWriter, req *http.Request) {
+		sku := mux.Vars(req)["sku"]
 
-	product := &Product{}
-	err := db.Model(product).Where("sku = ?", sku).Where("archived_at is null").Select()
+		product := &Product{}
+		err := db.Model(product).Where("sku = ?", sku).Where("archived_at is null").Select()
 
-	if err != nil {
-		informOfServerIssue(err, "Error deleting product from database", res)
-		return
+		if err != nil {
+			informOfServerIssue(err, "Error deleting product from database", res)
+			return
+		}
+
+		db.Model(product).Set("archived_at = now()").Where("sku = ?", sku).Update(product)
+		json.NewEncoder(res).Encode(product)
 	}
-
-	db.Model(product).Set("archived_at = now()").Set("active = false").Where("sku = ?", sku).Update(product)
-	json.NewEncoder(res).Encode(product)
 }

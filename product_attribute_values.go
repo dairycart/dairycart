@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/go-pg/pg"
 	"github.com/gorilla/mux"
 )
 
@@ -19,19 +20,18 @@ type ProductAttributeValue struct {
 	ProductAttribute   *ProductAttribute `json:"product_attribute"`
 	Value              string            `json:"value"`
 	ProductsCreated    bool              `json:"products_created"`
-	Active             bool              `json:"active"`
 	CreatedAt          time.Time         `json:"created_at"`
 	ArchivedAt         time.Time         `json:"archived_at"`
 }
 
 // CreateProductAttributeValue creates a ProductAttributeValue tied to a ProductAttribute
-func CreateProductAttributeValue(pav *ProductAttributeValue) (*ProductAttributeValue, error) {
+func CreateProductAttributeValue(db *pg.DB, pav *ProductAttributeValue) (*ProductAttributeValue, error) {
 	err := db.Insert(pav)
 	return pav, err
 }
 
 // RetrieveProductAttributeValue retrieves a ProductAttributeValue with a given ID from the database
-func RetrieveProductAttributeValue(id int64) (*ProductAttributeValue, error) {
+func RetrieveProductAttributeValue(db *pg.DB, id int64) (*ProductAttributeValue, error) {
 	pav := &ProductAttributeValue{}
 	productAttributeValue := db.Model(pav).
 		Where("id = ?", id).
@@ -42,40 +42,42 @@ func RetrieveProductAttributeValue(id int64) (*ProductAttributeValue, error) {
 }
 
 // ProductAttributeValueExists checks for the existence of a given ProductAttributeValue in the database
-func ProductAttributeValueExists(id int64) (bool, error) {
+func ProductAttributeValueExists(db *pg.DB, id int64) (bool, error) {
 	count, err := db.Model(&ProductAttributeValue{}).Where("id = ?", id).Where("archived_at is null").Count()
 
 	return count == 1, err
 }
 
-// ProductAttributeValueCreationHandler is a product creation handler
-func ProductAttributeValueCreationHandler(res http.ResponseWriter, req *http.Request) {
-	providedAttributeID := mux.Vars(req)["attribute_id"]
+func buildProductAttributeValueCreationHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Request) {
+	// ProductAttributeValueCreationHandler is a product creation handler
+	return func(res http.ResponseWriter, req *http.Request) {
+		providedAttributeID := mux.Vars(req)["attribute_id"]
 
-	// we can eat this error because Mux takes care of validating route params for us
-	attributeID, _ := strconv.ParseInt(providedAttributeID, 10, 64)
+		// we can eat this error because Mux takes care of validating route params for us
+		attributeID, _ := strconv.ParseInt(providedAttributeID, 10, 64)
 
-	productAttribueExists := ProductAttributeExists(attributeID)
-	if !productAttribueExists {
-		respondToInvalidRequest(nil, fmt.Sprintf("No matching product attribute for ID: %d", attributeID), res)
-		return
-	}
+		productAttribueExists := ProductAttributeExists(db, attributeID)
+		if !productAttribueExists {
+			respondToInvalidRequest(nil, fmt.Sprintf("No matching product attribute for ID: %d", attributeID), res)
+			return
+		}
 
-	newProductAttributeValue := &ProductAttributeValue{}
-	bodyIsInvalid := ensureRequestBodyValidity(res, req, newProductAttributeValue)
-	if bodyIsInvalid {
-		return
-	}
-	newProductAttributeValue.ProductAttributeID = attributeID
+		newProductAttributeValue := &ProductAttributeValue{}
+		bodyIsInvalid := ensureRequestBodyValidity(res, req, newProductAttributeValue)
+		if bodyIsInvalid {
+			return
+		}
+		newProductAttributeValue.ProductAttributeID = attributeID
 
-	// We don't want API consumers to be able to override this value
-	newProductAttributeValue.ProductsCreated = false
+		// We don't want API consumers to be able to override this value
+		newProductAttributeValue.ProductsCreated = false
 
-	_, err := CreateProductAttributeValue(newProductAttributeValue)
-	if err != nil {
-		errorString := fmt.Sprintf("error inserting product into database: %v", err)
-		log.Println(errorString)
-		http.Error(res, errorString, http.StatusBadRequest)
-		return
+		_, err := CreateProductAttributeValue(db, newProductAttributeValue)
+		if err != nil {
+			errorString := fmt.Sprintf("error inserting product into database: %v", err)
+			log.Println(errorString)
+			http.Error(res, errorString, http.StatusBadRequest)
+			return
+		}
 	}
 }

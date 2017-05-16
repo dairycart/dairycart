@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+
+	"github.com/go-pg/pg"
 )
 
 // Order describes, well... orders.
@@ -32,38 +34,42 @@ type OrdersResponse struct {
 	Data []Order `json:"data"`
 }
 
-// OrderListHandler is a generic order list request handler
-func OrderListHandler(res http.ResponseWriter, req *http.Request) {
-	var orders []Order
-	ordersModel := db.Model(&orders)
+func buildOrderListHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Request) {
+	// OrderListHandler is a generic order list request handler
+	return func(res http.ResponseWriter, req *http.Request) {
+		var orders []Order
+		ordersModel := db.Model(&orders)
 
-	pager, err := genericListQueryHandler(req, ordersModel, genericActiveFilter)
-	if err != nil {
-		informOfServerIssue(err, "Error encountered querying for orders", res)
-		return
-	}
+		pager, err := genericListQueryHandler(req, ordersModel, genericActiveFilter)
+		if err != nil {
+			informOfServerIssue(err, "Error encountered querying for orders", res)
+			return
+		}
 
-	ordersResponse := &OrdersResponse{
-		ListResponse: ListResponse{
-			Page:  pager.Page(),
-			Limit: pager.Limit(),
-			Count: len(orders),
-		},
-		Data: orders,
+		ordersResponse := &OrdersResponse{
+			ListResponse: ListResponse{
+				Page:  pager.Page(),
+				Limit: pager.Limit(),
+				Count: len(orders),
+			},
+			Data: orders,
+		}
+		json.NewEncoder(res).Encode(ordersResponse)
 	}
-	json.NewEncoder(res).Encode(ordersResponse)
 }
 
-// OrderCreationHandler is a order creation handler
-func OrderCreationHandler(res http.ResponseWriter, req *http.Request) {
-	newOrder := &Order{}
-	bodyIsInvalid := ensureRequestBodyValidity(res, req, newOrder)
-	if bodyIsInvalid {
-		return
-	}
+func buildOrderCreationHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Request) {
+	// OrderCreationHandler is a order creation handler
+	return func(res http.ResponseWriter, req *http.Request) {
+		newOrder := &Order{}
+		bodyIsInvalid := ensureRequestBodyValidity(res, req, newOrder)
+		if bodyIsInvalid {
+			return
+		}
 
-	err := db.Insert(newOrder)
-	if err != nil {
-		log.Printf("error inserting product into database: %v", err)
+		err := db.Insert(newOrder)
+		if err != nil {
+			log.Printf("error inserting product into database: %v", err)
+		}
 	}
 }

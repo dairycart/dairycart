@@ -10,6 +10,5 @@ FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 
 COPY --from=build-stage /dairycart /dairycart
-COPY templates templates
 
 ENTRYPOINT ["/dairycart"]

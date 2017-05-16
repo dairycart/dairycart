@@ -1,1 +1,1 @@
-docker-compose up --build
+docker run --publish 8080:8080 --name dairycart --env DAIRYCART_DB_URL="$DAIRYCART_DB_URL" --rm dairycart
