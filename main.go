@@ -78,6 +78,6 @@ func main() {
 
 	// serve 'em up a lil' sauce
 	http.Handle("/", router)
-	log.Println("Listening at port 8080")
+	log.Println("Dairycart now listening at port 8080")
 	http.ListenAndServe(":8080", nil)
 }

@@ -18,7 +18,7 @@ func main() {
 	dbURL := os.Getenv("DAIRYCART_DB_URL")
 	dbOptions, err := pg.ParseURL(dbURL)
 	if err != nil {
-		log.Fatalf("Error parsing database URL: %v", err)
+		log.Fatalf("While parsing database URL: %v, encountered error: %v", dbURL, err)
 	}
 	db := pg.Connect(dbOptions)
 
