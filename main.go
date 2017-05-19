@@ -7,6 +7,8 @@ import (
 
 	"github.com/go-pg/pg"
 	"github.com/gorilla/mux"
+
+	"github.com/verygoodsoftwarenotvirus/dairycart/api"
 )
 
 // notImplementedHandler is used for endpoints that haven't been implemented yet.
@@ -38,23 +40,7 @@ func main() {
 	// 	log.Printf("%s %s", time.Since(event.StartTime), query)
 	// })
 
-	// Base Products
-	router.HandleFunc("/base_product/{id:[0-9]+}", buildSingleBaseProductHandler(db)).Methods("GET")
-
-	// Products
-	router.HandleFunc("/products", buildProductListHandler(db)).Methods("GET")
-	router.HandleFunc("/product/{sku:[a-zA-Z]+}", buildProductExistenceHandler(db)).Methods("HEAD")
-	router.HandleFunc("/product/{sku:[a-zA-Z]+}", buildSingleProductHandler(db)).Methods("GET")
-	router.HandleFunc("/product/{sku:[a-zA-Z]+}", buildProductUpdateHandler(db)).Methods("PUT")
-	router.HandleFunc("/product", buildProductCreationHandler(db)).Methods("POST")
-	router.HandleFunc("/product/{sku:[a-zA-Z]+}", buildProductDeletionHandler(db)).Methods("DELETE")
-
-	// Product Attribute Values
-	router.HandleFunc("/product_attributes/{attribute_id:[0-9]+}/value", buildProductAttributeValueCreationHandler(db)).Methods("POST")
-
-	// Orders
-	router.HandleFunc("/orders", buildOrderListHandler(db)).Methods("GET")
-	router.HandleFunc("/order", buildOrderCreationHandler(db)).Methods("POST")
+	api.SetupAPIRoutes(router, db)
 
 	// serve 'em up a lil' sauce
 	http.Handle("/", router)
