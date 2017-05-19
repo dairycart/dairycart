@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 	"net/http"
 	"os"
@@ -28,7 +29,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error parsing database URL: %v", err)
 	}
-	db := pg.Connect(dbOptions)
+	ormDB := pg.Connect(dbOptions)
+
+	properDB, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	router := mux.NewRouter()
 
 	// // https://github.com/go-pg/pg/wiki/FAQ#how-can-i-view-queries-this-library-generates
@@ -40,7 +47,7 @@ func main() {
 	// 	log.Printf("%s %s", time.Since(event.StartTime), query)
 	// })
 
-	api.SetupAPIRoutes(router, db)
+	api.SetupAPIRoutes(router, ormDB, properDB)
 
 	// serve 'em up a lil' sauce
 	http.Handle("/", router)

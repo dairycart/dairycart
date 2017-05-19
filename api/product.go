@@ -1,9 +1,13 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
+	"log"
 	"net/http"
 	"time"
+
+	_ "github.com/lib/pq"
 
 	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
@@ -61,12 +65,16 @@ func filterActiveProducts(req *http.Request, q *orm.Query) {
 }
 
 // productExistsInDB will return whether or not a product with a given sku exists in the database
-func productExistsInDB(db Database, sku string) (bool, error) {
-	productCount, err := db.Model(&Product{}).Where("sku = ?", sku).Where("archived_at is null").Count()
-	return productCount == 1, err
+func productExistsInDB(db *sql.DB, sku string) (bool, error) {
+	var exists string
+	err := db.QueryRow("select exists(select 1 from products where sku=$1);", sku).Scan(&exists)
+	if err != nil {
+		log.Printf("error encountered querying for shit: %v", err)
+	}
+	return exists == "true", err
 }
 
-func buildProductExistenceHandler(db Database) func(res http.ResponseWriter, req *http.Request) {
+func buildProductExistenceHandler(db *sql.DB) func(res http.ResponseWriter, req *http.Request) {
 	// ProductExistenceHandler handles requests to check if a sku exists
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := mux.Vars(req)["sku"]

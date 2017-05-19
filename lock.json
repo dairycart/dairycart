@@ -1,5 +1,5 @@
 {
-    "memo": "fa5e80fee2af101f12e9d79e1fc4ce22f6c283d15c167535a7a5047759c029fb",
+    "memo": "68933ad9cf108b8964a34fc75b2b14e3fdfb0e9ad6d808fa4f48a9f525ff60e5",
     "projects": [
         {
             "name": "github.com/davecgh/go-spew",
@@ -60,6 +60,15 @@
             "revision": "1c35d901db3da928c72a72d8458480cc9ade058f",
             "packages": [
                 "."
+            ]
+        },
+        {
+            "name": "github.com/lib/pq",
+            "branch": "master",
+            "revision": "2704adc878c21e1329f46f6e56a1c387d788ff94",
+            "packages": [
+                ".",
+                "oid"
             ]
         },
         {
