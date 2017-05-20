@@ -1,4 +1,4 @@
-INSERT INTO products
+INSERT INTO product_progenitors
 (
     "name",
     "description",
@@ -15,9 +15,9 @@ INSERT INTO products
 ('T-Shirt', 'This is a t-shirt. wear it, or don''t. I''m not your dad.', 12.34, 1, 2, 3, 4, 5, 6, 7, 8),
 ('Skateboard', 'This is a skateboard. Please wear a helmet.', 99.99, 8, 7, 6, 5, 4, 3, 2, 1);
 
-INSERT INTO variants
+INSERT INTO products
 (
-    "product_id",
+    "product_progenitor_id",
     "sku",
     "name",
     "upc",

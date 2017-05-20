@@ -1,4 +1,4 @@
-CREATE TABLE products (
+CREATE TABLE product_progenitors (
     "id" bigserial,
     "name" text,
     "description" text,
@@ -17,9 +17,9 @@ CREATE TABLE products (
     PRIMARY KEY ("id")
 );
 
-CREATE TABLE variants (
+CREATE TABLE products (
     "id" bigserial,
-    "product_id" bigint NOT NULL,
+    "product_progenitor_id" bigint NOT NULL,
     "sku" text,
     "name" text,
     "upc" text,
@@ -32,17 +32,17 @@ CREATE TABLE variants (
     UNIQUE ("sku"),
     UNIQUE ("upc"),
     PRIMARY KEY ("id"),
-    FOREIGN KEY ("product_id") REFERENCES "products"("id")
+    FOREIGN KEY ("product_progenitor_id") REFERENCES "product_progenitors"("id")
 );
 
 CREATE TABLE product_attributes (
     "id" bigserial,
     "name" text,
-    "product_id" bigint,
+    "product_progenitor_id" bigint,
     "created_at" timestamp DEFAULT NOW(),
     "archived_at" timestamp,
     PRIMARY KEY ("id"),
-    FOREIGN KEY ("product_id") REFERENCES "products"("id")
+    FOREIGN KEY ("product_progenitor_id") REFERENCES "product_progenitors"("id")
 );
 
 CREATE TABLE product_attribute_values (

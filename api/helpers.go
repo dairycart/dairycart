@@ -1,11 +1,13 @@
 package api
 
 import (
+	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-pg/pg/orm"
@@ -18,9 +20,11 @@ const (
 	DefaultLimitString = "25"
 )
 
-/////////////////////////////////////////////////////////////////////////////////////////////////
-// stolen from https://www.reddit.com/r/golang/comments/3ibxdt/null_time_value_in_sql_results/ //
-/////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////
+//       ¸,ø¤º°º¤ø,¸¸,ø¤º°       Begin ~stolen~ borrowed structs.      °º¤ø,¸¸,ø¤º°º¤ø,¸      //
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+// borrowed from https://www.reddit.com/r/golang/comments/3ibxdt/null_time_value_in_sql_results/
 
 // NullTime is a time field which can be null
 type NullTime struct {
@@ -42,9 +46,45 @@ func (nt NullTime) Value() (driver.Value, error) {
 	return nt.Time, nil
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////////////
-// stolen from https://www.reddit.com/r/golang/comments/3ibxdt/null_time_value_in_sql_results/ //
-/////////////////////////////////////////////////////////////////////////////////////////////////
+// borrowed from http://stackoverflow.com/questions/32825640/custom-marshaltext-for-golang-sql-null-types
+
+// There's not really a great solution for these two stinkers here. Because []byte is what's expected, passing
+// nil results in an empty string. The original has []byte("null"), which I think is actually worse. At least
+// an empty string is falsy in most languages. ¯\_(ツ)_/¯
+
+// NullFloat64 is a json.Marshal-able 64-bit float.
+type NullFloat64 struct {
+	sql.NullFloat64
+}
+
+// MarshalText satisfies the encoding.TestMarshaler interface
+func (nf NullFloat64) MarshalText() ([]byte, error) {
+	if nf.Valid {
+		nfv := nf.Float64
+		return []byte(strconv.FormatFloat(nfv, 'f', -1, 64)), nil
+	}
+	return nil, nil
+}
+
+// This isn't borrowed, but rather inferred from stuff I borrowed above
+
+// NullString is a json.Marshal-able String.
+type NullString struct {
+	sql.NullString
+}
+
+// MarshalText satisfies the encoding.TestMarshaler interface
+func (ns NullString) MarshalText() ([]byte, error) {
+	if ns.Valid {
+		nsv := ns.String
+		return []byte(nsv), nil
+	}
+	return nil, nil
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+//        ¸,ø¤º°º¤ø,¸¸,ø¤º°       End ~stolen~ borrowed structs.       °º¤ø,¸¸,ø¤º°º¤ø,¸      //
+////////////////////////////////////////////////////////////////////////////////////////////////
 
 // ListResponse is a generic list response struct containing values that represent
 // pagination, meant to be embedded into other object response structs
@@ -111,9 +151,8 @@ func genericListActiveFilter(req *http.Request, tables []string, q *orm.Query) {
 
 // GenericListQueryHandler aims to generalize retrieving a list of paginated
 // models from the database as much as possible without being dangerous.
-func genericListQueryHandler(req *http.Request, input *orm.Query, activeRowFilterFunc func(req *http.Request, q *orm.Query)) (*orm.Pager, error) {
+func genericListQueryHandler(req *http.Request, input *orm.Query) (*orm.Pager, error) {
 	ensureValidLimitInRequest(req, input)
-	activeRowFilterFunc(req, input)
 
 	pager := orm.NewPager(req.URL.Query(), DefaultLimit)
 	pager.Paginate(input)

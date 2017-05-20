@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-pg/pg"
 	"github.com/gorilla/mux"
+	_ "github.com/lib/pq"
 
 	"github.com/verygoodsoftwarenotvirus/dairycart/api"
 )
@@ -36,21 +37,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	router := mux.NewRouter()
+	APIRouter := mux.NewRouter()
+	APIRouter.Host("api.dairycart.com")
 
-	// // https://github.com/go-pg/pg/wiki/FAQ#how-can-i-view-queries-this-library-generates
-	// db.OnQueryProcessed(func(event *pg.QueryProcessedEvent) {
-	// 	query, err := event.FormattedQuery()
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-	// 	log.Printf("%s %s", time.Since(event.StartTime), query)
-	// })
-
-	api.SetupAPIRoutes(router, ormDB, properDB)
+	api.SetupAPIRoutes(APIRouter, ormDB, properDB)
 
 	// serve 'em up a lil' sauce
-	http.Handle("/", router)
+	http.Handle("/", APIRouter)
 	log.Println("Dairycart now listening at port 8080")
 	http.ListenAndServe(":8080", nil)
 }
