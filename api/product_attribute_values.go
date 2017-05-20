@@ -15,13 +15,12 @@ import (
 // and three sizes, then there are two ProductAttributes for that base_product, color and size, and six ProductAttributeValues,
 // One for each color and one for each size.
 type ProductAttributeValue struct {
-	ID                 int64             `json:"id"`
-	ProductAttributeID int64             `json:"product_attribute_id"`
-	ProductAttribute   *ProductAttribute `json:"product_attribute"`
-	Value              string            `json:"value"`
-	ProductsCreated    bool              `json:"products_created"`
-	CreatedAt          time.Time         `json:"created_at"`
-	ArchivedAt         time.Time         `json:"archived_at"`
+	ID                 int64     `json:"id"`
+	ProductAttributeID int64     `json:"product_attribute_id"`
+	Value              string    `json:"value"`
+	ProductsCreated    bool      `json:"products_created"`
+	CreatedAt          time.Time `json:"created_at"`
+	ArchivedAt         NullTime  `json:"archived_at"`
 }
 
 // createProductAttributeValue creates a ProductAttributeValue tied to a ProductAttribute

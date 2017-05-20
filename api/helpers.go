@@ -1,10 +1,12 @@
 package api
 
 import (
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/go-pg/pg/orm"
 )
@@ -15,6 +17,34 @@ const (
 	// DefaultLimitString is DefaultLimit but in string form because types ¯\_(ツ)_/¯
 	DefaultLimitString = "25"
 )
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+// stolen from https://www.reddit.com/r/golang/comments/3ibxdt/null_time_value_in_sql_results/ //
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+// NullTime is a time field which can be null
+type NullTime struct {
+	Time  time.Time
+	Valid bool
+}
+
+// Scan implements the Scanner interface.
+func (nt *NullTime) Scan(value interface{}) error {
+	nt.Time, nt.Valid = value.(time.Time)
+	return nil
+}
+
+// Value implements the driver Valuer interface.
+func (nt NullTime) Value() (driver.Value, error) {
+	if !nt.Valid {
+		return nil, nil
+	}
+	return nt.Time, nil
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+// stolen from https://www.reddit.com/r/golang/comments/3ibxdt/null_time_value_in_sql_results/ //
+/////////////////////////////////////////////////////////////////////////////////////////////////
 
 // ListResponse is a generic list response struct containing values that represent
 // pagination, meant to be embedded into other object response structs

@@ -22,9 +22,4 @@ func SetupAPIRoutes(router *mux.Router, ormDB *pg.DB, properDB *sql.DB) {
 
 	// Product Attribute Values
 	router.HandleFunc("/product_attributes/{attribute_id:[0-9]+}/value", buildProductAttributeValueCreationHandler(ormDB)).Methods("POST")
-
-	// Orders
-	router.HandleFunc("/orders", buildOrderListHandler(ormDB)).Methods("GET")
-	router.HandleFunc("/order", buildOrderCreationHandler(ormDB)).Methods("POST")
-
 }
