@@ -1,0 +1,2 @@
+DELETE FROM variants WHERE id IS NOT NULL;
+DELETE FROM products WHERE id IS NOT NULL;

@@ -24,20 +24,12 @@ func main() {
 
 	oldVersion, newVersion, err := migrations.Run(db, flag.Args()...)
 	if err != nil {
-		exitf(err.Error())
+		fmt.Fprintf(os.Stderr, "%v\n", err.Error())
+		os.Exit(1)
 	}
 	if verbose {
 		if newVersion != oldVersion {
 			fmt.Printf("migrated from version %d to %d\n", oldVersion, newVersion)
 		}
 	}
-}
-
-func errorf(s string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, s+"\n", args...)
-}
-
-func exitf(s string, args ...interface{}) {
-	errorf(s, args...)
-	os.Exit(1)
 }
