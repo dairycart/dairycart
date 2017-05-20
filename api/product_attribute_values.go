@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/go-pg/pg"
 	"github.com/gorilla/mux"
 )
 
@@ -24,13 +25,13 @@ type ProductAttributeValue struct {
 }
 
 // createProductAttributeValue creates a ProductAttributeValue tied to a ProductAttribute
-func createProductAttributeValue(db Database, pav *ProductAttributeValue) (*ProductAttributeValue, error) {
+func createProductAttributeValue(db *pg.DB, pav *ProductAttributeValue) (*ProductAttributeValue, error) {
 	err := db.Insert(pav)
 	return pav, err
 }
 
 // retrieveProductAttributeValue retrieves a ProductAttributeValue with a given ID from the database
-func retrieveProductAttributeValue(db Database, id int64) (*ProductAttributeValue, error) {
+func retrieveProductAttributeValue(db *pg.DB, id int64) (*ProductAttributeValue, error) {
 	pav := &ProductAttributeValue{}
 	productAttributeValue := db.Model(pav).
 		Where("id = ?", id).
@@ -41,13 +42,13 @@ func retrieveProductAttributeValue(db Database, id int64) (*ProductAttributeValu
 }
 
 // productAttributeValueExists checks for the existence of a given ProductAttributeValue in the database
-func productAttributeValueExists(db Database, id int64) (bool, error) {
+func productAttributeValueExists(db *pg.DB, id int64) (bool, error) {
 	count, err := db.Model(&ProductAttributeValue{}).Where("id = ?", id).Where("archived_at is null").Count()
 
 	return count == 1, err
 }
 
-func buildProductAttributeValueCreationHandler(db Database) func(res http.ResponseWriter, req *http.Request) {
+func buildProductAttributeValueCreationHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Request) {
 	// productAttributeValueCreationHandler is a product creation handler
 	return func(res http.ResponseWriter, req *http.Request) {
 		providedAttributeID := mux.Vars(req)["attribute_id"]

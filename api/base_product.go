@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
 	"github.com/gorilla/mux"
 )
@@ -65,7 +66,7 @@ func NewBaseProductFromProduct(p *Product) *BaseProduct {
 }
 
 // retrieveBaseProductFromDB retrieves a product with a given SKU from the database
-func retrieveBaseProductFromDB(db Database, id int64) (*BaseProduct, error) {
+func retrieveBaseProductFromDB(db *pg.DB, id int64) (*BaseProduct, error) {
 	bp := &BaseProduct{}
 	baseProduct := db.Model(bp).
 		Where("id = ?", id).
@@ -81,7 +82,7 @@ func retrieveBaseProductFromDB(db Database, id int64) (*BaseProduct, error) {
 	return bp, err
 }
 
-func buildSingleBaseProductHandler(db Database) func(res http.ResponseWriter, req *http.Request) {
+func buildSingleBaseProductHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Request) {
 	// singleBaseProductHandler is a request handler that returns a single BaseProduct
 	return func(res http.ResponseWriter, req *http.Request) {
 		baseProductID := mux.Vars(req)["id"]
