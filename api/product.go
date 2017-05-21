@@ -34,8 +34,8 @@ type Product struct {
 	ArchivedAt NullTime  `json:"-"`
 }
 
-// GenerateScanArgs generates an array of pointers to struct fields for sql.Scan to populate
-func (p *Product) GenerateScanArgs() []interface{} {
+// generateScanArgs generates an array of pointers to struct fields for sql.Scan to populate
+func (p *Product) generateScanArgs() []interface{} {
 	return []interface{}{
 		&p.ID,
 		&p.ProductProgenitorID,
@@ -53,8 +53,8 @@ func (p *Product) GenerateScanArgs() []interface{} {
 
 // GenerateJoinScanArgs does some stuff TODO: write better docs
 func (p *Product) GenerateJoinScanArgs() []interface{} {
-	productScanArgs := p.GenerateScanArgs()
-	progenitorScanArgs := p.ProductProgenitor.GenerateScanArgs()
+	productScanArgs := p.generateScanArgs()
+	progenitorScanArgs := p.ProductProgenitor.generateScanArgs()
 	return append(productScanArgs, progenitorScanArgs...)
 }
 
@@ -96,7 +96,7 @@ func buildProductExistenceHandler(db *sql.DB) func(res http.ResponseWriter, req 
 // retrieveProductFromDB retrieves a product with a given SKU from the database
 func retrieveProductFromDB(db *sql.DB, sku string) (*Product, error) {
 	product := &Product{}
-	scanArgs := product.GenerateScanArgs()
+	scanArgs := product.generateScanArgs()
 
 	err := db.QueryRow("SELECT * FROM products WHERE sku = $1;", sku).Scan(scanArgs...)
 

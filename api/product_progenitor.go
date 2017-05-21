@@ -33,8 +33,8 @@ type ProductProgenitor struct {
 	ArchivedAt NullTime  `json:"-"`
 }
 
-// GenerateScanArgs generates an array of pointers to struct fields for sql.Scan to populate
-func (g *ProductProgenitor) GenerateScanArgs() []interface{} {
+// generateScanArgs generates an array of pointers to struct fields for sql.Scan to populate
+func (g *ProductProgenitor) generateScanArgs() []interface{} {
 	return []interface{}{
 		&g.ID,
 		&g.Name,
@@ -57,9 +57,9 @@ func (g *ProductProgenitor) GenerateScanArgs() []interface{} {
 // retrieveProductProgenitorFromDB retrieves a product with a given SKU from the database
 func retrieveProductProgenitorFromDB(db *sql.DB, id int64) (ProductProgenitor, error) {
 	var progenitor ProductProgenitor
-	scanArgs := progenitor.GenerateScanArgs()
+	scanArgs := progenitor.generateScanArgs()
 
-	err := db.QueryRow("SELECT * FROM product_progenitors WHERE id = $1;", id).Scan(scanArgs...)
+	err := db.QueryRow("SELECT * FROM product_progenitors WHERE id = $1 and archived_at is null;", id).Scan(scanArgs...)
 
 	return progenitor, err
 }
