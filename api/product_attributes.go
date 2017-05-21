@@ -14,6 +14,7 @@ type ProductAttribute struct {
 	Name       string    `json:"Name"`
 	ProductID  int64     `json:"product_id"`
 	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  NullTime  `json:"updated_at"`
 	ArchivedAt NullTime  `json:"archived_at"`
 }
 

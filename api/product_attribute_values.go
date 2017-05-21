@@ -20,6 +20,7 @@ type ProductAttributeValue struct {
 	Value              string    `json:"value"`
 	ProductsCreated    bool      `json:"products_created"`
 	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          NullTime  `json:"updated_at"`
 	ArchivedAt         NullTime  `json:"archived_at"`
 }
 

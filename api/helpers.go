@@ -16,7 +16,7 @@ import (
 const (
 	// DefaultLimit is the number of results we will return per page if the user doesn't specify another amount
 	DefaultLimit = 25
-	// DefaultLimitString is DefaultLimit but in string form because types ¯\_(ツ)_/¯
+	// DefaultLimitString is DefaultLimit but in string form because types are a thing
 	DefaultLimitString = "25"
 )
 
@@ -66,6 +66,12 @@ func (nf NullFloat64) MarshalText() ([]byte, error) {
 	return nil, nil
 }
 
+// UnmarshalText is a function which unmarshals a NullFloat64 so that gorilla/schema can parse it
+func (nf *NullFloat64) UnmarshalText(text []byte) (err error) {
+	nf.NullFloat64.Float64, err = strconv.ParseFloat(string(text), 64)
+	return err
+}
+
 // This isn't borrowed, but rather inferred from stuff I borrowed above
 
 // NullString is a json.Marshal-able String.
@@ -80,6 +86,12 @@ func (ns NullString) MarshalText() ([]byte, error) {
 		return []byte(nsv), nil
 	}
 	return nil, nil
+}
+
+// UnmarshalText is a function which unmarshals a NullString so that gorilla/schema can parse it
+func (ns *NullString) UnmarshalText(text []byte) (err error) {
+	ns.String = string(text)
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////

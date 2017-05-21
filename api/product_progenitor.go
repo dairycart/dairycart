@@ -29,7 +29,8 @@ type ProductProgenitor struct {
 	PackageLength float32 `json:"package_length"`
 
 	// // Housekeeping
-	CreatedAt  time.Time `json:"created"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  NullTime  `json:"updated_at"`
 	ArchivedAt NullTime  `json:"-"`
 }
 
