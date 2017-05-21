@@ -10,6 +10,12 @@ import (
 	"github.com/go-pg/pg"
 	"github.com/gorilla/mux"
 	"github.com/imdario/mergo"
+	"github.com/pkg/errors"
+)
+
+const (
+	skuRetrievalQuery      = "SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.sku = $1 AND p.archived_at IS NULL;"
+	productsRetrievalQuery = "SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.id IS NOT NULL AND p.archived_at IS NULL;"
 )
 
 // Product describes something a user can buy
@@ -51,8 +57,8 @@ func (p *Product) generateScanArgs() []interface{} {
 	}
 }
 
-// GenerateJoinScanArgs does some stuff TODO: write better docs
-func (p *Product) GenerateJoinScanArgs() []interface{} {
+// generateJoinScanArgs does some stuff TODO: write better docs
+func (p *Product) generateJoinScanArgs() []interface{} {
 	productScanArgs := p.generateScanArgs()
 	progenitorScanArgs := p.ProductProgenitor.generateScanArgs()
 	return append(productScanArgs, progenitorScanArgs...)
@@ -67,10 +73,12 @@ type ProductsResponse struct {
 // productExistsInDB will return whether or not a product with a given sku exists in the database
 func productExistsInDB(db *sql.DB, sku string) (bool, error) {
 	var exists string
+
 	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM products WHERE sku = $1 and archived_at is null);", sku).Scan(&exists)
-	if err != nil {
-		log.Printf("error encountered querying for shit: %v", err)
+	if err == sql.ErrNoRows {
+		return false, errors.Wrap(err, "Error querying for product")
 	}
+
 	return exists == "true", err
 }
 
@@ -81,7 +89,8 @@ func buildProductExistenceHandler(db *sql.DB) func(res http.ResponseWriter, req 
 
 		productExists, err := productExistsInDB(db, sku)
 		if err != nil {
-			informOfServerIssue(err, "Error encountered querying for product", res)
+			log.Printf(`informing user that the product they were looking for (sku %s) does not exist`, sku)
+			http.NotFound(res, req)
 			return
 		}
 
@@ -96,24 +105,25 @@ func buildProductExistenceHandler(db *sql.DB) func(res http.ResponseWriter, req 
 // retrieveProductFromDB retrieves a product with a given SKU from the database
 func retrieveProductFromDB(db *sql.DB, sku string) (*Product, error) {
 	product := &Product{}
-	scanArgs := product.generateScanArgs()
+	scanArgs := product.generateJoinScanArgs()
 
-	err := db.QueryRow("SELECT * FROM products WHERE sku = $1;", sku).Scan(scanArgs...)
+	err := db.QueryRow(skuRetrievalQuery, sku).Scan(scanArgs...)
+	if err == sql.ErrNoRows {
+		return product, errors.Wrap(err, "Error querying for product")
+	}
 
-	progenitor, err := retrieveProductProgenitorFromDB(db, product.ProductProgenitorID)
-	product.ProductProgenitor = progenitor
-
-	return product, err
+	return product, nil
 }
 
 func buildSingleProductHandler(db *sql.DB) func(res http.ResponseWriter, req *http.Request) {
 	// SingleProductHandler is a request handler that returns a single Product
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := mux.Vars(req)["sku"]
-		product, err := retrieveProductFromDB(db, sku)
 
+		product, err := retrieveProductFromDB(db, sku)
 		if err != nil {
-			informOfServerIssue(err, "Error encountered querying for product", res)
+			log.Printf(`informing user that the product they were looking for (sku %s) does not exist`, sku)
+			http.NotFound(res, req)
 			return
 		}
 
@@ -121,24 +131,29 @@ func buildSingleProductHandler(db *sql.DB) func(res http.ResponseWriter, req *ht
 	}
 }
 
+func retrieveProductsFromDB(db *sql.DB) ([]Product, error) {
+	var products []Product
+
+	rows, err := db.Query(productsRetrievalQuery)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error encountered querying for products")
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var product Product
+		_ = rows.Scan(product.generateJoinScanArgs()...)
+		products = append(products, product)
+	}
+	return products, nil
+}
+
 func buildProductListHandler(db *sql.DB) func(res http.ResponseWriter, req *http.Request) {
 	// productListHandler is a request handler that returns a list of products
 	return func(res http.ResponseWriter, req *http.Request) {
-		var products []Product
-
-		rows, err := db.Query("SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.id IS NOT NULL AND p.archived_at IS NULL;")
+		products, err := retrieveProductsFromDB(db)
 		if err != nil {
-			log.Fatal(err)
-		}
-		defer rows.Close()
-		for rows.Next() {
-			var product Product
-			scanArgs := product.GenerateJoinScanArgs()
-			err := rows.Scan(scanArgs...)
-			if err != nil {
-				log.Fatal(err)
-			}
-			products = append(products, product)
+			informOfServerIssue(err, "Error encountered querying for product", res)
+			return
 		}
 
 		productsResponse := &ProductsResponse{
