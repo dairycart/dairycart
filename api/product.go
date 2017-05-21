@@ -10,6 +10,7 @@ import (
 	"github.com/go-pg/pg"
 	"github.com/gorilla/mux"
 	"github.com/imdario/mergo"
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 )
 
@@ -49,9 +50,9 @@ type Product struct {
 	SalePrice NullFloat64 `json:"sale_price" schema:"sale_price"`
 
 	// // Housekeeping
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  NullTime  `json:"updated_at"`
-	ArchivedAt NullTime  `json:"-"`
+	CreatedAt  time.Time   `json:"created_at"`
+	UpdatedAt  pq.NullTime `json:"updated_at"`
+	ArchivedAt pq.NullTime `json:"-"`
 }
 
 // generateScanArgs generates an array of pointers to struct fields for sql.Scan to populate

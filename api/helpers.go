@@ -2,13 +2,11 @@ package api
 
 import (
 	"database/sql"
-	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/go-pg/pg/orm"
 )
@@ -23,28 +21,6 @@ const (
 ////////////////////////////////////////////////////////////////////////////////////////////////
 //       ¸,ø¤º°º¤ø,¸¸,ø¤º°       Begin ~stolen~ borrowed structs.      °º¤ø,¸¸,ø¤º°º¤ø,¸      //
 ////////////////////////////////////////////////////////////////////////////////////////////////
-
-// borrowed from https://www.reddit.com/r/golang/comments/3ibxdt/null_time_value_in_sql_results/
-
-// NullTime is a time field which can be null
-type NullTime struct {
-	Time  time.Time
-	Valid bool
-}
-
-// Scan implements the Scanner interface.
-func (nt *NullTime) Scan(value interface{}) error {
-	nt.Time, nt.Valid = value.(time.Time)
-	return nil
-}
-
-// Value implements the driver Valuer interface.
-func (nt NullTime) Value() (driver.Value, error) {
-	if !nt.Valid {
-		return nil, nil
-	}
-	return nt.Time, nil
-}
 
 // borrowed from http://stackoverflow.com/questions/32825640/custom-marshaltext-for-golang-sql-null-types
 

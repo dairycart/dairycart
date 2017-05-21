@@ -9,19 +9,20 @@ import (
 
 	"github.com/go-pg/pg"
 	"github.com/gorilla/mux"
+	"github.com/lib/pq"
 )
 
 // ProductAttributeValue represents a products variant attribute values. If you have a t-shirt that comes in three colors
 // and three sizes, then there are two ProductAttributes for that base_product, color and size, and six ProductAttributeValues,
 // One for each color and one for each size.
 type ProductAttributeValue struct {
-	ID                 int64     `json:"id"`
-	ProductAttributeID int64     `json:"product_attribute_id"`
-	Value              string    `json:"value"`
-	ProductsCreated    bool      `json:"products_created"`
-	CreatedAt          time.Time `json:"created_at"`
-	UpdatedAt          NullTime  `json:"updated_at"`
-	ArchivedAt         NullTime  `json:"archived_at"`
+	ID                 int64       `json:"id"`
+	ProductAttributeID int64       `json:"product_attribute_id"`
+	Value              string      `json:"value"`
+	ProductsCreated    bool        `json:"products_created"`
+	CreatedAt          time.Time   `json:"created_at"`
+	UpdatedAt          pq.NullTime `json:"updated_at"`
+	ArchivedAt         pq.NullTime `json:"archived_at"`
 }
 
 // createProductAttributeValue creates a ProductAttributeValue tied to a ProductAttribute
