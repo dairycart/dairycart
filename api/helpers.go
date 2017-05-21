@@ -7,8 +7,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-
-	"github.com/go-pg/pg/orm"
 )
 
 const (
@@ -117,48 +115,4 @@ func ensureRequestBodyValidity(res http.ResponseWriter, req *http.Request, objec
 		respondToInvalidRequest(err, "Invalid request body", res)
 	}
 	return err != nil
-}
-
-// genericActiveFilter limits the rows to only active products. This function should be used
-// for single-table requests only.
-func genericActiveFilter(req *http.Request, q *orm.Query) {
-	if req.URL.Query().Get("include_archived") != "true" {
-		q.Where("archived_at is null")
-	}
-}
-
-// genericListActiveFilter limits the rows to only active products from multiple tables.
-// This function should be used for multi-table requests only.
-func genericListActiveFilter(req *http.Request, tables []string, q *orm.Query) {
-	if req.URL.Query().Get("include_archived") != "true" {
-		for _, tableName := range tables {
-			q.Where(fmt.Sprintf("%s.archived_at is null", tableName))
-		}
-	}
-}
-
-// GenericListQueryHandler aims to generalize retrieving a list of paginated
-// models from the database as much as possible without being dangerous.
-func genericListQueryHandler(req *http.Request, input *orm.Query) (*orm.Pager, error) {
-	ensureValidLimitInRequest(req, input)
-
-	pager := orm.NewPager(req.URL.Query(), DefaultLimit)
-	pager.Paginate(input)
-
-	err := input.Select()
-	if err != nil {
-		log.Printf("Error encountered querying for products: %v", err)
-		return pager, err
-	}
-
-	return pager, nil
-}
-
-// EnsureValidLimitInRequest determines the requested limits, and supplies a default if the request doesn't contain one
-func ensureValidLimitInRequest(req *http.Request, q *orm.Query) {
-	requestedLimit := req.URL.Query().Get("limit")
-
-	if requestedLimit == "" {
-		req.URL.Query().Set("limit", DefaultLimitString)
-	}
 }

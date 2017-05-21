@@ -15,6 +15,7 @@ import (
 )
 
 const (
+	skuExistenceQuery         = `SELECT EXISTS(SELECT 1 FROM products WHERE sku = $1 and archived_at is null);`
 	skuDeletionQuery          = `UPDATE products SET archived_at = NOW() WHERE sku = $1 AND p.archived_at IS NULL;`
 	skuRetrievalQuery         = `SELECT * FROM products WHERE sku = $1 AND archived_at IS NULL;`
 	skuJoinRetrievalQuery     = `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.sku = $1 AND p.archived_at IS NULL;`
@@ -91,7 +92,7 @@ func respondThatProductInputIsInvalid(req *http.Request, res http.ResponseWriter
 func productExistsInDB(db *sql.DB, sku string) (bool, error) {
 	var exists string
 
-	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM products WHERE sku = $1 and archived_at is null);", sku).Scan(&exists)
+	err := db.QueryRow(skuExistenceQuery, sku).Scan(&exists)
 	if err == sql.ErrNoRows {
 		return false, errors.Wrap(err, "Error querying for product")
 	}

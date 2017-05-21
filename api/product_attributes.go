@@ -1,11 +1,16 @@
 package api
 
 import (
-	"log"
+	"database/sql"
 	"time"
 
-	"github.com/go-pg/pg"
 	"github.com/lib/pq"
+	"github.com/pkg/errors"
+)
+
+const (
+	productAttributeExistenceQuery = `SELECT EXISTS(SELECT 1 FROM product_attributes WHERE id = $1 and archived_at is null);`
+	productAttributeCreationQuery  = `INSERT INTO product_attributes ("name", "product_progenitor_id") VALUES ($1, $2);`
 )
 
 // ProductAttribute represents a products variant attributes. If you have a t-shirt that comes in three colors
@@ -20,11 +25,13 @@ type ProductAttribute struct {
 }
 
 // productAttributeExists checks for the existence of a given ProductAttribute in the database
-func productAttributeExists(db *pg.DB, id int64) bool {
-	count, err := db.Model(&ProductAttribute{}).Where("id = ?", id).Where("archived_at is null").Count()
-	if err != nil {
-		log.Printf("error occurred querying for product_attribute: %v\n", err)
+func productAttributeExists(db *sql.DB, id int64) (bool, error) {
+	var exists string
+
+	err := db.QueryRow(productAttributeExistenceQuery, id).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, errors.Wrap(err, "Error querying for product")
 	}
 
-	return count == 1
+	return exists == "true", err
 }

@@ -1,15 +1,22 @@
 package api
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/go-pg/pg"
 	"github.com/gorilla/mux"
 	"github.com/lib/pq"
+	"github.com/pkg/errors"
+)
+
+const (
+	productAttributeValueExistenceQuery = `SELECT EXISTS(SELECT 1 FROM product_attribute_values WHERE id = $1 and archived_at is null);`
+	productAttributeValueRetrievalQuery = `SELECT * FROM product_attribute_values WHERE id = $1 AND archived_at IS NULL`
+	productAttributeValueCreationQuery  = `INSERT INTO product_attribute_values ("product_attribute_id", "value") VALUES ($1, $2);`
 )
 
 // ProductAttributeValue represents a products variant attribute values. If you have a t-shirt that comes in three colors
@@ -22,34 +29,52 @@ type ProductAttributeValue struct {
 	ProductsCreated    bool        `json:"products_created"`
 	CreatedAt          time.Time   `json:"created_at"`
 	UpdatedAt          pq.NullTime `json:"updated_at"`
-	ArchivedAt         pq.NullTime `json:"archived_at"`
+	ArchivedAt         pq.NullTime `json:"-"`
+}
+
+func (pav ProductAttributeValue) generateScanArgs() []interface{} {
+	return []interface{}{
+		&pav.ID,
+		&pav.ProductAttributeID,
+		&pav.Value,
+		&pav.ProductsCreated,
+		&pav.CreatedAt,
+		&pav.UpdatedAt,
+		&pav.ArchivedAt,
+	}
 }
 
 // createProductAttributeValue creates a ProductAttributeValue tied to a ProductAttribute
-func createProductAttributeValue(db *pg.DB, pav *ProductAttributeValue) (*ProductAttributeValue, error) {
-	err := db.Insert(pav)
-	return pav, err
+func createProductAttributeValue(db *sql.DB, pav *ProductAttributeValue) (*ProductAttributeValue, error) {
+	_, err := db.Exec(productAttributeValueCreationQuery, pav.ProductAttributeID, pav.Value)
+	return nil, err
 }
 
 // retrieveProductAttributeValue retrieves a ProductAttributeValue with a given ID from the database
-func retrieveProductAttributeValue(db *pg.DB, id int64) (*ProductAttributeValue, error) {
+func retrieveProductAttributeValue(db *sql.DB, id int64) (*ProductAttributeValue, error) {
 	pav := &ProductAttributeValue{}
-	productAttributeValue := db.Model(pav).
-		Where("id = ?", id).
-		Where("product_attribute_value.archived_at is null")
 
-	err := productAttributeValue.Select()
+	err := db.QueryRow(productAttributeValueRetrievalQuery, id).Scan(pav.generateScanArgs()...)
+	if err == sql.ErrNoRows {
+		return pav, errors.Wrap(err, "Error querying for product attribute values")
+	}
+
 	return pav, err
 }
 
 // productAttributeValueExists checks for the existence of a given ProductAttributeValue in the database
-func productAttributeValueExists(db *pg.DB, id int64) (bool, error) {
-	count, err := db.Model(&ProductAttributeValue{}).Where("id = ?", id).Where("archived_at is null").Count()
+func productAttributeValueExists(db *sql.DB, id int64) (bool, error) {
+	var exists string
 
-	return count == 1, err
+	err := db.QueryRow(productAttributeValueExistenceQuery, id).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, errors.Wrap(err, "Error querying for product")
+	}
+
+	return exists == "true", err
 }
 
-func buildProductAttributeValueCreationHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Request) {
+func buildProductAttributeValueCreationHandler(db *sql.DB) func(res http.ResponseWriter, req *http.Request) {
 	// productAttributeValueCreationHandler is a product creation handler
 	return func(res http.ResponseWriter, req *http.Request) {
 		providedAttributeID := mux.Vars(req)["attribute_id"]
@@ -57,8 +82,8 @@ func buildProductAttributeValueCreationHandler(db *pg.DB) func(res http.Response
 		// we can eat this error because Mux takes care of validating route params for us
 		attributeID, _ := strconv.ParseInt(providedAttributeID, 10, 64)
 
-		productAttribueExists := productAttributeExists(db, attributeID)
-		if !productAttribueExists {
+		productAttribueExists, err := productAttributeExists(db, attributeID)
+		if err != nil || !productAttribueExists {
 			respondToInvalidRequest(nil, fmt.Sprintf("No matching product attribute for ID: %d", attributeID), res)
 			return
 		}
@@ -73,7 +98,7 @@ func buildProductAttributeValueCreationHandler(db *pg.DB) func(res http.Response
 		// We don't want API consumers to be able to override this value
 		newProductAttributeValue.ProductsCreated = false
 
-		_, err := createProductAttributeValue(db, newProductAttributeValue)
+		_, err = createProductAttributeValue(db, newProductAttributeValue)
 		if err != nil {
 			errorString := fmt.Sprintf("error inserting product into database: %v", err)
 			log.Println(errorString)

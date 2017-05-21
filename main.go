@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/go-pg/pg"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 
@@ -26,11 +25,6 @@ func main() {
 	}
 
 	dbURL := os.Getenv("DAIRYCART_DB_URL")
-	dbOptions, err := pg.ParseURL(dbURL)
-	if err != nil {
-		log.Fatalf("Error parsing database URL: %v", err)
-	}
-	ormDB := pg.Connect(dbOptions)
 
 	properDB, err := sql.Open("postgres", dbURL)
 	if err != nil {
@@ -40,7 +34,7 @@ func main() {
 	APIRouter := mux.NewRouter()
 	APIRouter.Host("api.dairycart.com")
 
-	api.SetupAPIRoutes(APIRouter, ormDB, properDB)
+	api.SetupAPIRoutes(APIRouter, properDB)
 
 	// serve 'em up a lil' sauce
 	http.Handle("/", APIRouter)

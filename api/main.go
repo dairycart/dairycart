@@ -3,12 +3,11 @@ package api
 import (
 	"database/sql"
 
-	"github.com/go-pg/pg"
 	"github.com/gorilla/mux"
 )
 
 // SetupAPIRoutes takes a mux router and a database connection and creates all the API routes for the API
-func SetupAPIRoutes(router *mux.Router, ormDB *pg.DB, db *sql.DB) {
+func SetupAPIRoutes(router *mux.Router, db *sql.DB) {
 	// Products
 	router.HandleFunc("/products", buildProductListHandler(db)).Methods("GET")
 	router.HandleFunc("/product/{sku:[a-zA-Z]+}", buildSingleProductHandler(db)).Methods("GET")
@@ -18,5 +17,5 @@ func SetupAPIRoutes(router *mux.Router, ormDB *pg.DB, db *sql.DB) {
 	router.HandleFunc("/product/{progenitor_id:[0-9]+}", buildProductCreationHandler(db)).Methods("POST")
 
 	// Product Attribute Values
-	router.HandleFunc("/product_attributes/{attribute_id:[0-9]+}/value", buildProductAttributeValueCreationHandler(ormDB)).Methods("POST")
+	router.HandleFunc("/product_attributes/{attribute_id:[0-9]+}/value", buildProductAttributeValueCreationHandler(db)).Methods("POST")
 }
