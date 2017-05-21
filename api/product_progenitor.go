@@ -2,9 +2,17 @@ package api
 
 import (
 	"database/sql"
+	"log"
+	"net/http"
 	"time"
 
 	"github.com/lib/pq"
+	"github.com/pkg/errors"
+)
+
+const (
+	productProgenitorExistenceQuery = `SELECT EXISTS(SELECT 1 FROM products WHERE id = $1 and archived_at is null);`
+	productProgenitorQuery          = `SELECT * FROM product_progenitors WHERE id = $1 and archived_at is null;`
 )
 
 // ProductProgenitor is the parent product for every product
@@ -57,12 +65,29 @@ func (g *ProductProgenitor) generateScanArgs() []interface{} {
 	}
 }
 
-// retrieveProductProgenitorFromDB retrieves a product with a given SKU from the database
+func respondThatProductProgenitorDoesNotExist(req *http.Request, res http.ResponseWriter, id int64) {
+	log.Printf(`informing user that the product they were looking for (id %d) does not exist`, id)
+	http.NotFound(res, req)
+}
+
+// ensureProgenitorExistsByID ensures a particular product progenitor exists
+func ensureProgenitorExistsByID(db *sql.DB, id int64) (bool, error) {
+	var exists string
+
+	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM products WHERE id = $1 and archived_at is null);", id).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, errors.Wrap(err, "Error querying for product")
+	}
+
+	return exists == "true", err
+}
+
+// retrieveProductProgenitorFromDB retrieves a product progenitor with a given ID from the database
 func retrieveProductProgenitorFromDB(db *sql.DB, id int64) (ProductProgenitor, error) {
 	var progenitor ProductProgenitor
 	scanArgs := progenitor.generateScanArgs()
 
-	err := db.QueryRow("SELECT * FROM product_progenitors WHERE id = $1 and archived_at is null;", id).Scan(scanArgs...)
+	err := db.QueryRow(productProgenitorQuery, id).Scan(scanArgs...)
 
 	return progenitor, err
 }

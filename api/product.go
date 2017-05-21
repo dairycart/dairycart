@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
-	"github.com/go-pg/pg"
 	"github.com/gorilla/mux"
 	"github.com/imdario/mergo"
 	"github.com/lib/pq"
@@ -15,21 +15,12 @@ import (
 )
 
 const (
-	skuDeletionQuery       = "UPDATE products SET archived_at = NOW() WHERE sku = $1 AND p.archived_at IS NULL;"
-	skuRetrievalQuery      = "SELECT * FROM products WHERE sku = $1 AND archived_at IS NULL;"
-	skuJoinRetrievalQuery  = "SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.sku = $1 AND p.archived_at IS NULL;"
-	productsRetrievalQuery = "SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.id IS NOT NULL AND p.archived_at IS NULL;"
-	productUpdateQuery     = `UPDATE products SET
-									"product_progenitor_id"=$1,
-									"sku"=$2,
-									"name"=$3,
-									"upc"=$4,
-									"quantity"=$5,
-									"on_sale"=$6,
-									"price"=$7,
-									"sale_price"=$8,
-									"updated_at"='NOW()'
-								WHERE "id"=$9;`
+	skuDeletionQuery          = `UPDATE products SET archived_at = NOW() WHERE sku = $1 AND p.archived_at IS NULL;`
+	skuRetrievalQuery         = `SELECT * FROM products WHERE sku = $1 AND archived_at IS NULL;`
+	skuJoinRetrievalQuery     = `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.sku = $1 AND p.archived_at IS NULL;`
+	allProductsRetrievalQuery = `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.id IS NOT NULL AND p.archived_at IS NULL;`
+	productUpdateQuery        = `UPDATE products SET "product_progenitor_id"=$1, "sku"=$2, "name"=$3, "upc"=$4, "quantity"=$5, "on_sale"=$6, "price"=$7, "sale_price"=$8, "updated_at"='NOW()' WHERE "id"=$9;`
+	productCreationQuery      = `INSERT INTO products ("product_progenitor_id", "sku", "name", "upc", "quantity", "on_sale", "price", "sale_price") VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`
 )
 
 // Product describes something a user can buy
@@ -86,8 +77,6 @@ type ProductsResponse struct {
 	Data []Product `json:"data"`
 }
 
-// Product HTTP helper functions. These functions have an inversed parameter signature from a standard HTTP handler
-// to avoid confusion/misuse
 func respondThatProductDoesNotExist(req *http.Request, res http.ResponseWriter, sku string) {
 	log.Printf(`informing user that the product they were looking for (sku %s) does not exist`, sku)
 	http.NotFound(res, req)
@@ -173,7 +162,7 @@ func buildSingleProductHandler(db *sql.DB) func(res http.ResponseWriter, req *ht
 func retrieveProductsFromDB(db *sql.DB) ([]Product, error) {
 	var products []Product
 
-	rows, err := db.Query(productsRetrievalQuery)
+	rows, err := db.Query(allProductsRetrievalQuery)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error encountered querying for products")
 	}
@@ -276,20 +265,28 @@ func buildProductUpdateHandler(db *sql.DB) func(res http.ResponseWriter, req *ht
 	}
 }
 
-// Unmigrated functions start here
-
 // createProduct takes a marshalled Product object and creates an entry for it and a base_product in the database
-func createProduct(db *pg.DB, newProduct *Product) error {
-	err := db.Insert(newProduct)
-	if err != nil {
-		return err
-	}
+func createProduct(db *sql.DB, new *Product) error {
+	_, err := db.Exec(productCreationQuery, new.ProductProgenitorID, new.SKU, new.Name, new.UPC, new.Quantity, new.OnSale, new.Price, new.SalePrice)
 	return err
 }
 
-func buildProductCreationHandler(db *pg.DB) func(res http.ResponseWriter, req *http.Request) {
+func buildProductCreationHandler(db *sql.DB) func(res http.ResponseWriter, req *http.Request) {
 	// ProductCreationHandler is a product creation handler
 	return func(res http.ResponseWriter, req *http.Request) {
+		progenitorIDString := mux.Vars(req)["progenitor_id"]
+		progenitorID, err := strconv.ParseInt(progenitorIDString, 10, 64)
+		if err != nil {
+			// this should absolutely never happen
+			informOfServerIssue(err, "Encountered error parsing provided progenitor ID", res)
+			return
+		}
+		progenitorExists, err := ensureProgenitorExistsByID(db, progenitorID)
+		if err != nil || !progenitorExists {
+			respondThatProductProgenitorDoesNotExist(req, res, progenitorID)
+			return
+		}
+
 		newProduct, err := loadProductInput(req, res)
 		if err != nil {
 			respondThatProductInputIsInvalid(req, res)
