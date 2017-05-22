@@ -11,8 +11,8 @@
         },
         {
             "name": "github.com/go-pg/pg",
-            "version": "v6.1.4",
-            "revision": "3b875f374ef54072935711e6261fa63d690f3be0",
+            "version": "v6.1.6",
+            "revision": "60123ff7aaa535e1c26fba9b7ca73569cfeebc5b",
             "packages": [
                 ".",
                 "internal",
@@ -32,8 +32,8 @@
         },
         {
             "name": "github.com/gorilla/mux",
-            "version": "v1.3.0",
-            "revision": "392c28fe23e1c45ddba891b0320b3b5df220beea",
+            "version": "v1.4.0",
+            "revision": "bcd8bc72b08df0f70df986b97f95590779502d31",
             "packages": [
                 "."
             ]

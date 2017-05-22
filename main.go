@@ -18,23 +18,15 @@ func notImplementedHandler(res http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
-	// init stuff
-	domainName := os.Getenv("DAIRYCART_DOMAIN")
-	if domainName == "" {
-		domainName = "localhost"
-	}
-
 	dbURL := os.Getenv("DAIRYCART_DB_URL")
-
-	properDB, err := sql.Open("postgres", dbURL)
+	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	APIRouter := mux.NewRouter()
 	APIRouter.Host("api.dairycart.com")
-
-	api.SetupAPIRoutes(APIRouter, properDB)
+	api.SetupAPIRoutes(APIRouter, db)
 
 	// serve 'em up a lil' sauce
 	http.Handle("/", APIRouter)

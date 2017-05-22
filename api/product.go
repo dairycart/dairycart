@@ -30,16 +30,16 @@ type Product struct {
 
 	// Basic Info
 	ID                  int64      `json:"id"`
-	ProductProgenitorID int64      `json:"product_progenitor_id" schema:"product_progenitor_id"`
-	SKU                 string     `json:"sku" schema:"sku"`
-	Name                string     `json:"name" schema:"name"`
-	UPC                 NullString `json:"upc" schema:"upc"`
-	Quantity            int        `json:"quantity" schema:"quantity"`
+	ProductProgenitorID int64      `json:"product_progenitor_id"`
+	SKU                 string     `json:"sku"`
+	Name                string     `json:"name"`
+	UPC                 NullString `json:"upc"`
+	Quantity            int        `json:"quantity"`
 
 	// Pricing Fields
-	OnSale    bool        `json:"on_sale" schema:"on_sale"`
-	Price     float32     `json:"price" schema:"price"`
-	SalePrice NullFloat64 `json:"sale_price" schema:"sale_price"`
+	OnSale    bool        `json:"on_sale"`
+	Price     float32     `json:"price"`
+	SalePrice NullFloat64 `json:"sale_price"`
 
 	// // Housekeeping
 	CreatedAt  time.Time   `json:"created_at"`

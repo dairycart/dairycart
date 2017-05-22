@@ -10,11 +10,8 @@ import (
 	"github.com/go-pg/pg"
 )
 
-const verbose = true
-
 func main() {
 	flag.Parse()
-
 	dbURL := os.Getenv("DAIRYCART_DB_URL")
 	dbOptions, err := pg.ParseURL(dbURL)
 	if err != nil {
@@ -27,9 +24,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "%v\n", err.Error())
 		os.Exit(1)
 	}
-	if verbose {
-		if newVersion != oldVersion {
-			fmt.Printf("migrated from version %d to %d\n", oldVersion, newVersion)
-		}
+	if newVersion != oldVersion {
+		fmt.Printf("migrated from version %d to %d\n", oldVersion, newVersion)
 	}
 }
