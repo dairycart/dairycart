@@ -1,27 +1,6 @@
 {
-    "memo": "85a67b4d49fc2ae03439052a6c6d874538525f506f211b1636138b07cf79a38a",
+    "memo": "7388bb86b68f1e15a5b11fdf2c45fd3c07368789e21d12f4646cc768a1d4fe63",
     "projects": [
-        {
-            "name": "github.com/go-pg/migrations",
-            "version": "v6.0.2",
-            "revision": "327e262afb5c632d5aada01953c4307943cb2180",
-            "packages": [
-                "."
-            ]
-        },
-        {
-            "name": "github.com/go-pg/pg",
-            "version": "v6.1.6",
-            "revision": "60123ff7aaa535e1c26fba9b7ca73569cfeebc5b",
-            "packages": [
-                ".",
-                "internal",
-                "internal/parser",
-                "internal/pool",
-                "orm",
-                "types"
-            ]
-        },
         {
             "name": "github.com/gorilla/context",
             "version": "v1.1",
@@ -47,20 +26,24 @@
             ]
         },
         {
-            "name": "github.com/jinzhu/inflection",
-            "branch": "master",
-            "revision": "1c35d901db3da928c72a72d8458480cc9ade058f",
-            "packages": [
-                "."
-            ]
-        },
-        {
             "name": "github.com/lib/pq",
             "branch": "master",
             "revision": "2704adc878c21e1329f46f6e56a1c387d788ff94",
             "packages": [
                 ".",
                 "oid"
+            ]
+        },
+        {
+            "name": "github.com/mattes/migrate",
+            "version": "v3.0.1",
+            "revision": "035c07716cd373d88456ec4d701402df52584cb4",
+            "packages": [
+                ".",
+                "database",
+                "database/postgres",
+                "source",
+                "source/file"
             ]
         },
         {
