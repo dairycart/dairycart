@@ -42,8 +42,7 @@ func migrateDatabase(db *sql.DB, migrationCount int) {
 			log.Printf("waiting half a second for the database")
 			time.Sleep(500 * time.Millisecond)
 		} else {
-			migrationsDir := os.Getenv("DAIRYCART_TEST_MIGRATIONS_DIR")
-			m, err := migrate.NewWithDatabaseInstance(migrationsDir, "postgres", driver)
+			m, err := migrate.NewWithDatabaseInstance("file:///migrations", "postgres", driver)
 			if err != nil {
 				log.Fatalf("error encountered setting up new migration client: %v", err)
 			}
