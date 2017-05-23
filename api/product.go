@@ -81,7 +81,7 @@ func respondThatProductDoesNotExist(req *http.Request, res http.ResponseWriter, 
 	http.NotFound(res, req)
 }
 
-func respondThatProductInputIsInvalid(req *http.Request, res http.ResponseWriter) {
+func respondThatProductInputIsInvalid(res http.ResponseWriter, req *http.Request) {
 	log.Printf("received this product body, which failed to decode: %v", req.Body)
 	http.Error(res, "Invalid product body", http.StatusBadRequest)
 }
@@ -203,7 +203,7 @@ func buildProductDeletionHandler(db *sql.DB) func(res http.ResponseWriter, req *
 	}
 }
 
-func loadProductInput(req *http.Request, res http.ResponseWriter) (*Product, error) {
+func loadProductInput(req *http.Request) (*Product, error) {
 	product := &Product{}
 	decoder := json.NewDecoder(req.Body)
 	defer req.Body.Close()
@@ -230,9 +230,9 @@ func buildProductUpdateHandler(db *sql.DB) func(res http.ResponseWriter, req *ht
 		}
 		existingProduct, _ := retrievePlainProductFromDB(db, sku) // eating the error here because we're already certain the sku exists
 
-		updatedProduct, err := loadProductInput(req, res)
+		updatedProduct, err := loadProductInput(req)
 		if err != nil {
-			respondThatProductInputIsInvalid(req, res)
+			respondThatProductInputIsInvalid(res, req)
 			return
 		}
 
@@ -268,9 +268,9 @@ func buildProductCreationHandler(db *sql.DB) func(res http.ResponseWriter, req *
 			return
 		}
 
-		newProduct, err := loadProductInput(req, res)
+		newProduct, err := loadProductInput(req)
 		if err != nil {
-			respondThatProductInputIsInvalid(req, res)
+			respondThatProductInputIsInvalid(res, req)
 			return
 		}
 

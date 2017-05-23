@@ -1,6 +1,14 @@
 {
-    "memo": "7388bb86b68f1e15a5b11fdf2c45fd3c07368789e21d12f4646cc768a1d4fe63",
+    "memo": "4d3d8443c3c0003e2124885ffa02da4b321d2f1800e70d734fe1cdecaba1f023",
     "projects": [
+        {
+            "name": "github.com/davecgh/go-spew",
+            "version": "v1.1.0",
+            "revision": "346938d642f2ec3594ed81d874461961cd0faa76",
+            "packages": [
+                "spew"
+            ]
+        },
         {
             "name": "github.com/gorilla/context",
             "version": "v1.1",
@@ -52,6 +60,22 @@
             "revision": "645ef00459ed84a119197bfb8d8205042c6df63d",
             "packages": [
                 "."
+            ]
+        },
+        {
+            "name": "github.com/pmezard/go-difflib",
+            "version": "v1.0.0",
+            "revision": "792786c7400a136282c1664665ae0a8db921c6c2",
+            "packages": [
+                "difflib"
+            ]
+        },
+        {
+            "name": "github.com/stretchr/testify",
+            "version": "v1.1.4",
+            "revision": "69483b4bd14f5845b5a1e55bca19e954e827f1d0",
+            "packages": [
+                "assert"
             ]
         }
     ]
