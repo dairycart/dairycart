@@ -14,7 +14,6 @@ import (
 )
 
 const (
-	productAttributeValueExistenceQuery = `SELECT EXISTS(SELECT 1 FROM product_attribute_values WHERE id = $1 and archived_at is null);`
 	productAttributeValueRetrievalQuery = `SELECT * FROM product_attribute_values WHERE id = $1 AND archived_at IS NULL`
 	productAttributeValueCreationQuery  = `INSERT INTO product_attribute_values ("product_attribute_id", "value") VALUES ($1, $2);`
 )
@@ -62,29 +61,17 @@ func retrieveProductAttributeValue(db *sql.DB, id int64) (*ProductAttributeValue
 	return pav, err
 }
 
-// productAttributeValueExists checks for the existence of a given ProductAttributeValue in the database
-func productAttributeValueExists(db *sql.DB, id int64) (bool, error) {
-	var exists string
-
-	err := db.QueryRow(productAttributeValueExistenceQuery, id).Scan(&exists)
-	if err == sql.ErrNoRows {
-		return false, errors.Wrap(err, "Error querying for product")
-	}
-
-	return exists == "true", err
-}
-
 func buildProductAttributeValueCreationHandler(db *sql.DB) func(res http.ResponseWriter, req *http.Request) {
 	// productAttributeValueCreationHandler is a product creation handler
 	return func(res http.ResponseWriter, req *http.Request) {
-		providedAttributeID := mux.Vars(req)["attribute_id"]
+		attributeID := mux.Vars(req)["attribute_id"]
 
 		// we can eat this error because Mux takes care of validating route params for us
-		attributeID, _ := strconv.ParseInt(providedAttributeID, 10, 64)
+		attributeIDInt, _ := strconv.ParseInt(attributeID, 10, 64)
 
-		productAttribueExists, err := productAttributeExists(db, attributeID)
+		productAttribueExists, err := rowExistsInDB(db, "product_attributes", "id", attributeID)
 		if err != nil || !productAttribueExists {
-			respondToInvalidRequest(nil, fmt.Sprintf("No matching product attribute for ID: %d", attributeID), res)
+			respondToInvalidRequest(nil, fmt.Sprintf("No matching product attribute for ID: %s", attributeID), res)
 			return
 		}
 
@@ -93,7 +80,7 @@ func buildProductAttributeValueCreationHandler(db *sql.DB) func(res http.Respons
 		if bodyIsInvalid {
 			return
 		}
-		newProductAttributeValue.ProductAttributeID = attributeID
+		newProductAttributeValue.ProductAttributeID = attributeIDInt
 
 		// We don't want API consumers to be able to override this value
 		newProductAttributeValue.ProductsCreated = false

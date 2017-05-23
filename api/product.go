@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -15,7 +14,6 @@ import (
 )
 
 const (
-	skuExistenceQuery         = `SELECT EXISTS(SELECT 1 FROM products WHERE sku = $1 and archived_at is null);`
 	skuDeletionQuery          = `UPDATE products SET archived_at = NOW() WHERE sku = $1 AND p.archived_at IS NULL;`
 	skuRetrievalQuery         = `SELECT * FROM products WHERE sku = $1 AND archived_at IS NULL;`
 	skuJoinRetrievalQuery     = `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.sku = $1 AND p.archived_at IS NULL;`
@@ -88,24 +86,12 @@ func respondThatProductInputIsInvalid(req *http.Request, res http.ResponseWriter
 	http.Error(res, "Invalid product body", http.StatusBadRequest)
 }
 
-// productExistsInDB will return whether or not a product with a given sku exists in the database
-func productExistsInDB(db *sql.DB, sku string) (bool, error) {
-	var exists string
-
-	err := db.QueryRow(skuExistenceQuery, sku).Scan(&exists)
-	if err == sql.ErrNoRows {
-		return false, errors.Wrap(err, "Error querying for product")
-	}
-
-	return exists == "true", err
-}
-
 func buildProductExistenceHandler(db *sql.DB) func(res http.ResponseWriter, req *http.Request) {
 	// ProductExistenceHandler handles requests to check if a sku exists
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := mux.Vars(req)["sku"]
 
-		productExists, err := productExistsInDB(db, sku)
+		productExists, err := rowExistsInDB(db, "products", "sku", sku)
 		if err != nil {
 			respondThatProductDoesNotExist(req, res, sku)
 			return
@@ -199,7 +185,7 @@ func buildProductListHandler(db *sql.DB) func(res http.ResponseWriter, req *http
 
 func deleteProductBySku(db *sql.DB, res http.ResponseWriter, req *http.Request, sku string) error {
 	// can't delete a product that doesn't exist!
-	_, err := productExistsInDB(db, sku)
+	_, err := rowExistsInDB(db, "products", "sku", sku)
 	if err != nil {
 		respondThatProductDoesNotExist(req, res, sku)
 	}
@@ -237,7 +223,7 @@ func buildProductUpdateHandler(db *sql.DB) func(res http.ResponseWriter, req *ht
 		sku := mux.Vars(req)["sku"]
 
 		// can't update a product that doesn't exist!
-		_, err := productExistsInDB(db, sku)
+		_, err := rowExistsInDB(db, "products", "sku", sku)
 		if err != nil {
 			respondThatProductDoesNotExist(req, res, sku)
 			return
@@ -275,14 +261,8 @@ func createProduct(db *sql.DB, new *Product) error {
 func buildProductCreationHandler(db *sql.DB) func(res http.ResponseWriter, req *http.Request) {
 	// ProductCreationHandler is a product creation handler
 	return func(res http.ResponseWriter, req *http.Request) {
-		progenitorIDString := mux.Vars(req)["progenitor_id"]
-		progenitorID, err := strconv.ParseInt(progenitorIDString, 10, 64)
-		if err != nil {
-			// this should absolutely never happen
-			informOfServerIssue(err, "Encountered error parsing provided progenitor ID", res)
-			return
-		}
-		progenitorExists, err := ensureProgenitorExistsByID(db, progenitorID)
+		progenitorID := mux.Vars(req)["progenitor_id"]
+		progenitorExists, err := rowExistsInDB(db, "product_progenitors", "id", progenitorID)
 		if err != nil || !progenitorExists {
 			respondThatProductProgenitorDoesNotExist(req, res, progenitorID)
 			return

@@ -7,6 +7,8 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/pkg/errors"
 )
 
 const (
@@ -115,4 +117,17 @@ func ensureRequestBodyValidity(res http.ResponseWriter, req *http.Request, objec
 		respondToInvalidRequest(err, "Invalid request body", res)
 	}
 	return err != nil
+}
+
+// rowExistsInDB will return whether or not a product/attribute/etc with a given identifier exists in the database
+func rowExistsInDB(db *sql.DB, table, identifier, id string) (bool, error) {
+	var exists string
+
+	query := fmt.Sprintf(`SELECT EXISTS(SELECT 1 FROM %s WHERE %s = $1 and archived_at is null);`, table, identifier)
+	err := db.QueryRow(query, id).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, errors.Wrap(err, "Error querying for row")
+	}
+
+	return exists == "true", err
 }
