@@ -2,18 +2,25 @@ package api
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/gorilla/mux"
+)
+
+const (
+	skuRegexValidation = `[a-zA-Z\\-_]+`
 )
 
 // SetupAPIRoutes takes a mux router and a database connection and creates all the API routes for the API
 func SetupAPIRoutes(router *mux.Router, db *sql.DB) {
 	// Products
+	productEndpoint := fmt.Sprintf("/product/{sku:%s}", skuRegexValidation)
+
 	router.HandleFunc("/products", buildProductListHandler(db)).Methods("GET")
-	router.HandleFunc("/product/{sku:[a-zA-Z]+}", buildSingleProductHandler(db)).Methods("GET")
-	router.HandleFunc("/product/{sku:[a-zA-Z]+}", buildProductUpdateHandler(db)).Methods("PUT")
-	router.HandleFunc("/product/{sku:[a-zA-Z]+}", buildProductExistenceHandler(db)).Methods("HEAD")
-	router.HandleFunc("/product/{sku:[a-zA-Z]+}", buildProductDeletionHandler(db)).Methods("DELETE")
+	router.HandleFunc(productEndpoint, buildSingleProductHandler(db)).Methods("GET")
+	router.HandleFunc(productEndpoint, buildProductUpdateHandler(db)).Methods("PUT")
+	router.HandleFunc(productEndpoint, buildProductExistenceHandler(db)).Methods("HEAD")
+	router.HandleFunc(productEndpoint, buildProductDeletionHandler(db)).Methods("DELETE")
 	router.HandleFunc("/product/{progenitor_id:[0-9]+}", buildProductCreationHandler(db)).Methods("POST")
 
 	// Product Attribute Values

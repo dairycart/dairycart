@@ -110,5 +110,5 @@ func TestProductRetrievalHandlerWithExistingProduct(t *testing.T) {
 	expectedBody, err := json.Marshal(expectedProduct)
 	assert.Nil(t, err)
 
-	assert.Equal(t, res.Body.String(), string(expectedBody), "response should be a marshaled Product struct")
+	assert.Equal(t, string(expectedBody), res.Body.String(), "response should be a marshaled Product struct")
 }

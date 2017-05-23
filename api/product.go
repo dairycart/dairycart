@@ -100,7 +100,7 @@ func productExistsInDB(db *sql.DB, sku string) (bool, error) {
 	return exists == "true", err
 }
 
-func buildProductExistenceHandler(db *sql.DB) func(res http.ResponseWriter, req *http.Request) {
+func buildProductExistenceHandler(db *sql.DB) http.HandlerFunc {
 	// ProductExistenceHandler handles requests to check if a sku exists
 	return func(res http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)
@@ -147,7 +147,7 @@ func retrieveProductFromDB(db *sql.DB, sku string) (*Product, error) {
 	return product, nil
 }
 
-func buildSingleProductHandler(db *sql.DB) func(res http.ResponseWriter, req *http.Request) {
+func buildSingleProductHandler(db *sql.DB) http.HandlerFunc {
 	// SingleProductHandler is a request handler that returns a single Product
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := mux.Vars(req)["sku"]
@@ -178,7 +178,7 @@ func retrieveProductsFromDB(db *sql.DB) ([]Product, error) {
 	return products, nil
 }
 
-func buildProductListHandler(db *sql.DB) func(res http.ResponseWriter, req *http.Request) {
+func buildProductListHandler(db *sql.DB) http.HandlerFunc {
 	// productListHandler is a request handler that returns a list of products
 	return func(res http.ResponseWriter, req *http.Request) {
 		products, err := retrieveProductsFromDB(db)
@@ -211,7 +211,7 @@ func deleteProductBySku(db *sql.DB, req *http.Request, res http.ResponseWriter, 
 	return err
 }
 
-func buildProductDeletionHandler(db *sql.DB) func(res http.ResponseWriter, req *http.Request) {
+func buildProductDeletionHandler(db *sql.DB) http.HandlerFunc {
 	// ProductDeletionHandler is a request handler that deletes a single product
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := mux.Vars(req)["sku"]
@@ -225,7 +225,7 @@ func updateProductInDatabase(db *sql.DB, up *Product) error {
 	return err
 }
 
-func buildProductUpdateHandler(db *sql.DB) func(res http.ResponseWriter, req *http.Request) {
+func buildProductUpdateHandler(db *sql.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		// ProductUpdateHandler is a request handler that can update products
 		sku := mux.Vars(req)["sku"]
@@ -267,7 +267,7 @@ func createProduct(db *sql.DB, new *Product) error {
 	return err
 }
 
-func buildProductCreationHandler(db *sql.DB) func(res http.ResponseWriter, req *http.Request) {
+func buildProductCreationHandler(db *sql.DB) http.HandlerFunc {
 	// ProductCreationHandler is a product creation handler
 	return func(res http.ResponseWriter, req *http.Request) {
 		progenitorID := mux.Vars(req)["progenitor_id"]

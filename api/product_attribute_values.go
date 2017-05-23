@@ -72,7 +72,7 @@ func loadProductAttributeValueInput(req *http.Request) (*ProductAttributeValue, 
 	return pav, err
 }
 
-func buildProductAttributeValueCreationHandler(db *sql.DB) func(res http.ResponseWriter, req *http.Request) {
+func buildProductAttributeValueCreationHandler(db *sql.DB) http.HandlerFunc {
 	// productAttributeValueCreationHandler is a product creation handler
 	return func(res http.ResponseWriter, req *http.Request) {
 		attributeID := mux.Vars(req)["attribute_id"]
