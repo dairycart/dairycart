@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -77,11 +78,11 @@ type ProductsResponse struct {
 }
 
 func respondThatProductDoesNotExist(req *http.Request, res http.ResponseWriter, sku string) {
-	log.Printf(`informing user that the product they were looking for (sku %s) does not exist`, sku)
-	http.NotFound(res, req)
+	log.Printf("informing user that the product they were looking for (sku %s) does not exist", sku)
+	http.Error(res, fmt.Sprintf("No product with the sku '%s' found", sku), http.StatusNotFound)
 }
 
-func respondThatProductInputIsInvalid(res http.ResponseWriter, req *http.Request) {
+func respondThatProductInputIsInvalid(req *http.Request, res http.ResponseWriter) {
 	log.Printf("received this product body, which failed to decode: %v", req.Body)
 	http.Error(res, "Invalid product body", http.StatusBadRequest)
 }
@@ -183,7 +184,7 @@ func buildProductListHandler(db *sql.DB) func(res http.ResponseWriter, req *http
 	}
 }
 
-func deleteProductBySku(db *sql.DB, res http.ResponseWriter, req *http.Request, sku string) error {
+func deleteProductBySku(db *sql.DB, req *http.Request, res http.ResponseWriter, sku string) error {
 	// can't delete a product that doesn't exist!
 	_, err := rowExistsInDB(db, "products", "sku", sku)
 	if err != nil {
@@ -198,7 +199,7 @@ func buildProductDeletionHandler(db *sql.DB) func(res http.ResponseWriter, req *
 	// ProductDeletionHandler is a request handler that deletes a single product
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := mux.Vars(req)["sku"]
-		deleteProductBySku(db, res, req, sku)
+		deleteProductBySku(db, req, res, sku)
 		json.NewEncoder(res).Encode("OK")
 	}
 }
@@ -232,7 +233,7 @@ func buildProductUpdateHandler(db *sql.DB) func(res http.ResponseWriter, req *ht
 
 		updatedProduct, err := loadProductInput(req)
 		if err != nil {
-			respondThatProductInputIsInvalid(res, req)
+			respondThatProductInputIsInvalid(req, res)
 			return
 		}
 
@@ -270,7 +271,7 @@ func buildProductCreationHandler(db *sql.DB) func(res http.ResponseWriter, req *
 
 		newProduct, err := loadProductInput(req)
 		if err != nil {
-			respondThatProductInputIsInvalid(res, req)
+			respondThatProductInputIsInvalid(req, res)
 			return
 		}
 
