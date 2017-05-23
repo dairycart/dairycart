@@ -3,8 +3,6 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -77,11 +75,6 @@ type ProductsResponse struct {
 	Data []Product `json:"data"`
 }
 
-func respondThatProductDoesNotExist(req *http.Request, res http.ResponseWriter, sku string) {
-	log.Printf("informing user that the product they were looking for (sku %s) does not exist", sku)
-	http.Error(res, fmt.Sprintf("No product with the sku '%s' found", sku), http.StatusNotFound)
-}
-
 func loadProductInput(req *http.Request) (*Product, error) {
 	product := &Product{}
 	decoder := json.NewDecoder(req.Body)
@@ -98,7 +91,7 @@ func buildProductExistenceHandler(db *sql.DB) http.HandlerFunc {
 
 		productExists, err := rowExistsInDB(db, "products", "sku", sku)
 		if err != nil {
-			respondThatProductDoesNotExist(req, res, sku)
+			respondThatRowDoesNotExist(req, res, "product", "sku", sku)
 			return
 		}
 
@@ -143,7 +136,7 @@ func buildSingleProductHandler(db *sql.DB) http.HandlerFunc {
 
 		product, err := retrieveProductFromDB(db, sku)
 		if err != nil {
-			respondThatProductDoesNotExist(req, res, sku)
+			respondThatRowDoesNotExist(req, res, "product", "sku", sku)
 			return
 		}
 
@@ -192,7 +185,7 @@ func deleteProductBySku(db *sql.DB, req *http.Request, res http.ResponseWriter, 
 	// can't delete a product that doesn't exist!
 	_, err := rowExistsInDB(db, "products", "sku", sku)
 	if err != nil {
-		respondThatProductDoesNotExist(req, res, sku)
+		respondThatRowDoesNotExist(req, res, "product", "sku", sku)
 	}
 
 	_, err = db.Exec(skuDeletionQuery, sku)
@@ -221,7 +214,7 @@ func buildProductUpdateHandler(db *sql.DB) http.HandlerFunc {
 		// can't update a product that doesn't exist!
 		_, err := rowExistsInDB(db, "products", "sku", sku)
 		if err != nil {
-			respondThatProductDoesNotExist(req, res, sku)
+			respondThatRowDoesNotExist(req, res, "product", "sku", sku)
 			return
 		}
 		existingProduct, _ := retrievePlainProductFromDB(db, sku) // eating the error here because we're already certain the sku exists

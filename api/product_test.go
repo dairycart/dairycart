@@ -49,12 +49,3 @@ func TestLoadProductInputWithValidInput(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, actual, expected, "valid product input should parse into a proper product struct")
 }
-
-func TestNonExistentProductResponder(t *testing.T) {
-	req := httptest.NewRequest("GET", "http://example.com/foo", nil)
-	w := httptest.NewRecorder()
-	respondThatProductDoesNotExist(req, w, "example")
-
-	assert.Equal(t, w.Body.String(), "No product with the sku 'example' found\n", "response should indicate the product was not found")
-	assert.Equal(t, w.Code, 404, "status code should be 404")
-}
