@@ -3,4 +3,5 @@ WORKDIR /go/src/github.com/verygoodsoftwarenotvirus/dairycart
 
 ADD api .
 COPY vendor vendor
-ENTRYPOINT ["go", "test"]
+COPY migrations /migrations
+ENTRYPOINT ["go", "test", "-v"]

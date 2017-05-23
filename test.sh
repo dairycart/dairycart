@@ -1,1 +1,1 @@
-docker system prune -f && docker build -t runtests -f Dockerfile-test . && docker run --name runtests --rm runtests
+docker system prune -f && docker-compose -f docker-compose-test.yml up --build --remove-orphans --force-recreate

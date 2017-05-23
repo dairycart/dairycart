@@ -1,0 +1,24 @@
+version: '3.2'
+
+services:
+  dairycart:
+    build:
+      context: .
+      dockerfile: test.Dockerfile
+    ports:
+      - '8080:8080'
+    depends_on:
+      - database
+    links:
+      - database
+    environment:
+      TEST_DB_URL: postgres://testing:password@database:5432/testing?sslmode=disable
+  database:
+    image: postgres:alpine
+    ports:
+    - '2345:5432'
+    environment:
+      POSTGRES_USER: testing
+      POSTGRES_PASSWORD: password
+    logging:
+      driver: none

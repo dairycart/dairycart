@@ -2,19 +2,12 @@ package api
 
 import (
 	"database/sql"
-	"io/ioutil"
-	"log"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
-
-func init() {
-	log.SetFlags(0)
-	log.SetOutput(ioutil.Discard)
-}
 
 func TestLoadProductInputWithValidInput(t *testing.T) {
 	exampleProduct := strings.NewReader(strings.TrimSpace(`
@@ -29,16 +22,11 @@ func TestLoadProductInputWithValidInput(t *testing.T) {
 			"sale_price": null
 		}
 	`))
-	expectedUPC := NullString{
-		sql.NullString{
-			String: "1234567890",
-		},
-	}
 	expected := &Product{
 		ProductProgenitorID: 1,
 		SKU:                 "example_sku",
 		Name:                "Test",
-		UPC:                 expectedUPC,
+		UPC:                 NullString{sql.NullString{String: "1234567890"}},
 		Quantity:            666,
 		Price:               12.34,
 	}
