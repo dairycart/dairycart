@@ -81,7 +81,7 @@ func buildProductAttributeValueCreationHandler(db *sql.DB) func(res http.Respons
 
 		productAttribueExists, err := rowExistsInDB(db, "product_attributes", "id", attributeID)
 		if err != nil || !productAttribueExists {
-			respondToInvalidRequest(nil, fmt.Sprintf("No matching product attribute for ID: %s", attributeID), res)
+			respondThatRowDoesNotExist(req, res, "product attribute", "ID", attributeID)
 			return
 		}
 

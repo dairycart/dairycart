@@ -172,7 +172,7 @@ func buildProductListHandler(db *sql.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		products, err := retrieveProductsFromDB(db)
 		if err != nil {
-			informOfServerIssue(err, "Error encountered querying for product", res)
+			notifyOfInternalIssue(res, err, "retrieve products from the database")
 			return
 		}
 
@@ -234,13 +234,13 @@ func buildProductUpdateHandler(db *sql.DB) http.HandlerFunc {
 
 		updatedProduct.ID = existingProduct.ID
 		if err := mergo.Merge(updatedProduct, existingProduct); err != nil {
-			informOfServerIssue(err, "Invalid request body: errors encountered merging with existing Product", res)
+			notifyOfInternalIssue(res, err, "merge updated product with existing product")
 			return
 		}
 
 		err = updateProductInDatabase(db, updatedProduct)
 		if err != nil {
-			informOfServerIssue(err, "Encountered errors updating product in the database", res)
+			notifyOfInternalIssue(res, err, "update product in database")
 			return
 		}
 
@@ -272,7 +272,7 @@ func buildProductCreationHandler(db *sql.DB) http.HandlerFunc {
 
 		err = createProduct(db, newProduct)
 		if err != nil {
-			informOfServerIssue(err, "Error inserting product into database", res)
+			notifyOfInternalIssue(res, err, "insert product in database")
 			return
 		}
 	}

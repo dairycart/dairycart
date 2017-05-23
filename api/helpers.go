@@ -81,26 +81,6 @@ type ListResponse struct {
 	Page  int `json:"page"`
 }
 
-// respondToInvalidRequest takes an error, a string format, and a response object, and
-// writes an error response when Dairycart determines that a user is at fault or provides
-// information that would otherwise cause an error. Things like providing an inadequate sku
-// are handled by this function.
-func respondToInvalidRequest(err error, errorFormat string, res http.ResponseWriter) {
-	errorString := fmt.Sprintf("%s: %v", errorFormat, err)
-	log.Println(errorString)
-	http.Error(res, errorFormat, http.StatusBadRequest)
-}
-
-// informOfServerIssue takes an error, a string format, and a response object, and
-// writes an error response when during the course of normal operation, Dairycart
-// experiences something out of the user's hands. Things like database query errors
-// are handled by this function.
-func informOfServerIssue(err error, errorFormat string, res http.ResponseWriter) {
-	errorString := fmt.Sprintf("%s: %v", errorFormat, err)
-	log.Println(errorString)
-	http.Error(res, errorFormat, http.StatusInternalServerError)
-}
-
 // rowExistsInDB will return whether or not a product/attribute/etc with a given identifier exists in the database
 func rowExistsInDB(db *sql.DB, table, identifier, id string) (bool, error) {
 	var exists string
@@ -122,4 +102,9 @@ func respondThatRowDoesNotExist(req *http.Request, res http.ResponseWriter, item
 func notifyOfInvalidRequestBody(res http.ResponseWriter, err error) {
 	log.Printf("Encountered this error decoding a request body: %v", err)
 	http.Error(res, "Invalid request body", http.StatusBadRequest)
+}
+
+func notifyOfInternalIssue(res http.ResponseWriter, err error, attemptedTask string) {
+	log.Println(fmt.Sprintf("Encountered this error trying to %s: %v", attemptedTask, err))
+	http.Error(res, "Unexpected internal error", http.StatusInternalServerError)
 }
