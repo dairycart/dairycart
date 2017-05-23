@@ -2,15 +2,18 @@ package api
 
 import (
 	"database/sql"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/lib/pq"
+	"github.com/pkg/errors"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const (
-	productProgenitorQuery = `SELECT * FROM product_progenitors WHERE id = $1 and archived_at is null;`
+	productProgenitorExistenceQuery = `SELECT * FROM product_progenitors WHERE id = $1 and archived_at is null;`
+	productProgenitorQuery          = `SELECT * FROM product_progenitors WHERE id = $1 and archived_at is null;`
 )
 
 // ProductProgenitor is the parent product for every product
@@ -61,6 +64,18 @@ func (g *ProductProgenitor) generateScanArgs() []interface{} {
 		&g.CreatedAt,
 		&g.ArchivedAt,
 	}
+}
+
+// productProgenitorExistsInDB will return whether or not a product/attribute/etc with a given identifier exists in the database
+func productProgenitorExistsInDB(db *sql.DB, id int64) (bool, error) {
+	var exists string
+
+	err := db.QueryRow(productProgenitorExistenceQuery, id).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, errors.Wrap(err, "Error querying for product progenitor")
+	}
+
+	return exists == "true", err
 }
 
 func respondThatProductProgenitorDoesNotExist(req *http.Request, res http.ResponseWriter, id string) {

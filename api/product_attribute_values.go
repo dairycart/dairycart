@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -12,6 +11,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const (

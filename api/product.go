@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/gorilla/mux"
 	"github.com/imdario/mergo"
 	"github.com/lib/pq"
@@ -13,6 +15,7 @@ import (
 )
 
 const (
+	skuExistenceQuery         = `SELECT EXISTS(SELECT 1 FROM products WHERE sku = $1 and archived_at is null);`
 	skuDeletionQuery          = `UPDATE products SET archived_at = NOW() WHERE sku = $1 AND p.archived_at IS NULL;`
 	skuRetrievalQuery         = `SELECT * FROM products WHERE sku = $1 AND archived_at IS NULL;`
 	skuJoinRetrievalQuery     = `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.sku = $1 AND p.archived_at IS NULL;`
@@ -84,13 +87,27 @@ func loadProductInput(req *http.Request) (*Product, error) {
 	return product, err
 }
 
-func buildProductExistenceHandler(db *sql.DB) http.HandlerFunc {
+// productExistsInDB will return whether or not a product/attribute/etc with a given identifier exists in the database
+func productExistsInDB(db *sql.DB, sku string) (bool, error) {
+	log.Println("productExistsInDB called")
+	var exists string
+
+	err := db.QueryRow(skuExistenceQuery, sku).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, errors.Wrap(err, "Error querying for product")
+	}
+
+	return exists == "true", err
+}
+
+func buildProductExistenceHandler(db *sql.DB) func(res http.ResponseWriter, req *http.Request) {
 	// ProductExistenceHandler handles requests to check if a sku exists
 	return func(res http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)
 		sku := vars["sku"]
 
 		productExists, err := rowExistsInDB(db, "products", "sku", sku)
+		// productExists, err := productExistsInDB(db, sku)
 		if err != nil {
 			respondThatRowDoesNotExist(req, res, "product", "sku", sku)
 			return
@@ -130,7 +147,7 @@ func retrieveProductFromDB(db *sql.DB, sku string) (*Product, error) {
 	return product, nil
 }
 
-func buildSingleProductHandler(db *sql.DB) http.HandlerFunc {
+func buildSingleProductHandler(db *sql.DB) func(res http.ResponseWriter, req *http.Request) {
 	// SingleProductHandler is a request handler that returns a single Product
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := mux.Vars(req)["sku"]
@@ -161,7 +178,7 @@ func retrieveProductsFromDB(db *sql.DB) ([]Product, error) {
 	return products, nil
 }
 
-func buildProductListHandler(db *sql.DB) http.HandlerFunc {
+func buildProductListHandler(db *sql.DB) func(res http.ResponseWriter, req *http.Request) {
 	// productListHandler is a request handler that returns a list of products
 	return func(res http.ResponseWriter, req *http.Request) {
 		products, err := retrieveProductsFromDB(db)
@@ -185,6 +202,7 @@ func buildProductListHandler(db *sql.DB) http.HandlerFunc {
 func deleteProductBySku(db *sql.DB, req *http.Request, res http.ResponseWriter, sku string) error {
 	// can't delete a product that doesn't exist!
 	_, err := rowExistsInDB(db, "products", "sku", sku)
+	// _, err := productExistsInDB(db, sku)
 	if err != nil {
 		respondThatRowDoesNotExist(req, res, "product", "sku", sku)
 	}
@@ -193,7 +211,7 @@ func deleteProductBySku(db *sql.DB, req *http.Request, res http.ResponseWriter, 
 	return err
 }
 
-func buildProductDeletionHandler(db *sql.DB) http.HandlerFunc {
+func buildProductDeletionHandler(db *sql.DB) func(res http.ResponseWriter, req *http.Request) {
 	// ProductDeletionHandler is a request handler that deletes a single product
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := mux.Vars(req)["sku"]
@@ -207,13 +225,14 @@ func updateProductInDatabase(db *sql.DB, up *Product) error {
 	return err
 }
 
-func buildProductUpdateHandler(db *sql.DB) http.HandlerFunc {
+func buildProductUpdateHandler(db *sql.DB) func(res http.ResponseWriter, req *http.Request) {
 	return func(res http.ResponseWriter, req *http.Request) {
 		// ProductUpdateHandler is a request handler that can update products
 		sku := mux.Vars(req)["sku"]
 
 		// can't update a product that doesn't exist!
 		_, err := rowExistsInDB(db, "products", "sku", sku)
+		// _, err := productExistsInDB(db, sku)
 		if err != nil {
 			respondThatRowDoesNotExist(req, res, "product", "sku", sku)
 			return
@@ -248,11 +267,16 @@ func createProduct(db *sql.DB, new *Product) error {
 	return err
 }
 
-func buildProductCreationHandler(db *sql.DB) http.HandlerFunc {
+func buildProductCreationHandler(db *sql.DB) func(res http.ResponseWriter, req *http.Request) {
 	// ProductCreationHandler is a product creation handler
 	return func(res http.ResponseWriter, req *http.Request) {
 		progenitorID := mux.Vars(req)["progenitor_id"]
+
+		// we should be able to safely eat this error because gorilla/mux should validate the id
+		// id, _ := strconv.ParseInt(progenitorID, 10, 64)
+
 		progenitorExists, err := rowExistsInDB(db, "product_progenitors", "id", progenitorID)
+		// progenitorExists, err := productProgenitorExistsInDB(db, id)
 		if err != nil || !progenitorExists {
 			respondThatProductProgenitorDoesNotExist(req, res, progenitorID)
 			return

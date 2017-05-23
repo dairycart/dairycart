@@ -4,7 +4,6 @@ import (
 	// stdlib
 	"database/sql"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -14,6 +13,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/mattes/migrate"
 	"github.com/mattes/migrate/database/postgres"
+	log "github.com/sirupsen/logrus"
 
 	// unnamed dependencies
 	_ "github.com/lib/pq"
@@ -23,9 +23,14 @@ import (
 	"github.com/verygoodsoftwarenotvirus/dairycart/api"
 )
 
-// notImplementedHandler is used for endpoints that haven't been implemented yet.
-func notImplementedHandler(res http.ResponseWriter, req *http.Request) {
-	res.WriteHeader(http.StatusTeapot)
+var db *sql.DB
+
+func init() {
+	// Output to stdout instead of the default stderr
+	log.SetOutput(os.Stdout)
+
+	// Only log the warning severity or above.
+	log.SetLevel(log.InfoLevel)
 }
 
 func determineMigrationCount() int {
@@ -52,7 +57,8 @@ func migrateDatabase(db *sql.DB, migrationCount int) {
 			log.Printf("waiting half a second for the database")
 			time.Sleep(500 * time.Millisecond)
 		} else {
-			m, err := migrate.NewWithDatabaseInstance("file:///migrations", "postgres", driver)
+			migrationsDir := "file://migrations" // os.Getenv("DAIRYCART_MIGRATIONS_DIR")
+			m, err := migrate.NewWithDatabaseInstance(migrationsDir, "postgres", driver)
 			if err != nil {
 				log.Fatalf("error encountered setting up new migration client: %v", err)
 			}
@@ -61,6 +67,7 @@ func migrateDatabase(db *sql.DB, migrationCount int) {
 				err = m.Steps(1)
 				if err != nil {
 					log.Printf("error encountered migrating database: %v", err)
+					break
 				}
 			}
 			databaseIsNotMigrated = false
@@ -71,19 +78,19 @@ func migrateDatabase(db *sql.DB, migrationCount int) {
 func main() {
 	// Connect to the database
 	dbURL := os.Getenv("DAIRYCART_DB_URL")
-	db, err := sql.Open("postgres", dbURL)
+	var err error
+	db, err = sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatalf("error encountered connecting to database: %v", err)
 	}
 
 	// migrate the database
 	migrationCount := determineMigrationCount()
-	log.Printf("determined migrationCount to be %d", migrationCount)
 	migrateDatabase(db, migrationCount)
 
 	// setup all our API routes
 	APIRouter := mux.NewRouter()
-	APIRouter.Host("api.dairycart.com")
+	// APIRouter.Host("api.dairycart.com")
 	api.SetupAPIRoutes(APIRouter, db)
 
 	// serve 'em up a lil' sauce

@@ -12,6 +12,7 @@ services:
     links:
       - database
     environment:
+      DAIRYCART_MIGRATIONS_DIR: "file:///migrations"
       DAIRYCART_DB_URL: postgres://dairycart:password@database:5432/dairycart?sslmode=disable
   database:
     image: postgres:alpine
