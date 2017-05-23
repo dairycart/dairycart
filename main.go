@@ -1,6 +1,7 @@
 package main
 
 import (
+	// stdlib
 	"database/sql"
 	"io/ioutil"
 	"log"
@@ -9,13 +10,16 @@ import (
 	"strings"
 	"time"
 
+	// dependencies
 	"github.com/gorilla/mux"
-	_ "github.com/lib/pq"
-
 	"github.com/mattes/migrate"
 	"github.com/mattes/migrate/database/postgres"
+
+	// unnamed dependencies
+	_ "github.com/lib/pq"
 	_ "github.com/mattes/migrate/source/file"
 
+	// homegrown
 	"github.com/verygoodsoftwarenotvirus/dairycart/api"
 )
 
@@ -69,12 +73,12 @@ func main() {
 	dbURL := os.Getenv("DAIRYCART_DB_URL")
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
-		log.Fatalf("error encountered connecting to database: %v\n", err)
+		log.Fatalf("error encountered connecting to database: %v", err)
 	}
 
 	// migrate the database
 	migrationCount := determineMigrationCount()
-	log.Printf(`determined migrationCount to be %d\n`, migrationCount)
+	log.Printf("determined migrationCount to be %d", migrationCount)
 	migrateDatabase(db, migrationCount)
 
 	// setup all our API routes
