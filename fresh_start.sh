@@ -1,1 +1,1 @@
-docker system prune -f && ./build.sh && ./run.sh
+docker system prune -f && ./run.sh

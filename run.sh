@@ -1,1 +1,1 @@
-docker run --publish 8080:8080 --name dairycart --env DAIRYCART_DB_URL="$DAIRYCART_DB_URL" --rm dairycart
+docker-compose up --build --remove-orphans --force-recreate
