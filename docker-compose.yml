@@ -6,24 +6,17 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - '8080:8080'
     depends_on:
-      - "migrator"
+      - database
+    links:
+      - database
     environment:
-      DAIRYCART_DB_URL: postgres://username:password@localhost/dairycart
-  migrator:
-    build:
-      context: .
-      dockerfile: Dockerfile-migrate
-    depends_on:
-      - "postgres"
-    environment:
-      DAIRYCART_DB_URL: postgres://username:password@localhost/dairycart
-  postgres:
-    image: "postgres"
+      DAIRYCART_DB_URL: postgres://dairycart:password@database:5432/dairycart?sslmode=disable
+  database:
+    image: postgres:alpine
     ports:
-    - '5432:5432'
+    - '2345:5432'
     environment:
-      POSTGRES_USER: username
+      POSTGRES_USER: dairycart
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: dairycart
