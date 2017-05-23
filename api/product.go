@@ -87,6 +87,15 @@ func respondThatProductInputIsInvalid(req *http.Request, res http.ResponseWriter
 	http.Error(res, "Invalid product body", http.StatusBadRequest)
 }
 
+func loadProductInput(req *http.Request) (*Product, error) {
+	product := &Product{}
+	decoder := json.NewDecoder(req.Body)
+	defer req.Body.Close()
+	err := decoder.Decode(product)
+
+	return product, err
+}
+
 func buildProductExistenceHandler(db *sql.DB) func(res http.ResponseWriter, req *http.Request) {
 	// ProductExistenceHandler handles requests to check if a sku exists
 	return func(res http.ResponseWriter, req *http.Request) {
@@ -202,15 +211,6 @@ func buildProductDeletionHandler(db *sql.DB) func(res http.ResponseWriter, req *
 		deleteProductBySku(db, req, res, sku)
 		json.NewEncoder(res).Encode("OK")
 	}
-}
-
-func loadProductInput(req *http.Request) (*Product, error) {
-	product := &Product{}
-	decoder := json.NewDecoder(req.Body)
-	defer req.Body.Close()
-	err := decoder.Decode(product)
-
-	return product, err
 }
 
 func updateProductInDatabase(db *sql.DB, up *Product) error {
