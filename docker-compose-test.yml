@@ -12,7 +12,8 @@ services:
     links:
       - database
     environment:
-      TEST_DB_URL: postgres://testing:password@database:5432/testing?sslmode=disable
+      DAIRYCART_TEST_MIGRATIONS_DIR: "file:///migrations"
+      DAIRYCART_TEST_DB_URL: postgres://testing:password@database:5432/testing?sslmode=disable
   database:
     image: postgres:alpine
     ports:

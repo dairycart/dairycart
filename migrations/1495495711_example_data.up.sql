@@ -32,4 +32,5 @@ INSERT INTO products
 (1, 't-shirt-medium-blue', 'Blue T-Shirt (Medium)', null, 12.34, 123),
 (1, 't-shirt-large-red', 'Red T-Shirt (Large)', null, 12.34, 123),
 (1, 't-shirt-large-green', 'Green T-Shirt (Large)', null, 12.34, 123),
-(1, 't-shirt-large-blue', 'Blue T-Shirt (Large)', null, 12.34, 123);
+(1, 't-shirt-large-blue', 'Blue T-Shirt (Large)', null, 12.34, 123),
+(2, 'skateboard', 'Skateboard', '1234567890', 12.34, 123);

@@ -87,7 +87,8 @@ func loadProductInput(req *http.Request) (*Product, error) {
 func buildProductExistenceHandler(db *sql.DB) http.HandlerFunc {
 	// ProductExistenceHandler handles requests to check if a sku exists
 	return func(res http.ResponseWriter, req *http.Request) {
-		sku := mux.Vars(req)["sku"]
+		vars := mux.Vars(req)
+		sku := vars["sku"]
 
 		productExists, err := rowExistsInDB(db, "products", "sku", sku)
 		if err != nil {

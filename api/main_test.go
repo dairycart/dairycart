@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"testing"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -41,7 +42,8 @@ func migrateDatabase(db *sql.DB, migrationCount int) {
 			log.Printf("waiting half a second for the database")
 			time.Sleep(500 * time.Millisecond)
 		} else {
-			m, err := migrate.NewWithDatabaseInstance("file:///migrations", "postgres", driver)
+			migrationsDir := os.Getenv("DAIRYCART_TEST_MIGRATIONS_DIR")
+			m, err := migrate.NewWithDatabaseInstance(migrationsDir, "postgres", driver)
 			if err != nil {
 				log.Fatalf("error encountered setting up new migration client: %v", err)
 			}
@@ -59,13 +61,16 @@ func migrateDatabase(db *sql.DB, migrationCount int) {
 
 func init() {
 	// Connect to the database
-	dbURL := os.Getenv("TEST_DB_URL")
-	testDB, err := sql.Open("postgres", dbURL)
+	dbURL := os.Getenv("DAIRYCART_TEST_DB_URL")
+	var err error
+	testDB, err = sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatalf("error encountered connecting to database: %v", err)
 	}
 	migrateDatabase(testDB, determineMigrationCount())
 
-	// log.SetFlags(0)
-	// log.SetOutput(ioutil.Discard)
+	if testing.Verbose() {
+		log.SetFlags(0)
+		log.SetOutput(ioutil.Discard)
+	}
 }
