@@ -2,7 +2,6 @@ package api
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -102,23 +101,6 @@ func informOfServerIssue(err error, errorFormat string, res http.ResponseWriter)
 	http.Error(res, errorFormat, http.StatusInternalServerError)
 }
 
-// ensureRequestBodyValidity takes a request object and checks that:
-// 		1) the body contained therein is not nil and
-//		2) the body decodes without errors into a particular struct
-// It then returns whether or not either of those conditions was untrue.
-func ensureRequestBodyValidity(res http.ResponseWriter, req *http.Request, object interface{}) bool {
-	if req.Body == nil {
-		http.Error(res, "Please send a request body", http.StatusBadRequest)
-		return true
-	}
-
-	err := json.NewDecoder(req.Body).Decode(object)
-	if err != nil {
-		respondToInvalidRequest(err, "Invalid request body", res)
-	}
-	return err != nil
-}
-
 // rowExistsInDB will return whether or not a product/attribute/etc with a given identifier exists in the database
 func rowExistsInDB(db *sql.DB, table, identifier, id string) (bool, error) {
 	var exists string
@@ -130,4 +112,14 @@ func rowExistsInDB(db *sql.DB, table, identifier, id string) (bool, error) {
 	}
 
 	return exists == "true", err
+}
+
+func respondThatRowDoesNotExist(req *http.Request, res http.ResponseWriter, itemType, identifierType, identifier string) {
+	log.Printf("informing user that the %s they were looking for (%s %s) does not exist", itemType, identifierType, identifier)
+	http.Error(res, fmt.Sprintf("No %s with the %s '%s' found", itemType, identifierType, identifier), http.StatusNotFound)
+}
+
+func notifyOfInvalidRequestBody(res http.ResponseWriter, err error) {
+	log.Printf("Encountered this error decoding a request body: %v", err)
+	http.Error(res, "Invalid request body", http.StatusBadRequest)
 }

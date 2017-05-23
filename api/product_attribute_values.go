@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -61,6 +62,15 @@ func retrieveProductAttributeValue(db *sql.DB, id int64) (*ProductAttributeValue
 	return pav, err
 }
 
+func loadProductAttributeValueInput(req *http.Request) (*ProductAttributeValue, error) {
+	pav := &ProductAttributeValue{}
+	decoder := json.NewDecoder(req.Body)
+	defer req.Body.Close()
+	err := decoder.Decode(pav)
+
+	return pav, err
+}
+
 func buildProductAttributeValueCreationHandler(db *sql.DB) func(res http.ResponseWriter, req *http.Request) {
 	// productAttributeValueCreationHandler is a product creation handler
 	return func(res http.ResponseWriter, req *http.Request) {
@@ -75,9 +85,9 @@ func buildProductAttributeValueCreationHandler(db *sql.DB) func(res http.Respons
 			return
 		}
 
-		newProductAttributeValue := &ProductAttributeValue{}
-		bodyIsInvalid := ensureRequestBodyValidity(res, req, newProductAttributeValue)
-		if bodyIsInvalid {
+		newProductAttributeValue, err := loadProductAttributeValueInput(req)
+		if err != nil {
+			notifyOfInvalidRequestBody(res, err)
 			return
 		}
 		newProductAttributeValue.ProductAttributeID = attributeIDInt
