@@ -1,0 +1,1 @@
+docker system prune -f && docker build -t runtests -f Dockerfile-api-test . && docker run --name runtests --rm runtests
