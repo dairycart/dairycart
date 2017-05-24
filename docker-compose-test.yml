@@ -7,19 +7,5 @@ services:
       dockerfile: test.Dockerfile
     ports:
       - '8080:8080'
-    depends_on:
-      - database
-    links:
-      - database
     environment:
       TESTING_FROM_DOCKER: "YUP"
-      DAIRYCART_TEST_DB_URL: postgres://testing:password@database:5432/testing?sslmode=disable
-  database:
-    image: postgres:alpine
-    ports:
-    - '2345:5432'
-    environment:
-      POSTGRES_USER: testing
-      POSTGRES_PASSWORD: password
-    logging:
-      driver: none
