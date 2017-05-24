@@ -18,7 +18,12 @@ import (
 var testDB *sql.DB
 
 func determineMigrationCount() int {
-	files, err := ioutil.ReadDir("/migrations")
+	migrationDir := "/Users/jeffrey/golang/src/github.com/verygoodsoftwarenotvirus/dairycart/migrations" // for local stuff
+	if os.Getenv("TESTING_FROM_DOCKER") != "" {
+		migrationDir = "/migrations"
+	}
+
+	files, err := ioutil.ReadDir(migrationDir)
 	if err != nil {
 		log.Fatalf("missing test migrations files: %v", err)
 	}
@@ -41,7 +46,11 @@ func migrateDatabase(db *sql.DB, migrationCount int) {
 			log.Printf("waiting half a second for the test database")
 			time.Sleep(500 * time.Millisecond)
 		} else {
-			m, err := migrate.NewWithDatabaseInstance("file:///migrations", "postgres", driver)
+			migrationDir := "file:///Users/jeffrey/golang/src/github.com/verygoodsoftwarenotvirus/dairycart/migrations" // for local stuff
+			if os.Getenv("TESTING_FROM_DOCKER") != "" {
+				migrationDir = "file:///migrations"
+			}
+			m, err := migrate.NewWithDatabaseInstance(migrationDir, "postgres", driver)
 			if err != nil {
 				log.Fatalf("error encountered setting up new test migration client: %v", err)
 			}

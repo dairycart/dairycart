@@ -62,6 +62,7 @@ func (g *ProductProgenitor) generateScanArgs() []interface{} {
 		&g.PackageWidth,
 		&g.PackageLength,
 		&g.CreatedAt,
+		&g.UpdatedAt,
 		&g.ArchivedAt,
 	}
 }

@@ -12,6 +12,7 @@ services:
     links:
       - database
     environment:
+      TESTING_FROM_DOCKER: "YUP"
       DAIRYCART_TEST_DB_URL: postgres://testing:password@database:5432/testing?sslmode=disable
   database:
     image: postgres:alpine

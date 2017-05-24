@@ -41,10 +41,15 @@ func (nf NullFloat64) MarshalText() ([]byte, error) {
 	return nil, nil
 }
 
-// UnmarshalText is a function which unmarshals a NullFloat64 so that gorilla/schema can parse it
+// UnmarshalText is a function which unmarshals a NullFloat64
 func (nf *NullFloat64) UnmarshalText(text []byte) (err error) {
-	nf.NullFloat64.Float64, err = strconv.ParseFloat(string(text), 64)
-	return err
+	s := string(text)
+	nf.NullFloat64.Float64, err = strconv.ParseFloat(s, 64)
+	if err != nil {
+		nf.NullFloat64.Float64 = 0
+	}
+	// returning nil because we've ensured that Float64 is set to at least zero.
+	return nil
 }
 
 // This isn't borrowed, but rather inferred from stuff I borrowed above
