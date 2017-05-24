@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/gorilla/mux"
 	"github.com/imdario/mergo"
 	"github.com/lib/pq"
@@ -89,7 +87,6 @@ func loadProductInput(req *http.Request) (*Product, error) {
 
 // productExistsInDB will return whether or not a product/attribute/etc with a given identifier exists in the database
 func productExistsInDB(db *sql.DB, sku string) (bool, error) {
-	log.Println("productExistsInDB called")
 	var exists string
 
 	err := db.QueryRow(skuExistenceQuery, sku).Scan(&exists)
@@ -144,7 +141,7 @@ func retrieveProductFromDB(db *sql.DB, sku string) (*Product, error) {
 		return product, errors.Wrap(err, "Error querying for product")
 	}
 
-	return product, nil
+	return product, err
 }
 
 func buildSingleProductHandler(db *sql.DB) http.HandlerFunc {

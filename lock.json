@@ -1,5 +1,5 @@
 {
-    "memo": "3cb3542e96a22631aa78bea5959d6f53a498ebe62d6ada64d2d21e99185047c1",
+    "memo": "1021316b670fdd20d24bd88de61548b12f2aa8caa132e3ff9e62667346511a5e",
     "projects": [
         {
             "name": "github.com/davecgh/go-spew",
@@ -92,6 +92,14 @@
             "revision": "dbc2be9168a660ef302e04b6ff6406de6f967473",
             "packages": [
                 "unix"
+            ]
+        },
+        {
+            "name": "gopkg.in/DATA-DOG/go-sqlmock.v1",
+            "version": "v1.2.0",
+            "revision": "b983233bc0bbea4dc6e8ec8c8c923d935765ffec",
+            "packages": [
+                "."
             ]
         }
     ]

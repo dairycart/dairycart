@@ -2,33 +2,38 @@ package api
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
 const (
 	updatedAtReplacementPattern = `,"(updated_at|archived_at)":{"Time":"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z","Valid":(true|false)}`
 )
 
-func setup() (*httptest.ResponseRecorder, *mux.Router) {
+func setupMockRequestsAndMux(db *sql.DB) (*httptest.ResponseRecorder, *mux.Router) {
 	m := mux.NewRouter()
-	SetupAPIRoutes(m, testDB)
+	SetupAPIRoutes(m, db)
 	return httptest.NewRecorder(), m
 }
 
-func replaceTimeStringsForTests(body string) string {
-	// we can't reliably predict what the `updated_at` or `archived_at` columns
-	// could possibly equal, so we strip them out of the body becuase we're bad
-	// at programming.
-	re := regexp.MustCompile(updatedAtReplacementPattern)
-	return re.ReplaceAllString(body, "")
+func formatConstantQueryForSQLMock(query string) string {
+	charsToReplace := []string{"$", "(", ")", "=", "*", ".", "+", "?", ",", "-"}
+
+	for _, x := range charsToReplace {
+		query = strings.Replace(query, x, fmt.Sprintf(`\%s`, x), -1)
+	}
+
+	return query
 }
 
 func assertProductEqualityForTests(t *testing.T, expected *Product, actual *Product) {
@@ -80,33 +85,106 @@ func TestLoadProductInputWithValidInput(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, actual, expected, "valid product input should parse into a proper product struct")
 }
-func TestRetrieveProductsFromDB(t *testing.T) {
-	products, err := retrieveProductsFromDB(testDB)
+
+func TestProductExistsInDB(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	defer db.Close()
+	assert.Nil(t, err)
+
+	exampleRows := sqlmock.NewRows([]string{""}).AddRow("true")
+	mock.ExpectQuery(formatConstantQueryForSQLMock(skuExistenceQuery)).
+		WithArgs("example").
+		WillReturnRows(exampleRows)
+	exists, err := productExistsInDB(db, "example")
 
 	assert.Nil(t, err)
-	assert.Equal(t, len(products), 10, "there should be 9 products")
+	assert.True(t, exists)
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expections: %s", err)
+	}
+}
+
+func TestRetrieveProductsFromDB(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	defer db.Close()
+	assert.Nil(t, err)
+
+	productJoinHeaders := []string{"id", "product_progenitor_id", "sku", "name", "upc", "quantity", "on_sale", "price", "sale_price", "created_at", "updated_at", "archived_at", "id", "name", "description", "taxable", "price", "product_weight", "product_height", "product_width", "product_length", "package_weight", "package_height", "package_width", "package_length", "created_at", "updated_at", "archived_at"}
+	exampleProductJoinData := []driver.Value{10, 2, "skateboard", "Skateboard", "1234567890", 123, false, 12.34, nil, "2017-05-23 12:36:43.932053", nil, nil, 2, "Skateboard", "This is a skateboard. Please wear a helmet.", false, 99.99, 8, 7, 6, 5, 4, 3, 2, 1, "2017-05-23 12:36:43.932053", nil, nil}
+	exampleRows := sqlmock.NewRows(productJoinHeaders).
+		AddRow(exampleProductJoinData...).
+		AddRow(exampleProductJoinData...).
+		AddRow(exampleProductJoinData...)
+
+	mock.ExpectQuery(formatConstantQueryForSQLMock(allProductsRetrievalQuery)).
+		WillReturnRows(exampleRows)
+
+	products, err := retrieveProductsFromDB(db)
+	assert.Nil(t, err)
+
+	assert.Equal(t, 3, len(products), "there should be 3 products")
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expections: %s", err)
+	}
 }
 
 // HTTP handler tests
 func TestProductExistenceHandlerWithExistingProduct(t *testing.T) {
-	res, router := setup()
-	req, _ := http.NewRequest("HEAD", "/product/skateboard", nil)
+	db, mock, err := sqlmock.New()
+	defer db.Close()
+	assert.Nil(t, err)
 
+	res, router := setupMockRequestsAndMux(db)
+
+	exampleRows := sqlmock.NewRows([]string{""}).AddRow("true")
+	mock.ExpectQuery(formatConstantQueryForSQLMock(skuExistenceQuery)).
+		WithArgs("skateboard").
+		WillReturnRows(exampleRows)
+
+	req, _ := http.NewRequest("HEAD", "/product/skateboard", nil)
 	router.ServeHTTP(res, req)
 
 	assert.Equal(t, res.Code, 200, "status code should be 200")
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expections: %s", err)
+	}
 }
 func TestProductExistenceHandlerWithNonexistentProduct(t *testing.T) {
-	res, router := setup()
-	req, _ := http.NewRequest("HEAD", "/product/unreal", nil)
+	db, mock, err := sqlmock.New()
+	defer db.Close()
+	assert.Nil(t, err)
 
+	res, router := setupMockRequestsAndMux(db)
+
+	exampleRows := sqlmock.NewRows([]string{""}).AddRow("false")
+	mock.ExpectQuery(formatConstantQueryForSQLMock(skuExistenceQuery)).
+		WithArgs("unreal").
+		WillReturnRows(exampleRows)
+
+	req, _ := http.NewRequest("HEAD", "/product/unreal", nil)
 	router.ServeHTTP(res, req)
 
 	assert.Equal(t, res.Code, 404, "status code should be 404")
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expections: %s", err)
+	}
 }
 
 func TestProductRetrievalHandlerWithExistingProduct(t *testing.T) {
-	res, router := setup()
+	db, mock, err := sqlmock.New()
+	defer db.Close()
+	assert.Nil(t, err)
+
+	res, router := setupMockRequestsAndMux(db)
+
+	productJoinHeaders := []string{"id", "product_progenitor_id", "sku", "name", "upc", "quantity", "on_sale", "price", "sale_price", "created_at", "updated_at", "archived_at", "id", "name", "description", "taxable", "price", "product_weight", "product_height", "product_width", "product_length", "package_weight", "package_height", "package_width", "package_length", "created_at", "updated_at", "archived_at"}
+	exampleProductJoinData := []driver.Value{10, 2, "skateboard", "Skateboard", "1234567890", 123, false, 12.34, nil, time.Now(), nil, nil, 2, "Skateboard", "This is a skateboard. Please wear a helmet.", false, 99.99, 8, 7, 6, 5, 4, 3, 2, 1, time.Now(), nil, nil}
+	exampleRows := sqlmock.NewRows(productJoinHeaders).
+		AddRow(exampleProductJoinData...)
+	mock.ExpectQuery(formatConstantQueryForSQLMock(skuJoinRetrievalQuery)).
+		WithArgs("skateboard").
+		WillReturnRows(exampleRows)
+
 	req, _ := http.NewRequest("GET", "/product/skateboard", nil)
 
 	router.ServeHTTP(res, req)
@@ -137,12 +215,9 @@ func TestProductRetrievalHandlerWithExistingProduct(t *testing.T) {
 	}
 
 	actualProduct := &Product{}
-	rawResponseBody := res.Body.String()
-	re := regexp.MustCompile(updatedAtReplacementPattern)
-	responseBody := re.ReplaceAllString(rawResponseBody, "")
-	bodyReader := strings.NewReader(responseBody)
+	bodyReader := strings.NewReader(res.Body.String())
 	decoder := json.NewDecoder(bodyReader)
-	err := decoder.Decode(actualProduct)
+	err = decoder.Decode(actualProduct)
 	assert.Nil(t, err)
 
 	assertProductEqualityForTests(t, expectedProduct, actualProduct)
