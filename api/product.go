@@ -255,28 +255,3 @@ func createProduct(db *sql.DB, np *Product) error {
 	_, err := db.Exec(productCreationQuery, np.ProductProgenitorID, np.SKU, np.Name, np.UPC, np.Quantity, np.OnSale, np.Price, np.SalePrice)
 	return err
 }
-
-func buildProductCreationHandler(db *sql.DB) http.HandlerFunc {
-	// ProductCreationHandler is a product creation handler
-	return func(res http.ResponseWriter, req *http.Request) {
-		progenitorID := mux.Vars(req)["progenitor_id"]
-
-		progenitorExists, err := rowExistsInDB(db, "product_progenitors", "id", progenitorID)
-		if err != nil || !progenitorExists {
-			respondThatProductProgenitorDoesNotExist(req, res, progenitorID)
-			return
-		}
-
-		newProduct, err := loadProductInput(req)
-		if err != nil {
-			notifyOfInvalidRequestBody(res, err)
-			return
-		}
-
-		err = createProduct(db, newProduct)
-		if err != nil {
-			notifyOfInternalIssue(res, err, "insert product in database")
-			return
-		}
-	}
-}
