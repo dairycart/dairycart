@@ -12,6 +12,7 @@ import (
 )
 
 const (
+	// we can't reliably predict what the `updated_at` or `archived_at` columns could possibly equal, so we strip them out of the body becuase we're bad at programming.
 	timeFieldReplacementPatterns = `,"(created_at|updated_at|archived_at)":({"Time":)?"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z"(,"Valid":(true|false))?(})?`
 )
 
@@ -23,9 +24,6 @@ func init() {
 }
 
 func replaceTimeStringsForTests(body string) string {
-	// we can't reliably predict what the `updated_at` or `archived_at` columns
-	// could possibly equal, so we strip them out of the body becuase we're bad
-	// at programming.
 	re := regexp.MustCompile(timeFieldReplacementPatterns)
 	return strings.TrimSpace(re.ReplaceAllString(body, ""))
 }
