@@ -83,10 +83,20 @@ func formatConstantQueryForSQLMock(query string) string {
 	return query
 }
 
-func setupProductExistenceChecks(db *sql.DB, mock sqlmock.Sqlmock, SKU string, exists bool) {
+func setExpectationsForProductExistence(db *sql.DB, mock sqlmock.Sqlmock, SKU string, exists bool) {
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
 	mock.ExpectQuery(formatConstantQueryForSQLMock(skuExistenceQuery)).
 		WithArgs(SKU).
+		WillReturnRows(exampleRows)
+}
+
+func setExpectationsForProductListQuery(mock sqlmock.Sqlmock) {
+	exampleRows := sqlmock.NewRows(productJoinHeaders).
+		AddRow(exampleProductJoinData...).
+		AddRow(exampleProductJoinData...).
+		AddRow(exampleProductJoinData...)
+
+	mock.ExpectQuery(formatConstantQueryForSQLMock(allProductsRetrievalQuery)).
 		WillReturnRows(exampleRows)
 }
 
@@ -134,7 +144,7 @@ func TestLoadProductInputWithInvalidInput(t *testing.T) {
 // 	defer db.Close()
 // 	assert.Nil(t, err)
 
-// 	setupProductExistenceChecks(db, mock, exampleSKU, true)
+// 	setExpectationsForProductExistences(db, mock, exampleSKU, true)
 
 // 	exists, err := productExistsInDB(db, exampleSKU)
 
@@ -181,14 +191,7 @@ func TestRetrieveProductsFromDB(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
-
-	exampleRows := sqlmock.NewRows(productJoinHeaders).
-		AddRow(exampleProductJoinData...).
-		AddRow(exampleProductJoinData...).
-		AddRow(exampleProductJoinData...)
-
-	mock.ExpectQuery(formatConstantQueryForSQLMock(allProductsRetrievalQuery)).
-		WillReturnRows(exampleRows)
+	setExpectationsForProductListQuery(mock)
 
 	products, err := retrieveProductsFromDB(db)
 	assert.Nil(t, err)
@@ -216,11 +219,7 @@ func TestDeleteProductBySKU(t *testing.T) {
 	}
 }
 
-func TestUpdateProductInDatabase(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
-
+func setExpectationsForProductUpdate(mock sqlmock.Sqlmock) {
 	mock.ExpectExec(formatConstantQueryForSQLMock(productUpdateQuery)).
 		WithArgs(
 			exampleProduct.ProductProgenitorID,
@@ -233,8 +232,43 @@ func TestUpdateProductInDatabase(t *testing.T) {
 			exampleProduct.SalePrice,
 			exampleProduct.ID,
 		).WillReturnResult(sqlmock.NewResult(1, 1))
+}
+
+func TestUpdateProductInDatabase(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	setExpectationsForProductUpdate(mock)
 
 	err = updateProductInDatabase(db, exampleProduct)
+	assert.Nil(t, err)
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expections: %s", err)
+	}
+}
+
+func setExpectationsForProductCreation(mock sqlmock.Sqlmock) {
+	mock.ExpectExec(formatConstantQueryForSQLMock(productCreationQuery)).
+		WithArgs(
+			exampleProduct.ProductProgenitorID,
+			exampleProduct.SKU,
+			exampleProduct.Name,
+			exampleProduct.UPC,
+			exampleProduct.Quantity,
+			exampleProduct.OnSale,
+			exampleProduct.Price,
+			exampleProduct.SalePrice,
+		).WillReturnResult(sqlmock.NewResult(1, 1))
+}
+
+func TestCreateProduct(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	setExpectationsForProductCreation(mock)
+
+	err = createProduct(db, exampleProduct)
 	assert.Nil(t, err)
 
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -296,13 +330,7 @@ func TestProductListHandler(t *testing.T) {
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
 
-	exampleRows := sqlmock.NewRows(productJoinHeaders).
-		AddRow(exampleProductJoinData...).
-		AddRow(exampleProductJoinData...).
-		AddRow(exampleProductJoinData...)
-
-	mock.ExpectQuery(formatConstantQueryForSQLMock(allProductsRetrievalQuery)).
-		WillReturnRows(exampleRows)
+	setExpectationsForProductListQuery(mock)
 
 	req, _ := http.NewRequest("GET", "/products", nil)
 
@@ -334,7 +362,7 @@ func TestProductExistenceHandlerWithNonexistentProduct(t *testing.T) {
 	assert.Nil(t, err)
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
-	setupProductExistenceChecks(db, mock, "unreal", false)
+	setExpectationsForProductExistence(db, mock, "unreal", false)
 
 	req, _ := http.NewRequest("HEAD", "/product/unreal", nil)
 	router.ServeHTTP(res, req)
@@ -350,7 +378,7 @@ func TestProductDeletionHandlerWithExistentProduct(t *testing.T) {
 	assert.Nil(t, err)
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
-	setupProductExistenceChecks(db, mock, exampleSKU, true)
+	setExpectationsForProductExistence(db, mock, exampleSKU, true)
 
 	mock.ExpectExec(formatConstantQueryForSQLMock(skuDeletionQuery)).
 		WithArgs(exampleSKU).
@@ -370,7 +398,7 @@ func TestProductDeletionHandlerWithNonexistentProduct(t *testing.T) {
 	assert.Nil(t, err)
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
-	setupProductExistenceChecks(db, mock, exampleSKU, false)
+	setExpectationsForProductExistence(db, mock, exampleSKU, false)
 
 	req, _ := http.NewRequest("DELETE", "/product/example", nil)
 	router.ServeHTTP(res, req)

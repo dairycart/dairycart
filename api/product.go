@@ -251,8 +251,8 @@ func buildProductUpdateHandler(db *sql.DB) http.HandlerFunc {
 }
 
 // createProduct takes a marshalled Product object and creates an entry for it and a base_product in the database
-func createProduct(db *sql.DB, new *Product) error {
-	_, err := db.Exec(productCreationQuery, new.ProductProgenitorID, new.SKU, new.Name, new.UPC, new.Quantity, new.OnSale, new.Price, new.SalePrice)
+func createProduct(db *sql.DB, np *Product) error {
+	_, err := db.Exec(productCreationQuery, np.ProductProgenitorID, np.SKU, np.Name, np.UPC, np.Quantity, np.OnSale, np.Price, np.SalePrice)
 	return err
 }
 
