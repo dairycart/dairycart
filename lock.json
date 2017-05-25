@@ -1,5 +1,5 @@
 {
-    "memo": "1021316b670fdd20d24bd88de61548b12f2aa8caa132e3ff9e62667346511a5e",
+    "memo": "00841d0192356fa80905c2bfd37e508c5c58a1b72060d23e1a8c0f6bb5454f37",
     "projects": [
         {
             "name": "github.com/davecgh/go-spew",
@@ -7,6 +7,14 @@
             "revision": "346938d642f2ec3594ed81d874461961cd0faa76",
             "packages": [
                 "spew"
+            ]
+        },
+        {
+            "name": "github.com/fatih/structs",
+            "version": "v1.0",
+            "revision": "a720dfa8df582c51dee1b36feabb906bde1588bd",
+            "packages": [
+                "."
             ]
         },
         {

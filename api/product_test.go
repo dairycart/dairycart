@@ -143,58 +143,6 @@ func TestRetrievePlainProductFromDB(t *testing.T) {
 	}
 }
 
-func TestProductRetrievalHandlerWithExistingProduct(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	defer db.Close()
-	assert.Nil(t, err)
-
-	res, router := setupMockRequestsAndMux(db)
-
-	exampleRows := sqlmock.NewRows(productJoinHeaders).
-		AddRow(exampleProductJoinData...)
-	mock.ExpectQuery(formatConstantQueryForSQLMock(skuJoinRetrievalQuery)).
-		WithArgs("skateboard").
-		WillReturnRows(exampleRows)
-
-	req, _ := http.NewRequest("GET", "/product/skateboard", nil)
-
-	router.ServeHTTP(res, req)
-	assert.Equal(t, res.Code, 200, "status code should be 200")
-
-	expected := &Product{
-		ProductProgenitor: ProductProgenitor{
-			// ID:            2,            // TODO:
-			// Name:          "Skateboard", //    figure out why this part
-			// Price:         99.99,        //    of the test fails.
-			Description:   "This is a skateboard. Please wear a helmet.",
-			ProductWeight: 8,
-			ProductHeight: 7,
-			ProductWidth:  6,
-			ProductLength: 5,
-			PackageWeight: 4,
-			PackageHeight: 3,
-			PackageWidth:  2,
-			PackageLength: 1,
-		},
-		ID:                  10,
-		ProductProgenitorID: 2,
-		SKU:                 "skateboard",
-		Name:                "Skateboard",
-		UPC:                 NullString{sql.NullString{String: "1234567890"}},
-		Quantity:            123,
-		Price:               12.34,
-		CreatedAt:           exampleTime,
-	}
-
-	actual := &Product{}
-	bodyReader := strings.NewReader(res.Body.String())
-	decoder := json.NewDecoder(bodyReader)
-	err = decoder.Decode(actual)
-	assert.Nil(t, err)
-
-	assert.Equal(t, expected, actual, "expected and actual products should be equal")
-}
-
 func TestRetrieveProductsFromDB(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	defer db.Close()
@@ -254,6 +202,59 @@ func TestProductExistenceHandlerWithExistingProduct(t *testing.T) {
 		t.Errorf("there were unfulfilled expections: %s", err)
 	}
 }
+
+func TestProductRetrievalHandlerWithExistingProduct(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	defer db.Close()
+	assert.Nil(t, err)
+
+	res, router := setupMockRequestsAndMux(db)
+
+	exampleRows := sqlmock.NewRows(productJoinHeaders).
+		AddRow(exampleProductJoinData...)
+	mock.ExpectQuery(formatConstantQueryForSQLMock(skuJoinRetrievalQuery)).
+		WithArgs("skateboard").
+		WillReturnRows(exampleRows)
+
+	req, _ := http.NewRequest("GET", "/product/skateboard", nil)
+
+	router.ServeHTTP(res, req)
+	assert.Equal(t, res.Code, 200, "status code should be 200")
+
+	expected := &Product{
+		ProductProgenitor: ProductProgenitor{
+			// ID:            2,            // TODO:
+			// Name:          "Skateboard", //    figure out why this part
+			// Price:         99.99,        //    of the test fails.
+			Description:   "This is a skateboard. Please wear a helmet.",
+			ProductWeight: 8,
+			ProductHeight: 7,
+			ProductWidth:  6,
+			ProductLength: 5,
+			PackageWeight: 4,
+			PackageHeight: 3,
+			PackageWidth:  2,
+			PackageLength: 1,
+		},
+		ID:                  10,
+		ProductProgenitorID: 2,
+		SKU:                 "skateboard",
+		Name:                "Skateboard",
+		UPC:                 NullString{sql.NullString{String: "1234567890"}},
+		Quantity:            123,
+		Price:               12.34,
+		CreatedAt:           exampleTime,
+	}
+
+	actual := &Product{}
+	bodyReader := strings.NewReader(res.Body.String())
+	decoder := json.NewDecoder(bodyReader)
+	err = decoder.Decode(actual)
+	assert.Nil(t, err)
+
+	assert.Equal(t, expected, actual, "expected and actual products should be equal")
+}
+
 func TestProductListHandler(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	defer db.Close()
