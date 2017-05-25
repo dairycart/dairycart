@@ -14,8 +14,8 @@ services:
     environment:
       DAIRYCART_MIGRATIONS_DIR: "file:///migrations"
       DAIRYCART_DB_URL: postgres://dairytest:password@database:5432/dairytest?sslmode=disable
-    # logging:
-    #   driver: "none"
+    logging:
+      driver: "none"
   test:
     build:
       context: .

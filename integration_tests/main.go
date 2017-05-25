@@ -48,6 +48,11 @@ func retrieveProduct(sku string) (*http.Response, error) {
 	return http.Get(url)
 }
 
+func retrieveListOfProducts() (*http.Response, error) {
+	url := buildURL("products")
+	return http.Get(url)
+}
+
 func updateProduct(sku string, JSONBody string) (*http.Response, error) {
 	client := &http.Client{}
 	body := strings.NewReader(JSONBody)
