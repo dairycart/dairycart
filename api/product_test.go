@@ -86,7 +86,7 @@ func formatConstantQueryForSQLMock(query string) string {
 func setupProductExistenceChecks(db *sql.DB, mock sqlmock.Sqlmock, SKU string, exists bool) {
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
 	mock.ExpectQuery(formatConstantQueryForSQLMock(skuExistenceQuery)).
-		WithArgs("unreal").
+		WithArgs(SKU).
 		WillReturnRows(exampleRows)
 }
 
