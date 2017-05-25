@@ -199,8 +199,8 @@ func buildProductDeletionHandler(db *sql.DB) http.HandlerFunc {
 		sku := mux.Vars(req)["sku"]
 
 		// can't delete a product that doesn't exist!
-		_, err := rowExistsInDB(db, "products", "sku", sku)
-		if err != nil {
+		exists, err := rowExistsInDB(db, "products", "sku", sku)
+		if err != nil || !exists {
 			respondThatRowDoesNotExist(req, res, "product", "sku", sku)
 			return
 		}
@@ -221,8 +221,8 @@ func buildProductUpdateHandler(db *sql.DB) http.HandlerFunc {
 		sku := mux.Vars(req)["sku"]
 
 		// can't update a product that doesn't exist!
-		_, err := rowExistsInDB(db, "products", "sku", sku)
-		if err != nil {
+		exists, err := rowExistsInDB(db, "products", "sku", sku)
+		if err != nil || !exists {
 			respondThatRowDoesNotExist(req, res, "product", "sku", sku)
 			return
 		}
@@ -261,11 +261,7 @@ func buildProductCreationHandler(db *sql.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		progenitorID := mux.Vars(req)["progenitor_id"]
 
-		// we should be able to safely eat this error because gorilla/mux should validate the id
-		// id, _ := strconv.ParseInt(progenitorID, 10, 64)
-
 		progenitorExists, err := rowExistsInDB(db, "product_progenitors", "id", progenitorID)
-		// progenitorExists, err := productProgenitorExistsInDB(db, id)
 		if err != nil || !progenitorExists {
 			respondThatProductProgenitorDoesNotExist(req, res, progenitorID)
 			return
