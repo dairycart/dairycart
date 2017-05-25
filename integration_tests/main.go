@@ -3,7 +3,6 @@ package dairytest
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -19,11 +18,6 @@ func buildURL(parts ...string) string {
 	return fmt.Sprintf("%s/%s", baseURL, strings.Join(parts, "/"))
 }
 
-func turnResponseBodyIntoString(res *http.Response) (string, error) {
-	bodyBytes, err := ioutil.ReadAll(res.Body)
-	return string(bodyBytes), err
-}
-
 func ensureThatDairycartIsAlive() error {
 	url := buildURL("health")
 	dairyCartIsDown := true
@@ -31,7 +25,6 @@ func ensureThatDairycartIsAlive() error {
 	for dairyCartIsDown {
 		_, err := http.Get(url)
 		if err != nil {
-			log.Printf("error encountered: %v", err)
 			log.Printf("waiting half a second before pinging Dairycart again")
 			time.Sleep(500 * time.Millisecond)
 			numberOfAttempts++
@@ -45,13 +38,12 @@ func ensureThatDairycartIsAlive() error {
 	return nil
 }
 
-func checkProductExistence(sku string) (string, error) {
+func checkProductExistence(sku string) (*http.Response, error) {
 	url := buildURL("product", sku)
-	resp, err := http.Head(url)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
+	return http.Head(url)
+}
 
-	return turnResponseBodyIntoString(resp)
+func retrieveProduct(sku string) (*http.Response, error) {
+	url := buildURL("product", sku)
+	return http.Get(url)
 }
