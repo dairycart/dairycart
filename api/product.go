@@ -228,21 +228,26 @@ func buildProductUpdateHandler(db *sql.DB) http.HandlerFunc {
 		}
 		existingProduct, _ := retrievePlainProductFromDB(db, sku) // eating the error here because we're already certain the sku exists
 
-		updatedProduct, err := loadProductInput(req)
+		newerProduct, err := loadProductInput(req)
 		if err != nil {
 			notifyOfInvalidRequestBody(res, err)
 			return
 		}
 
-		updatedProduct.ID = existingProduct.ID
-		if err := mergo.Merge(updatedProduct, existingProduct); err != nil {
+		if err := mergo.Merge(newerProduct, existingProduct); err != nil {
 			notifyOfInternalIssue(res, err, "merge updated product with existing product")
 			return
 		}
 
-		err = updateProductInDatabase(db, updatedProduct)
+		err = updateProductInDatabase(db, newerProduct)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "update product in database")
+			return
+		}
+
+		updatedProduct, err := retrieveProductFromDB(db, sku)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "retrieve updated product from database")
 			return
 		}
 

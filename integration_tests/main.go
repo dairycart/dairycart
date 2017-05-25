@@ -47,3 +47,15 @@ func retrieveProduct(sku string) (*http.Response, error) {
 	url := buildURL("product", sku)
 	return http.Get(url)
 }
+
+func updateProduct(sku string, JSONBody string) (*http.Response, error) {
+	client := &http.Client{}
+	body := strings.NewReader(JSONBody)
+	url := buildURL("product", sku)
+	req, err := http.NewRequest("PUT", url, body)
+	if err != nil {
+		log.Fatalf("failed to build request: %v", err)
+	}
+
+	return client.Do(req)
+}

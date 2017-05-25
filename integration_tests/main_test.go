@@ -56,7 +56,7 @@ func TestProductExistenceRouteForNonexistentProduct(t *testing.T) {
 }
 
 func TestProductRetrievalRouteForNonexistentProduct(t *testing.T) {
-	resp, err := retrieveProduct("does_not_exist")
+	resp, err := retrieveProduct("nonexistent")
 	assert.Nil(t, err)
 	assert.Equal(t, 404, resp.StatusCode, "requesting a product that doesn't exist should respond 404")
 }
@@ -72,4 +72,25 @@ func TestProductRetrievalRoute(t *testing.T) {
 	actual := replaceTimeStringsForTests(body)
 	expected := `{"description":"This is a skateboard. Please wear a helmet.","taxable":false,"product_weight":8,"product_height":7,"product_width":6,"product_length":5,"package_weight":4,"package_height":3,"package_width":2,"package_length":1,"id":10,"product_progenitor_id":2,"sku":"skateboard","name":"Skateboard","upc":"1234567890","quantity":123,"on_sale":false,"price":12.34,"sale_price":""}`
 	assert.Equal(t, expected, actual, "product response should contain a complete product")
+}
+
+func TestProductUpdateRoute(t *testing.T) {
+	JSONBody := `{"quantity":666}`
+	resp, err := updateProduct("skateboard", JSONBody)
+	assert.Nil(t, err)
+	assert.Equal(t, 200, resp.StatusCode, "requesting a product should respond 200")
+
+	body, err := turnResponseBodyIntoString(resp)
+	assert.Nil(t, err)
+
+	actual := replaceTimeStringsForTests(body)
+	expected := `{"description":"This is a skateboard. Please wear a helmet.","taxable":false,"product_weight":8,"product_height":7,"product_width":6,"product_length":5,"package_weight":4,"package_height":3,"package_width":2,"package_length":1,"id":10,"product_progenitor_id":2,"sku":"skateboard","name":"Skateboard","upc":"1234567890","quantity":666,"on_sale":false,"price":12.34,"sale_price":""}`
+	assert.Equal(t, expected, actual, "product response should reflect the updated fields")
+}
+
+func TestProductUpdateRouteForNonexistentProduct(t *testing.T) {
+	JSONBody := `{"quantity":666}`
+	resp, err := updateProduct("nonexistent", JSONBody)
+	assert.Nil(t, err)
+	assert.Equal(t, 404, resp.StatusCode, "requesting a product that doesn't exist should respond 404")
 }
