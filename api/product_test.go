@@ -100,6 +100,12 @@ func setExpectationsForProductListQuery(mock sqlmock.Sqlmock) {
 		WillReturnRows(exampleRows)
 }
 
+func ensureExpectationsWereMet(t *testing.T, mock sqlmock.Sqlmock) {
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expections: %s", err)
+	}
+}
+
 func TestLoadProductInputWithValidInput(t *testing.T) {
 	exampleInput := strings.NewReader(strings.TrimSpace(`
 		{
@@ -182,9 +188,7 @@ func TestRetrievePlainProductFromDB(t *testing.T) {
 	}
 
 	assert.Equal(t, expected, actual, "plain product returned should be valid")
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expections: %s", err)
-	}
+	ensureExpectationsWereMet(t, mock)
 }
 
 func TestRetrieveProductsFromDB(t *testing.T) {
@@ -195,11 +199,8 @@ func TestRetrieveProductsFromDB(t *testing.T) {
 
 	products, err := retrieveProductsFromDB(db)
 	assert.Nil(t, err)
-
 	assert.Equal(t, 3, len(products), "there should be 3 products")
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expections: %s", err)
-	}
+	ensureExpectationsWereMet(t, mock)
 }
 
 func TestDeleteProductBySKU(t *testing.T) {
@@ -213,10 +214,7 @@ func TestDeleteProductBySKU(t *testing.T) {
 
 	err = deleteProductBySKU(db, exampleSKU)
 	assert.Nil(t, err)
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expections: %s", err)
-	}
+	ensureExpectationsWereMet(t, mock)
 }
 
 func setExpectationsForProductUpdate(mock sqlmock.Sqlmock) {
@@ -242,10 +240,7 @@ func TestUpdateProductInDatabase(t *testing.T) {
 
 	err = updateProductInDatabase(db, exampleProduct)
 	assert.Nil(t, err)
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expections: %s", err)
-	}
+	ensureExpectationsWereMet(t, mock)
 }
 
 func setExpectationsForProductCreation(mock sqlmock.Sqlmock) {
@@ -270,31 +265,23 @@ func TestCreateProduct(t *testing.T) {
 
 	err = createProduct(db, exampleProduct)
 	assert.Nil(t, err)
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expections: %s", err)
-	}
+	ensureExpectationsWereMet(t, mock)
 }
 
 // HTTP handler tests
+
 func TestProductExistenceHandlerWithExistingProduct(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
+	setExpectationsForProductExistence(db, mock, exampleSKU, true)
 
-	exampleRows := sqlmock.NewRows([]string{""}).AddRow("true")
-	mock.ExpectQuery(formatConstantQueryForSQLMock(skuExistenceQuery)).
-		WithArgs("skateboard").
-		WillReturnRows(exampleRows)
-
-	req, _ := http.NewRequest("HEAD", "/product/skateboard", nil)
+	req, _ := http.NewRequest("HEAD", "/product/example", nil)
 	router.ServeHTTP(res, req)
 
 	assert.Equal(t, res.Code, 200, "status code should be 200")
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expections: %s", err)
-	}
+	ensureExpectationsWereMet(t, mock)
 }
 
 func TestProductRetrievalHandlerWithExistingProduct(t *testing.T) {
@@ -322,6 +309,7 @@ func TestProductRetrievalHandlerWithExistingProduct(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, expected, actual, "expected and actual products should be equal")
+	ensureExpectationsWereMet(t, mock)
 }
 
 func TestProductListHandler(t *testing.T) {
@@ -355,6 +343,7 @@ func TestProductListHandler(t *testing.T) {
 	assert.Equal(t, expected.Limit, actual.Limit, "expected and actual product limits should be equal")
 	assert.Equal(t, expected.Count, actual.Count, "expected and actual product counts should be equal")
 	assert.Equal(t, len(actual.Data), actual.Count, "actual product counts and product response count field should be equal")
+	ensureExpectationsWereMet(t, mock)
 }
 
 func TestProductExistenceHandlerWithNonexistentProduct(t *testing.T) {
@@ -368,9 +357,7 @@ func TestProductExistenceHandlerWithNonexistentProduct(t *testing.T) {
 	router.ServeHTTP(res, req)
 
 	assert.Equal(t, res.Code, 404, "status code should be 404")
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expections: %s", err)
-	}
+	ensureExpectationsWereMet(t, mock)
 }
 
 func TestProductDeletionHandlerWithExistentProduct(t *testing.T) {
@@ -388,9 +375,7 @@ func TestProductDeletionHandlerWithExistentProduct(t *testing.T) {
 	router.ServeHTTP(res, req)
 
 	assert.Equal(t, res.Code, 200, "status code should be 200")
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expections: %s", err)
-	}
+	ensureExpectationsWereMet(t, mock)
 }
 
 func TestProductDeletionHandlerWithNonexistentProduct(t *testing.T) {
@@ -404,7 +389,5 @@ func TestProductDeletionHandlerWithNonexistentProduct(t *testing.T) {
 	router.ServeHTTP(res, req)
 
 	assert.Equal(t, res.Code, 404, "status code should be 404")
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expections: %s", err)
-	}
+	ensureExpectationsWereMet(t, mock)
 }
