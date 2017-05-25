@@ -1,6 +1,6 @@
 FROM golang:alpine
 WORKDIR /go/src/github.com/verygoodsoftwarenotvirus/dairycart
 
-ADD integration_tests .
+ADD tests .
 COPY vendor vendor
 ENTRYPOINT ["go", "test", "-v"]
