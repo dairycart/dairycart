@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/fatih/structs"
 	"github.com/gorilla/mux"
 	"github.com/imdario/mergo"
 	"github.com/lib/pq"
@@ -14,7 +15,7 @@ import (
 
 const (
 	skuExistenceQuery         = `SELECT EXISTS(SELECT 1 FROM products WHERE sku = $1 and archived_at is null);`
-	skuDeletionQuery          = `UPDATE products SET archived_at = NOW() WHERE sku = $1 AND p.archived_at IS NULL;`
+	skuDeletionQuery          = `UPDATE products SET archived_at = NOW() WHERE sku = $1 AND archived_at IS NULL;`
 	skuRetrievalQuery         = `SELECT * FROM products WHERE sku = $1 AND archived_at IS NULL;`
 	skuJoinRetrievalQuery     = `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.sku = $1 AND p.archived_at IS NULL;`
 	allProductsRetrievalQuery = `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.id IS NOT NULL AND p.archived_at IS NULL;`
@@ -81,6 +82,10 @@ func loadProductInput(req *http.Request) (*Product, error) {
 	decoder := json.NewDecoder(req.Body)
 	defer req.Body.Close()
 	err := decoder.Decode(product)
+
+	if structs.IsZero(product) {
+		return nil, errors.New("Invalid input provided for product body")
+	}
 
 	return product, err
 }
@@ -196,15 +201,8 @@ func buildProductListHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func deleteProductBySku(db *sql.DB, req *http.Request, res http.ResponseWriter, sku string) error {
-	// can't delete a product that doesn't exist!
-	_, err := rowExistsInDB(db, "products", "sku", sku)
-	// _, err := productExistsInDB(db, sku)
-	if err != nil {
-		respondThatRowDoesNotExist(req, res, "product", "sku", sku)
-	}
-
-	_, err = db.Exec(skuDeletionQuery, sku)
+func deleteProductBySKU(db *sql.DB, sku string) error {
+	_, err := db.Exec(skuDeletionQuery, sku)
 	return err
 }
 
@@ -212,7 +210,15 @@ func buildProductDeletionHandler(db *sql.DB) http.HandlerFunc {
 	// ProductDeletionHandler is a request handler that deletes a single product
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := mux.Vars(req)["sku"]
-		deleteProductBySku(db, req, res, sku)
+
+		// can't delete a product that doesn't exist!
+		_, err := rowExistsInDB(db, "products", "sku", sku)
+		if err != nil {
+			respondThatRowDoesNotExist(req, res, "product", "sku", sku)
+			return
+		}
+
+		err = deleteProductBySKU(db, sku)
 		json.NewEncoder(res).Encode("OK")
 	}
 }
