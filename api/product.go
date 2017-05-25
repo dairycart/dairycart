@@ -90,18 +90,6 @@ func loadProductInput(req *http.Request) (*Product, error) {
 	return product, err
 }
 
-// productExistsInDB will return whether or not a product/attribute/etc with a given identifier exists in the database
-func productExistsInDB(db *sql.DB, sku string) (bool, error) {
-	var exists string
-
-	err := db.QueryRow(skuExistenceQuery, sku).Scan(&exists)
-	if err == sql.ErrNoRows {
-		return false, errors.Wrap(err, "Error querying for product")
-	}
-
-	return exists == "true", err
-}
-
 func buildProductExistenceHandler(db *sql.DB) http.HandlerFunc {
 	// ProductExistenceHandler handles requests to check if a sku exists
 	return func(res http.ResponseWriter, req *http.Request) {
@@ -109,7 +97,6 @@ func buildProductExistenceHandler(db *sql.DB) http.HandlerFunc {
 		sku := vars["sku"]
 
 		productExists, err := rowExistsInDB(db, "products", "sku", sku)
-		// productExists, err := productExistsInDB(db, sku)
 		if err != nil {
 			respondThatRowDoesNotExist(req, res, "product", "sku", sku)
 			return
@@ -235,7 +222,6 @@ func buildProductUpdateHandler(db *sql.DB) http.HandlerFunc {
 
 		// can't update a product that doesn't exist!
 		_, err := rowExistsInDB(db, "products", "sku", sku)
-		// _, err := productExistsInDB(db, sku)
 		if err != nil {
 			respondThatRowDoesNotExist(req, res, "product", "sku", sku)
 			return

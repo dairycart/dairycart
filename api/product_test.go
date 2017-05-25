@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -18,6 +19,7 @@ import (
 )
 
 const (
+	exampleSKU        = "example"
 	exampleTimeString = "2017-01-01 12:00:00.000000"
 )
 
@@ -26,6 +28,7 @@ var examplePlainProductData []driver.Value
 var productJoinHeaders []string
 var exampleProductJoinData []driver.Value
 var exampleTime time.Time
+var exampleProduct *Product
 
 func init() {
 	var err error
@@ -39,6 +42,31 @@ func init() {
 
 	productJoinHeaders = []string{"id", "product_progenitor_id", "sku", "name", "upc", "quantity", "on_sale", "price", "sale_price", "created_at", "updated_at", "archived_at", "id", "name", "description", "taxable", "price", "product_weight", "product_height", "product_width", "product_length", "package_weight", "package_height", "package_width", "package_length", "created_at", "updated_at", "archived_at"}
 	exampleProductJoinData = []driver.Value{10, 2, "skateboard", "Skateboard", "1234567890", 123, false, 12.34, nil, exampleTime, nil, nil, 2, "Skateboard", "This is a skateboard. Please wear a helmet.", false, 99.99, 8, 7, 6, 5, 4, 3, 2, 1, exampleTime, nil, nil}
+	exampleProduct = &Product{
+		ProductProgenitor: ProductProgenitor{
+			// ID:            2,            // TODO:
+			// Name:          "Skateboard", //    figure out why this part
+			// Price:         99.99,        //    of the test fails.
+			Description:   "This is a skateboard. Please wear a helmet.",
+			ProductWeight: 8,
+			ProductHeight: 7,
+			ProductWidth:  6,
+			ProductLength: 5,
+			PackageWeight: 4,
+			PackageHeight: 3,
+			PackageWidth:  2,
+			PackageLength: 1,
+		},
+		ID:                  10,
+		ProductProgenitorID: 2,
+		SKU:                 "skateboard",
+		Name:                "Skateboard",
+		UPC:                 NullString{sql.NullString{String: "1234567890"}},
+		Quantity:            123,
+		Price:               12.34,
+		CreatedAt:           exampleTime,
+	}
+
 }
 
 func setupMockRequestsAndMux(db *sql.DB) (*httptest.ResponseRecorder, *mux.Router) {
@@ -55,11 +83,18 @@ func formatConstantQueryForSQLMock(query string) string {
 	return query
 }
 
+func setupProductExistenceChecks(db *sql.DB, mock sqlmock.Sqlmock, SKU string, exists bool) {
+	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
+	mock.ExpectQuery(formatConstantQueryForSQLMock(skuExistenceQuery)).
+		WithArgs("unreal").
+		WillReturnRows(exampleRows)
+}
+
 func TestLoadProductInputWithValidInput(t *testing.T) {
 	exampleInput := strings.NewReader(strings.TrimSpace(`
 		{
 			"product_progenitor_id": 1,
-			"sku": "example_sku",
+			"sku": "example",
 			"name": "Test",
 			"quantity": 666,
 			"upc": "1234567890",
@@ -70,7 +105,7 @@ func TestLoadProductInputWithValidInput(t *testing.T) {
 	`))
 	expected := &Product{
 		ProductProgenitorID: 1,
-		SKU:                 "example_sku",
+		SKU:                 exampleSKU,
 		Name:                "Test",
 		UPC:                 NullString{sql.NullString{String: "1234567890"}},
 		Quantity:            666,
@@ -93,23 +128,22 @@ func TestLoadProductInputWithInvalidInput(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestProductExistsInDB(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	defer db.Close()
-	assert.Nil(t, err)
+// commenting out for now, because this likely belongs in helpers_test.go
+// func TestProductExistsInDB(t *testing.T) {
+// 	db, mock, err := sqlmock.New()
+// 	defer db.Close()
+// 	assert.Nil(t, err)
 
-	exampleRows := sqlmock.NewRows([]string{""}).AddRow("true")
-	mock.ExpectQuery(formatConstantQueryForSQLMock(skuExistenceQuery)).
-		WithArgs("example").
-		WillReturnRows(exampleRows)
-	exists, err := productExistsInDB(db, "example")
+// 	setupProductExistenceChecks(db, mock, exampleSKU, true)
 
-	assert.Nil(t, err)
-	assert.True(t, exists)
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expections: %s", err)
-	}
-}
+// 	exists, err := productExistsInDB(db, exampleSKU)
+
+// 	assert.Nil(t, err)
+// 	assert.True(t, exists)
+// 	if err := mock.ExpectationsWereMet(); err != nil {
+// 		t.Errorf("there were unfulfilled expections: %s", err)
+// 	}
+// }
 
 func TestRetrievePlainProductFromDB(t *testing.T) {
 	db, mock, err := sqlmock.New()
@@ -120,10 +154,10 @@ func TestRetrievePlainProductFromDB(t *testing.T) {
 		AddRow(examplePlainProductData...)
 
 	mock.ExpectQuery(formatConstantQueryForSQLMock(skuRetrievalQuery)).
-		WithArgs("example").
+		WithArgs(exampleSKU).
 		WillReturnRows(exampleRows)
 
-	actual, err := retrievePlainProductFromDB(db, "example")
+	actual, err := retrievePlainProductFromDB(db, exampleSKU)
 	assert.Nil(t, err)
 
 	expected := &Product{
@@ -164,16 +198,43 @@ func TestRetrieveProductsFromDB(t *testing.T) {
 		t.Errorf("there were unfulfilled expections: %s", err)
 	}
 }
-func TestDeleteProductBySKUForExistentSku(t *testing.T) {
+
+func TestDeleteProductBySKU(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	defer db.Close()
 	assert.Nil(t, err)
 
 	mock.ExpectExec(formatConstantQueryForSQLMock(skuDeletionQuery)).
-		WithArgs("example").
+		WithArgs(exampleSKU).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
-	err = deleteProductBySKU(db, "example")
+	err = deleteProductBySKU(db, exampleSKU)
+	assert.Nil(t, err)
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expections: %s", err)
+	}
+}
+
+func TestUpdateProductInDatabase(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	defer db.Close()
+	assert.Nil(t, err)
+
+	mock.ExpectExec(formatConstantQueryForSQLMock(productUpdateQuery)).
+		WithArgs(
+			exampleProduct.ProductProgenitorID,
+			exampleProduct.SKU,
+			exampleProduct.Name,
+			exampleProduct.UPC,
+			exampleProduct.Quantity,
+			exampleProduct.OnSale,
+			exampleProduct.Price,
+			exampleProduct.SalePrice,
+			exampleProduct.ID,
+		).WillReturnResult(sqlmock.NewResult(1, 1))
+
+	err = updateProductInDatabase(db, exampleProduct)
 	assert.Nil(t, err)
 
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -221,31 +282,7 @@ func TestProductRetrievalHandlerWithExistingProduct(t *testing.T) {
 	router.ServeHTTP(res, req)
 	assert.Equal(t, res.Code, 200, "status code should be 200")
 
-	expected := &Product{
-		ProductProgenitor: ProductProgenitor{
-			// ID:            2,            // TODO:
-			// Name:          "Skateboard", //    figure out why this part
-			// Price:         99.99,        //    of the test fails.
-			Description:   "This is a skateboard. Please wear a helmet.",
-			ProductWeight: 8,
-			ProductHeight: 7,
-			ProductWidth:  6,
-			ProductLength: 5,
-			PackageWeight: 4,
-			PackageHeight: 3,
-			PackageWidth:  2,
-			PackageLength: 1,
-		},
-		ID:                  10,
-		ProductProgenitorID: 2,
-		SKU:                 "skateboard",
-		Name:                "Skateboard",
-		UPC:                 NullString{sql.NullString{String: "1234567890"}},
-		Quantity:            123,
-		Price:               12.34,
-		CreatedAt:           exampleTime,
-	}
-
+	expected := exampleProduct
 	actual := &Product{}
 	bodyReader := strings.NewReader(res.Body.String())
 	decoder := json.NewDecoder(bodyReader)
@@ -300,11 +337,7 @@ func TestProductExistenceHandlerWithNonexistentProduct(t *testing.T) {
 	assert.Nil(t, err)
 
 	res, router := setupMockRequestsAndMux(db)
-
-	exampleRows := sqlmock.NewRows([]string{""}).AddRow("false")
-	mock.ExpectQuery(formatConstantQueryForSQLMock(skuExistenceQuery)).
-		WithArgs("unreal").
-		WillReturnRows(exampleRows)
+	setupProductExistenceChecks(db, mock, "unreal", false)
 
 	req, _ := http.NewRequest("HEAD", "/product/unreal", nil)
 	router.ServeHTTP(res, req)
