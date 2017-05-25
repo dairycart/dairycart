@@ -5,6 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,4 +34,42 @@ func TestNotifyOfInternalIssue(t *testing.T) {
 
 	assert.Equal(t, w.Body.String(), "Unexpected internal error\n", "response should indicate their was an internal error")
 	assert.Equal(t, w.Code, 500, "status code should be 404")
+}
+
+func TestRowExistsInDBForExistingRow(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	defer db.Close()
+	assert.Nil(t, err)
+
+	exampleRows := sqlmock.NewRows([]string{""}).AddRow("true")
+	mock.ExpectQuery(formatConstantQueryForSQLMock(skuExistenceQuery)).
+		WithArgs(exampleSKU).
+		WillReturnRows(exampleRows)
+
+	exists, err := rowExistsInDB(db, "products", "sku", exampleSKU)
+
+	assert.Nil(t, err)
+	assert.True(t, exists)
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expections: %s", err)
+	}
+}
+
+func TestRowExistsInDBForNonexistentRow(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	defer db.Close()
+	assert.Nil(t, err)
+
+	exampleRows := sqlmock.NewRows([]string{""}).AddRow("false")
+	mock.ExpectQuery(formatConstantQueryForSQLMock(skuExistenceQuery)).
+		WithArgs(exampleSKU).
+		WillReturnRows(exampleRows)
+
+	exists, err := rowExistsInDB(db, "products", "sku", exampleSKU)
+
+	assert.Nil(t, err)
+	assert.False(t, exists)
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expections: %s", err)
+	}
 }

@@ -46,9 +46,6 @@ func init() {
 	exampleProductJoinData = []driver.Value{10, 2, "skateboard", "Skateboard", "1234567890", 123, false, 12.34, nil, exampleTime, nil, nil, 2, "Skateboard", "This is a skateboard. Please wear a helmet.", false, 99.99, 8, 7, 6, 5, 4, 3, 2, 1, exampleTime, nil, nil}
 	exampleProduct = &Product{
 		ProductProgenitor: ProductProgenitor{
-			// ID:            2,            // TODO:
-			// Name:          "Skateboard", //    figure out why this part
-			// Price:         99.99,        //    of the test fails.
 			Description:   "This is a skateboard. Please wear a helmet.",
 			ProductWeight: 8,
 			ProductHeight: 7,
@@ -152,23 +149,6 @@ func TestLoadProductInputWithInvalidInput(t *testing.T) {
 
 	assert.NotNil(t, err)
 }
-
-// commenting out for now, because this likely belongs in helpers_test.go
-// func TestProductExistsInDB(t *testing.T) {
-// 	db, mock, err := sqlmock.New()
-// 	defer db.Close()
-// 	assert.Nil(t, err)
-
-// 	setExpectationsForProductExistences(db, mock, exampleSKU, true)
-
-// 	exists, err := productExistsInDB(db, exampleSKU)
-
-// 	assert.Nil(t, err)
-// 	assert.True(t, exists)
-// 	if err := mock.ExpectationsWereMet(); err != nil {
-// 		t.Errorf("there were unfulfilled expections: %s", err)
-// 	}
-// }
 
 func TestRetrievePlainProductFromDB(t *testing.T) {
 	db, mock, err := sqlmock.New()
