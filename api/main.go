@@ -21,7 +21,6 @@ func SetupAPIRoutes(router *mux.Router, db *sql.DB) {
 	router.HandleFunc(productEndpoint, buildProductUpdateHandler(db)).Methods("PUT")
 	router.HandleFunc(productEndpoint, buildProductExistenceHandler(db)).Methods("HEAD")
 	router.HandleFunc(productEndpoint, buildProductDeletionHandler(db)).Methods("DELETE")
-	router.HandleFunc("/product/{progenitor_id:[0-9]+}", buildProductCreationHandler(db)).Methods("POST")
 
 	// Product Attribute Values
 	router.HandleFunc("/product_attributes/{attribute_id:[0-9]+}/value", buildProductAttributeValueCreationHandler(db)).Methods("POST")
