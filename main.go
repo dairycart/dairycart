@@ -3,6 +3,7 @@ package main
 import (
 	// stdlib
 	"database/sql"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -94,7 +95,8 @@ func main() {
 	api.SetupAPIRoutes(APIRouter, db)
 
 	// serve 'em up a lil' sauce
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "I live!") })
 	http.Handle("/", APIRouter)
-	log.Println("Dairycart now listening at port 8080")
-	http.ListenAndServe(":8080", nil)
+	log.Println("Dairycart now listening for requests")
+	http.ListenAndServe(":80", nil)
 }

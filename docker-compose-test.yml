@@ -4,8 +4,26 @@ services:
   dairycart:
     build:
       context: .
-      dockerfile: test.Dockerfile
+      dockerfile: Dockerfile
     ports:
-      - '8080:8080'
+      - '8080:80'
+    depends_on:
+      - database
+    links:
+      - database
     environment:
-      TESTING_FROM_DOCKER: "YUP"
+      DAIRYCART_MIGRATIONS_DIR: "file:///migrations"
+      DAIRYCART_DB_URL: postgres://dairytest:password@database:5432/dairytest?sslmode=disable
+  test:
+    build:
+      context: .
+      dockerfile: integration_tests.Dockerfile
+    links:
+      - dairycart
+  database:
+    image: postgres:alpine
+    ports:
+    - '2345:5432'
+    environment:
+      POSTGRES_USER: dairytest
+      POSTGRES_PASSWORD: password
