@@ -3,7 +3,7 @@ version: '3.2'
 services:
   dairycart:
     build:
-      context: .
+      context: ..
       dockerfile: dairycart.Dockerfile
     ports:
       - '80:80'
