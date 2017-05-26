@@ -1,6 +1,7 @@
 package dairytest
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -18,50 +19,6 @@ var jsonMinifier *minify.M
 const (
 	// we can't reliably predict what the `updated_at` or `archived_at` columns could possibly equal, so we strip them out of the body becuase we're bad at programming.
 	timeFieldReplacementPatterns = `,"(created_at|updated_at|archived_at)":({"Time":)?"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z"(,"Valid":(true|false))?(})?`
-	skateboardProductJSON        = `
-		{
-			"description": "This is a skateboard. Please wear a helmet.",
-			"taxable": false,
-			"product_weight": 8,
-			"product_height": 7,
-			"product_width": 6,
-			"product_length": 5,
-			"package_weight": 4,
-			"package_height": 3,
-			"package_width": 2,
-			"package_length": 1,
-			"id": 10,
-			"product_progenitor_id": 2,
-			"sku": "skateboard",
-			"name": "Skateboard",
-			"upc": "1234567890",
-			"quantity": 123,
-			"on_sale": false,
-			"price": 12.34,
-			"sale_price": ""
-		}
-	`
-	newProductJSON = `
-		{
-			"description": "This is a new product.",
-			"taxable": true,
-			"product_weight": 9,
-			"product_height": 9,
-			"product_width": 9,
-			"product_length": 9,
-			"package_weight": 9,
-			"package_height": 9,
-			"package_width": 9,
-			"package_length": 9,
-			"sku": "new-product",
-			"name": "New Product",
-			"upc": "0123456789",
-			"quantity": 123,
-			"on_sale": false,
-			"price": 12.34,
-			"sale_price": null
-		}
-	`
 )
 
 func init() {
@@ -71,6 +28,12 @@ func init() {
 	}
 	jsonMinifier = minify.New()
 	jsonMinifier.AddFunc("application/json", jsonMinify.Minify)
+}
+
+func readTestFile(t *testing.T, filename string) string {
+	bodyBytes, err := ioutil.ReadFile(fmt.Sprintf("test_files/%s.json", filename))
+	assert.Nil(t, err)
+	return strings.TrimSpace(string(bodyBytes))
 }
 
 func replaceTimeStringsForTests(body string) string {
@@ -125,6 +88,7 @@ func TestProductRetrievalRoute(t *testing.T) {
 	body, err := turnResponseBodyIntoString(resp)
 	assert.Nil(t, err)
 
+	skateboardProductJSON := readTestFile(t, "skateboard")
 	actual := replaceTimeStringsForTests(body)
 	expected := minifyExampleJSON(t, skateboardProductJSON)
 	assert.Equal(t, expected, actual, "product response should contain a complete product")
@@ -188,6 +152,7 @@ func TestProductUpdateRouteForNonexistentProduct(t *testing.T) {
 // }
 
 func TestProductCreationWithAlreadyExistentSKU(t *testing.T) {
+	newProductJSON := readTestFile(t, "example_new_product")
 	bodyToUse := strings.Replace(newProductJSON, `"sku": "new-product"`, `"sku": "skateboard"`, 1)
 	resp, err := createProduct(bodyToUse)
 	assert.Nil(t, err)

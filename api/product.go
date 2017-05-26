@@ -35,8 +35,6 @@ func init() {
 
 // Product describes something a user can buy
 type Product struct {
-	ProductProgenitor
-
 	// Basic Info
 	ID                  int64      `json:"id"`
 	ProductProgenitorID int64      `json:"product_progenitor_id"`
@@ -54,6 +52,8 @@ type Product struct {
 	CreatedAt  time.Time   `json:"created_at"`
 	UpdatedAt  pq.NullTime `json:"updated_at"`
 	ArchivedAt pq.NullTime `json:"-"`
+
+	ProductProgenitor
 }
 
 // generateScanArgs generates an array of pointers to struct fields for sql.Scan to populate
