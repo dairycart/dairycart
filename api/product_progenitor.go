@@ -10,6 +10,7 @@ import (
 const (
 	productProgenitorExistenceQuery = `SELECT EXISTS(SELECT 1 FROM product_progenitors WHERE id = $1 and archived_at is null);`
 	productProgenitorQuery          = `SELECT * FROM product_progenitors WHERE id = $1 and archived_at is null;`
+	productProgenitorCreationQuery  = `INSERT INTO product_progenitors ("name", "description", "taxable", "price", "product_weight", "product_height", "product_width", "product_length", "package_weight", "package_height", "package_width", "package_length", "created_at") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW()) RETURNING id;`
 )
 
 // ProductProgenitor is the parent product for every product
@@ -61,6 +62,47 @@ func (g *ProductProgenitor) generateScanArgs() []interface{} {
 		&g.UpdatedAt,
 		&g.ArchivedAt,
 	}
+}
+
+func newProductProgenitorFromProductCreationInput(in *ProductCreationInput) *ProductProgenitor {
+	return &ProductProgenitor{
+		Name:          in.Name,
+		Description:   in.Description,
+		Taxable:       in.Taxable,
+		Price:         in.Price,
+		ProductWeight: in.ProductWeight,
+		ProductHeight: in.ProductHeight,
+		ProductWidth:  in.ProductWidth,
+		ProductLength: in.ProductLength,
+		PackageWeight: in.PackageWeight,
+		PackageHeight: in.PackageHeight,
+		PackageWidth:  in.PackageWidth,
+		PackageLength: in.PackageLength,
+	}
+}
+
+func createProductProgenitorInDB(db *sql.DB, g *ProductProgenitor) (*ProductProgenitor, error) {
+	var newProgenitorID int64
+	// using QueryRow instead of Exec because we want it to return the newly created row's ID
+	// Exec normally returns a sql.Result, which has a LastInsertedID() method, but when I tested
+	// this locally, it never worked. ¯\_(ツ)_/¯
+	err := db.QueryRow(productProgenitorCreationQuery,
+		g.Name,
+		g.Description,
+		g.Taxable,
+		g.Price,
+		g.ProductWeight,
+		g.ProductHeight,
+		g.ProductWidth,
+		g.ProductLength,
+		g.PackageWeight,
+		g.PackageHeight,
+		g.PackageWidth,
+		g.PackageLength,
+	).Scan(&newProgenitorID)
+
+	g.ID = newProgenitorID
+	return g, err
 }
 
 // retrieveProductProgenitorFromDB retrieves a product progenitor with a given ID from the database

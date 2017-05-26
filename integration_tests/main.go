@@ -46,17 +46,39 @@ func ensureThatDairycartIsAlive() error {
 
 func checkProductExistence(sku string) (*http.Response, error) {
 	url := buildURL("product", sku)
-	return http.Head(url)
+	req, err := http.NewRequest(http.MethodHead, url, nil)
+	if err != nil {
+		log.Fatalf("failed to build request: %v", err)
+	}
+	return client.Do(req)
 }
 
 func retrieveProduct(sku string) (*http.Response, error) {
 	url := buildURL("product", sku)
-	return http.Get(url)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		log.Fatalf("failed to build request: %v", err)
+	}
+	return client.Do(req)
 }
 
 func retrieveListOfProducts() (*http.Response, error) {
 	url := buildURL("products")
-	return http.Get(url)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		log.Fatalf("failed to build request: %v", err)
+	}
+	return client.Do(req)
+}
+
+func createProduct(JSONBody string) (*http.Response, error) {
+	body := strings.NewReader(JSONBody)
+	url := buildURL("product")
+	req, err := http.NewRequest(http.MethodPost, url, body)
+	if err != nil {
+		log.Fatalf("failed to build request: %v", err)
+	}
+	return client.Do(req)
 }
 
 func updateProduct(sku string, JSONBody string) (*http.Response, error) {
@@ -66,7 +88,6 @@ func updateProduct(sku string, JSONBody string) (*http.Response, error) {
 	if err != nil {
 		log.Fatalf("failed to build request: %v", err)
 	}
-
 	return client.Do(req)
 }
 

@@ -41,6 +41,27 @@ const (
 			"sale_price": ""
 		}
 	`
+	newProductJSON = `
+		{
+			"description": "This is a new product.",
+			"taxable": true,
+			"product_weight": 9,
+			"product_height": 9,
+			"product_width": 9,
+			"product_length": 9,
+			"package_weight": 9,
+			"package_height": 9,
+			"package_width": 9,
+			"package_length": 9,
+			"sku": "new-product",
+			"name": "New Product",
+			"upc": "0123456789",
+			"quantity": 123,
+			"on_sale": false,
+			"price": 12.34,
+			"sale_price": null
+		}
+	`
 )
 
 func init() {
@@ -59,7 +80,7 @@ func replaceTimeStringsForTests(body string) string {
 
 func turnResponseBodyIntoString(res *http.Response) (string, error) {
 	bodyBytes, err := ioutil.ReadAll(res.Body)
-	return string(bodyBytes), err
+	return strings.TrimSpace(string(bodyBytes)), err
 }
 
 func minifyExampleJSON(t *testing.T, json string) string {
@@ -121,12 +142,10 @@ func TestProductUpdateRoute(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 200, resp.StatusCode, "successfully updating a product should respond 200")
 
-	body, err := turnResponseBodyIntoString(resp)
+	actual, err := turnResponseBodyIntoString(resp)
 	assert.Nil(t, err)
 
-	actual := replaceTimeStringsForTests(body)
-	minified := minifyExampleJSON(t, skateboardProductJSON)
-	expected := strings.Replace(minified, `"quantity":123`, `"quantity":666`, 1)
+	expected := `"Product updated"`
 	assert.Equal(t, expected, actual, "product response should reflect the updated fields")
 }
 
@@ -149,6 +168,30 @@ func TestProductUpdateRouteForNonexistentProduct(t *testing.T) {
 	resp, err := updateProduct("nonexistent", JSONBody)
 	assert.Nil(t, err)
 	assert.Equal(t, 404, resp.StatusCode, "requesting a product that doesn't exist should respond 404")
+}
+
+// // FIXME: broken as shit
+// func TestProductCreation(t *testing.T) {
+// 	resp, err := createProduct(newProductJSON)
+// 	assert.Nil(t, err)
+
+// 	body, err := turnResponseBodyIntoString(resp)
+// 	assert.Nil(t, err)
+
+// 	log.Printf(`
+
+// 		received body:
+// 		 	%v
+// 	`, body)
+
+// 	assert.Equal(t, 200, resp.StatusCode, "creating a product that doesn't exist should respond 200")
+// }
+
+func TestProductCreationWithAlreadyExistentSKU(t *testing.T) {
+	bodyToUse := strings.Replace(newProductJSON, `"sku": "new-product"`, `"sku": "skateboard"`, 1)
+	resp, err := createProduct(bodyToUse)
+	assert.Nil(t, err)
+	assert.Equal(t, 400, resp.StatusCode, "creating a product that already exist should respond 400")
 }
 
 // // uncomment after implementing (and testing) product creation

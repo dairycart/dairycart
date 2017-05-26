@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"regexp"
 	"time"
@@ -20,10 +21,10 @@ const (
 	skuRetrievalQuery         = `SELECT * FROM products WHERE sku = $1 AND archived_at IS NULL;`
 	skuJoinRetrievalQuery     = `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.sku = $1 AND p.archived_at IS NULL;`
 	allProductsRetrievalQuery = `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.id IS NOT NULL AND p.archived_at IS NULL;`
-	productUpdateQuery        = `UPDATE products SET "product_progenitor_id"=$1, "sku"=$2, "name"=$3, "upc"=$4, "quantity"=$5, "on_sale"=$6, "price"=$7, "sale_price"=$8, "updated_at"='NOW()' WHERE "id"=$9;`
+	productUpdateQuery        = `UPDATE products SET "sku"=$1, "name"=$2, "upc"=$3, "quantity"=$4, "on_sale"=$5, "price"=$6, "sale_price"=$7, "updated_at"='NOW()' WHERE "id"=$8;`
 	productCreationQuery      = `INSERT INTO products ("product_progenitor_id", "sku", "name", "upc", "quantity", "on_sale", "price", "sale_price") VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`
 
-	skuValidationPattern = `^[a-zA-Z\\-_]+$`
+	skuValidationPattern = `^[a-zA-Z\-_]+$`
 )
 
 var skuValidator *regexp.Regexp
@@ -86,7 +87,7 @@ type ProductsResponse struct {
 	Data []Product `json:"data"`
 }
 
-func loadProductInput(req *http.Request) (*Product, error) {
+func validateProductUpdateInput(req *http.Request) (*Product, error) {
 	product := &Product{}
 	decoder := json.NewDecoder(req.Body)
 	defer req.Body.Close()
@@ -105,6 +106,10 @@ func loadProductInput(req *http.Request) (*Product, error) {
 	if !s.IsZero() && !skuValidator.MatchString(product.SKU) {
 		return nil, errors.New("Invalid input provided for product SKU")
 	}
+
+	// // TODO: revisit this later
+	// formatted, err := strconv.ParseFloat(fmt.Sprintf("%.2f", rounded), 64)
+	// product.Price =
 
 	return product, err
 }
@@ -230,7 +235,7 @@ func buildProductDeletionHandler(db *sql.DB) http.HandlerFunc {
 }
 
 func updateProductInDatabase(db *sql.DB, up *Product) error {
-	_, err := db.Exec(productUpdateQuery, up.ProductProgenitorID, up.SKU, up.Name, up.UPC, up.Quantity, up.OnSale, up.Price, up.SalePrice, up.ID)
+	_, err := db.Exec(productUpdateQuery, up.SKU, up.Name, up.UPC, up.Quantity, up.OnSale, up.Price, up.SalePrice, up.ID)
 	return err
 }
 
@@ -245,9 +250,10 @@ func buildProductUpdateHandler(db *sql.DB) http.HandlerFunc {
 			respondThatRowDoesNotExist(req, res, "product", "sku", sku)
 			return
 		}
-		existingProduct, _ := retrievePlainProductFromDB(db, sku) // eating the error here because we're already certain the sku exists
+		// eating the error here because we're already certain the sku exists
+		existingProduct, _ := retrievePlainProductFromDB(db, sku)
 
-		newerProduct, err := loadProductInput(req)
+		newerProduct, err := validateProductUpdateInput(req)
 		if err != nil {
 			notifyOfInvalidRequestBody(res, err)
 			return
@@ -264,18 +270,98 @@ func buildProductUpdateHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		updatedProduct, err := retrieveProductFromDB(db, sku)
-		if err != nil {
-			notifyOfInternalIssue(res, err, "retrieve updated product from database")
-			return
-		}
-
-		json.NewEncoder(res).Encode(updatedProduct)
+		json.NewEncoder(res).Encode("Product updated")
 	}
+}
+
+// ProductCreationInput is a struct that represents a product creation body
+type ProductCreationInput struct {
+	Description   string  `json:"description"`
+	Taxable       bool    `json:"taxable"`
+	ProductWeight float32 `json:"product_weight"`
+	ProductHeight float32 `json:"product_height"`
+	ProductWidth  float32 `json:"product_width"`
+	ProductLength float32 `json:"product_length"`
+	PackageWeight float32 `json:"package_weight"`
+	PackageHeight float32 `json:"package_height"`
+	PackageWidth  float32 `json:"package_width"`
+	PackageLength float32 `json:"package_length"`
+	SKU           string  `json:"sku"`
+	Name          string  `json:"name"`
+	UPC           string  `json:"upc"`
+	Quantity      int     `json:"quantity"`
+	OnSale        bool    `json:"on_sale"`
+	Price         float32 `json:"price"`
+	SalePrice     float64 `json:"sale_price"`
+}
+
+func validateProductCreationInput(req *http.Request) (*ProductCreationInput, error) {
+	newProduct := &ProductCreationInput{}
+	decoder := json.NewDecoder(req.Body)
+	defer req.Body.Close()
+	err := decoder.Decode(newProduct)
+
+	p := structs.New(newProduct)
+	// go will happily decode an invalid input into a completely zeroed struct,
+	// so we gotta do checks like this because we're bad at programming.
+	if p.IsZero() {
+		return nil, errors.New("Invalid input provided for product body")
+	}
+
+	// we need to be certain that if a user passed us a SKU, that it isn't set
+	// to something that mux won't disallow them from retrieving later
+	s := p.Field("SKU")
+	if !s.IsZero() && !skuValidator.MatchString(newProduct.SKU) {
+		return nil, errors.New("Invalid input provided for product SKU")
+	}
+
+	return newProduct, err
 }
 
 // createProduct takes a marshalled Product object and creates an entry for it and a base_product in the database
 func createProduct(db *sql.DB, np *Product) error {
 	_, err := db.Exec(productCreationQuery, np.ProductProgenitorID, np.SKU, np.Name, np.UPC, np.Quantity, np.OnSale, np.Price, np.SalePrice)
 	return err
+}
+
+func buildProductCreationHandler(db *sql.DB) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		productInput, err := validateProductCreationInput(req)
+		if err != nil {
+			notifyOfInvalidRequestBody(res, err)
+			return
+		}
+
+		sku := productInput.SKU
+		// can't create a product with a sku that already exists!
+		exists, err := rowExistsInDB(db, "products", "sku", sku)
+		if err != nil || exists {
+			notifyOfInvalidRequestBody(res, fmt.Errorf("product with sku `%s` already exists", sku))
+			return
+		}
+
+		progenitor := newProductProgenitorFromProductCreationInput(productInput)
+		newProgenitor, err := createProductProgenitorInDB(db, progenitor)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "update product in database")
+			return
+		}
+
+		newProduct := &Product{
+			ProductProgenitor: *newProgenitor,
+			SKU:               productInput.SKU,
+			UPC:               NullString{sql.NullString{String: productInput.UPC}},
+			Quantity:          productInput.Quantity,
+			OnSale:            productInput.OnSale,
+			SalePrice:         NullFloat64{sql.NullFloat64{Float64: productInput.SalePrice}},
+		}
+
+		err = createProduct(db, newProduct)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "update product in database")
+			return
+		}
+
+		json.NewEncoder(res).Encode(newProduct)
+	}
 }
