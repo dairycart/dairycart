@@ -4,29 +4,7 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/Masterminds/squirrel"
 	"github.com/lib/pq"
-)
-
-const (
-	productProgenitorExistenceQuery = `SELECT EXISTS(SELECT 1 FROM product_progenitors WHERE id = $1 and archived_at is null);`
-	productProgenitorCreationQuery  = `
-		INSERT INTO product_progenitors (
-			"name",
-			"description",
-			"taxable",
-			"price",
-			"product_weight",
-			"product_height",
-			"product_width",
-			"product_length",
-			"package_weight",
-			"package_height",
-			"package_width",
-			"package_length",
-			"created_at"
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW()) RETURNING id;
-	`
 )
 
 // ProductProgenitor is the parent product for every product
@@ -102,7 +80,8 @@ func createProductProgenitorInDB(db *sql.DB, g *ProductProgenitor) (*ProductProg
 	// using QueryRow instead of Exec because we want it to return the newly created row's ID
 	// Exec normally returns a sql.Result, which has a LastInsertedID() method, but when I tested
 	// this locally, it never worked. ¯\_(ツ)_/¯
-	err := db.QueryRow(productProgenitorCreationQuery,
+	query := buildProgenitorCreationQuery(g)
+	err := db.QueryRow(query,
 		g.Name,
 		g.Description,
 		g.Taxable,
@@ -121,18 +100,12 @@ func createProductProgenitorInDB(db *sql.DB, g *ProductProgenitor) (*ProductProg
 	return g, err
 }
 
-func buildQueryForProgenitorRetrieval(id int64) string {
-	sqlBuilder := sqlBuilder.Select("*").From("product_progenitors").Where(squirrel.Eq{"id": id}).Where(squirrel.Eq{"archived_at": nil})
-	productProgenitorQuery, _, _ := sqlBuilder.ToSql()
-	return productProgenitorQuery
-}
-
 // retrieveProductProgenitorFromDB retrieves a product progenitor with a given ID from the database
 func retrieveProductProgenitorFromDB(db *sql.DB, id int64) (*ProductProgenitor, error) {
 	progenitor := &ProductProgenitor{}
 	scanArgs := progenitor.generateScanArgs()
 
-	productProgenitorQuery := buildQueryForProgenitorRetrieval(id)
+	productProgenitorQuery := buildProgenitorRetrievalQuery(id)
 	err := db.QueryRow(productProgenitorQuery, id).Scan(scanArgs...)
 
 	return progenitor, err

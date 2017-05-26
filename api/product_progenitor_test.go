@@ -9,12 +9,12 @@ import (
 	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
-var exampleProductProgenitor *ProductProgenitor
+var exampleProgenitor *ProductProgenitor
 var productProgenitorHeaders []string
-var exampleProductProgenitorData []driver.Value
+var exampleProgenitorData []driver.Value
 
 func init() {
-	exampleProductProgenitor = &ProductProgenitor{
+	exampleProgenitor = &ProductProgenitor{
 		ID:            2,
 		Name:          "Skateboard",
 		Description:   "This is a skateboard. Please wear a helmet.",
@@ -30,33 +30,33 @@ func init() {
 		CreatedAt:     exampleTime,
 	}
 	productProgenitorHeaders = []string{"id", "name", "description", "taxable", "price", "product_weight", "product_height", "product_width", "product_length", "package_weight", "package_height", "package_width", "package_length", "created_at", "updated_at", "archived_at"}
-	exampleProductProgenitorData = []driver.Value{2, "Skateboard", "This is a skateboard. Please wear a helmet.", false, 99.99, 8, 7, 6, 5, 4, 3, 2, 1, exampleTime, nil, nil}
+	exampleProgenitorData = []driver.Value{2, "Skateboard", "This is a skateboard. Please wear a helmet.", false, 99.99, 8, 7, 6, 5, 4, 3, 2, 1, exampleTime, nil, nil}
 
 }
 
 func setExpectationsForProductProgenitorExistence(mock sqlmock.Sqlmock, id int64, exists bool) {
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
-	mock.ExpectQuery(formatConstantQueryForSQLMock(productProgenitorExistenceQuery)).
-		WithArgs(id).
-		WillReturnRows(exampleRows)
+	query := formatConstantQueryForSQLMock(buildProgenitorRetrievalQuery(1))
+	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows)
 }
 
 func setExpectationsForProductProgenitorCreation(mock sqlmock.Sqlmock) {
-	mock.ExpectQuery(formatConstantQueryForSQLMock(productProgenitorCreationQuery)).
+	query := formatConstantQueryForSQLMock(buildProgenitorCreationQuery(exampleProgenitor))
+	mock.ExpectQuery(query).
 		WithArgs(
-			exampleProductProgenitor.Name,
-			exampleProductProgenitor.Description,
-			exampleProductProgenitor.Taxable,
-			exampleProductProgenitor.Price,
-			exampleProductProgenitor.ProductWeight,
-			exampleProductProgenitor.ProductHeight,
-			exampleProductProgenitor.ProductWidth,
-			exampleProductProgenitor.ProductLength,
-			exampleProductProgenitor.PackageWeight,
-			exampleProductProgenitor.PackageHeight,
-			exampleProductProgenitor.PackageWidth,
-			exampleProductProgenitor.PackageLength,
-		).WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(exampleProductProgenitor.ID))
+			exampleProgenitor.Name,
+			exampleProgenitor.Description,
+			exampleProgenitor.Taxable,
+			exampleProgenitor.Price,
+			exampleProgenitor.ProductWeight,
+			exampleProgenitor.ProductHeight,
+			exampleProgenitor.ProductWidth,
+			exampleProgenitor.ProductLength,
+			exampleProgenitor.PackageWeight,
+			exampleProgenitor.PackageHeight,
+			exampleProgenitor.PackageWidth,
+			exampleProgenitor.PackageLength,
+		).WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(exampleProgenitor.ID))
 }
 
 func TestCreateProductProgenitorInDB(t *testing.T) {
@@ -65,25 +65,19 @@ func TestCreateProductProgenitorInDB(t *testing.T) {
 	defer db.Close()
 	setExpectationsForProductProgenitorCreation(mock)
 
-	newProgenitor, err := createProductProgenitorInDB(db, exampleProductProgenitor)
+	newProgenitor, err := createProductProgenitorInDB(db, exampleProgenitor)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(2), newProgenitor.ID, "createProductProgenitorInDB should return the correct ID for a new progenitor")
 	ensureExpectationsWereMet(t, mock)
 }
 
-func TestBuildQueryForProgenitorRetrieval(t *testing.T) {
-	expected := `SELECT * FROM product_progenitors WHERE id = $1 AND archived_at IS NULL`
-	actual := buildQueryForProgenitorRetrieval(exampleProductProgenitor.ID)
-	assert.Equal(t, expected, actual, "Generated SQL query should match expected SQL query")
-}
-
 func setupExpectationsForProductProgenitorRetrieval(mock sqlmock.Sqlmock) {
 	exampleRows := sqlmock.NewRows(productProgenitorHeaders).
-		AddRow(exampleProductProgenitorData...)
+		AddRow(exampleProgenitorData...)
 
-	productProgenitorQuery := buildQueryForProgenitorRetrieval(exampleProductProgenitor.ID)
+	productProgenitorQuery := buildProgenitorRetrievalQuery(exampleProgenitor.ID)
 	mock.ExpectQuery(formatConstantQueryForSQLMock(productProgenitorQuery)).
-		WithArgs(exampleProductProgenitor.ID).
+		WithArgs(exampleProgenitor.ID).
 		WillReturnRows(exampleRows)
 }
 
@@ -93,7 +87,7 @@ func TestRetrieveProductProgenitorFromDB(t *testing.T) {
 	defer db.Close()
 	setupExpectationsForProductProgenitorRetrieval(mock)
 
-	actual, err := retrieveProductProgenitorFromDB(db, exampleProductProgenitor.ID)
+	actual, err := retrieveProductProgenitorFromDB(db, exampleProgenitor.ID)
 	assert.Nil(t, err)
-	assert.Equal(t, exampleProductProgenitor, actual, "product progenitor retrieved by query should match")
+	assert.Equal(t, exampleProgenitor, actual, "product progenitor retrieved by query should match")
 }
