@@ -15,7 +15,7 @@ func TestRespondThatRowDoesNotExist(t *testing.T) {
 	w := httptest.NewRecorder()
 	respondThatRowDoesNotExist(req, w, "item", "field", "something")
 
-	assert.Equal(t, w.Body.String(), "No item with the field 'something' found\n", "response should indicate the row was not found")
+	assert.Equal(t, w.Body.String(), "No item with the field `something` found\n", "response should indicate the row was not found")
 	assert.Equal(t, w.Code, 404, "status code should be 404")
 }
 
