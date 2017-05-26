@@ -1,0 +1,21 @@
+{
+	"id": 10,
+	"product_progenitor_id": 2,
+	"sku": "skateboard",
+	"name": "Skateboard",
+	"upc": "1234567890",
+	"quantity": 666,
+	"on_sale": false,
+	"price": 12.34,
+	"sale_price": "",
+	"description": "",
+	"taxable": false,
+	"product_weight": 0,
+	"product_height": 0,
+	"product_width": 0,
+	"product_length": 0,
+	"package_weight": 0,
+	"package_height": 0,
+	"package_width": 0,
+	"package_length": 0
+}

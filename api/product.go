@@ -21,7 +21,7 @@ const (
 	skuRetrievalQuery         = `SELECT * FROM products WHERE sku = $1 AND archived_at IS NULL;`
 	skuJoinRetrievalQuery     = `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.sku = $1 AND p.archived_at IS NULL;`
 	allProductsRetrievalQuery = `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.id IS NOT NULL AND p.archived_at IS NULL;`
-	productUpdateQuery        = `UPDATE products SET "sku"=$1, "name"=$2, "upc"=$3, "quantity"=$4, "on_sale"=$5, "price"=$6, "sale_price"=$7, "updated_at"='NOW()' WHERE "id"=$8;`
+	productUpdateQuery        = `UPDATE products SET "sku"=$1, "name"=$2, "upc"=$3, "quantity"=$4, "on_sale"=$5, "price"=$6, "sale_price"=$7, "updated_at"='NOW()' WHERE "id"=$8 RETURNING *`
 	productCreationQuery      = `INSERT INTO products ("product_progenitor_id", "sku", "name", "upc", "quantity", "on_sale", "price", "sale_price") VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *;`
 
 	skuValidationPattern = `^[a-zA-Z\-_]+$`
@@ -85,6 +85,27 @@ func (p *Product) generateJoinScanArgs() []interface{} {
 type ProductsResponse struct {
 	ListResponse
 	Data []Product `json:"data"`
+}
+
+// ProductCreationInput is a struct that represents a product creation body
+type ProductCreationInput struct {
+	Description   string  `json:"description"`
+	Taxable       bool    `json:"taxable"`
+	ProductWeight float32 `json:"product_weight"`
+	ProductHeight float32 `json:"product_height"`
+	ProductWidth  float32 `json:"product_width"`
+	ProductLength float32 `json:"product_length"`
+	PackageWeight float32 `json:"package_weight"`
+	PackageHeight float32 `json:"package_height"`
+	PackageWidth  float32 `json:"package_width"`
+	PackageLength float32 `json:"package_length"`
+	SKU           string  `json:"sku"`
+	Name          string  `json:"name"`
+	UPC           string  `json:"upc"`
+	Quantity      int     `json:"quantity"`
+	OnSale        bool    `json:"on_sale"`
+	Price         float32 `json:"price"`
+	SalePrice     float64 `json:"sale_price"`
 }
 
 func validateProductUpdateInput(req *http.Request) (*Product, error) {
@@ -235,7 +256,7 @@ func buildProductDeletionHandler(db *sql.DB) http.HandlerFunc {
 }
 
 func updateProductInDatabase(db *sql.DB, up *Product) error {
-	_, err := db.Exec(productUpdateQuery, up.SKU, up.Name, up.UPC, up.Quantity, up.OnSale, up.Price, up.SalePrice, up.ID)
+	err := db.QueryRow(productUpdateQuery, up.SKU, up.Name, up.UPC, up.Quantity, up.OnSale, up.Price, up.SalePrice, up.ID).Scan(up.generateScanArgs()...)
 	return err
 }
 
@@ -251,7 +272,7 @@ func buildProductUpdateHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 		// eating the error here because we're already certain the sku exists
-		existingProduct, _ := retrievePlainProductFromDB(db, sku)
+		existingProduct, _ := retrieveProductFromDB(db, sku)
 
 		newerProduct, err := validateProductUpdateInput(req)
 		if err != nil {
@@ -270,29 +291,8 @@ func buildProductUpdateHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		json.NewEncoder(res).Encode("Product updated")
+		json.NewEncoder(res).Encode(newerProduct)
 	}
-}
-
-// ProductCreationInput is a struct that represents a product creation body
-type ProductCreationInput struct {
-	Description   string  `json:"description"`
-	Taxable       bool    `json:"taxable"`
-	ProductWeight float32 `json:"product_weight"`
-	ProductHeight float32 `json:"product_height"`
-	ProductWidth  float32 `json:"product_width"`
-	ProductLength float32 `json:"product_length"`
-	PackageWeight float32 `json:"package_weight"`
-	PackageHeight float32 `json:"package_height"`
-	PackageWidth  float32 `json:"package_width"`
-	PackageLength float32 `json:"package_length"`
-	SKU           string  `json:"sku"`
-	Name          string  `json:"name"`
-	UPC           string  `json:"upc"`
-	Quantity      int     `json:"quantity"`
-	OnSale        bool    `json:"on_sale"`
-	Price         float32 `json:"price"`
-	SalePrice     float64 `json:"sale_price"`
 }
 
 func validateProductCreationInput(req *http.Request) (*ProductCreationInput, error) {

@@ -106,10 +106,12 @@ func TestProductUpdateRoute(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 200, resp.StatusCode, "successfully updating a product should respond 200")
 
-	actual, err := turnResponseBodyIntoString(resp)
+	body, err := turnResponseBodyIntoString(resp)
 	assert.Nil(t, err)
 
-	expected := `"Product updated"`
+	actual := replaceTimeStringsForTests(body)
+	minified := minifyExampleJSON(t, readTestFile(t, "skateboard"))
+	expected := strings.Replace(minified, `"quantity":123`, `"quantity":666`, 1)
 	assert.Equal(t, expected, actual, "product response should reflect the updated fields")
 }
 
