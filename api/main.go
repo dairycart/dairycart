@@ -8,13 +8,13 @@ import (
 )
 
 const (
-	skuRegexValidation = `[a-zA-Z\\-_]+`
+	skuValidation = `[a-zA-Z\\-_]+`
 )
 
 // SetupAPIRoutes takes a mux router and a database connection and creates all the API routes for the API
 func SetupAPIRoutes(router *mux.Router, db *sql.DB) {
 	// Products
-	productEndpoint := fmt.Sprintf("/product/{sku:%s}", skuRegexValidation)
+	productEndpoint := fmt.Sprintf("/product/{sku:%s}", skuValidation)
 
 	router.HandleFunc("/products", buildProductListHandler(db)).Methods("GET")
 	router.HandleFunc(productEndpoint, buildSingleProductHandler(db)).Methods("GET")

@@ -106,7 +106,7 @@ func respondThatRowDoesNotExist(req *http.Request, res http.ResponseWriter, item
 
 func notifyOfInvalidRequestBody(res http.ResponseWriter, err error) {
 	log.Printf("Encountered this error decoding a request body: %v", err)
-	http.Error(res, "Invalid request body", http.StatusBadRequest)
+	http.Error(res, err.Error(), http.StatusBadRequest)
 }
 
 func notifyOfInternalIssue(res http.ResponseWriter, err error, attemptedTask string) {

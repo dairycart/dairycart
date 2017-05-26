@@ -23,7 +23,7 @@ func TestNotifyOfInvalidRequestBody(t *testing.T) {
 	w := httptest.NewRecorder()
 	notifyOfInvalidRequestBody(w, errors.New("test"))
 
-	assert.Equal(t, w.Body.String(), "Invalid request body\n", "response should indicate the request body was invalid")
+	assert.Equal(t, w.Body.String(), "test\n", "response should indicate the request body was invalid")
 	assert.Equal(t, w.Code, 400, "status code should be 404")
 }
 

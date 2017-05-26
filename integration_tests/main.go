@@ -9,10 +9,16 @@ import (
 	"time"
 )
 
+var client *http.Client
+
 const (
 	maxAttempts = 10
 	baseURL     = `http://dairycart`
 )
+
+func init() {
+	client = &http.Client{}
+}
 
 func buildURL(parts ...string) string {
 	return fmt.Sprintf("%s/%s", baseURL, strings.Join(parts, "/"))
@@ -54,13 +60,21 @@ func retrieveListOfProducts() (*http.Response, error) {
 }
 
 func updateProduct(sku string, JSONBody string) (*http.Response, error) {
-	client := &http.Client{}
 	body := strings.NewReader(JSONBody)
 	url := buildURL("product", sku)
-	req, err := http.NewRequest("PUT", url, body)
+	req, err := http.NewRequest(http.MethodPut, url, body)
 	if err != nil {
 		log.Fatalf("failed to build request: %v", err)
 	}
 
+	return client.Do(req)
+}
+
+func deleteProduct(sku string) (*http.Response, error) {
+	url := buildURL("product", sku)
+	req, err := http.NewRequest(http.MethodDelete, url, nil)
+	if err != nil {
+		log.Fatalf("failed to build request: %v", err)
+	}
 	return client.Do(req)
 }

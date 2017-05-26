@@ -94,8 +94,15 @@ func TestProductUpdateRoute(t *testing.T) {
 	assert.Equal(t, expected, actual, "product response should reflect the updated fields")
 }
 
-func TestProductUpdateRouteWithInvalidInput(t *testing.T) {
+func TestProductUpdateRouteWithCompletelyInvalidInput(t *testing.T) {
 	JSONBody := `{"testing": true}`
+	resp, err := updateProduct("skateboard", JSONBody)
+	assert.Nil(t, err)
+	assert.Equal(t, 400, resp.StatusCode, "trying to update a product with invalid input should respond 400")
+}
+
+func TestProductUpdateRouteWithInvalidSKU(t *testing.T) {
+	JSONBody := `{"sku": "thí% $kü ïs not åny gõôd"}`
 	resp, err := updateProduct("skateboard", JSONBody)
 	assert.Nil(t, err)
 	assert.Equal(t, 400, resp.StatusCode, "trying to update a product with invalid input should respond 400")
@@ -106,4 +113,17 @@ func TestProductUpdateRouteForNonexistentProduct(t *testing.T) {
 	resp, err := updateProduct("nonexistent", JSONBody)
 	assert.Nil(t, err)
 	assert.Equal(t, 404, resp.StatusCode, "requesting a product that doesn't exist should respond 404")
+}
+
+// // uncomment after implementing (and testing) product creation
+// func TestProductDeletionRouteForNewlyCreatedProduct(t *testing.T) {
+// 	resp, err := deleteProduct("new_product")
+// 	assert.Nil(t, err)
+// 	assert.Equal(t, 200, resp.StatusCode, "trying to delete a product that exists should respond 200")
+// }
+
+func TestProductDeletionRouteForNonexistentProduct(t *testing.T) {
+	resp, err := deleteProduct("nonexistent")
+	assert.Nil(t, err)
+	assert.Equal(t, 404, resp.StatusCode, "trying to delete a product that doesn't exist should respond 404")
 }

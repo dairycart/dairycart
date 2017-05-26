@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/fatih/structs"
@@ -21,7 +22,15 @@ const (
 	allProductsRetrievalQuery = `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.id IS NOT NULL AND p.archived_at IS NULL;`
 	productUpdateQuery        = `UPDATE products SET "product_progenitor_id"=$1, "sku"=$2, "name"=$3, "upc"=$4, "quantity"=$5, "on_sale"=$6, "price"=$7, "sale_price"=$8, "updated_at"='NOW()' WHERE "id"=$9;`
 	productCreationQuery      = `INSERT INTO products ("product_progenitor_id", "sku", "name", "upc", "quantity", "on_sale", "price", "sale_price") VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`
+
+	skuValidationPattern = `^[a-zA-Z\\-_]+$`
 )
+
+var skuValidator *regexp.Regexp
+
+func init() {
+	skuValidator = regexp.MustCompile(skuValidationPattern)
+}
 
 // Product describes something a user can buy
 type Product struct {
@@ -83,8 +92,18 @@ func loadProductInput(req *http.Request) (*Product, error) {
 	defer req.Body.Close()
 	err := decoder.Decode(product)
 
-	if structs.IsZero(product) {
+	p := structs.New(product)
+	// go will happily decode an invalid input into a completely zeroed struct,
+	// so we gotta do checks like this because we're bad at programming.
+	if p.IsZero() {
 		return nil, errors.New("Invalid input provided for product body")
+	}
+
+	// we need to be certain that if a user passed us a SKU, that it isn't set
+	// to something that mux won't disallow them from retrieving later
+	s := p.Field("SKU")
+	if !s.IsZero() && !skuValidator.MatchString(product.SKU) {
+		return nil, errors.New("Invalid input provided for product SKU")
 	}
 
 	return product, err
