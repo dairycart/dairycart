@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/gorilla/mux"
 )
 
@@ -11,6 +12,12 @@ const (
 	// SKUPattern represents the valid characters a sku can contain
 	SKUPattern = `[a-zA-Z\-_]+`
 )
+
+var sqlBuilder squirrel.StatementBuilderType
+
+func init() {
+	sqlBuilder = squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+}
 
 // SetupAPIRoutes takes a mux router and a database connection and creates all the API routes for the API
 func SetupAPIRoutes(router *mux.Router, db *sql.DB) {

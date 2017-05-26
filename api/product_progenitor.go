@@ -4,12 +4,12 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/lib/pq"
 )
 
 const (
 	productProgenitorExistenceQuery = `SELECT EXISTS(SELECT 1 FROM product_progenitors WHERE id = $1 and archived_at is null);`
-	productProgenitorQuery          = `SELECT * FROM product_progenitors WHERE id = $1 and archived_at is null;`
 	productProgenitorCreationQuery  = `
 		INSERT INTO product_progenitors (
 			"name",
@@ -121,11 +121,18 @@ func createProductProgenitorInDB(db *sql.DB, g *ProductProgenitor) (*ProductProg
 	return g, err
 }
 
+func buildQueryForProgenitorRetrieval(id int64) string {
+	sqlBuilder := sqlBuilder.Select("*").From("product_progenitors").Where(squirrel.Eq{"id": id}).Where(squirrel.Eq{"archived_at": nil})
+	productProgenitorQuery, _, _ := sqlBuilder.ToSql()
+	return productProgenitorQuery
+}
+
 // retrieveProductProgenitorFromDB retrieves a product progenitor with a given ID from the database
 func retrieveProductProgenitorFromDB(db *sql.DB, id int64) (*ProductProgenitor, error) {
 	progenitor := &ProductProgenitor{}
 	scanArgs := progenitor.generateScanArgs()
 
+	productProgenitorQuery := buildQueryForProgenitorRetrieval(id)
 	err := db.QueryRow(productProgenitorQuery, id).Scan(scanArgs...)
 
 	return progenitor, err

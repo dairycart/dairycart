@@ -71,10 +71,17 @@ func TestCreateProductProgenitorInDB(t *testing.T) {
 	ensureExpectationsWereMet(t, mock)
 }
 
+func TestBuildQueryForProgenitorRetrieval(t *testing.T) {
+	expected := `SELECT * FROM product_progenitors WHERE id = $1 AND archived_at IS NULL`
+	actual := buildQueryForProgenitorRetrieval(exampleProductProgenitor.ID)
+	assert.Equal(t, expected, actual, "Generated SQL query should match expected SQL query")
+}
+
 func setupExpectationsForProductProgenitorRetrieval(mock sqlmock.Sqlmock) {
 	exampleRows := sqlmock.NewRows(productProgenitorHeaders).
 		AddRow(exampleProductProgenitorData...)
 
+	productProgenitorQuery := buildQueryForProgenitorRetrieval(exampleProductProgenitor.ID)
 	mock.ExpectQuery(formatConstantQueryForSQLMock(productProgenitorQuery)).
 		WithArgs(exampleProductProgenitor.ID).
 		WillReturnRows(exampleRows)

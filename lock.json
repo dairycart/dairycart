@@ -1,6 +1,14 @@
 {
-    "memo": "92ddaebd19b9787788c27b28c1d1e150e96f83b6a91259dce9be4cb4feba7ea4",
+    "memo": "f790a76f3a0c88dc2473ea57c66506398d49af854500cfc38372e7317215210b",
     "projects": [
+        {
+            "name": "github.com/Masterminds/squirrel",
+            "branch": "v1",
+            "revision": "20f192218cf52a73397fa2df45bdda720f3e47c8",
+            "packages": [
+                "."
+            ]
+        },
         {
             "name": "github.com/davecgh/go-spew",
             "version": "v1.1.0",
@@ -37,6 +45,22 @@
             "name": "github.com/imdario/mergo",
             "version": "0.2.2",
             "revision": "3e95a51e0639b4cf372f2ccf74c86749d747fbdc",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/lann/builder",
+            "branch": "master",
+            "revision": "f22ce00fd9394014049dad11c244859432bd6820",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/lann/ps",
+            "branch": "master",
+            "revision": "62de8c46ede02a7675c4c79c84883eb164cb71e3",
             "packages": [
                 "."
             ]
@@ -107,7 +131,8 @@
             "version": "v2.1.0",
             "revision": "bf4ffcc476fdee34561726f5b5523dc0f87a707a",
             "packages": [
-                "."
+                ".",
+                "json"
             ]
         },
         {
@@ -115,7 +140,8 @@
             "version": "v2.1.0",
             "revision": "70d04d8c1ad44f8f9e435a056f276910cb1f29bf",
             "packages": [
-                "."
+                ".",
+                "json"
             ]
         },
         {
