@@ -134,22 +134,19 @@ func TestProductUpdateRouteForNonexistentProduct(t *testing.T) {
 	assert.Equal(t, 404, resp.StatusCode, "requesting a product that doesn't exist should respond 404")
 }
 
-// // FIXME: broken as shit
-// func TestProductCreation(t *testing.T) {
-// 	resp, err := createProduct(newProductJSON)
-// 	assert.Nil(t, err)
+func TestProductCreation(t *testing.T) {
+	newProductJSON := readTestFile(t, "example_new_product")
+	resp, err := createProduct(newProductJSON)
+	assert.Nil(t, err)
+	assert.Equal(t, 200, resp.StatusCode, "creating a product that doesn't exist should respond 200")
 
-// 	body, err := turnResponseBodyIntoString(resp)
-// 	assert.Nil(t, err)
+	respBody, err := turnResponseBodyIntoString(resp)
+	assert.Nil(t, err)
+	actual := replaceTimeStringsForTests(respBody)
 
-// 	log.Printf(`
-
-// 		received body:
-// 		 	%v
-// 	`, body)
-
-// 	assert.Equal(t, 200, resp.StatusCode, "creating a product that doesn't exist should respond 200")
-// }
+	expected := minifyExampleJSON(t, readTestFile(t, "created_product_response"))
+	assert.Equal(t, expected, actual, "product creation route should respond with created product body")
+}
 
 func TestProductCreationWithAlreadyExistentSKU(t *testing.T) {
 	newProductJSON := readTestFile(t, "example_new_product")

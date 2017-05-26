@@ -38,7 +38,7 @@ type ProductProgenitor struct {
 
 	// // Housekeeping
 	CreatedAt  time.Time   `json:"created_at"`
-	UpdatedAt  pq.NullTime `json:"updated_at"`
+	UpdatedAt  pq.NullTime `json:"-"`
 	ArchivedAt pq.NullTime `json:"-"`
 }
 

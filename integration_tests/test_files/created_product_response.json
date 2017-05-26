@@ -1,0 +1,21 @@
+{
+	"id": 11,
+	"product_progenitor_id": 3,
+	"sku": "new-product",
+	"name": "",
+	"upc": "",
+	"quantity": 123,
+	"on_sale": false,
+	"price": 0,
+	"sale_price": "",
+	"description": "This is a new product.",
+	"taxable": true,
+	"product_weight": 9,
+	"product_height": 9,
+	"product_width": 9,
+	"product_length": 9,
+	"package_weight": 9,
+	"package_height": 9,
+	"package_width": 9,
+	"package_length": 9
+}

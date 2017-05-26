@@ -22,7 +22,7 @@ const (
 	skuJoinRetrievalQuery     = `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.sku = $1 AND p.archived_at IS NULL;`
 	allProductsRetrievalQuery = `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.id IS NOT NULL AND p.archived_at IS NULL;`
 	productUpdateQuery        = `UPDATE products SET "sku"=$1, "name"=$2, "upc"=$3, "quantity"=$4, "on_sale"=$5, "price"=$6, "sale_price"=$7, "updated_at"='NOW()' WHERE "id"=$8;`
-	productCreationQuery      = `INSERT INTO products ("product_progenitor_id", "sku", "name", "upc", "quantity", "on_sale", "price", "sale_price") VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`
+	productCreationQuery      = `INSERT INTO products ("product_progenitor_id", "sku", "name", "upc", "quantity", "on_sale", "price", "sale_price") VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *;`
 
 	skuValidationPattern = `^[a-zA-Z\-_]+$`
 )
@@ -50,7 +50,7 @@ type Product struct {
 
 	// // Housekeeping
 	CreatedAt  time.Time   `json:"created_at"`
-	UpdatedAt  pq.NullTime `json:"updated_at"`
+	UpdatedAt  pq.NullTime `json:"-"`
 	ArchivedAt pq.NullTime `json:"-"`
 
 	ProductProgenitor
@@ -320,7 +320,7 @@ func validateProductCreationInput(req *http.Request) (*ProductCreationInput, err
 
 // createProduct takes a marshalled Product object and creates an entry for it and a base_product in the database
 func createProduct(db *sql.DB, np *Product) error {
-	_, err := db.Exec(productCreationQuery, np.ProductProgenitorID, np.SKU, np.Name, np.UPC, np.Quantity, np.OnSale, np.Price, np.SalePrice)
+	err := db.QueryRow(productCreationQuery, np.ProductProgenitorID, np.SKU, np.Name, np.UPC, np.Quantity, np.OnSale, np.Price, np.SalePrice).Scan(np.generateScanArgs()...)
 	return err
 }
 
@@ -343,22 +343,23 @@ func buildProductCreationHandler(db *sql.DB) http.HandlerFunc {
 		progenitor := newProductProgenitorFromProductCreationInput(productInput)
 		newProgenitor, err := createProductProgenitorInDB(db, progenitor)
 		if err != nil {
-			notifyOfInternalIssue(res, err, "update product in database")
+			notifyOfInternalIssue(res, err, "insert product progenitor in database")
 			return
 		}
 
 		newProduct := &Product{
-			ProductProgenitor: *newProgenitor,
-			SKU:               productInput.SKU,
-			UPC:               NullString{sql.NullString{String: productInput.UPC}},
-			Quantity:          productInput.Quantity,
-			OnSale:            productInput.OnSale,
-			SalePrice:         NullFloat64{sql.NullFloat64{Float64: productInput.SalePrice}},
+			ProductProgenitor:   *newProgenitor,
+			ProductProgenitorID: newProgenitor.ID,
+			SKU:                 productInput.SKU,
+			UPC:                 NullString{sql.NullString{String: productInput.UPC}},
+			Quantity:            productInput.Quantity,
+			OnSale:              productInput.OnSale,
+			SalePrice:           NullFloat64{sql.NullFloat64{Float64: productInput.SalePrice}},
 		}
 
 		err = createProduct(db, newProduct)
 		if err != nil {
-			notifyOfInternalIssue(res, err, "update product in database")
+			notifyOfInternalIssue(res, err, "insert product in database")
 			return
 		}
 
