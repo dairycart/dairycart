@@ -9,7 +9,7 @@ import (
 
 const (
 	// SKUPattern represents the valid characters a sku can contain
-	SKUPattern = `[a-zA-Z\\-_]+`
+	SKUPattern = `[a-zA-Z\-_]+`
 )
 
 // SetupAPIRoutes takes a mux router and a database connection and creates all the API routes for the API

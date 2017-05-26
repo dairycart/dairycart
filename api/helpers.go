@@ -101,7 +101,7 @@ func rowExistsInDB(db *sql.DB, table, identifier, id string) (bool, error) {
 
 func respondThatRowDoesNotExist(req *http.Request, res http.ResponseWriter, itemType, identifierType, identifier string) {
 	log.Printf("informing user that the %s they were looking for (%s %s) does not exist", itemType, identifierType, identifier)
-	http.Error(res, fmt.Sprintf("No %s with the %s '%s' found", itemType, identifierType, identifier), http.StatusNotFound)
+	http.Error(res, fmt.Sprintf("No %s with the %s `%s` found", itemType, identifierType, identifier), http.StatusNotFound)
 }
 
 func notifyOfInvalidRequestBody(res http.ResponseWriter, err error) {

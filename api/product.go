@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"regexp"
 	"time"
@@ -251,7 +252,7 @@ func buildProductDeletionHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		err = deleteProductBySKU(db, sku)
-		json.NewEncoder(res).Encode("OK")
+		io.WriteString(res, fmt.Sprintf("Successfully deleted product `%s`", sku))
 	}
 }
 

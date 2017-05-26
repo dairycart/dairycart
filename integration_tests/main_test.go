@@ -98,6 +98,13 @@ func TestProductListRoute(t *testing.T) {
 	resp, err := retrieveListOfProducts()
 	assert.Nil(t, err)
 	assert.Equal(t, 200, resp.StatusCode, "requesting a list of products should respond 200")
+
+	respBody, err := turnResponseBodyIntoString(resp)
+	assert.Nil(t, err)
+	actual := replaceTimeStringsForTests(respBody)
+
+	expected := minifyExampleJSON(t, readTestFile(t, "product_list_response"))
+	assert.Equal(t, expected, actual, "product list route should respond with a list of products")
 }
 
 func TestProductUpdateRoute(t *testing.T) {
@@ -134,6 +141,10 @@ func TestProductUpdateRouteForNonexistentProduct(t *testing.T) {
 	resp, err := updateProduct("nonexistent", JSONBody)
 	assert.Nil(t, err)
 	assert.Equal(t, 404, resp.StatusCode, "requesting a product that doesn't exist should respond 404")
+
+	actual, err := turnResponseBodyIntoString(resp)
+	expected := "No product with the sku `nonexistent` found"
+	assert.Equal(t, expected, actual, "product creation route should respond with created product body")
 }
 
 func TestProductCreation(t *testing.T) {
@@ -155,18 +166,29 @@ func TestProductCreationWithAlreadyExistentSKU(t *testing.T) {
 	bodyToUse := strings.Replace(newProductJSON, `"sku": "new-product"`, `"sku": "skateboard"`, 1)
 	resp, err := createProduct(bodyToUse)
 	assert.Nil(t, err)
-	assert.Equal(t, 400, resp.StatusCode, "creating a product that already exist should respond 400")
+	assert.Equal(t, 400, resp.StatusCode, "creating a product that already exists should respond 400")
+
+	actual, err := turnResponseBodyIntoString(resp)
+	expected := "product with sku `skateboard` already exists"
+	assert.Equal(t, expected, actual, "product creation route should respond with created product body")
 }
 
-// // uncomment after implementing (and testing) product creation
-// func TestProductDeletionRouteForNewlyCreatedProduct(t *testing.T) {
-// 	resp, err := deleteProduct("new_product")
-// 	assert.Nil(t, err)
-// 	assert.Equal(t, 200, resp.StatusCode, "trying to delete a product that exists should respond 200")
-// }
+func TestProductDeletionRouteForNewlyCreatedProduct(t *testing.T) {
+	resp, err := deleteProduct("new-product")
+	assert.Nil(t, err)
+	assert.Equal(t, 200, resp.StatusCode, "trying to delete a product that exists should respond 200")
+
+	actual, err := turnResponseBodyIntoString(resp)
+	expected := "Successfully deleted product `new-product`"
+	assert.Equal(t, expected, actual, "product creation route should respond with created product body")
+}
 
 func TestProductDeletionRouteForNonexistentProduct(t *testing.T) {
 	resp, err := deleteProduct("nonexistent")
 	assert.Nil(t, err)
 	assert.Equal(t, 404, resp.StatusCode, "trying to delete a product that doesn't exist should respond 404")
+
+	actual, err := turnResponseBodyIntoString(resp)
+	expected := "No product with the sku `nonexistent` found"
+	assert.Equal(t, expected, actual, "product creation route should respond with created product body")
 }
