@@ -13,11 +13,11 @@ services:
       - database
     environment:
       DAIRYCART_MIGRATIONS_DIR: "file:///migrations"
-      DAIRYCART_DB_URL: postgres://dairycart:password@database:5432/dairycart?sslmode=disable
+      DAIRYCART_DB_URL: postgres://dairycart:hunter2@database:5432/dairycart?sslmode=disable
   database:
     image: postgres:alpine
     ports:
     - '2345:5432'
     environment:
       POSTGRES_USER: dairycart
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: hunter2

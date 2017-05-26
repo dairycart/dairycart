@@ -9,11 +9,38 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/tdewolff/minify"
+	jsonMinify "github.com/tdewolff/minify/json"
 )
+
+var jsonMinifier *minify.M
 
 const (
 	// we can't reliably predict what the `updated_at` or `archived_at` columns could possibly equal, so we strip them out of the body becuase we're bad at programming.
 	timeFieldReplacementPatterns = `,"(created_at|updated_at|archived_at)":({"Time":)?"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z"(,"Valid":(true|false))?(})?`
+	skateboardProductJSON        = `
+		{
+			"description": "This is a skateboard. Please wear a helmet.",
+			"taxable": false,
+			"product_weight": 8,
+			"product_height": 7,
+			"product_width": 6,
+			"product_length": 5,
+			"package_weight": 4,
+			"package_height": 3,
+			"package_width": 2,
+			"package_length": 1,
+			"id": 10,
+			"product_progenitor_id": 2,
+			"sku": "skateboard",
+			"name": "Skateboard",
+			"upc": "1234567890",
+			"quantity": 123,
+			"on_sale": false,
+			"price": 12.34,
+			"sale_price": ""
+		}
+	`
 )
 
 func init() {
@@ -21,6 +48,8 @@ func init() {
 	if err != nil {
 		log.Fatalf("dairycart isn't up: %v", err)
 	}
+	jsonMinifier = minify.New()
+	jsonMinifier.AddFunc("application/json", jsonMinify.Minify)
 }
 
 func replaceTimeStringsForTests(body string) string {
@@ -70,7 +99,8 @@ func TestProductRetrievalRoute(t *testing.T) {
 	assert.Nil(t, err)
 
 	actual := replaceTimeStringsForTests(body)
-	expected := `{"description":"This is a skateboard. Please wear a helmet.","taxable":false,"product_weight":8,"product_height":7,"product_width":6,"product_length":5,"package_weight":4,"package_height":3,"package_width":2,"package_length":1,"id":10,"product_progenitor_id":2,"sku":"skateboard","name":"Skateboard","upc":"1234567890","quantity":123,"on_sale":false,"price":12.34,"sale_price":""}`
+	expected, err := jsonMinifier.String("application/json", skateboardProductJSON)
+	assert.Nil(t, err)
 	assert.Equal(t, expected, actual, "product response should contain a complete product")
 }
 

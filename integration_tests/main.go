@@ -13,7 +13,7 @@ var client *http.Client
 
 const (
 	maxAttempts = 10
-	baseURL     = `http://dairycart`
+	baseURL     = `http://dairycart/v1`
 )
 
 func init() {

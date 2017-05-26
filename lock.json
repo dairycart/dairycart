@@ -1,5 +1,5 @@
 {
-    "memo": "00841d0192356fa80905c2bfd37e508c5c58a1b72060d23e1a8c0f6bb5454f37",
+    "memo": "92ddaebd19b9787788c27b28c1d1e150e96f83b6a91259dce9be4cb4feba7ea4",
     "projects": [
         {
             "name": "github.com/davecgh/go-spew",
@@ -92,6 +92,38 @@
             "revision": "69483b4bd14f5845b5a1e55bca19e954e827f1d0",
             "packages": [
                 "assert"
+            ]
+        },
+        {
+            "name": "github.com/tdewolff/buffer",
+            "version": "v1.0.0",
+            "revision": "43cef5ba7b6ce99cc410632dad46cf1c6c97026e",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/tdewolff/minify",
+            "version": "v2.1.0",
+            "revision": "bf4ffcc476fdee34561726f5b5523dc0f87a707a",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/tdewolff/parse",
+            "version": "v2.1.0",
+            "revision": "70d04d8c1ad44f8f9e435a056f276910cb1f29bf",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/tdewolff/strconv",
+            "branch": "master",
+            "revision": "3e8091f4417ebaaa3910da63a45ea394ebbfb0e3",
+            "packages": [
+                "."
             ]
         },
         {
