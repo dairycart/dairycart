@@ -22,8 +22,30 @@ const (
 	skuRetrievalQuery         = `SELECT * FROM products WHERE sku = $1 AND archived_at IS NULL;`
 	skuJoinRetrievalQuery     = `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.sku = $1 AND p.archived_at IS NULL;`
 	allProductsRetrievalQuery = `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.id IS NOT NULL AND p.archived_at IS NULL;`
-	productUpdateQuery        = `UPDATE products SET "sku"=$1, "name"=$2, "upc"=$3, "quantity"=$4, "on_sale"=$5, "price"=$6, "sale_price"=$7, "updated_at"='NOW()' WHERE "id"=$8 RETURNING *`
-	productCreationQuery      = `INSERT INTO products ("product_progenitor_id", "sku", "name", "upc", "quantity", "on_sale", "price", "sale_price") VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *;`
+	productUpdateQuery        = `
+		UPDATE products SET
+			"sku"=$1,
+			"name"=$2,
+			"upc"=$3,
+			"quantity"=$4,
+			"on_sale"=$5,
+			"price"=$6,
+			"sale_price"=$7,
+			"updated_at"='NOW()'
+		WHERE "id"=$8 RETURNING *
+	`
+	productCreationQuery = `
+		INSERT INTO products (
+			"product_progenitor_id",
+			"sku",
+			"name",
+			"upc",
+			"quantity",
+			"on_sale",
+			"price",
+			"sale_price"
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *;
+	`
 
 	skuValidationPattern = `^[a-zA-Z\-_]+$`
 )
@@ -144,7 +166,7 @@ func buildProductExistenceHandler(db *sql.DB) http.HandlerFunc {
 
 		productExists, err := rowExistsInDB(db, "products", "sku", sku)
 		if err != nil {
-			respondThatRowDoesNotExist(req, res, "product", "sku", sku)
+			respondThatRowDoesNotExist(req, res, "product", sku)
 			return
 		}
 
@@ -189,7 +211,7 @@ func buildSingleProductHandler(db *sql.DB) http.HandlerFunc {
 
 		product, err := retrieveProductFromDB(db, sku)
 		if err != nil {
-			respondThatRowDoesNotExist(req, res, "product", "sku", sku)
+			respondThatRowDoesNotExist(req, res, "product", sku)
 			return
 		}
 
@@ -247,7 +269,7 @@ func buildProductDeletionHandler(db *sql.DB) http.HandlerFunc {
 		// can't delete a product that doesn't exist!
 		exists, err := rowExistsInDB(db, "products", "sku", sku)
 		if err != nil || !exists {
-			respondThatRowDoesNotExist(req, res, "product", "sku", sku)
+			respondThatRowDoesNotExist(req, res, "product", sku)
 			return
 		}
 
@@ -269,7 +291,7 @@ func buildProductUpdateHandler(db *sql.DB) http.HandlerFunc {
 		// can't update a product that doesn't exist!
 		exists, err := rowExistsInDB(db, "products", "sku", sku)
 		if err != nil || !exists {
-			respondThatRowDoesNotExist(req, res, "product", "sku", sku)
+			respondThatRowDoesNotExist(req, res, "product", sku)
 			return
 		}
 		// eating the error here because we're already certain the sku exists

@@ -23,7 +23,7 @@ const (
 
 	existentSKU            = "skateboard"
 	nonexistentSKU         = "nonexistent"
-	expected404SKUResponse = "No product with the sku `nonexistent` found"
+	expected404SKUResponse = "The product you were looking for (sku `nonexistent`) does not exist"
 )
 
 func init() {

@@ -17,7 +17,7 @@ import (
 
 const (
 	productAttributeValueRetrievalQuery = `SELECT * FROM product_attribute_values WHERE id = $1 AND archived_at IS NULL`
-	productAttributeValueCreationQuery  = `INSERT INTO product_attribute_values ("product_attribute_id", "value") VALUES ($1, $2);`
+	productAttributeValueCreationQuery  = `INSERT INTO product_attribute_values ("product_attribute_id", "value") VALUES ($1, $2) RETURNING *;`
 )
 
 // ProductAttributeValue represents a products variant attribute values. If you have a t-shirt that comes in three colors
@@ -82,7 +82,7 @@ func buildProductAttributeValueCreationHandler(db *sql.DB) http.HandlerFunc {
 
 		productAttribueExists, err := rowExistsInDB(db, "product_attributes", "id", attributeID)
 		if err != nil || !productAttribueExists {
-			respondThatRowDoesNotExist(req, res, "product attribute", "ID", attributeID)
+			respondThatRowDoesNotExist(req, res, "product_attribute", attributeID)
 			return
 		}
 

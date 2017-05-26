@@ -99,9 +99,21 @@ func rowExistsInDB(db *sql.DB, table, identifier, id string) (bool, error) {
 	return exists == "true", err
 }
 
-func respondThatRowDoesNotExist(req *http.Request, res http.ResponseWriter, itemType, identifierType, identifier string) {
-	log.Printf("informing user that the %s they were looking for (%s %s) does not exist", itemType, identifierType, identifier)
-	http.Error(res, fmt.Sprintf("No %s with the %s `%s` found", itemType, identifierType, identifier), http.StatusNotFound)
+func respondThatRowDoesNotExist(req *http.Request, res http.ResponseWriter, itemType, id string) {
+	itemTypeToIdentifierMap := map[string]string{
+		"product_attribute":  "id",
+		"product_progenitor": "id",
+		"product":            "sku",
+	}
+
+	// in case we forget one, default to ID
+	identifier := itemTypeToIdentifierMap[itemType]
+	if _, ok := itemTypeToIdentifierMap[itemType]; !ok {
+		identifier = "identified by"
+	}
+
+	log.Printf("informing user that the %s they were looking for (%s %s) does not exist", itemType, identifier, id)
+	http.Error(res, fmt.Sprintf("The %s you were looking for (%s `%s`) does not exist", itemType, identifier, id), http.StatusNotFound)
 }
 
 func notifyOfInvalidRequestBody(res http.ResponseWriter, err error) {

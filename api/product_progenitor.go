@@ -10,7 +10,23 @@ import (
 const (
 	productProgenitorExistenceQuery = `SELECT EXISTS(SELECT 1 FROM product_progenitors WHERE id = $1 and archived_at is null);`
 	productProgenitorQuery          = `SELECT * FROM product_progenitors WHERE id = $1 and archived_at is null;`
-	productProgenitorCreationQuery  = `INSERT INTO product_progenitors ("name", "description", "taxable", "price", "product_weight", "product_height", "product_width", "product_length", "package_weight", "package_height", "package_width", "package_length", "created_at") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW()) RETURNING id;`
+	productProgenitorCreationQuery  = `
+		INSERT INTO product_progenitors (
+			"name",
+			"description",
+			"taxable",
+			"price",
+			"product_weight",
+			"product_height",
+			"product_width",
+			"product_length",
+			"package_weight",
+			"package_height",
+			"package_width",
+			"package_length",
+			"created_at"
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW()) RETURNING id;
+	`
 )
 
 // ProductProgenitor is the parent product for every product

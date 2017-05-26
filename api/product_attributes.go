@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	productAttributeCreationQuery = `INSERT INTO product_attributes ("name", "product_progenitor_id") VALUES ($1, $2);`
+	productAttributeCreationQuery = `INSERT INTO product_attributes ("name", "product_progenitor_id") VALUES ($1, $2) RETURNING *;`
 )
 
 // ProductAttribute represents a products variant attributes. If you have a t-shirt that comes in three colors
