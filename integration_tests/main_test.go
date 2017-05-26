@@ -62,6 +62,12 @@ func turnResponseBodyIntoString(res *http.Response) (string, error) {
 	return string(bodyBytes), err
 }
 
+func minifyExampleJSON(t *testing.T, json string) string {
+	minified, err := jsonMinifier.String("application/json", json)
+	assert.Nil(t, err)
+	return minified
+}
+
 func TestProductExistenceRouteForExistingProduct(t *testing.T) {
 	resp, err := checkProductExistence("skateboard")
 	assert.Nil(t, err)
@@ -99,8 +105,7 @@ func TestProductRetrievalRoute(t *testing.T) {
 	assert.Nil(t, err)
 
 	actual := replaceTimeStringsForTests(body)
-	expected, err := jsonMinifier.String("application/json", skateboardProductJSON)
-	assert.Nil(t, err)
+	expected := minifyExampleJSON(t, skateboardProductJSON)
 	assert.Equal(t, expected, actual, "product response should contain a complete product")
 }
 
@@ -120,7 +125,8 @@ func TestProductUpdateRoute(t *testing.T) {
 	assert.Nil(t, err)
 
 	actual := replaceTimeStringsForTests(body)
-	expected := `{"description":"This is a skateboard. Please wear a helmet.","taxable":false,"product_weight":8,"product_height":7,"product_width":6,"product_length":5,"package_weight":4,"package_height":3,"package_width":2,"package_length":1,"id":10,"product_progenitor_id":2,"sku":"skateboard","name":"Skateboard","upc":"1234567890","quantity":666,"on_sale":false,"price":12.34,"sale_price":""}`
+	minified := minifyExampleJSON(t, skateboardProductJSON)
+	expected := strings.Replace(minified, `"quantity":123`, `"quantity":666`, 1)
 	assert.Equal(t, expected, actual, "product response should reflect the updated fields")
 }
 
