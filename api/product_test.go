@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -14,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
@@ -80,31 +78,10 @@ func init() {
 	`))
 }
 
-func setupMockRequestsAndMux(db *sql.DB) (*httptest.ResponseRecorder, *mux.Router) {
-	m := mux.NewRouter()
-	SetupAPIRoutes(m, db)
-	return httptest.NewRecorder(), m
-}
-
-// this function is lame
-func formatConstantQueryForSQLMock(query string) string {
-	for _, x := range []string{"$", "(", ")", "=", "*", ".", "+", "?", ",", "-"} {
-		query = strings.Replace(query, x, fmt.Sprintf(`\%s`, x), -1)
-	}
-	return query
-}
-
 func setExpectationsForProductExistence(mock sqlmock.Sqlmock, SKU string, exists bool) {
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
 	mock.ExpectQuery(formatConstantQueryForSQLMock(skuExistenceQuery)).
 		WithArgs(SKU).
-		WillReturnRows(exampleRows)
-}
-
-func setExpectationsForProductProgenitorExistence(mock sqlmock.Sqlmock, id int64, exists bool) {
-	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
-	mock.ExpectQuery(formatConstantQueryForSQLMock(productProgenitorExistenceQuery)).
-		WithArgs(id).
 		WillReturnRows(exampleRows)
 }
 
@@ -150,17 +127,21 @@ func TestValidateProductUpdateInputWithInvalidInput(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestRetrievePlainProductFromDB(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
-
+func setupExpectationsForProductRetrieval(mock sqlmock.Sqlmock) {
 	exampleRows := sqlmock.NewRows(plainProductHeaders).
 		AddRow(examplePlainProductData...)
 
 	mock.ExpectQuery(formatConstantQueryForSQLMock(skuRetrievalQuery)).
 		WithArgs(exampleSKU).
 		WillReturnRows(exampleRows)
+}
+
+func TestRetrievePlainProductFromDB(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+
+	setupExpectationsForProductRetrieval(mock)
 
 	actual, err := retrievePlainProductFromDB(db, exampleSKU)
 	assert.Nil(t, err)
@@ -251,13 +232,13 @@ func setExpectationsForProductCreation(mock sqlmock.Sqlmock) {
 		).WillReturnRows(exampleRows)
 }
 
-func TestCreateProduct(t *testing.T) {
+func TestCreateProductInDB(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
 	setExpectationsForProductCreation(mock)
 
-	err = createProduct(db, exampleProduct)
+	err = createProductInDB(db, exampleProduct)
 	assert.Nil(t, err)
 	ensureExpectationsWereMet(t, mock)
 }

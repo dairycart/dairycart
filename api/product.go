@@ -341,8 +341,8 @@ func validateProductCreationInput(req *http.Request) (*ProductCreationInput, err
 	return newProduct, err
 }
 
-// createProduct takes a marshalled Product object and creates an entry for it and a base_product in the database
-func createProduct(db *sql.DB, np *Product) error {
+// createProductInDB takes a marshalled Product object and creates an entry for it and a base_product in the database
+func createProductInDB(db *sql.DB, np *Product) error {
 	err := db.QueryRow(productCreationQuery, np.ProductProgenitorID, np.SKU, np.Name, np.UPC, np.Quantity, np.OnSale, np.Price, np.SalePrice).Scan(np.generateScanArgs()...)
 	return err
 }
@@ -381,7 +381,7 @@ func buildProductCreationHandler(db *sql.DB) http.HandlerFunc {
 			SalePrice:           NullFloat64{sql.NullFloat64{Float64: productInput.SalePrice}},
 		}
 
-		err = createProduct(db, newProduct)
+		err = createProductInDB(db, newProduct)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "insert product in database")
 			return

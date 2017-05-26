@@ -122,8 +122,8 @@ func createProductProgenitorInDB(db *sql.DB, g *ProductProgenitor) (*ProductProg
 }
 
 // retrieveProductProgenitorFromDB retrieves a product progenitor with a given ID from the database
-func retrieveProductProgenitorFromDB(db *sql.DB, id int64) (ProductProgenitor, error) {
-	var progenitor ProductProgenitor
+func retrieveProductProgenitorFromDB(db *sql.DB, id int64) (*ProductProgenitor, error) {
+	progenitor := &ProductProgenitor{}
 	scanArgs := progenitor.generateScanArgs()
 
 	err := db.QueryRow(productProgenitorQuery, id).Scan(scanArgs...)
