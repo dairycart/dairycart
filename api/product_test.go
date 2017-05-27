@@ -92,8 +92,9 @@ func setExpectationsForProductListQuery(mock sqlmock.Sqlmock) {
 		AddRow(exampleProductJoinData...).
 		AddRow(exampleProductJoinData...)
 
-	allProductsRetrievalQuery := buildAllProductsRetrievalQuery()
+	allProductsRetrievalQuery, _ := buildAllProductsRetrievalQuery(defaultQueryFilter)
 	mock.ExpectQuery(formatConstantQueryForSQLMock(allProductsRetrievalQuery)).
+		// WithArgs(args).
 		WillReturnRows(exampleRows)
 }
 
@@ -170,7 +171,7 @@ func TestRetrieveProductsFromDB(t *testing.T) {
 	defer db.Close()
 	setExpectationsForProductListQuery(mock)
 
-	products, err := retrieveProductsFromDB(db, baseQueryFilter)
+	products, err := retrieveProductsFromDB(db, defaultQueryFilter)
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(products), "there should be 3 products")
 	ensureExpectationsWereMet(t, mock)

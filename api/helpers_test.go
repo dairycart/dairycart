@@ -7,36 +7,58 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 
 	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 
 	"github.com/stretchr/testify/assert"
 )
 
-var baseQueryFilter *QueryFilter
+const ()
+
+var exampleFilterStartTime time.Time
+var exampleFilterEndTime time.Time
+var defaultQueryFilter *QueryFilter
 
 func init() {
-	baseQueryFilter = &QueryFilter{
+	defaultQueryFilter = &QueryFilter{
 		Page:  1,
 		Limit: 25,
 	}
 }
 
 type RawFilterParamsTest struct {
-	input      string
-	expected   *QueryFilter
-	shouldFail bool
+	input          string
+	expected       *QueryFilter
+	shouldFail     bool
+	failureMessage string
 }
 
 func TestParseRawFilterParams(t *testing.T) {
+	exampleUnixStartTime := int64(232747200)
+	exampleUnixEndTime := int64(232747200 + 10000)
+
+	exampleFilterStartTime := time.Unix(exampleUnixStartTime, 0)
+	exampleFilterEndTime := time.Unix(exampleUnixEndTime, 0)
+
 	testSuite := []RawFilterParamsTest{
 		RawFilterParamsTest{
-			input:    "https://test.com/example",
-			expected: baseQueryFilter,
+			input:          "https://test.com/example",
+			expected:       defaultQueryFilter,
+			failureMessage: "URL with no query params should parse to the default query filter",
 		},
 		RawFilterParamsTest{
-			input:    "https://test.com/example?page=1&limit=25",
-			expected: baseQueryFilter,
+			input:          "https://test.com/example?page=1&limit=25",
+			expected:       defaultQueryFilter,
+			failureMessage: "URL with query params set to the defaults should parse to the default query filter",
+		},
+		RawFilterParamsTest{
+			input: "https://test.com/example?page=1&limit=500000",
+			expected: &QueryFilter{
+				Page:  1,
+				Limit: 50,
+			},
+			failureMessage: "URL with limit param set to high should default to 50",
 		},
 		RawFilterParamsTest{
 			input: "https://test.com/example?page=2&limit=40",
@@ -44,17 +66,63 @@ func TestParseRawFilterParams(t *testing.T) {
 				Page:  2,
 				Limit: 40,
 			},
+			failureMessage: "URL with non-default page and limit params should parse correctly",
+		},
+		RawFilterParamsTest{
+			input: fmt.Sprintf("https://test.com/example?updated_after=%v", exampleUnixStartTime),
+			expected: &QueryFilter{
+				Page:         1,
+				Limit:        25,
+				UpdatedAfter: exampleFilterStartTime,
+			},
+			failureMessage: "URL with specified updated_after field should have a non-nil time value set for UpdatedAfter",
+		},
+		RawFilterParamsTest{
+			input: fmt.Sprintf("https://test.com/example?updated_before=%v", exampleUnixEndTime),
+			expected: &QueryFilter{
+				Page:          1,
+				Limit:         25,
+				UpdatedBefore: exampleFilterEndTime,
+			},
+			failureMessage: "URL with specified updated_before field should have a non-nil time value set for UpdatedBefore",
+		},
+		RawFilterParamsTest{
+			input: fmt.Sprintf("https://test.com/example?updated_after=%v&updated_before=%v", exampleUnixStartTime, exampleUnixEndTime),
+			expected: &QueryFilter{
+				Page:          1,
+				Limit:         25,
+				UpdatedAfter:  exampleFilterStartTime,
+				UpdatedBefore: exampleFilterEndTime,
+			},
+			failureMessage: "URL with specified updated_after and updated_before fields should have a non-nil time value set for both UpdatedAfter and UpdatedBefore",
+		},
+		RawFilterParamsTest{
+			input: fmt.Sprintf("https://test.com/example?page=2&limit=35&updated_after=%v&updated_before=%v", exampleUnixStartTime, exampleUnixEndTime),
+			expected: &QueryFilter{
+				Page:          2,
+				Limit:         35,
+				UpdatedAfter:  exampleFilterStartTime,
+				UpdatedBefore: exampleFilterEndTime,
+			},
+			failureMessage: "URL with all relevant filters should have a completely custom QueryFilter value",
+		},
+		RawFilterParamsTest{
+			input:          fmt.Sprintf("https://test.com/example?rage=2&dimit=35&upgraded_after=%v&agitated_before=%v", exampleUnixStartTime, exampleUnixEndTime),
+			expected:       defaultQueryFilter,
+			failureMessage: "URL with no relevant values should parsee to the default query filter",
 		},
 	}
 
-	for i, test := range testSuite {
+	for _, test := range testSuite {
 		earl, err := url.Parse(test.input)
 		if err != nil {
 			log.Fatal(err)
 		}
 		actual, err := parseRawFilterParams(earl.Query())
-		assert.Nil(t, err)
-		assert.Equal(t, test.expected, actual, fmt.Sprintf("parseRawFilterParams test #%d (input: %s) should not fail", i, test.input))
+		if !test.shouldFail {
+			assert.Nil(t, err)
+		}
+		assert.Equal(t, test.expected, actual, test.failureMessage)
 	}
 
 }

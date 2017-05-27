@@ -239,7 +239,8 @@ func buildSingleProductHandler(db *sql.DB) http.HandlerFunc {
 func retrieveProductsFromDB(db *sql.DB, queryFilter *QueryFilter) ([]Product, error) {
 	var products []Product
 
-	rows, err := db.Query(buildAllProductsRetrievalQuery())
+	query, args := buildAllProductsRetrievalQuery(queryFilter)
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error encountered querying for products")
 	}

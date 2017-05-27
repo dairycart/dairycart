@@ -61,9 +61,10 @@ func TestBuildProductRetrievalQuery(t *testing.T) {
 }
 
 func TestBuildAllProductsRetrievalQuery(t *testing.T) {
-	expected := `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.archived_at IS NULL`
-	actual := buildAllProductsRetrievalQuery()
-	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
+	expectedQuery := `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.archived_at IS NULL LIMIT 25`
+	actualQuery, actualArgs := buildAllProductsRetrievalQuery(defaultQueryFilter)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 0, len(actualArgs), queryEqualityErrorMessage)
 }
 func TestBuildProductDeletionQuery(t *testing.T) {
 	expected := `UPDATE products SET archived_at = NOW() WHERE sku = $1 AND archived_at IS NULL`

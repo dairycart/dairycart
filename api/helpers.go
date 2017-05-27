@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"fmt"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -17,6 +18,8 @@ const (
 	DefaultLimit = 25
 	// DefaultLimitString is DefaultLimit but in string form because types are a thing
 	DefaultLimitString = "25"
+	// MaxLimit is the maximum number of objects Dairycart will return in a response
+	MaxLimit = 50
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -139,6 +142,8 @@ type ListResponse struct {
 type QueryFilter struct {
 	Page          uint64
 	Limit         uint8
+	CreatedAfter  time.Time
+	CreatedBefore time.Time
 	UpdatedAfter  time.Time
 	UpdatedBefore time.Time
 }
@@ -161,7 +166,8 @@ func parseRawFilterParams(rawFilterParams url.Values) (*QueryFilter, error) {
 
 	limit := rawFilterParams["limit"]
 	if len(limit) == 1 {
-		i, err := strconv.ParseUint(limit[0], 10, 64)
+		i, err := strconv.ParseFloat(limit[0], 64)
+		i = math.Min(i, MaxLimit)
 		if err != nil {
 			log.Printf("encountered error when trying to parse query filter param %s: %v", `Limit`, err)
 			return nil, err
@@ -171,22 +177,42 @@ func parseRawFilterParams(rawFilterParams url.Values) (*QueryFilter, error) {
 
 	updatedAfter := rawFilterParams["updated_after"]
 	if len(updatedAfter) == 1 {
-		parsedAsTime, err := time.Parse(`2006-01-02T15:04:05-0700`, updatedAfter[0])
+		i, err := strconv.ParseUint(updatedAfter[0], 10, 64)
 		if err != nil {
 			log.Printf("encountered error when trying to parse query filter param %s: %v", `UpdatedAfter`, err)
 			return nil, err
 		}
-		qf.UpdatedAfter = parsedAsTime
+		qf.UpdatedAfter = time.Unix(int64(i), 0)
 	}
 
 	updatedBefore := rawFilterParams["updated_before"]
 	if len(updatedBefore) == 1 {
-		parsedAsTime, err := time.Parse(`2006-01-02T15:04:05-0700`, updatedBefore[0])
+		i, err := strconv.ParseUint(updatedBefore[0], 10, 64)
 		if err != nil {
 			log.Printf("encountered error when trying to parse query filter param %s: %v", `UpdatedBefore`, err)
 			return nil, err
 		}
-		qf.UpdatedBefore = parsedAsTime
+		qf.UpdatedBefore = time.Unix(int64(i), 0)
+	}
+
+	createdAfter := rawFilterParams["created_after"]
+	if len(createdAfter) == 1 {
+		i, err := strconv.ParseUint(createdAfter[0], 10, 64)
+		if err != nil {
+			log.Printf("encountered error when trying to parse query filter param %s: %v", `CreatedAfter`, err)
+			return nil, err
+		}
+		qf.CreatedAfter = time.Unix(int64(i), 0)
+	}
+
+	createdBefore := rawFilterParams["created_before"]
+	if len(createdBefore) == 1 {
+		i, err := strconv.ParseUint(createdBefore[0], 10, 64)
+		if err != nil {
+			log.Printf("encountered error when trying to parse query filter param %s: %v", `CreatedBefore`, err)
+			return nil, err
+		}
+		qf.CreatedBefore = time.Unix(int64(i), 0)
 	}
 
 	return qf, nil
