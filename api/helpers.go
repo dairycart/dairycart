@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -225,7 +224,7 @@ func rowExistsInDB(db *sql.DB, table, identifier, id string) (bool, error) {
 	query := buildRowExistenceQuery(table, identifier, id)
 	err := db.QueryRow(query, id).Scan(&exists)
 	if err == sql.ErrNoRows {
-		return false, errors.Wrap(err, "Error querying for row")
+		return false, nil
 	}
 
 	return exists == "true", err

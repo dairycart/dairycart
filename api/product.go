@@ -181,11 +181,7 @@ func buildProductExistenceHandler(db *sql.DB) http.HandlerFunc {
 		vars := mux.Vars(req)
 		sku := vars["sku"]
 
-		productExists, err := rowExistsInDB(db, "products", "sku", sku)
-		if err != nil {
-			respondThatRowDoesNotExist(req, res, "product", sku)
-			return
-		}
+		productExists, _ := rowExistsInDB(db, "products", "sku", sku)
 
 		responseStatus := http.StatusNotFound
 		if productExists {
@@ -193,19 +189,6 @@ func buildProductExistenceHandler(db *sql.DB) http.HandlerFunc {
 		}
 		res.WriteHeader(responseStatus)
 	}
-}
-
-// retrievePlainProductFromDB retrieves a product with a given SKU from the database
-func retrievePlainProductFromDB(db *sql.DB, sku string) (*Product, error) {
-	product := &Product{}
-	scanArgs := product.generateScanArgs()
-	skuRetrievalQuery := buildProductRetrievalQuery(sku)
-	err := db.QueryRow(skuRetrievalQuery, sku).Scan(scanArgs...)
-	if err == sql.ErrNoRows {
-		return product, errors.Wrap(err, "Error querying for product")
-	}
-
-	return product, nil
 }
 
 // retrieveProductFromDB retrieves a product with a given SKU from the database

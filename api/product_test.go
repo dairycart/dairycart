@@ -130,6 +130,15 @@ func TestValidateProductUpdateInputWithInvalidInput(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
+func TestValidateProductUpdateInputWithInvalidSKU(t *testing.T) {
+	exampleInput := strings.NewReader(`{"sku": "pooƃ ou sᴉ nʞs sᴉɥʇ"}`)
+
+	req := httptest.NewRequest("GET", "http://example.com", exampleInput)
+	_, err := validateProductUpdateInput(req)
+
+	assert.NotNil(t, err)
+}
+
 func setupExpectationsForProductRetrieval(mock sqlmock.Sqlmock) {
 	exampleRows := sqlmock.NewRows(plainProductHeaders).
 		AddRow(examplePlainProductData...)
@@ -138,31 +147,6 @@ func setupExpectationsForProductRetrieval(mock sqlmock.Sqlmock) {
 	mock.ExpectQuery(formatConstantQueryForSQLMock(skuRetrievalQuery)).
 		WithArgs(exampleSKU).
 		WillReturnRows(exampleRows)
-}
-
-func TestRetrievePlainProductFromDB(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
-
-	setupExpectationsForProductRetrieval(mock)
-
-	actual, err := retrievePlainProductFromDB(db, exampleSKU)
-	assert.Nil(t, err)
-
-	expected := &Product{
-		ID:                  10,
-		ProductProgenitorID: 2,
-		SKU:                 "skateboard",
-		Name:                "Skateboard",
-		UPC:                 NullString{sql.NullString{String: "1234567890", Valid: true}},
-		Quantity:            123,
-		Price:               12.34,
-		CreatedAt:           exampleTime,
-	}
-
-	assert.Equal(t, expected, actual, "plain product returned should be valid")
-	ensureExpectationsWereMet(t, mock)
 }
 
 func TestRetrieveProductsFromDB(t *testing.T) {
