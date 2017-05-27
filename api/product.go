@@ -17,36 +17,6 @@ import (
 )
 
 const (
-	skuExistenceQuery         = `SELECT EXISTS(SELECT 1 FROM products WHERE sku = $1 and archived_at is null);`
-	skuDeletionQuery          = `UPDATE products SET archived_at = NOW() WHERE sku = $1 AND archived_at IS NULL;`
-	skuRetrievalQuery         = `SELECT * FROM products WHERE sku = $1 AND archived_at IS NULL;`
-	skuJoinRetrievalQuery     = `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.sku = $1 AND p.archived_at IS NULL;`
-	allProductsRetrievalQuery = `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.id IS NOT NULL AND p.archived_at IS NULL;`
-	productUpdateQuery        = `
-		UPDATE products SET
-			"sku"=$1,
-			"name"=$2,
-			"upc"=$3,
-			"quantity"=$4,
-			"on_sale"=$5,
-			"price"=$6,
-			"sale_price"=$7,
-			"updated_at"='NOW()'
-		WHERE "id"=$8 RETURNING *
-	`
-	productCreationQuery = `
-		INSERT INTO products (
-			"product_progenitor_id",
-			"sku",
-			"name",
-			"upc",
-			"quantity",
-			"on_sale",
-			"price",
-			"sale_price"
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *;
-	`
-
 	skuValidationPattern = `^[a-zA-Z\-_]+$`
 )
 
@@ -182,7 +152,7 @@ func buildProductExistenceHandler(db *sql.DB) http.HandlerFunc {
 func retrievePlainProductFromDB(db *sql.DB, sku string) (*Product, error) {
 	product := &Product{}
 	scanArgs := product.generateScanArgs()
-
+	skuRetrievalQuery := buildProductRetrievalQuery(sku)
 	err := db.QueryRow(skuRetrievalQuery, sku).Scan(scanArgs...)
 	if err == sql.ErrNoRows {
 		return product, errors.Wrap(err, "Error querying for product")
@@ -195,7 +165,7 @@ func retrievePlainProductFromDB(db *sql.DB, sku string) (*Product, error) {
 func retrieveProductFromDB(db *sql.DB, sku string) (*Product, error) {
 	product := &Product{}
 	scanArgs := product.generateJoinScanArgs()
-
+	skuJoinRetrievalQuery := buildCompleteProductRetrievalQuery(sku)
 	err := db.QueryRow(skuJoinRetrievalQuery, sku).Scan(scanArgs...)
 	if err == sql.ErrNoRows {
 		return product, errors.Wrap(err, "Error querying for product")
@@ -222,7 +192,7 @@ func buildSingleProductHandler(db *sql.DB) http.HandlerFunc {
 func retrieveProductsFromDB(db *sql.DB) ([]Product, error) {
 	var products []Product
 
-	rows, err := db.Query(allProductsRetrievalQuery)
+	rows, err := db.Query(buildAllProductsRetrievalQuery())
 	if err != nil {
 		return nil, errors.Wrap(err, "Error encountered querying for products")
 	}
@@ -257,7 +227,8 @@ func buildProductListHandler(db *sql.DB) http.HandlerFunc {
 }
 
 func deleteProductBySKU(db *sql.DB, sku string) error {
-	_, err := db.Exec(skuDeletionQuery, sku)
+	productDeletionQuery := buildProductDeletionQuery(sku)
+	_, err := db.Exec(productDeletionQuery, sku)
 	return err
 }
 
@@ -279,7 +250,8 @@ func buildProductDeletionHandler(db *sql.DB) http.HandlerFunc {
 }
 
 func updateProductInDatabase(db *sql.DB, up *Product) error {
-	err := db.QueryRow(productUpdateQuery, up.SKU, up.Name, up.UPC, up.Quantity, up.OnSale, up.Price, up.SalePrice, up.ID).Scan(up.generateScanArgs()...)
+	productUpdateQuery, queryArgs := buildProductUpdateQuery(up)
+	err := db.QueryRow(productUpdateQuery, queryArgs...).Scan(up.generateScanArgs()...)
 	return err
 }
 
@@ -343,7 +315,8 @@ func validateProductCreationInput(req *http.Request) (*ProductCreationInput, err
 
 // createProductInDB takes a marshalled Product object and creates an entry for it and a base_product in the database
 func createProductInDB(db *sql.DB, np *Product) error {
-	err := db.QueryRow(productCreationQuery, np.ProductProgenitorID, np.SKU, np.Name, np.UPC, np.Quantity, np.OnSale, np.Price, np.SalePrice).Scan(np.generateScanArgs()...)
+	productCreationQuery, queryArgs := buildProductCreationQuery(np)
+	err := db.QueryRow(productCreationQuery, queryArgs...).Scan(np.generateScanArgs()...)
 	return err
 }
 

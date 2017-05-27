@@ -80,21 +80,8 @@ func createProductProgenitorInDB(db *sql.DB, g *ProductProgenitor) (*ProductProg
 	// using QueryRow instead of Exec because we want it to return the newly created row's ID
 	// Exec normally returns a sql.Result, which has a LastInsertedID() method, but when I tested
 	// this locally, it never worked. ¯\_(ツ)_/¯
-	query := buildProgenitorCreationQuery(g)
-	err := db.QueryRow(query,
-		g.Name,
-		g.Description,
-		g.Taxable,
-		g.Price,
-		g.ProductWeight,
-		g.ProductHeight,
-		g.ProductWidth,
-		g.ProductLength,
-		g.PackageWeight,
-		g.PackageHeight,
-		g.PackageWidth,
-		g.PackageLength,
-	).Scan(&newProgenitorID)
+	query, queryArgs := buildProgenitorCreationQuery(g)
+	err := db.QueryRow(query, queryArgs...).Scan(&newProgenitorID)
 
 	g.ID = newProgenitorID
 	return g, err

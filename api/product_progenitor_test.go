@@ -41,7 +41,8 @@ func setExpectationsForProductProgenitorExistence(mock sqlmock.Sqlmock, id int64
 }
 
 func setExpectationsForProductProgenitorCreation(mock sqlmock.Sqlmock) {
-	query := formatConstantQueryForSQLMock(buildProgenitorCreationQuery(exampleProgenitor))
+	q, _ := buildProgenitorCreationQuery(exampleProgenitor)
+	query := formatConstantQueryForSQLMock(q)
 	mock.ExpectQuery(query).
 		WithArgs(
 			exampleProgenitor.Name,

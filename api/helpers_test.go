@@ -42,6 +42,7 @@ func TestRowExistsInDBForExistingRow(t *testing.T) {
 	assert.Nil(t, err)
 
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow("true")
+	skuExistenceQuery := buildProductExistenceQuery(exampleSKU)
 	mock.ExpectQuery(formatConstantQueryForSQLMock(skuExistenceQuery)).
 		WithArgs(exampleSKU).
 		WillReturnRows(exampleRows)
@@ -61,6 +62,7 @@ func TestRowExistsInDBForNonexistentRow(t *testing.T) {
 	assert.Nil(t, err)
 
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow("false")
+	skuExistenceQuery := buildProductExistenceQuery(exampleSKU)
 	mock.ExpectQuery(formatConstantQueryForSQLMock(skuExistenceQuery)).
 		WithArgs(exampleSKU).
 		WillReturnRows(exampleRows)

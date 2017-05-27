@@ -80,6 +80,7 @@ func init() {
 
 func setExpectationsForProductExistence(mock sqlmock.Sqlmock, SKU string, exists bool) {
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
+	skuExistenceQuery := buildProductExistenceQuery(SKU)
 	mock.ExpectQuery(formatConstantQueryForSQLMock(skuExistenceQuery)).
 		WithArgs(SKU).
 		WillReturnRows(exampleRows)
@@ -91,6 +92,7 @@ func setExpectationsForProductListQuery(mock sqlmock.Sqlmock) {
 		AddRow(exampleProductJoinData...).
 		AddRow(exampleProductJoinData...)
 
+	allProductsRetrievalQuery := buildAllProductsRetrievalQuery()
 	mock.ExpectQuery(formatConstantQueryForSQLMock(allProductsRetrievalQuery)).
 		WillReturnRows(exampleRows)
 }
@@ -131,6 +133,7 @@ func setupExpectationsForProductRetrieval(mock sqlmock.Sqlmock) {
 	exampleRows := sqlmock.NewRows(plainProductHeaders).
 		AddRow(examplePlainProductData...)
 
+	skuRetrievalQuery := buildProductRetrievalQuery(exampleSKU)
 	mock.ExpectQuery(formatConstantQueryForSQLMock(skuRetrievalQuery)).
 		WithArgs(exampleSKU).
 		WillReturnRows(exampleRows)
@@ -178,6 +181,7 @@ func TestDeleteProductBySKU(t *testing.T) {
 	assert.Nil(t, err)
 	defer db.Close()
 
+	skuDeletionQuery := buildProductDeletionQuery(exampleSKU)
 	mock.ExpectExec(formatConstantQueryForSQLMock(skuDeletionQuery)).
 		WithArgs(exampleSKU).
 		WillReturnResult(sqlmock.NewResult(1, 1))
@@ -191,15 +195,16 @@ func setExpectationsForProductUpdate(mock sqlmock.Sqlmock) {
 	exampleRows := sqlmock.NewRows(plainProductHeaders).
 		AddRow(examplePlainProductData...)
 
+	productUpdateQuery, _ := buildProductUpdateQuery(exampleProduct)
 	mock.ExpectQuery(formatConstantQueryForSQLMock(productUpdateQuery)).
 		WithArgs(
-			exampleProduct.SKU,
 			exampleProduct.Name,
-			exampleProduct.UPC,
-			exampleProduct.Quantity,
 			exampleProduct.OnSale,
 			exampleProduct.Price,
+			exampleProduct.Quantity,
 			exampleProduct.SalePrice,
+			exampleProduct.SKU,
+			exampleProduct.UPC,
 			exampleProduct.ID,
 		).WillReturnRows(exampleRows)
 }
@@ -219,6 +224,7 @@ func setExpectationsForProductCreation(mock sqlmock.Sqlmock) {
 	exampleRows := sqlmock.NewRows(plainProductHeaders).
 		AddRow(examplePlainProductData...)
 
+	productCreationQuery, _ := buildProductCreationQuery(exampleProduct)
 	mock.ExpectQuery(formatConstantQueryForSQLMock(productCreationQuery)).
 		WithArgs(
 			exampleProduct.ProductProgenitorID,
@@ -280,8 +286,9 @@ func TestProductRetrievalHandlerWithExistingProduct(t *testing.T) {
 
 	exampleRows := sqlmock.NewRows(productJoinHeaders).
 		AddRow(exampleProductJoinData...)
+	skuJoinRetrievalQuery := buildCompleteProductRetrievalQuery(exampleProduct.SKU)
 	mock.ExpectQuery(formatConstantQueryForSQLMock(skuJoinRetrievalQuery)).
-		WithArgs("skateboard").
+		WithArgs(exampleProduct.SKU).
 		WillReturnRows(exampleRows)
 
 	req, _ := http.NewRequest("GET", "/v1/product/skateboard", nil)
@@ -329,6 +336,7 @@ func TestProductDeletionHandlerWithExistentProduct(t *testing.T) {
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, exampleSKU, true)
 
+	skuDeletionQuery := buildProductDeletionQuery(exampleSKU)
 	mock.ExpectExec(formatConstantQueryForSQLMock(skuDeletionQuery)).
 		WithArgs(exampleSKU).
 		WillReturnResult(sqlmock.NewResult(1, 1))

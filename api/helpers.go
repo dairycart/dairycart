@@ -90,7 +90,7 @@ type ListResponse struct {
 func rowExistsInDB(db *sql.DB, table, identifier, id string) (bool, error) {
 	var exists string
 
-	query := fmt.Sprintf(`SELECT EXISTS(SELECT 1 FROM %s WHERE %s = $1 and archived_at is null);`, table, identifier)
+	query := buildRowExistenceQuery(table, identifier, id)
 	err := db.QueryRow(query, id).Scan(&exists)
 	if err == sql.ErrNoRows {
 		return false, errors.Wrap(err, "Error querying for row")
