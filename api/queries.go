@@ -210,3 +210,46 @@ func buildProductCreationQuery(p *Product) (string, []interface{}) {
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
+
+/////////////////////////////////////////////////////
+//                                    ___          //
+//                                ,-""   `.        //
+//      Product                 ,'  _   e )`-._    //
+//         Attribute           /  ,' `-._<.===-'   //
+//            Values          /  /                 //
+//                           /  ;                  //
+//               _.--.__    /   ;                  //
+//  (`._    _.-""       "--'    |                  //
+//  <_  `-""                     \                 //
+//   <`-                          :                //
+//    (__   <__.                  ;                //
+//      `-.   '-.__.      _.'    /                 //
+//         \      `-.__,-'    _,'                  //
+//          `._    ,    /__,-'                     //
+//             ""._\__,'< <____                    //
+//                  | |  `----.`.                  //
+//                  | |        \ `.                //
+//                  ; |___      \-``               //
+//                  \   --<                        //
+//                   `.`.<                         //
+//                     `-'                         //
+//                                                 //
+/////////////////////////////////////////////////////
+
+func buildProductAttributeValueRetrievalQuery(id int64) string {
+	return buildRowRetrievalQuery("product_attribute_values", "id", id)
+}
+
+func buildProductAttributeValueDeletionQuery(id int64) string {
+	return buildRowDeletionQuery("product_attribute_values", "id", id)
+}
+
+func buildProductAttributeValueCreationQuery(pav *ProductAttributeValue) (string, []interface{}) {
+	queryBuilder := sqlBuilder.
+		Insert("product_attribute_values").
+		Columns("product_attribute_id", "value").
+		Values(pav.ProductAttributeID, pav.Value).
+		Suffix(`RETURNING *`)
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}
