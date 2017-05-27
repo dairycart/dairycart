@@ -181,7 +181,11 @@ func buildProductExistenceHandler(db *sql.DB) http.HandlerFunc {
 		vars := mux.Vars(req)
 		sku := vars["sku"]
 
-		productExists, _ := rowExistsInDB(db, "products", "sku", sku)
+		productExists, err := rowExistsInDB(db, "products", "sku", sku)
+		if err != nil {
+			respondThatRowDoesNotExist(req, res, "product", sku)
+			return
+		}
 
 		responseStatus := http.StatusNotFound
 		if productExists {
