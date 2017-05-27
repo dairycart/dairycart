@@ -31,8 +31,8 @@ func init() {
 //     |_____|\_/|_____|                .***.                 |_______________|     //
 //       _|__|/ \|_|_.....................*......................_|________|_       //
 //      / ********** \                   ^^^                    / ********** \      //
-//    /  ************  \       (Dairycart API Traffic)         /  ************  \   //
-//   --------------------                                    --------------------   //
+//    /  ************  \       (Dairycart API Traffic)         / ************* \    //
+//   --------------------                                     -------------------   //
 //////////////////////////////////////////////////////////////////////////////////////
 
 // SetupAPIRoutes takes a mux router and a database connection and creates all the API routes for the API
@@ -46,6 +46,12 @@ func SetupAPIRoutes(router *mux.Router, db *sql.DB) {
 	router.HandleFunc(productEndpoint, buildProductExistenceHandler(db)).Methods("HEAD")
 	router.HandleFunc(productEndpoint, buildProductDeletionHandler(db)).Methods("DELETE")
 
-	// Product Attribute Values
-	router.HandleFunc("/product_attributes/{attribute_id:[0-9]+}/value", buildProductAttributeValueCreationHandler(db)).Methods("POST")
+	// Product Attributes
+	router.HandleFunc("/product_attributes/{progenitor_id:[0-9]+}", buildProductAttributeListHandler(db)).Methods("GET")
+	router.HandleFunc("/product_attributes/{progenitor_id:[0-9]+}", buildProductAttributeCreationHandler(db)).Methods("POST")
+	router.HandleFunc("/product_attributes/{progenitor_id:[0-9]+}/{attribute_id:[0-9]+}", buildProductAttributeUpdateHandler(db)).Methods("PUT")
+
+	// // Product Attribute Values
+	// router.HandleFunc("/product_attributes/{attribute_id:[0-9]+}/values", buildProductAttributeValueCreationHandler(db)).Methods("GET")
+	// router.HandleFunc("/product_attributes/{attribute_id:[0-9]+}/value", buildProductAttributeValueCreationHandler(db)).Methods("POST")
 }

@@ -211,6 +211,51 @@ func buildProductCreationQuery(p *Product) (string, []interface{}) {
 	return query, args
 }
 
+/////////////////////////////////////////////////////////////
+//                                                         //
+//          _..--""-.                  .-""--.._           //
+//      _.-'         \ __...----...__ /         '-._       //
+//    .'      .:::...,'              ',...:::.      '.     //
+//   (     .'``'''::;                  ;::'''``'.     )    //
+//    \             '-)              (-'             /     //
+//     \             /                \             /      //
+//      \          .'.-.            .-.'.          /       //
+//       \         | \0|            |0/ |         /        //
+//       |          \  |   .-==-.   |  /          |        //
+//        \          `/`;          ;`\`          /         //
+//         '.._      (_ |  .-==-.  | _)      _..'          //
+//             `"`"-`/ `/'        '\` \`-"`"`              //
+//                  / /`;   .==.   ;`\ \                   //
+//            .---./_/   \  .==.  /   \ \                  //
+//           / '.    `-.__)       |    `"                  //
+//          | =(`-.        '==.   ;                        //
+//           \  '. `-.           /         Product         //
+//            \_:_)   `"--.....-'         Attributes       //
+//                                                         //
+/////////////////////////////////////////////////////////////
+
+const (
+	productAttributeCreationQuery = `INSERT INTO product_attributes ("name", "product_progenitor_id") VALUES ($1, $2) RETURNING *;`
+)
+
+func buildProductAttributeRetrievalQuery(id int64) string {
+	return buildRowRetrievalQuery("product_attributes", "id", id)
+}
+
+func buildProductAttributeDeletionQuery(id int64) string {
+	return buildRowDeletionQuery("product_attributes", "id", id)
+}
+
+func buildProductAttributeCreationQuery(a *ProductAttribute) (string, []interface{}) {
+	queryBuilder := sqlBuilder.
+		Insert("product_attributes").
+		Columns("name", "product_progenitor_id").
+		Values(a.Name, a.ProductProgenitorID).
+		Suffix(`RETURNING *`)
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}
+
 /////////////////////////////////////////////////////
 //                                    ___          //
 //                                ,-""   `.        //

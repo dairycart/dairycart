@@ -89,6 +89,26 @@ func TestBuildProductCreationQuery(t *testing.T) {
 	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
 }
 
+func TestBuildProductAttributeRetrievalQuery(t *testing.T) {
+	expected := `SELECT * FROM product_attributes WHERE id = $1 AND archived_at IS NULL`
+	actual := buildProductAttributeRetrievalQuery(1)
+	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
+}
+
+func TestBuildProductAttributeDeletionQuery(t *testing.T) {
+	expected := `UPDATE product_attributes SET archived_at = NOW() WHERE id = $1 AND archived_at IS NULL`
+	actual := buildProductAttributeDeletionQuery(1)
+	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
+}
+
+func TestBuildProductAttributeCreationQuery(t *testing.T) {
+	expectedQuery := `INSERT INTO product_attributes (name,product_progenitor_id) VALUES ($1,$2) RETURNING *`
+	actualQuery, actualArgs := buildProductAttributeCreationQuery(&ProductAttribute{})
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	// comparing interface equality with assert is impossible as far as I can tell
+	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
+}
+
 func TestBuildProductAttributeValueRetrievalQuery(t *testing.T) {
 	expected := `SELECT * FROM product_attribute_values WHERE id = $1 AND archived_at IS NULL`
 	actual := buildProductAttributeValueRetrievalQuery(1)
