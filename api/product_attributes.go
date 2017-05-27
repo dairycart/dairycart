@@ -2,10 +2,13 @@ package api
 
 import (
 	"database/sql"
+	"encoding/json"
 	"net/http"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/lib/pq"
+	"github.com/pkg/errors"
 )
 
 // ProductAttribute represents a products variant attributes. If you have a t-shirt that comes in three colors
@@ -30,20 +33,57 @@ func (a ProductAttribute) generateScanArgs() []interface{} {
 	}
 }
 
-func getProductAttributesForProduct(db *sql.DB, progenitorID int64) ([]*ProductAttribute, error) {
-	return nil, nil
+// ProductAttributessResponse is a product response struct
+type ProductAttributessResponse struct {
+	ListResponse
+	Data []ProductAttribute `json:"data"`
 }
 
+func getProductAttributesForProgenitor(db *sql.DB, progenitorID string) ([]ProductAttribute, error) {
+	var attributes []ProductAttribute
+
+	rows, err := db.Query(buildProductAttributeListQuery(progenitorID))
+	if err != nil {
+		return nil, errors.Wrap(err, "Error encountered querying for products")
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var attribute ProductAttribute
+		_ = rows.Scan(attribute.generateScanArgs()...)
+		attributes = append(attributes, attribute)
+	}
+	return attributes, nil
+}
+
+// router.HandleFunc("/product_attributes/{progenitor_id:[0-9]+}", buildProductAttributeListHandler(db)).Methods("GET")
 func buildProductAttributeListHandler(db *sql.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
+		progenitorID := mux.Vars(req)["progenitor_id"]
+		attributes, err := getProductAttributesForProgenitor(db, progenitorID)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "retrieve products from the database")
+			return
+		}
 
+		attributesResponse := &ProductAttributessResponse{
+			ListResponse: ListResponse{
+				Page:  1,
+				Limit: 25,
+				Count: uint64(len(attributes)),
+			},
+			Data: attributes,
+		}
+		json.NewEncoder(res).Encode(attributesResponse)
 	}
 }
 
-func createProductAttributeInDB(db *sql.DB, pa *ProductAttribute) error {
-	return nil
+func createProductAttributeInDB(db *sql.DB, a *ProductAttribute) error {
+	query, args := buildProductAttributeCreationQuery(a)
+	err := db.QueryRow(query, args...).Scan(a.generateScanArgs()...)
+	return err
 }
 
+// router.HandleFunc("/product_attributes/{progenitor_id:[0-9]+}", buildProductAttributeCreationHandler(db)).Methods("POST")
 func buildProductAttributeCreationHandler(db *sql.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 
@@ -56,6 +96,7 @@ func updateProductAttributeInDB(db *sql.DB, a *ProductAttribute) error {
 	return err
 }
 
+// router.HandleFunc("/product_attributes/{progenitor_id:[0-9]+}/{attribute_id:[0-9]+}", buildProductAttributeUpdateHandler(db)).Methods("PUT")
 func buildProductAttributeUpdateHandler(db *sql.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 

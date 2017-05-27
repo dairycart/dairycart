@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -128,9 +130,66 @@ func (ns *NullString) UnmarshalText(text []byte) (err error) {
 // ListResponse is a generic list response struct containing values that represent
 // pagination, meant to be embedded into other object response structs
 type ListResponse struct {
-	Count int `json:"count"`
-	Limit int `json:"limit"`
-	Page  int `json:"page"`
+	Count uint64 `json:"count"`
+	Limit uint8  `json:"limit"`
+	Page  uint64 `json:"page"`
+}
+
+// QueryFilter represents a query filter
+type QueryFilter struct {
+	Page          uint64
+	Limit         uint8
+	UpdatedAfter  time.Time
+	UpdatedBefore time.Time
+}
+
+func parseRawFilterParams(rawFilterParams url.Values) (*QueryFilter, error) {
+	qf := &QueryFilter{
+		Page:  1,
+		Limit: 25,
+	}
+
+	page := rawFilterParams["page"]
+	if len(page) == 1 {
+		i, err := strconv.ParseUint(page[0], 10, 64)
+		if err != nil {
+			log.Printf("encountered error when trying to parse query filter param %s: %v", `Page`, err)
+			return nil, err
+		}
+		qf.Page = i
+	}
+
+	limit := rawFilterParams["limit"]
+	if len(limit) == 1 {
+		i, err := strconv.ParseUint(limit[0], 10, 64)
+		if err != nil {
+			log.Printf("encountered error when trying to parse query filter param %s: %v", `Limit`, err)
+			return nil, err
+		}
+		qf.Limit = uint8(i)
+	}
+
+	updatedAfter := rawFilterParams["updated_after"]
+	if len(updatedAfter) == 1 {
+		parsedAsTime, err := time.Parse(`2006-01-02T15:04:05-0700`, updatedAfter[0])
+		if err != nil {
+			log.Printf("encountered error when trying to parse query filter param %s: %v", `UpdatedAfter`, err)
+			return nil, err
+		}
+		qf.UpdatedAfter = parsedAsTime
+	}
+
+	updatedBefore := rawFilterParams["updated_before"]
+	if len(updatedBefore) == 1 {
+		parsedAsTime, err := time.Parse(`2006-01-02T15:04:05-0700`, updatedBefore[0])
+		if err != nil {
+			log.Printf("encountered error when trying to parse query filter param %s: %v", `UpdatedBefore`, err)
+			return nil, err
+		}
+		qf.UpdatedBefore = parsedAsTime
+	}
+
+	return qf, nil
 }
 
 // rowExistsInDB will return whether or not a product/attribute/etc with a given identifier exists in the database

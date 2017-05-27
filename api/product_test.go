@@ -170,7 +170,7 @@ func TestRetrieveProductsFromDB(t *testing.T) {
 	defer db.Close()
 	setExpectationsForProductListQuery(mock)
 
-	products, err := retrieveProductsFromDB(db)
+	products, err := retrieveProductsFromDB(db, baseQueryFilter)
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(products), "there should be 3 products")
 	ensureExpectationsWereMet(t, mock)
@@ -325,7 +325,7 @@ func TestProductListHandler(t *testing.T) {
 	assert.Equal(t, expected.Page, actual.Page, "expected and actual product pages should be equal")
 	assert.Equal(t, expected.Limit, actual.Limit, "expected and actual product limits should be equal")
 	assert.Equal(t, expected.Count, actual.Count, "expected and actual product counts should be equal")
-	assert.Equal(t, len(actual.Data), actual.Count, "actual product counts and product response count field should be equal")
+	assert.Equal(t, uint64(len(actual.Data)), actual.Count, "actual product counts and product response count field should be equal")
 	ensureExpectationsWereMet(t, mock)
 }
 

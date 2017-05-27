@@ -2,13 +2,62 @@ package api
 
 import (
 	"errors"
+	"fmt"
+	"log"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 
 	"github.com/stretchr/testify/assert"
 )
+
+var baseQueryFilter *QueryFilter
+
+func init() {
+	baseQueryFilter = &QueryFilter{
+		Page:  1,
+		Limit: 25,
+	}
+}
+
+type RawFilterParamsTest struct {
+	input      string
+	expected   *QueryFilter
+	shouldFail bool
+}
+
+func TestParseRawFilterParams(t *testing.T) {
+	testSuite := []RawFilterParamsTest{
+		RawFilterParamsTest{
+			input:    "https://test.com/example",
+			expected: baseQueryFilter,
+		},
+		RawFilterParamsTest{
+			input:    "https://test.com/example?page=1&limit=25",
+			expected: baseQueryFilter,
+		},
+		RawFilterParamsTest{
+			input: "https://test.com/example?page=2&limit=40",
+			expected: &QueryFilter{
+				Page:  2,
+				Limit: 40,
+			},
+		},
+	}
+
+	for i, test := range testSuite {
+		earl, err := url.Parse(test.input)
+		if err != nil {
+			log.Fatal(err)
+		}
+		actual, err := parseRawFilterParams(earl.Query())
+		assert.Nil(t, err)
+		assert.Equal(t, test.expected, actual, fmt.Sprintf("parseRawFilterParams test #%d (input: %s) should not fail", i, test.input))
+	}
+
+}
 
 func TestRespondThatRowDoesNotExist(t *testing.T) {
 	req := httptest.NewRequest("GET", "http://example.com/foo", nil)
