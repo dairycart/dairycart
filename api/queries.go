@@ -246,6 +246,20 @@ func buildProductAttributeDeletionQuery(id int64) string {
 	return buildRowDeletionQuery("product_attributes", "id", id)
 }
 
+func buildProductAttributeUpdateQuery(a *ProductAttribute) (string, []interface{}) {
+	productAttributeUpdateSetMap := map[string]interface{}{
+		"name":       a.Name,
+		"updated_at": squirrel.Expr("NOW()"),
+	}
+	queryBuilder := sqlBuilder.
+		Update("product_attributes").
+		SetMap(productAttributeUpdateSetMap).
+		Where(squirrel.Eq{"id": a.ID}).
+		Suffix(`RETURNING *`)
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}
+
 func buildProductAttributeCreationQuery(a *ProductAttribute) (string, []interface{}) {
 	queryBuilder := sqlBuilder.
 		Insert("product_attributes").
@@ -289,11 +303,25 @@ func buildProductAttributeValueDeletionQuery(id int64) string {
 	return buildRowDeletionQuery("product_attribute_values", "id", id)
 }
 
-func buildProductAttributeValueCreationQuery(pav *ProductAttributeValue) (string, []interface{}) {
+func buildProductAttributeValueUpdateQuery(v *ProductAttributeValue) (string, []interface{}) {
+	productAttributeUpdateSetMap := map[string]interface{}{
+		"value":      v.Value,
+		"updated_at": squirrel.Expr("NOW()"),
+	}
+	queryBuilder := sqlBuilder.
+		Update("product_attribute_values").
+		SetMap(productAttributeUpdateSetMap).
+		Where(squirrel.Eq{"id": v.ID}).
+		Suffix(`RETURNING *`)
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}
+
+func buildProductAttributeValueCreationQuery(v *ProductAttributeValue) (string, []interface{}) {
 	queryBuilder := sqlBuilder.
 		Insert("product_attribute_values").
 		Columns("product_attribute_id", "value").
-		Values(pav.ProductAttributeID, pav.Value).
+		Values(v.ProductAttributeID, v.Value).
 		Suffix(`RETURNING *`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args

@@ -19,6 +19,17 @@ type ProductAttribute struct {
 	ArchivedAt          pq.NullTime `json:"-"`
 }
 
+func (a ProductAttribute) generateScanArgs() []interface{} {
+	return []interface{}{
+		&a.ID,
+		&a.Name,
+		&a.ProductProgenitorID,
+		&a.CreatedAt,
+		&a.UpdatedAt,
+		&a.ArchivedAt,
+	}
+}
+
 func getProductAttributesForProduct(db *sql.DB, progenitorID int64) ([]*ProductAttribute, error) {
 	return nil, nil
 }
@@ -39,8 +50,10 @@ func buildProductAttributeCreationHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func updateProductAttributeInDB(db *sql.DB, pa *ProductAttribute) error {
-	return nil
+func updateProductAttributeInDB(db *sql.DB, a *ProductAttribute) error {
+	productUpdateQuery, queryArgs := buildProductAttributeUpdateQuery(a)
+	err := db.QueryRow(productUpdateQuery, queryArgs...).Scan(a.generateScanArgs()...)
+	return err
 }
 
 func buildProductAttributeUpdateHandler(db *sql.DB) http.HandlerFunc {

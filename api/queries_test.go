@@ -101,6 +101,13 @@ func TestBuildProductAttributeDeletionQuery(t *testing.T) {
 	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
 }
 
+func TestBuildProductAttributeUpdateQuery(t *testing.T) {
+	expectedQuery := `UPDATE product_attributes SET name = $1, updated_at = NOW() WHERE id = $2 RETURNING *`
+	actualQuery, actualArgs := buildProductAttributeUpdateQuery(&ProductAttribute{})
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
+}
+
 func TestBuildProductAttributeCreationQuery(t *testing.T) {
 	expectedQuery := `INSERT INTO product_attributes (name,product_progenitor_id) VALUES ($1,$2) RETURNING *`
 	actualQuery, actualArgs := buildProductAttributeCreationQuery(&ProductAttribute{})
@@ -119,6 +126,13 @@ func TestBuildProductAttributeValueDeletionQuery(t *testing.T) {
 	expected := `UPDATE product_attribute_values SET archived_at = NOW() WHERE id = $1 AND archived_at IS NULL`
 	actual := buildProductAttributeValueDeletionQuery(1)
 	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
+}
+
+func TestBuildProductAttributeValueUpdateQuery(t *testing.T) {
+	expectedQuery := `UPDATE product_attribute_values SET updated_at = NOW(), value = $1 WHERE id = $2 RETURNING *`
+	actualQuery, actualArgs := buildProductAttributeValueUpdateQuery(&ProductAttributeValue{})
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
 }
 
 func TestBuildProductAttributeValueCreationQuery(t *testing.T) {
