@@ -23,6 +23,12 @@ func TestBuildRowRetrievalQuery(t *testing.T) {
 	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
 }
 
+func TestBuildRowDeletionQuery(t *testing.T) {
+	expected := `UPDATE things SET archived_at = NOW() WHERE stuff = $1 AND archived_at IS NULL`
+	actual := buildRowDeletionQuery("things", "stuff", "abritrary")
+	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
+}
+
 func TestBuildProgenitorRetrievalQuery(t *testing.T) {
 	expected := `SELECT * FROM product_progenitors WHERE id = $1 AND archived_at IS NULL`
 	actual := buildProgenitorRetrievalQuery(1)
@@ -41,7 +47,6 @@ func TestBuildProgenitorCreationQuery(t *testing.T) {
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	// comparing interface equality with assert is impossible as far as I can tell
 	assert.Equal(t, 12, len(actualArgs), argsEqualityErrorMessage)
-
 }
 
 func TestBuildProductExistenceQuery(t *testing.T) {
