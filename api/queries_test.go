@@ -127,8 +127,8 @@ func TestBuildProductAttributeRetrievalQuery(t *testing.T) {
 }
 
 func TestBuildProductAttributeListQuery(t *testing.T) {
-	expected := `SELECT * FROM product_attributes WHERE product_progenitor_id = $1 AND archived_at IS NULL`
-	actual := buildProductAttributeListQuery("1")
+	expected := `SELECT * FROM product_attributes WHERE product_progenitor_id = $1 AND archived_at IS NULL LIMIT 25`
+	actual := buildProductAttributeListQuery("1", &QueryFilter{})
 	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
 }
 

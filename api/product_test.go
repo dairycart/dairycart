@@ -377,9 +377,7 @@ func TestProductExistenceHandlerWithExistenceCheckerError(t *testing.T) {
 }
 
 func setExpectationsForSingleProductRetrieval(mock sqlmock.Sqlmock, err error) {
-
-	exampleRows := sqlmock.NewRows(productJoinHeaders).
-		AddRow(exampleProductJoinData...)
+	exampleRows := sqlmock.NewRows(productJoinHeaders).AddRow(exampleProductJoinData...)
 	skuJoinRetrievalQuery := buildCompleteProductRetrievalQuery(exampleProduct.SKU)
 	mock.ExpectQuery(formatQueryForSQLMock(skuJoinRetrievalQuery)).
 		WithArgs(exampleProduct.SKU).

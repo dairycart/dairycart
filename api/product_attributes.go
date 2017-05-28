@@ -39,10 +39,10 @@ type ProductAttributessResponse struct {
 	Data []ProductAttribute `json:"data"`
 }
 
-func getProductAttributesForProgenitor(db *sql.DB, progenitorID string) ([]ProductAttribute, error) {
+func getProductAttributesForProgenitor(db *sql.DB, progenitorID string, queryFilter *QueryFilter) ([]ProductAttribute, error) {
 	var attributes []ProductAttribute
 
-	rows, err := db.Query(buildProductAttributeListQuery(progenitorID))
+	rows, err := db.Query(buildProductAttributeListQuery(progenitorID, queryFilter))
 	if err != nil {
 		return nil, errors.Wrap(err, "Error encountered querying for products")
 	}
@@ -59,7 +59,9 @@ func getProductAttributesForProgenitor(db *sql.DB, progenitorID string) ([]Produ
 func buildProductAttributeListHandler(db *sql.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		progenitorID := mux.Vars(req)["progenitor_id"]
-		attributes, err := getProductAttributesForProgenitor(db, progenitorID)
+		rawFilterParams := req.URL.Query()
+		queryFilter := parseRawFilterParams(rawFilterParams)
+		attributes, err := getProductAttributesForProgenitor(db, progenitorID, queryFilter)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve products from the database")
 			return
@@ -67,8 +69,8 @@ func buildProductAttributeListHandler(db *sql.DB) http.HandlerFunc {
 
 		attributesResponse := &ProductAttributessResponse{
 			ListResponse: ListResponse{
-				Page:  1,
-				Limit: 25,
+				Page:  queryFilter.Page,
+				Limit: queryFilter.Limit,
 				Count: uint64(len(attributes)),
 			},
 			Data: attributes,

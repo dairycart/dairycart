@@ -59,6 +59,36 @@ func buildRowDeletionQuery(table string, idColumn string, id interface{}) string
 	return query
 }
 
+func applyQueryFilterToQueryBuilder(queryBuilder squirrel.SelectBuilder, queryFilter *QueryFilter) squirrel.SelectBuilder {
+	if queryFilter.Limit > 0 {
+		queryBuilder = queryBuilder.Limit(uint64(queryFilter.Limit))
+	} else {
+		queryBuilder = queryBuilder.Limit(25)
+	}
+
+	if queryFilter.Page > 1 {
+		offset := (queryFilter.Page - 1) * uint64(queryFilter.Limit)
+		queryBuilder = queryBuilder.Offset(offset)
+	}
+
+	if !queryFilter.CreatedAfter.IsZero() {
+		queryBuilder = queryBuilder.Where(squirrel.Gt{"p.created_at": queryFilter.CreatedAfter})
+	}
+
+	if !queryFilter.CreatedBefore.IsZero() {
+		queryBuilder = queryBuilder.Where(squirrel.Lt{"p.created_at": queryFilter.CreatedBefore})
+	}
+
+	if !queryFilter.UpdatedAfter.IsZero() {
+		queryBuilder = queryBuilder.Where(squirrel.Gt{"p.updated_at": queryFilter.UpdatedAfter})
+	}
+
+	if !queryFilter.UpdatedBefore.IsZero() {
+		queryBuilder = queryBuilder.Where(squirrel.Lt{"p.updated_at": queryFilter.UpdatedBefore})
+	}
+	return queryBuilder
+}
+
 //////////////////////////////////////////////////////////////////////////////////
 //                                                                              //
 //   ........................................................................   //
@@ -168,26 +198,7 @@ func buildAllProductsRetrievalQuery(queryFilter *QueryFilter) (string, []interfa
 		Where(squirrel.Eq{"p.archived_at": nil}).
 		Limit(uint64(queryFilter.Limit))
 
-	if queryFilter.Page > 1 {
-		offset := (queryFilter.Page - 1) * uint64(queryFilter.Limit)
-		queryBuilder = queryBuilder.Offset(offset)
-	}
-
-	if !queryFilter.CreatedAfter.IsZero() {
-		queryBuilder = queryBuilder.Where(squirrel.Gt{"p.created_at": queryFilter.CreatedAfter})
-	}
-
-	if !queryFilter.CreatedBefore.IsZero() {
-		queryBuilder = queryBuilder.Where(squirrel.Lt{"p.created_at": queryFilter.CreatedBefore})
-	}
-
-	if !queryFilter.UpdatedAfter.IsZero() {
-		queryBuilder = queryBuilder.Where(squirrel.Gt{"p.updated_at": queryFilter.UpdatedAfter})
-	}
-
-	if !queryFilter.UpdatedBefore.IsZero() {
-		queryBuilder = queryBuilder.Where(squirrel.Lt{"p.updated_at": queryFilter.UpdatedBefore})
-	}
+	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter)
 
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
@@ -269,12 +280,13 @@ func buildProductAttributeDeletionQuery(id int64) string {
 	return buildRowDeletionQuery("product_attributes", "id", id)
 }
 
-func buildProductAttributeListQuery(progenitorID string) string {
+func buildProductAttributeListQuery(progenitorID string, queryFilter *QueryFilter) string {
 	queryBuilder := sqlBuilder.
 		Select("*").
 		From("product_attributes").
 		Where(squirrel.Eq{"product_progenitor_id": progenitorID}).
 		Where(squirrel.Eq{"archived_at": nil})
+	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter)
 	query, _, _ := queryBuilder.ToSql()
 	return query
 }
