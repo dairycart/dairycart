@@ -96,6 +96,7 @@ func (nf NullFloat64) MarshalText() ([]byte, error) {
 func (nf *NullFloat64) UnmarshalText(text []byte) (err error) {
 	s := string(text)
 	nf.NullFloat64.Float64, err = strconv.ParseFloat(s, 64)
+	nf.NullFloat64.Valid = err != nil
 	if err != nil {
 		nf.NullFloat64.Float64 = 0
 	}
@@ -122,7 +123,23 @@ func (ns NullString) MarshalText() ([]byte, error) {
 // UnmarshalText is a function which unmarshals a NullString so that gorilla/schema can parse it
 func (ns *NullString) UnmarshalText(text []byte) (err error) {
 	ns.String = string(text)
+	ns.Valid = true
 	return nil
+}
+
+// Round borrowed from https://gist.github.com/DavidVaini/10308388
+func Round(val float64, roundOn float64, places int) (newVal float64) {
+	var round float64
+	pow := math.Pow(10, float64(places))
+	digit := pow * val
+	_, div := math.Modf(digit)
+	if div >= roundOn {
+		round = math.Ceil(digit)
+	} else {
+		round = math.Floor(digit)
+	}
+	newVal = round / pow
+	return
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////

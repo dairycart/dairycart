@@ -131,11 +131,12 @@ func ensureExpectationsWereMet(t *testing.T, mock sqlmock.Sqlmock) {
 
 func TestValidateProductUpdateInputWithValidInput(t *testing.T) {
 	expected := &Product{
-		SKU:      exampleSKU,
-		Name:     "Test",
-		UPC:      NullString{sql.NullString{String: "1234567890"}},
-		Quantity: 666,
-		Price:    12.34,
+		SKU:       exampleSKU,
+		Name:      "Test",
+		UPC:       NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:  666,
+		Price:     12.34,
+		SalePrice: NullFloat64{sql.NullFloat64{Float64: 0, Valid: true}},
 	}
 
 	req := httptest.NewRequest("GET", "http://example.com", strings.NewReader(exampleProductUpdateInput))
@@ -232,7 +233,7 @@ func TestDeleteProductBySKU(t *testing.T) {
 	ensureExpectationsWereMet(t, mock)
 }
 
-func setExpectationsForProductUpdate(mock sqlmock.Sqlmock) {
+func setExpectationsForProductUpdate(mock sqlmock.Sqlmock, err error) {
 	exampleRows := sqlmock.NewRows(plainProductHeaders).
 		AddRow(examplePlainProductData...)
 
@@ -247,14 +248,15 @@ func setExpectationsForProductUpdate(mock sqlmock.Sqlmock) {
 			exampleProduct.SKU,
 			exampleProduct.UPC,
 			exampleProduct.ID,
-		).WillReturnRows(exampleRows)
+		).WillReturnRows(exampleRows).
+		WillReturnError(err)
 }
 
 func TestUpdateProductInDatabase(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
-	setExpectationsForProductUpdate(mock)
+	setExpectationsForProductUpdate(mock, nil)
 
 	err = updateProductInDatabase(db, exampleProduct)
 	assert.Nil(t, err)
@@ -477,6 +479,56 @@ func TestProductListHandlerWithDBError(t *testing.T) {
 
 	router.ServeHTTP(res, req)
 	assert.Equal(t, res.Code, 500, "status code should be 500")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func setExpectationsForProductUpdateHandler(mock sqlmock.Sqlmock, err error) {
+	exampleRows := sqlmock.NewRows(plainProductHeaders).
+		AddRow(examplePlainProductData...)
+
+	productUpdateQuery, _ := buildProductUpdateQuery(exampleProduct)
+	mock.ExpectQuery(formatConstantQueryForSQLMock(productUpdateQuery)).
+		WithArgs(
+			"Test",
+			false,
+			12.34000015258789,
+			666,
+			float64(0),
+			"example",
+			nil,
+			0,
+		).WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
+func TestProductUpdateHandler(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+	setExpectationsForProductExistence(mock, exampleSKU, true, nil)
+	setExpectationsForProductUpdateHandler(mock, nil)
+
+	req, err := http.NewRequest("PUT", "/v1/product/example", strings.NewReader(exampleProductUpdateInput))
+	assert.Nil(t, err)
+	router.ServeHTTP(res, req)
+
+	assert.Equal(t, res.Code, 200, "status code should be 200")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestProductUpdateHandlerWithNonexistentProduct(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+	setExpectationsForProductExistence(mock, exampleSKU, false, nil)
+
+	req, err := http.NewRequest("PUT", "/v1/product/example", strings.NewReader(exampleProductUpdateInput))
+	assert.Nil(t, err)
+	router.ServeHTTP(res, req)
+
+	assert.Equal(t, res.Code, 404, "status code should be 404")
 	ensureExpectationsWereMet(t, mock)
 }
 

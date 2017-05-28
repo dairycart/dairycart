@@ -168,9 +168,16 @@ func validateProductUpdateInput(req *http.Request) (*Product, error) {
 		return nil, errors.New("Invalid input provided for product SKU")
 	}
 
-	// // TODO: revisit this later
-	// formatted, err := strconv.ParseFloat(fmt.Sprintf("%.2f", rounded), 64)
-	// product.Price =
+	product.PackageWeight = float32(Round(float64(product.PackageWeight), .1, 2))
+	product.PackageHeight = float32(Round(float64(product.PackageHeight), .1, 2))
+	product.PackageWidth = float32(Round(float64(product.PackageWidth), .1, 2))
+	product.PackageLength = float32(Round(float64(product.PackageLength), .1, 2))
+	product.ProductWeight = float32(Round(float64(product.ProductWeight), .1, 2))
+	product.ProductHeight = float32(Round(float64(product.ProductHeight), .1, 2))
+	product.ProductWidth = float32(Round(float64(product.ProductWidth), .1, 2))
+	product.ProductLength = float32(Round(float64(product.ProductLength), .1, 2))
+	product.Price = float32(Round(float64(product.Price), .1, 2))
+	product.SalePrice = NullFloat64{sql.NullFloat64{Float64: Round(product.SalePrice.Float64, .1, 2), Valid: true}}
 
 	return product, err
 }
