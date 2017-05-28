@@ -33,8 +33,8 @@ func (a ProductAttribute) generateScanArgs() []interface{} {
 	}
 }
 
-// ProductAttributessResponse is a product response struct
-type ProductAttributessResponse struct {
+// ProductAttributesResponse is a product attribute response struct
+type ProductAttributesResponse struct {
 	ListResponse
 	Data []ProductAttribute `json:"data"`
 }
@@ -55,7 +55,6 @@ func getProductAttributesForProgenitor(db *sql.DB, progenitorID string, queryFil
 	return attributes, nil
 }
 
-// router.HandleFunc("/product_attributes/{progenitor_id:[0-9]+}", buildProductAttributeListHandler(db)).Methods("GET")
 func buildProductAttributeListHandler(db *sql.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		progenitorID := mux.Vars(req)["progenitor_id"]
@@ -67,7 +66,7 @@ func buildProductAttributeListHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		attributesResponse := &ProductAttributessResponse{
+		attributesResponse := &ProductAttributesResponse{
 			ListResponse: ListResponse{
 				Page:  queryFilter.Page,
 				Limit: queryFilter.Limit,
@@ -79,13 +78,12 @@ func buildProductAttributeListHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-// func createProductAttributeInDB(db *sql.DB, a *ProductAttribute) error {
-// 	query, args := buildProductAttributeCreationQuery(a)
-// 	err := db.QueryRow(query, args...).Scan(a.generateScanArgs()...)
-// 	return err
-// }
+func createProductAttributeInDB(db *sql.DB, a *ProductAttribute) error {
+	query, args := buildProductAttributeCreationQuery(a)
+	err := db.QueryRow(query, args...).Scan(a.generateScanArgs()...)
+	return err
+}
 
-// // router.HandleFunc("/product_attributes/{progenitor_id:[0-9]+}", buildProductAttributeCreationHandler(db)).Methods("POST")
 // func buildProductAttributeCreationHandler(db *sql.DB) http.HandlerFunc {
 // 	return func(res http.ResponseWriter, req *http.Request) {
 
@@ -98,7 +96,6 @@ func buildProductAttributeListHandler(db *sql.DB) http.HandlerFunc {
 // 	return err
 // }
 
-// // router.HandleFunc("/product_attributes/{progenitor_id:[0-9]+}/{attribute_id:[0-9]+}", buildProductAttributeUpdateHandler(db)).Methods("PUT")
 // func buildProductAttributeUpdateHandler(db *sql.DB) http.HandlerFunc {
 // 	return func(res http.ResponseWriter, req *http.Request) {
 

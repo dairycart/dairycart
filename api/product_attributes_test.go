@@ -19,11 +19,12 @@ var productAttributeData []driver.Value
 
 func init() {
 	exampleProductAttribute = &ProductAttribute{
-		ID:   123,
-		Name: "attribute",
+		ID:                  123,
+		Name:                "attribute",
+		ProductProgenitorID: 2, // == exampleProgenitor.ID
 	}
 	productAttributeHeaders = []string{"id", "name", "product_progenitor_id", "created_at", "updated_at", "archived_at"}
-	productAttributeData = []driver.Value{1, 2, "Attribute", exampleTime, nil, nil}
+	productAttributeData = []driver.Value{exampleProductAttribute.ID, exampleProductAttribute.Name, exampleProductAttribute.ProductProgenitorID, exampleTime, nil, nil}
 }
 
 func setExpectationsForProductAttributeExistence(mock sqlmock.Sqlmock, id int64, exists bool, err error) {
@@ -36,11 +37,30 @@ func setExpectationsForProductAttributeExistence(mock sqlmock.Sqlmock, id int64,
 		WillReturnError(err)
 }
 
+func setExpectationsForProductAttributeCreation(mock sqlmock.Sqlmock, a *ProductAttribute, err error) {
+	exampleRows := sqlmock.NewRows(productAttributeHeaders).AddRow(productAttributeData...)
+	query, _ := buildProductAttributeCreationQuery(a)
+	mock.ExpectQuery(formatQueryForSQLMock(query)).
+		WithArgs(a.Name, a.ProductProgenitorID).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
+func TestCreateProductAttributeInDB(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	setExpectationsForProductAttributeCreation(mock, exampleProductAttribute, nil)
+
+	err = createProductAttributeInDB(db, exampleProductAttribute)
+	assert.Nil(t, err)
+}
+
 //////////////////////////////////////////////////////
 //                                                  //
-//   HTTP                                 :e        //
-//     Handler                           'M$\       //
-//         Tests                        sf$$br      //
+//     HTTP                               :e        //
+//       Handler                         'M$\       //
+//           Tests                      sf$$br      //
 //                                    J\J\J$L$L     //
 //                                  :d  )fM$$$$$r   //
 //                             ..P*\ .4MJP   '*\    //

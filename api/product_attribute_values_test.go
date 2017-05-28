@@ -23,7 +23,7 @@ var productAttributeValueData []driver.Value
 func init() {
 	exampleProductAttributeValue = &ProductAttributeValue{
 		ID:                 256,
-		ProductAttributeID: 123, // exampleProductAttribute.ID
+		ProductAttributeID: 123, // == exampleProductAttribute.ID
 		Value:              "something",
 	}
 	productAttributeValueHeaders = []string{"id", "product_attribute_id", "value", "created_at", "updated_at", "archived_at"}
@@ -64,8 +64,6 @@ func TestRetrieveProductAttributeValueFromDBThatDoesNotExist(t *testing.T) {
 
 	_, err = retrieveProductAttributeValueFromDB(db, exampleProductAttributeValue.ID)
 	assert.NotNil(t, err)
-	// TODO: fix this part of the test. I think this is likely a false positive. Integration tests should tell.
-	// assert.Equal(t, exampleProductAttributeValue, actual, "expected and actual products should match")
 	ensureExpectationsWereMet(t, mock)
 }
 
