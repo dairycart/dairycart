@@ -1,10 +1,2 @@
-cd api
-
-if [ ! -e coverage.out ] ; then
-    touch coverage.out
-fi
-
-go test -coverprofile=coverage.out
+go test github.com/verygoodsoftwarenotvirus/dairycart/api -coverprofile=coverage.out
 go tool cover -html=coverage.out
-
-cd ../
