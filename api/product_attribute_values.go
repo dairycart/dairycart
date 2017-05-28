@@ -86,8 +86,7 @@ func buildProductAttributeValueCreationHandler(db *sql.DB) http.HandlerFunc {
 
 		newProductAttributeValue, err = createProductAttributeValueInDB(db, newProductAttributeValue)
 		if err != nil {
-			errStr := err.Error()
-			notifyOfInternalIssue(res, err, errStr)// "insert product in database")
+			notifyOfInternalIssue(res, err, "insert product in database")
 			return
 		}
 
