@@ -3,10 +3,17 @@ package api
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"net/http/httptest"
 	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
+)
+
+const (
+	exampleSKU        = "example"
+	exampleTimeString = "2017-01-01 12:00:00.000000"
 )
 
 ////////////////////////////////////////////////////////
@@ -21,7 +28,7 @@ import (
 //      _          _-"" WHHHHHW""--__                 //
 //      \\      _-"   __\VW=WV/__   /"".              //
 //       \\  _-" \__--"  "-_-"   """    "_            //
-//        \\/ PhH  _                      ""          //
+//        \\/      _                      ""          //
 //         \\----_/_|     ___      /"\  T""\====-     //
 //          \\ /"-._     |%|H|    (   "\|) | /  .:)   //
 //           \/     /    |-+-|     \    |_ J .:::-'   //
@@ -36,6 +43,19 @@ import (
 //    C\_ _- _,'     \  "--------.   L_""""_/         //
 //     " \/-'         "-_________|     '"-Y           //
 ////////////////////////////////////////////////////////
+
+var arbitraryError error
+var exampleTime time.Time
+
+func init() {
+	arbitraryError = fmt.Errorf("arbitrary error")
+
+	var timeParseErr error
+	exampleTime, timeParseErr = time.Parse("2006-01-02 03:04:00.000000", exampleTimeString)
+	if timeParseErr != nil {
+		log.Fatalf("error parsing time")
+	}
+}
 
 func setupMockRequestsAndMux(db *sql.DB) (*httptest.ResponseRecorder, *mux.Router) {
 	m := mux.NewRouter()

@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/gorilla/mux"
@@ -35,10 +36,15 @@ func init() {
 //   --------------------                                     -------------------   //
 //////////////////////////////////////////////////////////////////////////////////////
 
+func buildRoute(routeParts ...string) string {
+	allRouteParts := append([]string{"v1"}, routeParts...)
+	return fmt.Sprintf("/%s", strings.Join(allRouteParts, "/"))
+}
+
 // SetupAPIRoutes takes a mux router and a database connection and creates all the API routes for the API
 func SetupAPIRoutes(router *mux.Router, db *sql.DB) {
 	// Products
-	productEndpoint := fmt.Sprintf("/v1/product/{sku:%s}", SKUPattern)
+	productEndpoint := buildRoute("product", fmt.Sprintf("{sku:%s}", SKUPattern))
 	router.HandleFunc("/v1/product", buildProductCreationHandler(db)).Methods("POST")
 	router.HandleFunc("/v1/products", buildProductListHandler(db)).Methods("GET")
 	router.HandleFunc(productEndpoint, buildSingleProductHandler(db)).Methods("GET")
@@ -47,11 +53,15 @@ func SetupAPIRoutes(router *mux.Router, db *sql.DB) {
 	router.HandleFunc(productEndpoint, buildProductDeletionHandler(db)).Methods("DELETE")
 
 	// Product Attributes
-	router.HandleFunc("/product_attributes/{progenitor_id:[0-9]+}", buildProductAttributeListHandler(db)).Methods("GET")
-	router.HandleFunc("/product_attributes/{progenitor_id:[0-9]+}", buildProductAttributeCreationHandler(db)).Methods("POST")
-	router.HandleFunc("/product_attributes/{progenitor_id:[0-9]+}/{attribute_id:[0-9]+}", buildProductAttributeUpdateHandler(db)).Methods("PUT")
+	productAttributeEndpoint := buildRoute("product_attributes", "{progenitor_id:[0-9]+}")
+	specificAttributeEndpoint := buildRoute("product_attributes", "{progenitor_id:[0-9]+}", "{attribute_id:[0-9]+}")
+	router.HandleFunc(productAttributeEndpoint, buildProductAttributeListHandler(db)).Methods("GET")
+	router.HandleFunc(productAttributeEndpoint, buildProductAttributeCreationHandler(db)).Methods("POST")
+	router.HandleFunc(specificAttributeEndpoint, buildProductAttributeUpdateHandler(db)).Methods("PUT")
 
 	// // Product Attribute Values
-	// router.HandleFunc("/product_attributes/{attribute_id:[0-9]+}/values", buildProductAttributeValueCreationHandler(db)).Methods("GET")
-	// router.HandleFunc("/product_attributes/{attribute_id:[0-9]+}/value", buildProductAttributeValueCreationHandler(db)).Methods("POST")
+	attributeValueEndpoint := buildRoute("product_attributes", "{attribute_id:[0-9]+}", "value")
+	attributeValuesEndpoint := buildRoute("product_attributes", "{attribute_id:[0-9]+}", "values")
+	router.HandleFunc(attributeValueEndpoint, buildProductAttributeValueCreationHandler(db)).Methods("POST")
+	router.HandleFunc(attributeValuesEndpoint, buildProductAttributeValueCreationHandler(db)).Methods("GET")
 }

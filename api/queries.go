@@ -257,9 +257,9 @@ func buildProductCreationQuery(p *Product) (string, []interface{}) {
 //                                                         //
 /////////////////////////////////////////////////////////////
 
-const (
-	productAttributeCreationQuery = `INSERT INTO product_attributes ("name", "product_progenitor_id") VALUES ($1, $2) RETURNING *;`
-)
+func buildProductAttributeexistenceQuery(id int64) string {
+	return buildRowExistenceQuery("product_attributes", "id", id)
+}
 
 func buildProductAttributeRetrievalQuery(id int64) string {
 	return buildRowRetrievalQuery("product_attributes", "id", id)

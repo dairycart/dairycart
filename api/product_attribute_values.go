@@ -3,7 +3,6 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -11,13 +10,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
-
-	log "github.com/sirupsen/logrus"
-)
-
-const (
-	productAttributeValueRetrievalQuery = `SELECT * FROM product_attribute_values WHERE id = $1 AND archived_at IS NULL`
-	productAttributeValueCreationQuery  = `INSERT INTO product_attribute_values ("product_attribute_id", "value") VALUES ($1, $2) RETURNING *;`
 )
 
 // ProductAttributeValue represents a products variant attribute values. If you have a t-shirt that comes in three colors
@@ -27,7 +19,6 @@ type ProductAttributeValue struct {
 	ID                 int64       `json:"id"`
 	ProductAttributeID int64       `json:"product_attribute_id"`
 	Value              string      `json:"value"`
-	ProductsCreated    bool        `json:"products_created"`
 	CreatedAt          time.Time   `json:"created_at"`
 	UpdatedAt          pq.NullTime `json:"updated_at"`
 	ArchivedAt         pq.NullTime `json:"-"`
@@ -38,24 +29,17 @@ func (pav ProductAttributeValue) generateScanArgs() []interface{} {
 		&pav.ID,
 		&pav.ProductAttributeID,
 		&pav.Value,
-		&pav.ProductsCreated,
 		&pav.CreatedAt,
 		&pav.UpdatedAt,
 		&pav.ArchivedAt,
 	}
 }
 
-// createProductAttributeValue creates a ProductAttributeValue tied to a ProductAttribute
-func createProductAttributeValue(db *sql.DB, pav *ProductAttributeValue) (*ProductAttributeValue, error) {
-	_, err := db.Exec(productAttributeValueCreationQuery, pav.ProductAttributeID, pav.Value)
-	return nil, err
-}
-
 // retrieveProductAttributeValue retrieves a ProductAttributeValue with a given ID from the database
 func retrieveProductAttributeValue(db *sql.DB, id int64) (*ProductAttributeValue, error) {
 	pav := &ProductAttributeValue{}
-
-	err := db.QueryRow(productAttributeValueRetrievalQuery, id).Scan(pav.generateScanArgs()...)
+	query := buildProductAttributeValueRetrievalQuery(id)
+	err := db.QueryRow(query, id).Scan(pav.generateScanArgs()...)
 	if err == sql.ErrNoRows {
 		return pav, errors.Wrap(err, "Error querying for product attribute values")
 	}
@@ -72,6 +56,13 @@ func loadProductAttributeValueInput(req *http.Request) (*ProductAttributeValue, 
 	return pav, err
 }
 
+// createProductAttributeValueInDB creates a ProductAttributeValue tied to a ProductAttribute
+func createProductAttributeValueInDB(db *sql.DB, pav *ProductAttributeValue) (*ProductAttributeValue, error) {
+	query, args := buildProductAttributeValueCreationQuery(pav)
+	err := db.QueryRow(query, args...).Scan(pav.generateScanArgs()...)
+	return pav, err
+}
+
 func buildProductAttributeValueCreationHandler(db *sql.DB) http.HandlerFunc {
 	// productAttributeValueCreationHandler is a product creation handler
 	return func(res http.ResponseWriter, req *http.Request) {
@@ -80,8 +71,8 @@ func buildProductAttributeValueCreationHandler(db *sql.DB) http.HandlerFunc {
 		// we can eat this error because Mux takes care of validating route params for us
 		attributeIDInt, _ := strconv.ParseInt(attributeID, 10, 64)
 
-		productAttribueExists, err := rowExistsInDB(db, "product_attributes", "id", attributeID)
-		if err != nil || !productAttribueExists {
+		productAttributeExists, err := rowExistsInDB(db, "product_attributes", "id", attributeID)
+		if err != nil || !productAttributeExists {
 			respondThatRowDoesNotExist(req, res, "product_attribute", attributeID)
 			return
 		}
@@ -93,15 +84,13 @@ func buildProductAttributeValueCreationHandler(db *sql.DB) http.HandlerFunc {
 		}
 		newProductAttributeValue.ProductAttributeID = attributeIDInt
 
-		// We don't want API consumers to be able to override this value
-		newProductAttributeValue.ProductsCreated = false
-
-		_, err = createProductAttributeValue(db, newProductAttributeValue)
+		newProductAttributeValue, err = createProductAttributeValueInDB(db, newProductAttributeValue)
 		if err != nil {
-			errorString := fmt.Sprintf("error inserting product into database: %v", err)
-			log.Println(errorString)
-			http.Error(res, errorString, http.StatusBadRequest)
+			errStr := err.Error()
+			notifyOfInternalIssue(res, err, errStr)// "insert product in database")
 			return
 		}
+
+		json.NewEncoder(res).Encode(newProductAttributeValue)
 	}
 }

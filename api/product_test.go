@@ -4,24 +4,19 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
 const (
-	exampleSKU        = "example"
-	exampleTimeString = "2017-01-01 12:00:00.000000"
-	badSKUUpdateJSON  = `{"sku": "pooƃ ou sᴉ nʞs sᴉɥʇ"}`
-	lolFloats         = 12.34000015258789
+	badSKUUpdateJSON = `{"sku": "pooƃ ou sᴉ nʞs sᴉɥʇ"}`
+	lolFloats        = 12.34000015258789
 
 	exampleProductCreationInput = `
 		{
@@ -56,22 +51,13 @@ const (
 	`
 )
 
-var arbitraryError error
 var plainProductHeaders []string
 var examplePlainProductData []driver.Value
 var productJoinHeaders []string
 var exampleProductJoinData []driver.Value
-var exampleTime time.Time
 var exampleProduct *Product
 
 func init() {
-	var err error
-	exampleTime, err = time.Parse("2006-01-02 03:04:00.000000", exampleTimeString)
-	if err != nil {
-		log.Fatalf("error parsing time")
-	}
-
-	arbitraryError = fmt.Errorf("arbitrary error")
 	plainProductHeaders = []string{"id", "product_progenitor_id", "sku", "name", "upc", "quantity", "on_sale", "price", "sale_price", "created_at", "updated_at", "archived_at"}
 	examplePlainProductData = []driver.Value{10, 2, "skateboard", "Skateboard", "1234567890", 123, false, 12.34, nil, exampleTime, nil, nil}
 

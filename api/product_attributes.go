@@ -15,7 +15,7 @@ import (
 // and three sizes, then there are two ProductAttributes for that base_product, color and size.
 type ProductAttribute struct {
 	ID                  int64       `json:"id"`
-	Name                string      `json:"Name"`
+	Name                string      `json:"name"`
 	ProductProgenitorID int64       `json:"product_progenitor_id"`
 	CreatedAt           time.Time   `json:"created_at"`
 	UpdatedAt           pq.NullTime `json:"-"`
