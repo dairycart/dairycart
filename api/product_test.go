@@ -5,7 +5,6 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -21,6 +20,40 @@ import (
 const (
 	exampleSKU        = "example"
 	exampleTimeString = "2017-01-01 12:00:00.000000"
+
+	exampleProductCreationInput = `
+		{
+			"sku": "new-product",
+			"name": "New Product",
+			"upc": "0123456789",
+			"quantity": 123,
+			"on_sale": false,
+			"price": 0,
+			"sale_price": null,
+			"description": "This is a new product.",
+			"taxable": true,
+			"product_weight": 9,
+			"product_height": 9,
+			"product_width": 9,
+			"product_length": 9,
+			"package_weight": 9,
+			"package_height": 9,
+			"package_width": 9,
+			"package_length": 9
+		}
+	`
+
+	exampleProductUpdateInput = `
+		{
+			"sku": "example",
+			"name": "Test",
+			"quantity": 666,
+			"upc": "1234567890",
+			"on_sale": false,
+			"price": 12.34,
+			"sale_price": null
+		}
+	`
 )
 
 var arbitraryError error
@@ -30,7 +63,6 @@ var productJoinHeaders []string
 var exampleProductJoinData []driver.Value
 var exampleTime time.Time
 var exampleProduct *Product
-var exampleProductCreationInput io.Reader
 
 func init() {
 	var err error
@@ -70,19 +102,6 @@ func init() {
 		Price:               12.34,
 		CreatedAt:           exampleTime,
 	}
-
-	exampleProductCreationInput = strings.NewReader(strings.TrimSpace(`
-		{
-			"product_progenitor_id": 1,
-			"sku": "example",
-			"name": "Test",
-			"quantity": 666,
-			"upc": "1234567890",
-			"on_sale": false,
-			"price": 12.34,
-			"sale_price": null
-		}
-	`))
 }
 
 func setExpectationsForProductExistence(mock sqlmock.Sqlmock, SKU string, exists bool, err error) {
@@ -112,19 +131,18 @@ func ensureExpectationsWereMet(t *testing.T, mock sqlmock.Sqlmock) {
 
 func TestValidateProductUpdateInputWithValidInput(t *testing.T) {
 	expected := &Product{
-		ProductProgenitorID: 1,
-		SKU:                 exampleSKU,
-		Name:                "Test",
-		UPC:                 NullString{sql.NullString{String: "1234567890"}},
-		Quantity:            666,
-		Price:               12.34,
+		SKU:      exampleSKU,
+		Name:     "Test",
+		UPC:      NullString{sql.NullString{String: "1234567890"}},
+		Quantity: 666,
+		Price:    12.34,
 	}
 
-	req := httptest.NewRequest("GET", "http://example.com", exampleProductCreationInput)
+	req := httptest.NewRequest("GET", "http://example.com", strings.NewReader(exampleProductUpdateInput))
 	actual, err := validateProductUpdateInput(req)
 
 	assert.Nil(t, err)
-	assert.Equal(t, actual, expected, "valid product input should parse into a proper product struct")
+	assert.Equal(t, expected, actual, "valid product input should parse into a proper product struct")
 }
 
 func TestValidateProductUpdateInputWithInvalidInput(t *testing.T) {
@@ -272,7 +290,63 @@ func TestCreateProductInDB(t *testing.T) {
 	ensureExpectationsWereMet(t, mock)
 }
 
-// HTTP handler tests
+func TestValidateProductCreationInput(t *testing.T) {
+	expected := &ProductCreationInput{
+		Description:   "This is a new product.",
+		Taxable:       true,
+		ProductWeight: 9,
+		ProductHeight: 9,
+		ProductWidth:  9,
+		ProductLength: 9,
+		PackageWeight: 9,
+		PackageHeight: 9,
+		PackageWidth:  9,
+		PackageLength: 9,
+		SKU:           "new-product",
+		Name:          "New Product",
+		UPC:           "0123456789",
+		Quantity:      123,
+	}
+
+	req := httptest.NewRequest("GET", "http://example.com", strings.NewReader(exampleProductCreationInput))
+	actual, err := validateProductCreationInput(req)
+
+	assert.Nil(t, err)
+	assert.Equal(t, expected, actual, "valid product input should parse into a proper product struct")
+}
+
+func TestValidateProductCreationInputWithInvalidInput(t *testing.T) {
+	req := httptest.NewRequest("GET", "http://example.com", nil)
+	_, err := validateProductCreationInput(req)
+
+	assert.NotNil(t, err)
+}
+
+func TestValidateProductCreationInputWithInvalidSKU(t *testing.T) {
+	req := httptest.NewRequest("GET", "http://example.com", strings.NewReader(`{"sku": "pooƃ ou sᴉ nʞs sᴉɥʇ"}`))
+	_, err := validateProductCreationInput(req)
+
+	assert.NotNil(t, err)
+}
+
+//////////////////////////////////////////////////////////////
+//                        ,-.             __                //
+//  HTTP                ,'   `---.___.---'  `.              //
+//    handler         ,'   ,-                 `-._          //
+//      tests       ,'    /                       \         //
+//               ,\/     /                        \\        //
+//           )`._)>)     |                         \\       //
+//           `>,'    _   \                  /       |\      //
+//             )      \   |   |            |        |\\     //
+//    .   ,   /        \  |    `.          |        | ))    //
+//    \`. \`-'          )-|      `.        |        /((     //
+//     \ `-`   a`     _/ ;\ _     )`-.___.--\      /  `'    //
+//      `._         ,'    \`j`.__/        \  `.    \        //
+//        / ,    ,'       _)\   /`        _) ( \   /        //
+//        \__   /        /nn_) (         /nn__\_) (         //
+//          `--'     hjw   /nn__\             /nn__\        //
+//////////////////////////////////////////////////////////////
+
 func TestProductExistenceHandlerWithExistingProduct(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
@@ -280,7 +354,8 @@ func TestProductExistenceHandlerWithExistingProduct(t *testing.T) {
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, exampleSKU, true, nil)
 
-	req, _ := http.NewRequest("HEAD", "/v1/product/example", nil)
+	req, err := http.NewRequest("HEAD", "/v1/product/example", nil)
+	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
 	assert.Equal(t, res.Code, 200, "status code should be 200")
@@ -294,7 +369,8 @@ func TestProductExistenceHandlerWithNonexistentProduct(t *testing.T) {
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, "unreal", false, nil)
 
-	req, _ := http.NewRequest("HEAD", "/v1/product/unreal", nil)
+	req, err := http.NewRequest("HEAD", "/v1/product/unreal", nil)
+	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
 	assert.Equal(t, res.Code, 404, "status code should be 404")
@@ -308,11 +384,23 @@ func TestProductExistenceHandlerWithExistenceCheckerError(t *testing.T) {
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, "unreal", false, arbitraryError)
 
-	req, _ := http.NewRequest("HEAD", "/v1/product/unreal", nil)
+	req, err := http.NewRequest("HEAD", "/v1/product/unreal", nil)
+	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
 	assert.Equal(t, res.Code, 404, "status code should be 404")
 	ensureExpectationsWereMet(t, mock)
+}
+
+func setExpectationsForSingleProductRetrieval(mock sqlmock.Sqlmock, err error) {
+
+	exampleRows := sqlmock.NewRows(productJoinHeaders).
+		AddRow(exampleProductJoinData...)
+	skuJoinRetrievalQuery := buildCompleteProductRetrievalQuery(exampleProduct.SKU)
+	mock.ExpectQuery(formatConstantQueryForSQLMock(skuJoinRetrievalQuery)).
+		WithArgs(exampleProduct.SKU).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
 }
 
 func TestProductRetrievalHandlerWithExistingProduct(t *testing.T) {
@@ -320,18 +408,28 @@ func TestProductRetrievalHandlerWithExistingProduct(t *testing.T) {
 	assert.Nil(t, err)
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
+	setExpectationsForSingleProductRetrieval(mock, nil)
 
-	exampleRows := sqlmock.NewRows(productJoinHeaders).
-		AddRow(exampleProductJoinData...)
-	skuJoinRetrievalQuery := buildCompleteProductRetrievalQuery(exampleProduct.SKU)
-	mock.ExpectQuery(formatConstantQueryForSQLMock(skuJoinRetrievalQuery)).
-		WithArgs(exampleProduct.SKU).
-		WillReturnRows(exampleRows)
-
-	req, _ := http.NewRequest("GET", "/v1/product/skateboard", nil)
+	req, err := http.NewRequest("GET", "/v1/product/skateboard", nil)
+	assert.Nil(t, err)
 
 	router.ServeHTTP(res, req)
 	assert.Equal(t, res.Code, 200, "status code should be 200")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestProductRetrievalHandlerWithDBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+	setExpectationsForSingleProductRetrieval(mock, sql.ErrNoRows)
+
+	req, err := http.NewRequest("GET", "/v1/product/skateboard", nil)
+	assert.Nil(t, err)
+
+	router.ServeHTTP(res, req)
+	assert.Equal(t, res.Code, 404, "status code should be 404")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -342,7 +440,8 @@ func TestProductListHandler(t *testing.T) {
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductListQuery(mock, nil)
 
-	req, _ := http.NewRequest("GET", "/v1/products", nil)
+	req, err := http.NewRequest("GET", "/v1/products", nil)
+	assert.Nil(t, err)
 
 	router.ServeHTTP(res, req)
 	assert.Equal(t, res.Code, 200, "status code should be 200")
@@ -366,6 +465,21 @@ func TestProductListHandler(t *testing.T) {
 	ensureExpectationsWereMet(t, mock)
 }
 
+func TestProductListHandlerWithDBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+	setExpectationsForProductListQuery(mock, arbitraryError)
+
+	req, err := http.NewRequest("GET", "/v1/products", nil)
+	assert.Nil(t, err)
+
+	router.ServeHTTP(res, req)
+	assert.Equal(t, res.Code, 500, "status code should be 500")
+	ensureExpectationsWereMet(t, mock)
+}
+
 func TestProductDeletionHandlerWithExistentProduct(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
@@ -378,7 +492,8 @@ func TestProductDeletionHandlerWithExistentProduct(t *testing.T) {
 		WithArgs(exampleSKU).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
-	req, _ := http.NewRequest("DELETE", "/v1/product/example", nil)
+	req, err := http.NewRequest("DELETE", "/v1/product/example", nil)
+	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
 	assert.Equal(t, res.Code, 200, "status code should be 200")
@@ -392,7 +507,8 @@ func TestProductDeletionHandlerWithNonexistentProduct(t *testing.T) {
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, exampleSKU, false, nil)
 
-	req, _ := http.NewRequest("DELETE", "/v1/product/example", nil)
+	req, err := http.NewRequest("DELETE", "/v1/product/example", nil)
+	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
 	assert.Equal(t, res.Code, 404, "status code should be 404")

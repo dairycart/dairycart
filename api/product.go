@@ -328,12 +328,12 @@ func buildProductUpdateHandler(db *sql.DB) http.HandlerFunc {
 }
 
 func validateProductCreationInput(req *http.Request) (*ProductCreationInput, error) {
-	newProduct := &ProductCreationInput{}
+	pci := &ProductCreationInput{}
 	decoder := json.NewDecoder(req.Body)
 	defer req.Body.Close()
-	err := decoder.Decode(newProduct)
+	err := decoder.Decode(pci)
 
-	p := structs.New(newProduct)
+	p := structs.New(pci)
 	// go will happily decode an invalid input into a completely zeroed struct,
 	// so we gotta do checks like this because we're bad at programming.
 	if p.IsZero() {
@@ -343,11 +343,11 @@ func validateProductCreationInput(req *http.Request) (*ProductCreationInput, err
 	// we need to be certain that if a user passed us a SKU, that it isn't set
 	// to something that mux won't disallow them from retrieving later
 	s := p.Field("SKU")
-	if !s.IsZero() && !skuValidator.MatchString(newProduct.SKU) {
+	if !s.IsZero() && !skuValidator.MatchString(pci.SKU) {
 		return nil, errors.New("Invalid input provided for product SKU")
 	}
 
-	return newProduct, err
+	return pci, err
 }
 
 // createProductInDB takes a marshalled Product object and creates an entry for it and a base_product in the database
