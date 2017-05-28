@@ -4,15 +4,15 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"net/http/httptest"
 	"net/url"
 	"testing"
 	"time"
 
-	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
-
 	"github.com/stretchr/testify/assert"
+
+	log "github.com/sirupsen/logrus"
+	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
 var exampleFilterStartTime time.Time

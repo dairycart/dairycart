@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/fatih/structs"
 	"github.com/gorilla/mux"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
@@ -14,12 +16,13 @@ import (
 // ProductAttribute represents a products variant attributes. If you have a t-shirt that comes in three colors
 // and three sizes, then there are two ProductAttributes for that base_product, color and size.
 type ProductAttribute struct {
-	ID                  int64       `json:"id"`
-	Name                string      `json:"name"`
-	ProductProgenitorID int64       `json:"product_progenitor_id"`
-	CreatedAt           time.Time   `json:"created_at"`
-	UpdatedAt           pq.NullTime `json:"-"`
-	ArchivedAt          pq.NullTime `json:"-"`
+	ID                  int64                    `json:"id"`
+	Name                string                   `json:"name"`
+	ProductProgenitorID int64                    `json:"product_progenitor_id"`
+	Values              []*ProductAttributeValue `json:"values"`
+	CreatedAt           time.Time                `json:"created_at"`
+	UpdatedAt           pq.NullTime              `json:"-"`
+	ArchivedAt          pq.NullTime              `json:"-"`
 }
 
 func (a ProductAttribute) generateScanArgs() []interface{} {
@@ -37,6 +40,12 @@ func (a ProductAttribute) generateScanArgs() []interface{} {
 type ProductAttributesResponse struct {
 	ListResponse
 	Data []ProductAttribute `json:"data"`
+}
+
+// ProductAttributeCreationInput is a struct to use for create product attributes
+type ProductAttributeCreationInput struct {
+	Name   string   `json:"name"`
+	Values []string `json:"values"`
 }
 
 func getProductAttributesForProgenitor(db *sql.DB, progenitorID string, queryFilter *QueryFilter) ([]ProductAttribute, error) {
@@ -78,17 +87,88 @@ func buildProductAttributeListHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func createProductAttributeInDB(db *sql.DB, a *ProductAttribute) error {
-	query, args := buildProductAttributeCreationQuery(a)
-	err := db.QueryRow(query, args...).Scan(a.generateScanArgs()...)
-	return err
+func validateProductAttributeCreationInput(req *http.Request) (*ProductAttributeCreationInput, error) {
+	i := &ProductAttributeCreationInput{}
+	json.NewDecoder(req.Body).Decode(i)
+
+	s := structs.New(i)
+	// go will happily decode an invalid input into a completely zeroed struct,
+	// so we gotta do checks like this because we're bad at programming.
+	if s.IsZero() {
+		return nil, errors.New("Invalid input provided for product attribute body")
+	}
+
+	return i, nil
 }
 
-// func buildProductAttributeCreationHandler(db *sql.DB) http.HandlerFunc {
-// 	return func(res http.ResponseWriter, req *http.Request) {
+func createProductAttributeInDB(db *sql.DB, a *ProductAttribute) (*ProductAttribute, error) {
+	query, args := buildProductAttributeCreationQuery(a)
+	row := db.QueryRow(query, args...)
+	scanArgs := a.generateScanArgs()
+	err := row.Scan(scanArgs...)
+	return a, err
+}
 
-// 	}
-// }
+func createProductAttributesInDBFromInput(db *sql.DB, in *ProductAttributeCreationInput, progenitorID int64) (*ProductAttribute, error) {
+	newProductAttribute := &ProductAttribute{
+		Name:                in.Name,
+		ProductProgenitorID: progenitorID,
+	}
+	newProductAttribute, err := createProductAttributeInDB(db, newProductAttribute)
+	if err != nil {
+		return nil, err
+	}
+
+	noop := func(i interface{}) {
+		return
+	}
+
+	for _, value := range in.Values {
+		newAttributeValue := &ProductAttributeValue{
+			ProductAttributeID: newProductAttribute.ID,
+			Value:              value,
+		}
+		_, err := createProductAttributeValueInDB(db, newAttributeValue)
+		if err != nil {
+			errStr := err.Error()
+			noop(errStr)
+			return nil, err
+		}
+		newProductAttribute.Values = append(newProductAttribute.Values, newAttributeValue)
+	}
+
+	return newProductAttribute, nil
+}
+
+func buildProductAttributeCreationHandler(db *sql.DB) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		// ProductUpdateHandler is a request handler that can update products
+		progenitorID := mux.Vars(req)["progenitor_id"]
+		// eating this error because Mux should valdiate this for us.
+		progenitorIDInt, _ := strconv.Atoi(progenitorID)
+
+		// can't update a product that doesn't exist!
+		exists, err := rowExistsInDB(db, "product_progenitors", "id", progenitorID)
+		if err != nil || !exists {
+			respondThatRowDoesNotExist(req, res, "product_progenitors", progenitorID)
+			return
+		}
+
+		newAttributeData, err := validateProductAttributeCreationInput(req)
+		if err != nil {
+			notifyOfInvalidRequestBody(res, err)
+			return
+		}
+
+		newProductAttribute, err := createProductAttributesInDBFromInput(db, newAttributeData, int64(progenitorIDInt))
+		if err != nil {
+			notifyOfInternalIssue(res, err, "retrieve products from the database")
+			return
+		}
+
+		json.NewEncoder(res).Encode(newProductAttribute)
+	}
+}
 
 // func updateProductAttributeInDB(db *sql.DB, a *ProductAttribute) error {
 // 	productUpdateQuery, queryArgs := buildProductAttributeUpdateQuery(a)

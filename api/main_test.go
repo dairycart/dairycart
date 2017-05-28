@@ -2,17 +2,18 @@ package api
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
-	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
-
 	"github.com/gorilla/mux"
+
+	log "github.com/sirupsen/logrus"
+	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
 const (
@@ -81,4 +82,12 @@ func ensureExpectationsWereMet(t *testing.T, mock sqlmock.Sqlmock) {
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expections: %s", err)
 	}
+}
+
+func argsToDriverValues(args []interface{}) []driver.Value {
+	rv := []driver.Value{}
+	for _, x := range args {
+		rv = append(rv, x)
+	}
+	return rv
 }

@@ -119,7 +119,7 @@ func buildProgenitorRetrievalQuery(id int64) string {
 	return buildRowRetrievalQuery("product_progenitors", "id", id)
 }
 
-func buildProgenitorExistenceQuery(id int64) string {
+func buildProgenitorExistenceQuery(id string) string {
 	return buildRowExistenceQuery("product_progenitors", "id", id)
 }
 

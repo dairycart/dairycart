@@ -38,7 +38,7 @@ func TestBuildProgenitorRetrievalQuery(t *testing.T) {
 
 func TestBuildProgenitorExistenceQuery(t *testing.T) {
 	expected := `SELECT EXISTS(SELECT 1 FROM product_progenitors WHERE id = $1 AND archived_at IS NULL)`
-	actual := buildProgenitorExistenceQuery(1)
+	actual := buildProgenitorExistenceQuery("1")
 	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
 }
 

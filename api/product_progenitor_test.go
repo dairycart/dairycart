@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
@@ -67,9 +68,9 @@ func TestNewProductProgenitorFromProductCreationInput(t *testing.T) {
 	assert.Equal(t, expected, actual, "Output of newProductProgenitorFromProductCreationInput was unexpected")
 }
 
-func setExpectationsForProductProgenitorExistence(mock sqlmock.Sqlmock, id int64, exists bool) {
+func setExpectationsForProductProgenitorExistence(mock sqlmock.Sqlmock, id string, exists bool) {
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
-	query := formatQueryForSQLMock(buildProgenitorRetrievalQuery(1))
+	query := formatQueryForSQLMock(buildProgenitorExistenceQuery(id))
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows)
 }
 

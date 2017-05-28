@@ -11,7 +11,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/DATA-DOG/go-sqlmock.v1"
+
+	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
 const (
@@ -246,18 +247,10 @@ func setExpectationsForProductCreation(mock sqlmock.Sqlmock, p *Product, err err
 	exampleRows := sqlmock.NewRows(plainProductHeaders).
 		AddRow(examplePlainProductData...)
 
-	productCreationQuery, _ := buildProductCreationQuery(exampleProduct)
+	productCreationQuery, args := buildProductCreationQuery(exampleProduct)
+	queryArgs := argsToDriverValues(args)
 	mock.ExpectQuery(formatQueryForSQLMock(productCreationQuery)).
-		WithArgs(
-			p.ProductProgenitorID,
-			p.SKU,
-			p.Name,
-			p.UPC,
-			p.Quantity,
-			p.OnSale,
-			p.Price,
-			p.SalePrice,
-		).
+		WithArgs(queryArgs...).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
 }

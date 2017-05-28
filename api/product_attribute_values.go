@@ -67,10 +67,10 @@ func loadProductAttributeValueInput(req *http.Request) (*ProductAttributeValue, 
 }
 
 // createProductAttributeValueInDB creates a ProductAttributeValue tied to a ProductAttribute
-func createProductAttributeValueInDB(db *sql.DB, pav *ProductAttributeValue) (*ProductAttributeValue, error) {
-	query, args := buildProductAttributeValueCreationQuery(pav)
-	err := db.QueryRow(query, args...).Scan(pav.generateScanArgs()...)
-	return pav, err
+func createProductAttributeValueInDB(db *sql.DB, v *ProductAttributeValue) (*ProductAttributeValue, error) {
+	query, args := buildProductAttributeValueCreationQuery(v)
+	err := db.QueryRow(query, args...).Scan(v.generateScanArgs()...)
+	return v, err
 }
 
 func buildProductAttributeValueCreationHandler(db *sql.DB) http.HandlerFunc {
