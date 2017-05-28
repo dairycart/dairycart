@@ -209,7 +209,7 @@ func retrieveProductFromDB(db *sql.DB, sku string) (*Product, error) {
 	skuJoinRetrievalQuery := buildCompleteProductRetrievalQuery(sku)
 	err := db.QueryRow(skuJoinRetrievalQuery, sku).Scan(scanArgs...)
 	if err == sql.ErrNoRows {
-		return product, errors.Wrap(err, "Error querying for product")
+		return product, err // errors.Wrap(err, "Error querying for product")
 	}
 
 	return product, err
@@ -295,7 +295,8 @@ func buildProductDeletionHandler(db *sql.DB) http.HandlerFunc {
 
 func updateProductInDatabase(db *sql.DB, up *Product) error {
 	productUpdateQuery, queryArgs := buildProductUpdateQuery(up)
-	err := db.QueryRow(productUpdateQuery, queryArgs...).Scan(up.generateScanArgs()...)
+	scanArgs := up.generateScanArgs()
+	err := db.QueryRow(productUpdateQuery, queryArgs...).Scan(scanArgs...)
 	return err
 }
 
@@ -310,8 +311,6 @@ func buildProductUpdateHandler(db *sql.DB) http.HandlerFunc {
 			respondThatRowDoesNotExist(req, res, "product", sku)
 			return
 		}
-		// eating the error here because we're already certain the sku exists
-		existingProduct, _ := retrieveProductFromDB(db, sku)
 
 		newerProduct, err := validateProductUpdateInput(req)
 		if err != nil {
@@ -319,14 +318,20 @@ func buildProductUpdateHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		if err := mergo.Merge(newerProduct, existingProduct); err != nil {
+		// eating the error here because we're already certain the sku exists
+		existingProduct, err := retrieveProductFromDB(db, sku)
+		if err != nil {
 			notifyOfInternalIssue(res, err, "merge updated product with existing product")
 			return
 		}
 
+		// eating the error here because we've already validated input
+		mergo.Merge(newerProduct, existingProduct)
+
 		err = updateProductInDatabase(db, newerProduct)
 		if err != nil {
-			notifyOfInternalIssue(res, err, "update product in database")
+			errStr := err.Error()
+			notifyOfInternalIssue(res, err, errStr) // "update product in database")
 			return
 		}
 
@@ -337,8 +342,8 @@ func buildProductUpdateHandler(db *sql.DB) http.HandlerFunc {
 func validateProductCreationInput(req *http.Request) (*ProductCreationInput, error) {
 	pci := &ProductCreationInput{}
 	decoder := json.NewDecoder(req.Body)
-	defer req.Body.Close()
 	err := decoder.Decode(pci)
+	defer req.Body.Close()
 
 	p := structs.New(pci)
 	// go will happily decode an invalid input into a completely zeroed struct,
@@ -383,7 +388,8 @@ func buildProductCreationHandler(db *sql.DB) http.HandlerFunc {
 		progenitor := newProductProgenitorFromProductCreationInput(productInput)
 		newProgenitor, err := createProductProgenitorInDB(db, progenitor)
 		if err != nil {
-			notifyOfInternalIssue(res, err, "insert product progenitor in database")
+			errStr := err.Error()
+			notifyOfInternalIssue(res, err, errStr) //  "insert product progenitor in database")
 			return
 		}
 
@@ -394,6 +400,7 @@ func buildProductCreationHandler(db *sql.DB) http.HandlerFunc {
 			Name:                productInput.Name,
 			UPC:                 NullString{sql.NullString{String: productInput.UPC, Valid: true}},
 			Quantity:            productInput.Quantity,
+			Price:               productInput.Price,
 			OnSale:              productInput.OnSale,
 			SalePrice:           NullFloat64{sql.NullFloat64{Float64: productInput.SalePrice}},
 		}

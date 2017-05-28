@@ -73,31 +73,33 @@ func setExpectationsForProductProgenitorExistence(mock sqlmock.Sqlmock, id int64
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows)
 }
 
-func setExpectationsForProductProgenitorCreation(mock sqlmock.Sqlmock) {
+func setExpectationsForProductProgenitorCreation(mock sqlmock.Sqlmock, g *ProductProgenitor, err error) {
 	q, _ := buildProgenitorCreationQuery(exampleProgenitor)
 	query := formatConstantQueryForSQLMock(q)
 	mock.ExpectQuery(query).
 		WithArgs(
-			exampleProgenitor.Name,
-			exampleProgenitor.Description,
-			exampleProgenitor.Taxable,
-			exampleProgenitor.Price,
-			exampleProgenitor.ProductWeight,
-			exampleProgenitor.ProductHeight,
-			exampleProgenitor.ProductWidth,
-			exampleProgenitor.ProductLength,
-			exampleProgenitor.PackageWeight,
-			exampleProgenitor.PackageHeight,
-			exampleProgenitor.PackageWidth,
-			exampleProgenitor.PackageLength,
-		).WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(exampleProgenitor.ID))
+			g.Name,
+			g.Description,
+			g.Taxable,
+			g.Price,
+			g.ProductWeight,
+			g.ProductHeight,
+			g.ProductWidth,
+			g.ProductLength,
+			g.PackageWeight,
+			g.PackageHeight,
+			g.PackageWidth,
+			g.PackageLength,
+		).WillReturnRows(sqlmock.NewRows([]string{"id"}).
+		AddRow(exampleProgenitor.ID)).
+		WillReturnError(err)
 }
 
 func TestCreateProductProgenitorInDB(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
-	setExpectationsForProductProgenitorCreation(mock)
+	setExpectationsForProductProgenitorCreation(mock, exampleProgenitor, nil)
 
 	newProgenitor, err := createProductProgenitorInDB(db, exampleProgenitor)
 	assert.Nil(t, err)
