@@ -79,28 +79,28 @@ func buildProductAttributeListHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func createProductAttributeInDB(db *sql.DB, a *ProductAttribute) error {
-	query, args := buildProductAttributeCreationQuery(a)
-	err := db.QueryRow(query, args...).Scan(a.generateScanArgs()...)
-	return err
-}
+// func createProductAttributeInDB(db *sql.DB, a *ProductAttribute) error {
+// 	query, args := buildProductAttributeCreationQuery(a)
+// 	err := db.QueryRow(query, args...).Scan(a.generateScanArgs()...)
+// 	return err
+// }
 
-// router.HandleFunc("/product_attributes/{progenitor_id:[0-9]+}", buildProductAttributeCreationHandler(db)).Methods("POST")
-func buildProductAttributeCreationHandler(db *sql.DB) http.HandlerFunc {
-	return func(res http.ResponseWriter, req *http.Request) {
+// // router.HandleFunc("/product_attributes/{progenitor_id:[0-9]+}", buildProductAttributeCreationHandler(db)).Methods("POST")
+// func buildProductAttributeCreationHandler(db *sql.DB) http.HandlerFunc {
+// 	return func(res http.ResponseWriter, req *http.Request) {
 
-	}
-}
+// 	}
+// }
 
-func updateProductAttributeInDB(db *sql.DB, a *ProductAttribute) error {
-	productUpdateQuery, queryArgs := buildProductAttributeUpdateQuery(a)
-	err := db.QueryRow(productUpdateQuery, queryArgs...).Scan(a.generateScanArgs()...)
-	return err
-}
+// func updateProductAttributeInDB(db *sql.DB, a *ProductAttribute) error {
+// 	productUpdateQuery, queryArgs := buildProductAttributeUpdateQuery(a)
+// 	err := db.QueryRow(productUpdateQuery, queryArgs...).Scan(a.generateScanArgs()...)
+// 	return err
+// }
 
-// router.HandleFunc("/product_attributes/{progenitor_id:[0-9]+}/{attribute_id:[0-9]+}", buildProductAttributeUpdateHandler(db)).Methods("PUT")
-func buildProductAttributeUpdateHandler(db *sql.DB) http.HandlerFunc {
-	return func(res http.ResponseWriter, req *http.Request) {
+// // router.HandleFunc("/product_attributes/{progenitor_id:[0-9]+}/{attribute_id:[0-9]+}", buildProductAttributeUpdateHandler(db)).Methods("PUT")
+// func buildProductAttributeUpdateHandler(db *sql.DB) http.HandlerFunc {
+// 	return func(res http.ResponseWriter, req *http.Request) {
 
-	}
-}
+// 	}
+// }

@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http/httptest"
 	"strings"
@@ -51,6 +52,7 @@ var arbitraryError error
 var exampleTime time.Time
 
 func init() {
+	log.SetOutput(ioutil.Discard)
 	arbitraryError = fmt.Errorf("arbitrary error")
 
 	var timeParseErr error
