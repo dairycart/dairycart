@@ -34,6 +34,39 @@ func init() {
 
 }
 
+func TestNewProductProgenitorFromProductCreationInput(t *testing.T) {
+	expected := &ProductProgenitor{
+		Name:          "Example",
+		Description:   "this is a description",
+		Taxable:       true,
+		Price:         10,
+		ProductWeight: 10,
+		ProductHeight: 10,
+		ProductWidth:  10,
+		ProductLength: 10,
+		PackageWeight: 10,
+		PackageHeight: 10,
+		PackageWidth:  10,
+		PackageLength: 10,
+	}
+	input := &ProductCreationInput{
+		Name:          "Example",
+		Description:   "this is a description",
+		Taxable:       true,
+		Price:         10,
+		ProductWeight: 10,
+		ProductHeight: 10,
+		ProductWidth:  10,
+		ProductLength: 10,
+		PackageWeight: 10,
+		PackageHeight: 10,
+		PackageWidth:  10,
+		PackageLength: 10,
+	}
+	actual := newProductProgenitorFromProductCreationInput(input)
+	assert.Equal(t, expected, actual, "Output of newProductProgenitorFromProductCreationInput was unexpected")
+}
+
 func setExpectationsForProductProgenitorExistence(mock sqlmock.Sqlmock, id int64, exists bool) {
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
 	query := formatConstantQueryForSQLMock(buildProgenitorRetrievalQuery(1))

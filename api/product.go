@@ -244,14 +244,7 @@ func buildProductListHandler(db *sql.DB) http.HandlerFunc {
 	// productListHandler is a request handler that returns a list of products
 	return func(res http.ResponseWriter, req *http.Request) {
 		rawFilterParams := req.URL.Query()
-		queryFilter, err := parseRawFilterParams(rawFilterParams)
-		if err != nil {
-			// TODO: There should be a function notifying of invalid query params instead of this,
-			// but this will have to do for the moment
-			notifyOfInvalidRequestBody(res, err)
-			return
-		}
-
+		queryFilter := parseRawFilterParams(rawFilterParams)
 		products, err := retrieveProductsFromDB(db, queryFilter)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve products from the database")
@@ -260,8 +253,8 @@ func buildProductListHandler(db *sql.DB) http.HandlerFunc {
 
 		productsResponse := &ProductsResponse{
 			ListResponse: ListResponse{
-				Page:  1,  // TODO: implement proper paging :(
-				Limit: 25, // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+				Page:  queryFilter.Page,
+				Limit: queryFilter.Limit,
 				Count: uint64(len(products)),
 			},
 			Data: products,

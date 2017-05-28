@@ -147,7 +147,7 @@ type QueryFilter struct {
 	UpdatedBefore time.Time
 }
 
-func parseRawFilterParams(rawFilterParams url.Values) (*QueryFilter, error) {
+func parseRawFilterParams(rawFilterParams url.Values) *QueryFilter {
 	qf := &QueryFilter{
 		Page:  1,
 		Limit: 25,
@@ -158,20 +158,19 @@ func parseRawFilterParams(rawFilterParams url.Values) (*QueryFilter, error) {
 		i, err := strconv.ParseUint(page[0], 10, 64)
 		if err != nil {
 			log.Printf("encountered error when trying to parse query filter param %s: %v", `Page`, err)
-			return nil, err
+		} else {
+			qf.Page = i
 		}
-		qf.Page = i
 	}
 
 	limit := rawFilterParams["limit"]
 	if len(limit) == 1 {
 		i, err := strconv.ParseFloat(limit[0], 64)
-		i = math.Min(i, MaxLimit)
 		if err != nil {
 			log.Printf("encountered error when trying to parse query filter param %s: %v", `Limit`, err)
-			return nil, err
+		} else {
+			qf.Limit = uint8(math.Min(i, MaxLimit))
 		}
-		qf.Limit = uint8(i)
 	}
 
 	updatedAfter := rawFilterParams["updated_after"]
@@ -179,9 +178,9 @@ func parseRawFilterParams(rawFilterParams url.Values) (*QueryFilter, error) {
 		i, err := strconv.ParseUint(updatedAfter[0], 10, 64)
 		if err != nil {
 			log.Printf("encountered error when trying to parse query filter param %s: %v", `UpdatedAfter`, err)
-			return nil, err
+		} else {
+			qf.UpdatedAfter = time.Unix(int64(i), 0)
 		}
-		qf.UpdatedAfter = time.Unix(int64(i), 0)
 	}
 
 	updatedBefore := rawFilterParams["updated_before"]
@@ -189,9 +188,9 @@ func parseRawFilterParams(rawFilterParams url.Values) (*QueryFilter, error) {
 		i, err := strconv.ParseUint(updatedBefore[0], 10, 64)
 		if err != nil {
 			log.Printf("encountered error when trying to parse query filter param %s: %v", `UpdatedBefore`, err)
-			return nil, err
+		} else {
+			qf.UpdatedBefore = time.Unix(int64(i), 0)
 		}
-		qf.UpdatedBefore = time.Unix(int64(i), 0)
 	}
 
 	createdAfter := rawFilterParams["created_after"]
@@ -199,9 +198,9 @@ func parseRawFilterParams(rawFilterParams url.Values) (*QueryFilter, error) {
 		i, err := strconv.ParseUint(createdAfter[0], 10, 64)
 		if err != nil {
 			log.Printf("encountered error when trying to parse query filter param %s: %v", `CreatedAfter`, err)
-			return nil, err
+		} else {
+			qf.CreatedAfter = time.Unix(int64(i), 0)
 		}
-		qf.CreatedAfter = time.Unix(int64(i), 0)
 	}
 
 	createdBefore := rawFilterParams["created_before"]
@@ -209,12 +208,12 @@ func parseRawFilterParams(rawFilterParams url.Values) (*QueryFilter, error) {
 		i, err := strconv.ParseUint(createdBefore[0], 10, 64)
 		if err != nil {
 			log.Printf("encountered error when trying to parse query filter param %s: %v", `CreatedBefore`, err)
-			return nil, err
+		} else {
+			qf.CreatedBefore = time.Unix(int64(i), 0)
 		}
-		qf.CreatedBefore = time.Unix(int64(i), 0)
 	}
 
-	return qf, nil
+	return qf
 }
 
 // rowExistsInDB will return whether or not a product/attribute/etc with a given identifier exists in the database

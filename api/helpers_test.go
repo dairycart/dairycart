@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -32,6 +33,21 @@ type RawFilterParamsTest struct {
 	expected       *QueryFilter
 	shouldFail     bool
 	failureMessage string
+}
+
+func TestNullFloat64MarshalTextReturnsFloat64IfValid(t *testing.T) {
+	example := NullFloat64{sql.NullFloat64{Float64: 1.23, Valid: true}}
+	expected := []byte("1.23")
+	actual, err := example.MarshalText()
+	assert.Nil(t, err)
+	assert.Equal(t, expected, actual, "NullFloat64.MarshalText() should properly return a float as a string when that float is valid")
+}
+
+func TestNullStringMarshalTextReturnsNilIfStringIsInvalid(t *testing.T) {
+	example := NullString{sql.NullString{String: "test", Valid: false}}
+	expectedNil, err := example.MarshalText()
+	assert.Nil(t, err)
+	assert.Nil(t, expectedNil)
 }
 
 func TestParseRawFilterParams(t *testing.T) {
@@ -107,7 +123,47 @@ func TestParseRawFilterParams(t *testing.T) {
 			failureMessage: "URL with all relevant filters should have a completely custom QueryFilter value",
 		},
 		RawFilterParamsTest{
+			input: fmt.Sprintf("https://test.com/example?page=2&limit=35&created_after=%v&created_before=%v", exampleUnixStartTime, exampleUnixEndTime),
+			expected: &QueryFilter{
+				Page:          2,
+				Limit:         35,
+				CreatedAfter:  exampleFilterStartTime,
+				CreatedBefore: exampleFilterEndTime,
+			},
+			failureMessage: "URL with all relevant filters should have a completely custom QueryFilter value",
+		},
+		RawFilterParamsTest{
 			input:          fmt.Sprintf("https://test.com/example?rage=2&dimit=35&upgraded_after=%v&agitated_before=%v", exampleUnixStartTime, exampleUnixEndTime),
+			expected:       defaultQueryFilter,
+			failureMessage: "URL with no relevant values should parsee to the default query filter",
+		},
+		RawFilterParamsTest{
+			input:          "https://test.com/example?page=two",
+			expected:       defaultQueryFilter,
+			failureMessage: "URL with no relevant values should parsee to the default query filter",
+		},
+		RawFilterParamsTest{
+			input:          "https://test.com/example?limit=eleventy",
+			expected:       defaultQueryFilter,
+			failureMessage: "URL with no relevant values should parsee to the default query filter",
+		},
+		RawFilterParamsTest{
+			input:          "https://test.com/example?updated_after=my_grandma_died",
+			expected:       defaultQueryFilter,
+			failureMessage: "URL with no relevant values should parsee to the default query filter",
+		},
+		RawFilterParamsTest{
+			input:          "https://test.com/example?updated_before=my_grandma_lived",
+			expected:       defaultQueryFilter,
+			failureMessage: "URL with no relevant values should parsee to the default query filter",
+		},
+		RawFilterParamsTest{
+			input:          "https://test.com/example?created_before=the_world_held_its_breath",
+			expected:       defaultQueryFilter,
+			failureMessage: "URL with no relevant values should parsee to the default query filter",
+		},
+		RawFilterParamsTest{
+			input:          "https://test.com/example?created_after=the_world_exhaled",
 			expected:       defaultQueryFilter,
 			failureMessage: "URL with no relevant values should parsee to the default query filter",
 		},
@@ -118,10 +174,7 @@ func TestParseRawFilterParams(t *testing.T) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		actual, err := parseRawFilterParams(earl.Query())
-		if !test.shouldFail {
-			assert.Nil(t, err)
-		}
+		actual := parseRawFilterParams(earl.Query())
 		assert.Equal(t, test.expected, actual, test.failureMessage)
 	}
 
@@ -151,6 +204,25 @@ func TestNotifyOfInternalIssue(t *testing.T) {
 
 	assert.Equal(t, "Unexpected internal error\n", w.Body.String(), "response should indicate their was an internal error")
 	assert.Equal(t, 500, w.Code, "status code should be 404")
+}
+
+func TestRowExistsInDBWhenDBThrowsError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	defer db.Close()
+	assert.Nil(t, err)
+
+	skuExistenceQuery := buildProductExistenceQuery(exampleSKU)
+	mock.ExpectQuery(formatConstantQueryForSQLMock(skuExistenceQuery)).
+		WithArgs(exampleSKU).
+		WillReturnError(sql.ErrNoRows)
+
+	exists, err := rowExistsInDB(db, "products", "sku", exampleSKU)
+
+	assert.Nil(t, err)
+	assert.False(t, exists)
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expections: %s", err)
+	}
 }
 
 func TestRowExistsInDBForExistingRow(t *testing.T) {

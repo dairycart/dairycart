@@ -2,6 +2,7 @@ package api
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -64,8 +65,37 @@ func TestBuildAllProductsRetrievalQuery(t *testing.T) {
 	expectedQuery := `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.archived_at IS NULL LIMIT 25`
 	actualQuery, actualArgs := buildAllProductsRetrievalQuery(defaultQueryFilter)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
-	assert.Equal(t, 0, len(actualArgs), queryEqualityErrorMessage)
+	assert.Equal(t, 0, len(actualArgs), argsEqualityErrorMessage)
 }
+
+func TestBuildAllProductsRetrievalQueryWithPartiallyCustomQueryFilter(t *testing.T) {
+	queryFilter := &QueryFilter{
+		Page:          3,
+		Limit:         25,
+		UpdatedBefore: time.Unix(int64(232747200), 0),
+		UpdatedAfter:  time.Unix(int64(232747200+10000), 0),
+	}
+	expectedQuery := `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.archived_at IS NULL AND p.updated_at > $1 AND p.updated_at < $2 LIMIT 25 OFFSET 50`
+	actualQuery, actualArgs := buildAllProductsRetrievalQuery(queryFilter)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
+}
+
+func TestBuildAllProductsRetrievalQueryWithCompletelyCustomQueryFilter(t *testing.T) {
+	queryFilter := &QueryFilter{
+		Page:          3,
+		Limit:         46,
+		UpdatedBefore: time.Unix(int64(232747200), 0),
+		UpdatedAfter:  time.Unix(int64(232747200+10000), 0),
+		CreatedBefore: time.Unix(int64(232747200), 0),
+		CreatedAfter:  time.Unix(int64(232747200+10000), 0),
+	}
+	expectedQuery := `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.archived_at IS NULL AND p.created_at > $1 AND p.created_at < $2 AND p.updated_at > $3 AND p.updated_at < $4 LIMIT 46 OFFSET 92`
+	actualQuery, actualArgs := buildAllProductsRetrievalQuery(queryFilter)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 4, len(actualArgs), argsEqualityErrorMessage)
+}
+
 func TestBuildProductDeletionQuery(t *testing.T) {
 	expected := `UPDATE products SET archived_at = NOW() WHERE sku = $1 AND archived_at IS NULL`
 	actual := buildProductDeletionQuery(exampleSKU)
