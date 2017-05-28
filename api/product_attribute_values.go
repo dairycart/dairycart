@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/fatih/structs"
 	"github.com/gorilla/mux"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
@@ -36,10 +37,12 @@ func (pav ProductAttributeValue) generateScanArgs() []interface{} {
 }
 
 // retrieveProductAttributeValue retrieves a ProductAttributeValue with a given ID from the database
-func retrieveProductAttributeValue(db *sql.DB, id int64) (*ProductAttributeValue, error) {
+func retrieveProductAttributeValueFromDB(db *sql.DB, id int64) (*ProductAttributeValue, error) {
 	pav := &ProductAttributeValue{}
 	query := buildProductAttributeValueRetrievalQuery(id)
-	err := db.QueryRow(query, id).Scan(pav.generateScanArgs()...)
+	queryRow := db.QueryRow(query, id)
+	scanArgs := pav.generateScanArgs()
+	err := queryRow.Scan(scanArgs...)
 	if err == sql.ErrNoRows {
 		return pav, errors.Wrap(err, "Error querying for product attribute values")
 	}
@@ -52,6 +55,13 @@ func loadProductAttributeValueInput(req *http.Request) (*ProductAttributeValue, 
 	decoder := json.NewDecoder(req.Body)
 	defer req.Body.Close()
 	err := decoder.Decode(pav)
+
+	s := structs.New(pav)
+	// go will happily decode an invalid input into a completely zeroed struct,
+	// so we gotta do checks like this because we're bad at programming.
+	if s.IsZero() {
+		return nil, errors.New("Invalid input provided for product attribute value body")
+	}
 
 	return pav, err
 }

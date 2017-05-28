@@ -6,7 +6,10 @@ import (
 	"log"
 	"net/http/httptest"
 	"strings"
+	"testing"
 	"time"
+
+	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 
 	"github.com/gorilla/mux"
 )
@@ -18,9 +21,9 @@ const (
 
 ////////////////////////////////////////////////////////
 //                                                    //
-//   This file doesn't actually test main.go, but     //
-//      rather contains some small helper functions   //
-//      that might be used by all the tests           //
+//    This file doesn't actually test main.go, but    //
+//     rather contains some small helper functions    //
+//     that might be used by all the tests            //
 //                                                    //
 //                       .---.                        //
 //                      /_____\                       //
@@ -63,10 +66,17 @@ func setupMockRequestsAndMux(db *sql.DB) (*httptest.ResponseRecorder, *mux.Route
 	return httptest.NewRecorder(), m
 }
 
-// this function is lame
-func formatConstantQueryForSQLMock(query string) string {
+// sqlmock stuff TODO: give this an ASCII animal
+
+func formatQueryForSQLMock(query string) string {
 	for _, x := range []string{"$", "(", ")", "=", "*", ".", "+", "?", ",", "-"} {
 		query = strings.Replace(query, x, fmt.Sprintf(`\%s`, x), -1)
 	}
 	return query
+}
+
+func ensureExpectationsWereMet(t *testing.T, mock sqlmock.Sqlmock) {
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expections: %s", err)
+	}
 }
