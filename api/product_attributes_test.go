@@ -27,6 +27,8 @@ const (
 )
 
 var exampleProductAttribute *ProductAttribute
+var expectedCreatedProductAttribute *ProductAttribute
+var exampleProductAttributeInput *ProductAttributeCreationInput
 var productAttributeHeaders []string
 var productAttributeData []driver.Value
 
@@ -38,6 +40,31 @@ func init() {
 	}
 	productAttributeHeaders = []string{"id", "name", "product_progenitor_id", "created_at", "updated_at", "archived_at"}
 	productAttributeData = []driver.Value{exampleProductAttribute.ID, exampleProductAttribute.Name, exampleProductAttribute.ProductProgenitorID, exampleTime, nil, nil}
+
+	expectedCreatedProductAttribute = &ProductAttribute{
+		ID:                  exampleProductAttribute.ID,
+		Name:                "something",
+		ProductProgenitorID: exampleProductAttribute.ProductProgenitorID,
+		Values: []*ProductAttributeValue{
+			{
+				ProductAttributeID: exampleProductAttribute.ID,
+				Value:              "one",
+			},
+			{
+				ProductAttributeID: exampleProductAttribute.ID,
+				Value:              "two",
+			},
+			{
+				ProductAttributeID: exampleProductAttribute.ID,
+				Value:              "three",
+			},
+		},
+	}
+
+	exampleProductAttributeInput = &ProductAttributeCreationInput{
+		Name:   "something",
+		Values: []string{"one", "two", "three"},
+	}
 }
 
 func setExpectationsForProductAttributeExistence(mock sqlmock.Sqlmock, id int64, exists bool, err error) {
@@ -50,23 +77,15 @@ func setExpectationsForProductAttributeExistence(mock sqlmock.Sqlmock, id int64,
 		WillReturnError(err)
 }
 
-// func setExpectationsForProductAttributeCreation(mock sqlmock.Sqlmock, a *ProductAttribute, err error) {
-// 	exampleRows := sqlmock.NewRows(productAttributeHeaders).AddRow(productAttributeData...)
-// 	query, _ := buildProductAttributeCreationQuery(a)
-// 	mock.ExpectQuery(formatQueryForSQLMock(query)).
-// 		WithArgs(a.Name, a.ProductProgenitorID).
-// 		WillReturnRows(exampleRows).
-// 		WillReturnError(err)
-// }
-
 func setExpectationsForProductAttributeCreation(mock sqlmock.Sqlmock, a *ProductAttribute, err error) {
-	exampleRows := sqlmock.NewRows(productAttributeHeaders).AddRow(productAttributeData...)
+	exampleRows := sqlmock.NewRows([]string{"id"}).AddRow(exampleProductAttribute.ID)
 	query, args := buildProductAttributeCreationQuery(a)
 	queryArgs := argsToDriverValues(args)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
 		WithArgs(queryArgs...).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
+
 }
 
 func TestCreateProductAttributeInDB(t *testing.T) {
@@ -78,6 +97,44 @@ func TestCreateProductAttributeInDB(t *testing.T) {
 	actual, err := createProductAttributeInDB(db, exampleProductAttribute)
 	assert.Nil(t, err)
 	assert.Equal(t, exampleProductAttribute, actual, "Creating a product attribute should return the created product attribute")
+}
+
+func TestCreateProductAttributeAndValuesInDBFromInput(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	setExpectationsForProductAttributeCreation(mock, expectedCreatedProductAttribute, nil)
+	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[0], nil)
+	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[1], nil)
+	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[2], nil)
+
+	actual, err := createProductAttributeAndValuesInDBFromInput(db, exampleProductAttributeInput, expectedCreatedProductAttribute.ProductProgenitorID)
+	assert.Nil(t, err)
+	assert.Equal(t, expectedCreatedProductAttribute, actual, "output from product attribute creation should match expectation")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestCreateProductAttributeAndValuesInDBFromInputWithIssueCreatingAttribute(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	setExpectationsForProductAttributeCreation(mock, expectedCreatedProductAttribute, arbitraryError)
+
+	_, err = createProductAttributeAndValuesInDBFromInput(db, exampleProductAttributeInput, expectedCreatedProductAttribute.ProductProgenitorID)
+	assert.NotNil(t, err)
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestCreateProductAttributeAndValuesInDBFromInputWithIssueCreatingAttributeValue(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	setExpectationsForProductAttributeCreation(mock, expectedCreatedProductAttribute, nil)
+	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[0], arbitraryError)
+
+	_, err = createProductAttributeAndValuesInDBFromInput(db, exampleProductAttributeInput, expectedCreatedProductAttribute.ProductProgenitorID)
+	assert.NotNil(t, err)
+	ensureExpectationsWereMet(t, mock)
 }
 
 //////////////////////////////////////////////////////
@@ -165,31 +222,6 @@ func TestProductAttributeListHandlerWithDBErrors(t *testing.T) {
 }
 
 func TestProductAttributeCreation(t *testing.T) {
-	// expectedProductAttributeInput := &ProductAttributeCreationInput{
-	// 	Name:   "something",
-	// 	Values: []string{"one", "two", "three"},
-	// }
-
-	expectedProductAttribute := &ProductAttribute{
-		ID:                  exampleProductAttribute.ID,
-		Name:                "something",
-		ProductProgenitorID: exampleProductAttribute.ProductProgenitorID,
-		Values: []*ProductAttributeValue{
-			{
-				ProductAttributeID: exampleProductAttribute.ID,
-				Value:              "one",
-			},
-			{
-				ProductAttributeID: exampleProductAttribute.ID,
-				Value:              "two",
-			},
-			{
-				ProductAttributeID: exampleProductAttribute.ID,
-				Value:              "three",
-			},
-		},
-	}
-
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -197,21 +229,10 @@ func TestProductAttributeCreation(t *testing.T) {
 	progenitorIDString := strconv.Itoa(int(exampleProductAttribute.ProductProgenitorID))
 	setExpectationsForProductProgenitorExistence(mock, progenitorIDString, true)
 
-	// everything above is good
-	// setExpectationsForProductAttributeCreation(mock, expectedProductAttribute, nil)
-
-	exampleRows := sqlmock.NewRows([]string{"id", "name", "product_progenitor_id", "created_at", "updated_at", "archived_at"}).
-		AddRow([]driver.Value{123, "something", 2, exampleTime, nil, nil}...)
-	query, args := buildProductAttributeCreationQuery(expectedProductAttribute)
-	queryArgs := argsToDriverValues(args)
-	mock.ExpectQuery(formatQueryForSQLMock(query)).
-		WithArgs(queryArgs...).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
-
-	setExpectationsForProductAttributeValueCreation(mock, expectedProductAttribute.Values[0], nil)
-	setExpectationsForProductAttributeValueCreation(mock, expectedProductAttribute.Values[1], nil)
-	setExpectationsForProductAttributeValueCreation(mock, expectedProductAttribute.Values[2], nil)
+	setExpectationsForProductAttributeCreation(mock, expectedCreatedProductAttribute, nil)
+	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[0], nil)
+	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[1], nil)
+	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[2], nil)
 
 	productAttributeEndpoint := buildRoute("product_attributes", progenitorIDString)
 	req, err := http.NewRequest("POST", productAttributeEndpoint, strings.NewReader(exampleProductAttributeCreationBody))
@@ -219,5 +240,58 @@ func TestProductAttributeCreation(t *testing.T) {
 	router.ServeHTTP(res, req)
 
 	assert.Equal(t, res.Code, 200, "status code should be 200")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestProductAttributeCreationWithNonExistentProgenitor(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+	progenitorIDString := strconv.Itoa(int(exampleProductAttribute.ProductProgenitorID))
+	setExpectationsForProductProgenitorExistence(mock, progenitorIDString, false)
+
+	productAttributeEndpoint := buildRoute("product_attributes", progenitorIDString)
+	req, err := http.NewRequest("POST", productAttributeEndpoint, strings.NewReader(exampleProductAttributeCreationBody))
+	assert.Nil(t, err)
+	router.ServeHTTP(res, req)
+
+	assert.Equal(t, res.Code, 404, "status code should be 404")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestProductAttributeCreationWithInvalidAttributeCreationInput(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+	progenitorIDString := strconv.Itoa(int(exampleProductAttribute.ProductProgenitorID))
+	setExpectationsForProductProgenitorExistence(mock, progenitorIDString, true)
+
+	productAttributeEndpoint := buildRoute("product_attributes", progenitorIDString)
+	req, err := http.NewRequest("POST", productAttributeEndpoint, strings.NewReader(exampleGarbageInput))
+	assert.Nil(t, err)
+	router.ServeHTTP(res, req)
+
+	assert.Equal(t, res.Code, 400, "status code should be 400")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestProductAttributeCreationWithProblemsCreatingAttribute(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+	progenitorIDString := strconv.Itoa(int(exampleProductAttribute.ProductProgenitorID))
+	setExpectationsForProductProgenitorExistence(mock, progenitorIDString, true)
+
+	setExpectationsForProductAttributeCreation(mock, expectedCreatedProductAttribute, arbitraryError)
+
+	productAttributeEndpoint := buildRoute("product_attributes", progenitorIDString)
+	req, err := http.NewRequest("POST", productAttributeEndpoint, strings.NewReader(exampleProductAttributeCreationBody))
+	assert.Nil(t, err)
+	router.ServeHTTP(res, req)
+
+	assert.Equal(t, res.Code, 500, "status code should be 500")
 	ensureExpectationsWereMet(t, mock)
 }

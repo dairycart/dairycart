@@ -310,7 +310,7 @@ func buildProductAttributeCreationQuery(a *ProductAttribute) (string, []interfac
 		Insert("product_attributes").
 		Columns("name", "product_progenitor_id").
 		Values(a.Name, a.ProductProgenitorID).
-		Suffix(`RETURNING *`)
+		Suffix(`RETURNING "id"`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }

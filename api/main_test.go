@@ -17,8 +17,9 @@ import (
 )
 
 const (
-	exampleSKU        = "example"
-	exampleTimeString = "2017-01-01 12:00:00.000000"
+	exampleSKU          = "example"
+	exampleTimeString   = "2017-01-01 12:00:00.000000"
+	exampleGarbageInput = `{"things": "stuff"}`
 )
 
 ////////////////////////////////////////////////////////

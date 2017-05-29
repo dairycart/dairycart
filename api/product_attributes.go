@@ -102,14 +102,18 @@ func validateProductAttributeCreationInput(req *http.Request) (*ProductAttribute
 }
 
 func createProductAttributeInDB(db *sql.DB, a *ProductAttribute) (*ProductAttribute, error) {
-	query, args := buildProductAttributeCreationQuery(a)
-	row := db.QueryRow(query, args...)
-	scanArgs := a.generateScanArgs()
-	err := row.Scan(scanArgs...)
+	var newAttributeID int64
+	// using QueryRow instead of Exec because we want it to return the newly created row's ID
+	// Exec normally returns a sql.Result, which has a LastInsertedID() method, but when I tested
+	// this locally, it never worked. ¯\_(ツ)_/¯
+	query, queryArgs := buildProductAttributeCreationQuery(a)
+	err := db.QueryRow(query, queryArgs...).Scan(&newAttributeID)
+
+	a.ID = newAttributeID
 	return a, err
 }
 
-func createProductAttributesInDBFromInput(db *sql.DB, in *ProductAttributeCreationInput, progenitorID int64) (*ProductAttribute, error) {
+func createProductAttributeAndValuesInDBFromInput(db *sql.DB, in *ProductAttributeCreationInput, progenitorID int64) (*ProductAttribute, error) {
 	newProductAttribute := &ProductAttribute{
 		Name:                in.Name,
 		ProductProgenitorID: progenitorID,
@@ -119,19 +123,13 @@ func createProductAttributesInDBFromInput(db *sql.DB, in *ProductAttributeCreati
 		return nil, err
 	}
 
-	noop := func(i interface{}) {
-		return
-	}
-
 	for _, value := range in.Values {
 		newAttributeValue := &ProductAttributeValue{
 			ProductAttributeID: newProductAttribute.ID,
 			Value:              value,
 		}
-		_, err := createProductAttributeValueInDB(db, newAttributeValue)
+		newAttributeValue, err := createProductAttributeValueInDB(db, newAttributeValue)
 		if err != nil {
-			errStr := err.Error()
-			noop(errStr)
 			return nil, err
 		}
 		newProductAttribute.Values = append(newProductAttribute.Values, newAttributeValue)
@@ -160,7 +158,7 @@ func buildProductAttributeCreationHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		newProductAttribute, err := createProductAttributesInDBFromInput(db, newAttributeData, int64(progenitorIDInt))
+		newProductAttribute, err := createProductAttributeAndValuesInDBFromInput(db, newAttributeData, int64(progenitorIDInt))
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve products from the database")
 			return

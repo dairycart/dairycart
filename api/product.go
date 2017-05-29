@@ -362,7 +362,7 @@ func validateProductCreationInput(req *http.Request) (*ProductCreationInput, err
 	return pci, err
 }
 
-// createProductInDB takes a marshalled Product object and creates an entry for it and a base_product in the database
+// createProductInDB takes a marshaled Product object and creates an entry for it and a base_product in the database
 func createProductInDB(db *sql.DB, np *Product) error {
 	productCreationQuery, queryArgs := buildProductCreationQuery(np)
 	err := db.QueryRow(productCreationQuery, queryArgs...).Scan(np.generateScanArgs()...)
