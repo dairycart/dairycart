@@ -96,7 +96,10 @@ func (nf NullFloat64) MarshalText() ([]byte, error) {
 func (nf *NullFloat64) UnmarshalText(text []byte) (err error) {
 	s := string(text)
 	nf.NullFloat64.Float64, err = strconv.ParseFloat(s, 64)
-	nf.NullFloat64.Valid = err == nil
+	nf.NullFloat64.Valid = err != nil
+	if err != nil {
+		nf.NullFloat64.Float64 = 0
+	}
 	// returning nil because we've ensured that Float64 is set to at least zero.
 	return nil
 }
@@ -245,8 +248,8 @@ func rowExistsInDB(db *sql.DB, table, identifier, id string) (bool, error) {
 
 func respondThatRowDoesNotExist(req *http.Request, res http.ResponseWriter, itemType, id string) {
 	itemTypeToIdentifierMap := map[string]string{
-		"product attribute":  "id",
-		"product progenitor": "id",
+		"product_attribute":  "id",
+		"product_progenitor": "id",
 		"product":            "sku",
 	}
 

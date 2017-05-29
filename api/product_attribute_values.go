@@ -38,14 +38,16 @@ func (pav ProductAttributeValue) generateScanArgs() []interface{} {
 
 // retrieveProductAttributeValue retrieves a ProductAttributeValue with a given ID from the database
 func retrieveProductAttributeValueFromDB(db *sql.DB, id int64) (*ProductAttributeValue, error) {
-	v := &ProductAttributeValue{}
+	pav := &ProductAttributeValue{}
 	query := buildProductAttributeValueRetrievalQuery(id)
-	err := db.QueryRow(query, id).Scan(v.generateScanArgs()...)
+	queryRow := db.QueryRow(query, id)
+	scanArgs := pav.generateScanArgs()
+	err := queryRow.Scan(scanArgs...)
 	if err == sql.ErrNoRows {
-		return v, errors.Wrap(err, "Error querying for product attribute values")
+		return pav, errors.Wrap(err, "Error querying for product attribute values")
 	}
 
-	return v, err
+	return pav, err
 }
 
 func loadProductAttributeValueInput(req *http.Request) (*ProductAttributeValue, error) {
@@ -81,7 +83,7 @@ func buildProductAttributeValueCreationHandler(db *sql.DB) http.HandlerFunc {
 
 		productAttributeExists, err := rowExistsInDB(db, "product_attributes", "id", attributeID)
 		if err != nil || !productAttributeExists {
-			respondThatRowDoesNotExist(req, res, "product attribute", attributeID)
+			respondThatRowDoesNotExist(req, res, "product_attribute", attributeID)
 			return
 		}
 
