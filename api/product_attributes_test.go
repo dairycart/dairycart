@@ -67,10 +67,10 @@ func init() {
 	}
 }
 
-func setExpectationsForProductAttributeExistence(mock sqlmock.Sqlmock, id int64, exists bool, err error) {
+func setExpectationsForProductAttributeExistence(mock sqlmock.Sqlmock, a *ProductAttribute, exists bool, err error) {
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
-	query := buildProductAttributeexistenceQuery(id)
-	stringID := strconv.Itoa(int(id))
+	query := buildProductAttributeexistenceQuery(a.ID)
+	stringID := strconv.Itoa(int(a.ID))
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
 		WithArgs(stringID).
 		WillReturnRows(exampleRows).
@@ -87,7 +87,6 @@ func setExpectationsForProductAttributeCreation(mock sqlmock.Sqlmock, a *Product
 		WillReturnError(err)
 
 }
-
 func TestCreateProductAttributeInDB(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
@@ -138,14 +137,14 @@ func TestCreateProductAttributeAndValuesInDBFromInputWithIssueCreatingAttributeV
 }
 
 func setExpectationsForProductAttributeUpdate(mock sqlmock.Sqlmock, a *ProductAttribute, err error) {
-	exampleRows := sqlmock.NewRows(productAttributeHeaders).AddRow(productAttributeData...)
+	exampleRows := sqlmock.NewRows(productAttributeHeaders).
+		AddRow([]driver.Value{a.ID, a.Name, a.ProductProgenitorID, exampleTime, nil, nil}...)
 	query, args := buildProductAttributeUpdateQuery(a)
 	queryArgs := argsToDriverValues(args)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
 		WithArgs(queryArgs...).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
-
 }
 
 func TestUpdateProductAttributeInDB(t *testing.T) {
@@ -185,11 +184,11 @@ func TestUpdateProductAttributeInDB(t *testing.T) {
 //                                                  //
 //////////////////////////////////////////////////////
 
-func setExpectationsForProductAttributeListQuery(mock sqlmock.Sqlmock, err error) {
+func setExpectationsForProductAttributeListQuery(mock sqlmock.Sqlmock, a *ProductAttribute, err error) {
 	exampleRows := sqlmock.NewRows(productAttributeHeaders).
-		AddRow(productAttributeData...).
-		AddRow(productAttributeData...).
-		AddRow(productAttributeData...)
+		AddRow([]driver.Value{a.ID, a.Name, a.ProductProgenitorID, exampleTime, nil, nil}...).
+		AddRow([]driver.Value{a.ID, a.Name, a.ProductProgenitorID, exampleTime, nil, nil}...).
+		AddRow([]driver.Value{a.ID, a.Name, a.ProductProgenitorID, exampleTime, nil, nil}...)
 	query := buildProductAttributeListQuery(strconv.Itoa(int(exampleProgenitor.ID)), defaultQueryFilter)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).WillReturnRows(exampleRows).WillReturnError(err)
 }
@@ -199,7 +198,7 @@ func TestProductAttributeListHandler(t *testing.T) {
 	assert.Nil(t, err)
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
-	setExpectationsForProductAttributeListQuery(mock, nil)
+	setExpectationsForProductAttributeListQuery(mock, exampleProductAttribute, nil)
 
 	productAttributeEndpoint := buildRoute("product_attributes", strconv.Itoa(int(exampleProgenitor.ID)))
 	req, err := http.NewRequest("GET", productAttributeEndpoint, nil)
@@ -220,10 +219,10 @@ func TestProductAttributeListHandler(t *testing.T) {
 	err = json.NewDecoder(strings.NewReader(res.Body.String())).Decode(actual)
 	assert.Nil(t, err)
 
-	assert.Equal(t, expected.Page, actual.Page, "expected and actual product pages should be equal")
-	assert.Equal(t, expected.Limit, actual.Limit, "expected and actual product limits should be equal")
-	assert.Equal(t, expected.Count, actual.Count, "expected and actual product counts should be equal")
-	assert.Equal(t, uint64(len(actual.Data)), actual.Count, "actual product counts and product response count field should be equal")
+	assert.Equal(t, expected.Page, actual.Page, "expected and actual product attribute pages should be equal")
+	assert.Equal(t, expected.Limit, actual.Limit, "expected and actual product attribute limits should be equal")
+	assert.Equal(t, expected.Count, actual.Count, "expected and actual product attribute counts should be equal")
+	assert.Equal(t, uint64(len(actual.Data)), actual.Count, "actual product attribute counts and product attribute response count field should be equal")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -232,7 +231,7 @@ func TestProductAttributeListHandlerWithDBErrors(t *testing.T) {
 	assert.Nil(t, err)
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
-	setExpectationsForProductAttributeListQuery(mock, arbitraryError)
+	setExpectationsForProductAttributeListQuery(mock, exampleProductAttribute, arbitraryError)
 
 	productAttributeEndpoint := buildRoute("product_attributes", strconv.Itoa(int(exampleProgenitor.ID)))
 	req, err := http.NewRequest("GET", productAttributeEndpoint, nil)
