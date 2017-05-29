@@ -42,28 +42,10 @@ type ProductAttributesResponse struct {
 	Data []ProductAttribute `json:"data"`
 }
 
-// ProductAttributeUpdateInput is a struct to use for updating product attributes
-type ProductAttributeUpdateInput struct {
-	Name string `json:"name"`
-}
-
-// ProductAttributeCreationInput is a struct to use for creating product attributes
+// ProductAttributeCreationInput is a struct to use for create product attributes
 type ProductAttributeCreationInput struct {
 	Name   string   `json:"name"`
 	Values []string `json:"values"`
-}
-
-// retrieveProductAttributeFromDB retrieves a ProductAttribute with a given ID from the database
-func retrieveProductAttributeFromDB(db *sql.DB, id int64) (*ProductAttribute, error) {
-	attribute := &ProductAttribute{}
-	scanArgs := attribute.generateScanArgs()
-	query := buildProductAttributeRetrievalQuery(id)
-	err := db.QueryRow(query, id).Scan(scanArgs...)
-	if err == sql.ErrNoRows {
-		return attribute, errors.Wrap(err, "Error querying for product")
-	}
-
-	return attribute, err
 }
 
 func getProductAttributesForProgenitor(db *sql.DB, progenitorID string, queryFilter *QueryFilter) ([]ProductAttribute, error) {
@@ -102,84 +84,6 @@ func buildProductAttributeListHandler(db *sql.DB) http.HandlerFunc {
 			Data: attributes,
 		}
 		json.NewEncoder(res).Encode(attributesResponse)
-	}
-}
-
-func validateProductAttributeUpdateInput(req *http.Request) (*ProductAttributeUpdateInput, error) {
-	i := &ProductAttributeUpdateInput{}
-	json.NewDecoder(req.Body).Decode(i)
-
-	s := structs.New(i)
-	// go will happily decode an invalid input into a completely zeroed struct,
-	// so we gotta do checks like this because we're bad at programming.
-	if s.IsZero() {
-		return nil, errors.New("Invalid input provided for product attribute body")
-	}
-
-	return i, nil
-}
-
-func updateProductAttributeInDB(db *sql.DB, a *ProductAttribute) error {
-	productUpdateQuery, queryArgs := buildProductAttributeUpdateQuery(a)
-	row := db.QueryRow(productUpdateQuery, queryArgs...)
-	scanArgs := a.generateScanArgs()
-	err := row.Scan(scanArgs...)
-	//err := db.QueryRow(productUpdateQuery, queryArgs...).Scan(a.generateScanArgs()...)
-	return err
-}
-
-func buildProductAttributeUpdateHandler(db *sql.DB) http.HandlerFunc {
-	return func(res http.ResponseWriter, req *http.Request) {
-		// ProductUpdateHandler is a request handler that can update products
-		reqVars := mux.Vars(req)
-		progenitorID := reqVars["progenitor_id"]
-		attributeID := reqVars["attribute_id"]
-		// eating this error because Mux should validate this for us.
-		attributeIDInt, _ := strconv.Atoi(attributeID)
-
-		noop := func(i interface{}) {
-			return
-		}
-
-		// can't update an attribute for a product progenitor that doesn't exist!
-		progenitorExists, err := rowExistsInDB(db, "product_progenitors", "id", progenitorID)
-		if err != nil || !progenitorExists {
-			respondThatRowDoesNotExist(req, res, "product progenitor", progenitorID)
-			return
-		}
-
-		// can't update an attribute that doesn't exist!
-		attributeExists, err := rowExistsInDB(db, "product_attributes", "id", attributeID)
-		if err != nil || !attributeExists {
-			respondThatRowDoesNotExist(req, res, "product attribute", attributeID)
-			return
-		}
-
-		updatedAttributeData, err := validateProductAttributeUpdateInput(req)
-		if err != nil {
-			notifyOfInvalidRequestBody(res, err)
-			return
-		}
-
-		existingAttribute, err := retrieveProductAttributeFromDB(db, int64(attributeIDInt))
-		if err != nil {
-			errStr := err.Error()
-			noop(errStr)
-			notifyOfInternalIssue(res, err, "retrieve product attribute from the database")
-			return
-		}
-		existingAttribute.Name = updatedAttributeData.Name
-
-		err = updateProductAttributeInDB(db, existingAttribute)
-		if err != nil {
-			errStr := err.Error()
-			noop(errStr)
-			notifyOfInternalIssue(res, err, "update product attribute in the database")
-			return
-		}
-
-		json.NewEncoder(res).Encode(existingAttribute)
-
 	}
 }
 
@@ -241,14 +145,12 @@ func buildProductAttributeCreationHandler(db *sql.DB) http.HandlerFunc {
 		// eating this error because Mux should valdiate this for us.
 		progenitorIDInt, _ := strconv.Atoi(progenitorID)
 
-		// can't update an attribute for a product progenitor that doesn't exist!
+		// can't update a product that doesn't exist!
 		exists, err := rowExistsInDB(db, "product_progenitors", "id", progenitorID)
 		if err != nil || !exists {
-			respondThatRowDoesNotExist(req, res, "product progenitor", progenitorID)
+			respondThatRowDoesNotExist(req, res, "product_progenitors", progenitorID)
 			return
 		}
-
-		// TODO: check that an existing attribute with that name doesn't exist
 
 		newAttributeData, err := validateProductAttributeCreationInput(req)
 		if err != nil {
@@ -265,3 +167,15 @@ func buildProductAttributeCreationHandler(db *sql.DB) http.HandlerFunc {
 		json.NewEncoder(res).Encode(newProductAttribute)
 	}
 }
+
+func updateProductAttributeInDB(db *sql.DB, a *ProductAttribute) error {
+	productUpdateQuery, queryArgs := buildProductAttributeUpdateQuery(a)
+	err := db.QueryRow(productUpdateQuery, queryArgs...).Scan(a.generateScanArgs()...)
+	return err
+}
+
+// func buildProductAttributeUpdateHandler(db *sql.DB) http.HandlerFunc {
+// 	return func(res http.ResponseWriter, req *http.Request) {
+
+// 	}
+// }

@@ -52,7 +52,7 @@ func TestRetrieveProductAttributeValueFromDB(t *testing.T) {
 	_, err = retrieveProductAttributeValueFromDB(db, exampleProductAttributeValue.ID)
 	assert.Nil(t, err)
 	// TODO: fix this part of the test.
-	// assert.Equal(t, exampleProductAttributeValue, actual, "expected and actual product attribute values should match")
+	// assert.Equal(t, exampleProductAttributeValue, actual, "expected and actual products should match")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -110,7 +110,7 @@ func TestProductAttributeValueCreationHandler(t *testing.T) {
 	assert.Nil(t, err)
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
-	setExpectationsForProductAttributeExistence(mock, exampleProductAttribute, true, nil)
+	setExpectationsForProductAttributeExistence(mock, exampleProductAttribute.ID, true, nil)
 	setExpectationsForProductAttributeValueCreation(mock, exampleProductAttributeValue, nil)
 
 	attributeValueEndpoint := buildRoute("product_attributes", "123", "value")
@@ -127,7 +127,7 @@ func TestProductAttributeValueCreationHandlerWithNonexistentProductAttribute(t *
 	assert.Nil(t, err)
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
-	setExpectationsForProductAttributeExistence(mock, exampleProductAttribute, true, arbitraryError)
+	setExpectationsForProductAttributeExistence(mock, exampleProductAttribute.ID, true, arbitraryError)
 
 	attributeValueEndpoint := buildRoute("product_attributes", "123", "value")
 	req, err := http.NewRequest("POST", attributeValueEndpoint, strings.NewReader(exampleProductAttributeValueCreationBody))
@@ -144,7 +144,7 @@ func TestProductAttributeValueCreationHandlerWithInvalidValueBody(t *testing.T) 
 	assert.Nil(t, err)
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
-	setExpectationsForProductAttributeExistence(mock, exampleProductAttribute, true, nil)
+	setExpectationsForProductAttributeExistence(mock, exampleProductAttribute.ID, true, nil)
 
 	attributeValueEndpoint := buildRoute("product_attributes", "123", "value")
 	req, err := http.NewRequest("POST", attributeValueEndpoint, strings.NewReader(exampleInvalidProductAttributeValueCreationBody))
@@ -160,7 +160,7 @@ func TestProductAttributeValueCreationHandlerWithRowCreationError(t *testing.T) 
 	assert.Nil(t, err)
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
-	setExpectationsForProductAttributeExistence(mock, exampleProductAttribute, true, nil)
+	setExpectationsForProductAttributeExistence(mock, exampleProductAttribute.ID, true, nil)
 	setExpectationsForProductAttributeValueCreation(mock, exampleProductAttributeValue, arbitraryError)
 
 	attributeValueEndpoint := buildRoute("product_attributes", "123", "value")

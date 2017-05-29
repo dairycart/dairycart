@@ -209,7 +209,7 @@ func retrieveProductFromDB(db *sql.DB, sku string) (*Product, error) {
 	skuJoinRetrievalQuery := buildCompleteProductRetrievalQuery(sku)
 	err := db.QueryRow(skuJoinRetrievalQuery, sku).Scan(scanArgs...)
 	if err == sql.ErrNoRows {
-		return product, errors.Wrap(err, "Error querying for product")
+		return product, err // errors.Wrap(err, "Error querying for product")
 	}
 
 	return product, err
