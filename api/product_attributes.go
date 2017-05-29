@@ -136,10 +136,6 @@ func buildProductAttributeUpdateHandler(db *sql.DB) http.HandlerFunc {
 		// eating this error because Mux should validate this for us.
 		attributeIDInt, _ := strconv.Atoi(attributeID)
 
-		noop := func(i interface{}) {
-			return
-		}
-
 		// can't update an attribute for a product progenitor that doesn't exist!
 		progenitorExists, err := rowExistsInDB(db, "product_progenitors", "id", progenitorID)
 		if err != nil || !progenitorExists {
@@ -162,8 +158,6 @@ func buildProductAttributeUpdateHandler(db *sql.DB) http.HandlerFunc {
 
 		existingAttribute, err := retrieveProductAttributeFromDB(db, int64(attributeIDInt))
 		if err != nil {
-			errStr := err.Error()
-			noop(errStr)
 			notifyOfInternalIssue(res, err, "retrieve product attribute from the database")
 			return
 		}
@@ -171,8 +165,6 @@ func buildProductAttributeUpdateHandler(db *sql.DB) http.HandlerFunc {
 
 		err = updateProductAttributeInDB(db, existingAttribute)
 		if err != nil {
-			errStr := err.Error()
-			noop(errStr)
 			notifyOfInternalIssue(res, err, "update product attribute in the database")
 			return
 		}
