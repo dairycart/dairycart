@@ -168,11 +168,11 @@ func buildProductAttributeCreationHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-// func updateProductAttributeInDB(db *sql.DB, a *ProductAttribute) error {
-// 	productUpdateQuery, queryArgs := buildProductAttributeUpdateQuery(a)
-// 	err := db.QueryRow(productUpdateQuery, queryArgs...).Scan(a.generateScanArgs()...)
-// 	return err
-// }
+func updateProductAttributeInDB(db *sql.DB, a *ProductAttribute) error {
+	productUpdateQuery, queryArgs := buildProductAttributeUpdateQuery(a)
+	err := db.QueryRow(productUpdateQuery, queryArgs...).Scan(a.generateScanArgs()...)
+	return err
+}
 
 // func buildProductAttributeUpdateHandler(db *sql.DB) http.HandlerFunc {
 // 	return func(res http.ResponseWriter, req *http.Request) {

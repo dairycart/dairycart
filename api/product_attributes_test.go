@@ -137,6 +137,28 @@ func TestCreateProductAttributeAndValuesInDBFromInputWithIssueCreatingAttributeV
 	ensureExpectationsWereMet(t, mock)
 }
 
+func setExpectationsForProductAttributeUpdate(mock sqlmock.Sqlmock, a *ProductAttribute, err error) {
+	exampleRows := sqlmock.NewRows(productAttributeHeaders).AddRow(productAttributeData...)
+	query, args := buildProductAttributeUpdateQuery(a)
+	queryArgs := argsToDriverValues(args)
+	mock.ExpectQuery(formatQueryForSQLMock(query)).
+		WithArgs(queryArgs...).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+
+}
+
+func TestUpdateProductAttributeInDB(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	setExpectationsForProductAttributeUpdate(mock, expectedCreatedProductAttribute, nil)
+
+	err = updateProductAttributeInDB(db, exampleProductAttribute)
+	assert.Nil(t, err)
+	ensureExpectationsWereMet(t, mock)
+}
+
 //////////////////////////////////////////////////////
 //                                                  //
 //     HTTP                               :e        //
