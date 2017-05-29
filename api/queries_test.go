@@ -115,7 +115,7 @@ func TestBuildProductUpdateQuery(t *testing.T) {
 	assert.Equal(t, 8, len(actualArgs), argsEqualityErrorMessage)
 }
 func TestBuildProductCreationQuery(t *testing.T) {
-	expected := `INSERT INTO products (product_progenitor_id,sku,name,upc,quantity,on_sale,price,sale_price) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`
+	expected := `INSERT INTO products (product_progenitor_id,sku,name,upc,quantity,on_sale,price,sale_price) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING "id"`
 	actual, _ := buildProductCreationQuery(exampleProduct)
 	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
 }
@@ -173,7 +173,7 @@ func TestBuildProductAttributeValueUpdateQuery(t *testing.T) {
 }
 
 func TestBuildProductAttributeValueCreationQuery(t *testing.T) {
-	expectedQuery := `INSERT INTO product_attribute_values (product_attribute_id,value) VALUES ($1,$2) RETURNING *`
+	expectedQuery := `INSERT INTO product_attribute_values (product_attribute_id,value) VALUES ($1,$2) RETURNING "id"`
 	actualQuery, actualArgs := buildProductAttributeValueCreationQuery(&ProductAttributeValue{})
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	// comparing interface equality with assert is impossible as far as I can tell

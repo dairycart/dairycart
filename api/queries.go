@@ -240,7 +240,7 @@ func buildProductCreationQuery(p *Product) (string, []interface{}) {
 		Insert("products").
 		Columns("product_progenitor_id", "sku", "name", "upc", "quantity", "on_sale", "price", "sale_price").
 		Values(p.ProductProgenitorID, p.SKU, p.Name, p.UPC, p.Quantity, p.OnSale, p.Price, p.SalePrice).
-		Suffix(`RETURNING *`)
+		Suffix(`RETURNING "id"`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
@@ -367,7 +367,7 @@ func buildProductAttributeValueCreationQuery(v *ProductAttributeValue) (string, 
 		Insert("product_attribute_values").
 		Columns("product_attribute_id", "value").
 		Values(v.ProductAttributeID, v.Value).
-		Suffix(`RETURNING *`)
+		Suffix(`RETURNING "id"`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }

@@ -43,6 +43,7 @@ func init() {
 		ID:                  123,
 		Name:                "something",
 		ProductProgenitorID: 2, // == exampleProgenitor.ID
+		CreatedAt:           exampleTime,
 	}
 	exampleUpdatedProductAttribute = &ProductAttribute{
 		ID:                  exampleProductAttribute.ID,
@@ -57,14 +58,15 @@ func init() {
 		ProductProgenitorID: exampleProductAttribute.ProductProgenitorID,
 		Values: []*ProductAttributeValue{
 			{
+				ID:                 256, // == exampleProductAttributeValue.ID,
 				ProductAttributeID: exampleProductAttribute.ID,
 				Value:              "one",
-			},
-			{
+			}, {
+				ID:                 256, // == exampleProductAttributeValue.ID,
 				ProductAttributeID: exampleProductAttribute.ID,
 				Value:              "two",
-			},
-			{
+			}, {
+				ID:                 256, // == exampleProductAttributeValue.ID,
 				ProductAttributeID: exampleProductAttribute.ID,
 				Value:              "three",
 			},
@@ -132,7 +134,6 @@ func TestRetrieveProductAttributeFromDB(t *testing.T) {
 
 	actual, err := retrieveProductAttributeFromDB(db, exampleProductAttribute.ID)
 	assert.Nil(t, err)
-	// TODO: fix this part of the test.
 	assert.Equal(t, exampleProductAttribute, actual, "expected and actual product attributes should match")
 	ensureExpectationsWereMet(t, mock)
 }

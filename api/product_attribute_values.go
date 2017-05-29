@@ -25,7 +25,7 @@ type ProductAttributeValue struct {
 	ArchivedAt         pq.NullTime `json:"-"`
 }
 
-func (pav ProductAttributeValue) generateScanArgs() []interface{} {
+func (pav *ProductAttributeValue) generateScanArgs() []interface{} {
 	return []interface{}{
 		&pav.ID,
 		&pav.ProductAttributeID,
@@ -44,7 +44,6 @@ func retrieveProductAttributeValueFromDB(db *sql.DB, id int64) (*ProductAttribut
 	if err == sql.ErrNoRows {
 		return v, errors.Wrap(err, "Error querying for product attribute values")
 	}
-
 	return v, err
 }
 
@@ -65,10 +64,11 @@ func loadProductAttributeValueInput(req *http.Request) (*ProductAttributeValue, 
 }
 
 // createProductAttributeValueInDB creates a ProductAttributeValue tied to a ProductAttribute
-func createProductAttributeValueInDB(db *sql.DB, v *ProductAttributeValue) (*ProductAttributeValue, error) {
+func createProductAttributeValueInDB(db *sql.DB, v *ProductAttributeValue) (int64, error) {
+	var newAttributeValueID int64
 	query, args := buildProductAttributeValueCreationQuery(v)
-	err := db.QueryRow(query, args...).Scan(v.generateScanArgs()...)
-	return v, err
+	err := db.QueryRow(query, args...).Scan(&newAttributeValueID)
+	return newAttributeValueID, err
 }
 
 func buildProductAttributeValueCreationHandler(db *sql.DB) http.HandlerFunc {
@@ -92,11 +92,12 @@ func buildProductAttributeValueCreationHandler(db *sql.DB) http.HandlerFunc {
 		}
 		newProductAttributeValue.ProductAttributeID = attributeIDInt
 
-		newProductAttributeValue, err = createProductAttributeValueInDB(db, newProductAttributeValue)
+		newProductAttributeValueID, err := createProductAttributeValueInDB(db, newProductAttributeValue)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "insert product in database")
 			return
 		}
+		newProductAttributeValue.ID = newProductAttributeValueID
 
 		json.NewEncoder(res).Encode(newProductAttributeValue)
 	}

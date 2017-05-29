@@ -25,6 +25,7 @@ func init() {
 		ID:                 256,
 		ProductAttributeID: 123, // == exampleProductAttribute.ID
 		Value:              "something",
+		CreatedAt:          exampleTime,
 	}
 	productAttributeValueHeaders = []string{"id", "product_attribute_id", "value", "created_at", "updated_at", "archived_at"}
 	productAttributeValueData = []driver.Value{
@@ -49,10 +50,9 @@ func TestRetrieveProductAttributeValueFromDB(t *testing.T) {
 	defer db.Close()
 	setExpectationsForProductAttributeValueRetrieval(mock, exampleProductAttributeValue, nil)
 
-	_, err = retrieveProductAttributeValueFromDB(db, exampleProductAttributeValue.ID)
+	actual, err := retrieveProductAttributeValueFromDB(db, exampleProductAttributeValue.ID)
 	assert.Nil(t, err)
-	// TODO: fix this part of the test.
-	// assert.Equal(t, exampleProductAttributeValue, actual, "expected and actual product attribute values should match")
+	assert.Equal(t, exampleProductAttributeValue, actual, "expected and actual product attribute values should match")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -68,7 +68,7 @@ func TestRetrieveProductAttributeValueFromDBThatDoesNotExist(t *testing.T) {
 }
 
 func setExpectationsForProductAttributeValueCreation(mock sqlmock.Sqlmock, v *ProductAttributeValue, err error) {
-	exampleRows := sqlmock.NewRows(productAttributeValueHeaders).AddRow(productAttributeValueData...)
+	exampleRows := sqlmock.NewRows([]string{"id"}).AddRow(exampleProductAttributeValue.ID)
 	query, _ := buildProductAttributeValueCreationQuery(v)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
 		WithArgs(v.ProductAttributeID, v.Value).
@@ -84,7 +84,7 @@ func TestCreateProductAttributeValue(t *testing.T) {
 
 	actual, err := createProductAttributeValueInDB(db, exampleProductAttributeValue)
 	assert.Nil(t, err)
-	assert.Equal(t, exampleProductAttributeValue, actual, "AttributeValue should be returned after successful creation")
+	assert.Equal(t, exampleProductAttributeValue.ID, actual, "AttributeValue should be returned after successful creation")
 	ensureExpectationsWereMet(t, mock)
 }
 

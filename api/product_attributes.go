@@ -25,7 +25,7 @@ type ProductAttribute struct {
 	ArchivedAt          pq.NullTime              `json:"-"`
 }
 
-func (a ProductAttribute) generateScanArgs() []interface{} {
+func (a *ProductAttribute) generateScanArgs() []interface{} {
 	return []interface{}{
 		&a.ID,
 		&a.Name,
@@ -62,7 +62,6 @@ func retrieveProductAttributeFromDB(db *sql.DB, id int64) (*ProductAttribute, er
 	if err == sql.ErrNoRows {
 		return attribute, errors.Wrap(err, "Error querying for product")
 	}
-
 	return attribute, err
 }
 
@@ -224,10 +223,11 @@ func createProductAttributeAndValuesInDBFromInput(db *sql.DB, in *ProductAttribu
 			ProductAttributeID: newProductAttribute.ID,
 			Value:              value,
 		}
-		newAttributeValue, err := createProductAttributeValueInDB(db, newAttributeValue)
+		newAttributeValueID, err := createProductAttributeValueInDB(db, newAttributeValue)
 		if err != nil {
 			return nil, err
 		}
+		newAttributeValue.ID = newAttributeValueID
 		newProductAttribute.Values = append(newProductAttribute.Values, newAttributeValue)
 	}
 
