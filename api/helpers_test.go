@@ -29,13 +29,13 @@ func init() {
 type rawFilterParamsTest struct {
 }
 
-func TestNullFloat64MarshalTextReturnsFloat64IfValid(t *testing.T) {
-	example := NullFloat64{sql.NullFloat64{Float64: 1.23, Valid: true}}
-	expected := []byte("1.23")
-	actual, err := example.MarshalText()
-	assert.Nil(t, err)
-	assert.Equal(t, expected, actual, "NullFloat64.MarshalText() should properly return a float as a string when that float is valid")
-}
+// func TestNullFloat64MarshalTextReturnsFloat64IfValid(t *testing.T) {
+// 	example := NullFloat64{sql.NullFloat64{Float64: 1.23, Valid: true}}
+// 	expected := []byte("1.23")
+// 	actual, err := example.MarshalText()
+// 	assert.Nil(t, err)
+// 	assert.Equal(t, expected, actual, "NullFloat64.MarshalText() should properly return a float as a string when that float is valid")
+// }
 
 func TestNullStringMarshalTextReturnsNilIfStringIsInvalid(t *testing.T) {
 	example := NullString{sql.NullString{String: "test", Valid: false}}

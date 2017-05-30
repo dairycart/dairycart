@@ -26,6 +26,7 @@ const (
 			"upc": "1234567890",
 			"quantity": 123,
 			"price": 12.34,
+			"cost": 5,
 			"description": "This is a skateboard. Please wear a helmet.",
 			"taxable": true,
 			"product_weight": 8,
@@ -46,6 +47,7 @@ const (
 			"upc": "1234567890",
 			"quantity": 123,
 			"price": 12.34,
+			"cost": 5,
 			"description": "This is a skateboard. Please wear a helmet.",
 			"taxable": true,
 			"product_weight": 8,
@@ -73,9 +75,7 @@ const (
 			"name": "Test",
 			"quantity": 666,
 			"upc": "1234567890",
-			"on_sale": false,
-			"price": 12.34,
-			"sale_price": null
+			"price": 12.34
 		}
 	`
 )
@@ -88,11 +88,11 @@ var exampleProduct *Product
 var exampleUpdatedProduct *Product
 
 func init() {
-	plainProductHeaders = []string{"id", "product_progenitor_id", "sku", "name", "upc", "quantity", "on_sale", "price", "sale_price", "created_at", "updated_at", "archived_at"}
-	examplePlainProductData = []driver.Value{10, 2, "skateboard", "Skateboard", "1234567890", 123, false, 12.34, nil, exampleTime, nil, nil}
+	plainProductHeaders = []string{"id", "product_progenitor_id", "sku", "name", "upc", "quantity", "price", "cost", "created_at", "updated_at", "archived_at"}
+	examplePlainProductData = []driver.Value{10, 2, "skateboard", "Skateboard", "1234567890", 123, 12.34, 5.00, exampleTime, nil, nil}
 
-	productJoinHeaders = []string{"id", "product_progenitor_id", "sku", "name", "upc", "quantity", "on_sale", "price", "sale_price", "created_at", "updated_at", "archived_at", "id", "name", "description", "taxable", "price", "product_weight", "product_height", "product_width", "product_length", "package_weight", "package_height", "package_width", "package_length", "created_at", "updated_at", "archived_at"}
-	exampleProductJoinData = []driver.Value{10, 2, "skateboard", "Skateboard", "1234567890", 123, false, 12.34, nil, exampleTime, nil, nil, 2, "Skateboard", "This is a skateboard. Please wear a helmet.", false, 99.99, 8, 7, 6, 5, 4, 3, 2, 1, exampleTime, nil, nil}
+	productJoinHeaders = []string{"id", "product_progenitor_id", "sku", "name", "upc", "quantity", "price", "cost", "created_at", "updated_at", "archived_at", "id", "name", "description", "taxable", "price", "product_weight", "product_height", "product_width", "product_length", "package_weight", "package_height", "package_width", "package_length", "created_at", "updated_at", "archived_at"}
+	exampleProductJoinData = []driver.Value{10, 2, "skateboard", "Skateboard", "1234567890", 123, 12.34, 5.00, exampleTime, nil, nil, 2, "Skateboard", "This is a skateboard. Please wear a helmet.", false, 99.99, 8, 7, 6, 5, 4, 3, 2, 1, exampleTime, nil, nil}
 	exampleProduct = &Product{
 		ProductProgenitor: ProductProgenitor{
 			ID:            2,
@@ -116,6 +116,7 @@ func init() {
 		UPC:                 NullString{sql.NullString{String: "1234567890", Valid: true}},
 		Quantity:            123,
 		Price:               12.34,
+		Cost:                5.00,
 		CreatedAt:           exampleTime,
 	}
 	exampleUpdatedProduct = &Product{
@@ -124,7 +125,7 @@ func init() {
 		Name:      "Test",
 		UPC:       NullString{sql.NullString{String: "1234567890", Valid: true}},
 		Quantity:  666,
-		SalePrice: NullFloat64{sql.NullFloat64{Float64: 0}},
+		Cost:      5.00,
 		Price:     lolFloats,
 		CreatedAt: exampleTime,
 	}
@@ -161,9 +162,10 @@ func setExpectationsForProductUpdate(mock sqlmock.Sqlmock, p *Product, err error
 	exampleRows := sqlmock.NewRows(plainProductHeaders).
 		AddRow(examplePlainProductData...)
 
-	productUpdateQuery, _ := buildProductUpdateQuery(p)
+	productUpdateQuery, queryArgs := buildProductUpdateQuery(p)
+	args := argsToDriverValues(queryArgs)
 	mock.ExpectQuery(formatQueryForSQLMock(productUpdateQuery)).
-		WithArgs(p.Name, p.OnSale, p.Price, p.Quantity, p.SalePrice, p.SKU, p.UPC, p.ID).
+		WithArgs(args...).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
 }
@@ -188,17 +190,14 @@ func setExpectationsForSingleProductRetrieval(mock sqlmock.Sqlmock, err error) {
 }
 
 func setExpectationsForProductUpdateHandler(mock sqlmock.Sqlmock, p *Product, err error) {
-	exampleRows := sqlmock.NewRows(plainProductHeaders).
-		AddRow(examplePlainProductData...)
-
+	exampleRows := sqlmock.NewRows(plainProductHeaders).AddRow(examplePlainProductData...)
 	productUpdateQuery, _ := buildProductUpdateQuery(exampleProduct)
 	mock.ExpectQuery(formatQueryForSQLMock(productUpdateQuery)).
 		WithArgs(
+			p.Cost,
 			p.Name,
-			p.OnSale,
 			p.Price,
 			p.Quantity,
-			p.SalePrice.Float64,
 			p.SKU,
 			p.UPC.String,
 			p.ID,
@@ -208,12 +207,12 @@ func setExpectationsForProductUpdateHandler(mock sqlmock.Sqlmock, p *Product, er
 
 func TestValidateProductUpdateInputWithValidInput(t *testing.T) {
 	expected := &Product{
-		SKU:       exampleSKU,
-		Name:      "Test",
-		UPC:       NullString{sql.NullString{String: "1234567890", Valid: true}},
-		Quantity:  666,
-		Price:     12.34,
-		SalePrice: NullFloat64{sql.NullFloat64{Float64: 0, Valid: true}},
+		SKU:      exampleSKU,
+		Name:     "Test",
+		UPC:      NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity: 666,
+		Price:    12.34,
+		Cost:     0,
 	}
 
 	req := httptest.NewRequest("GET", "http://example.com", strings.NewReader(exampleProductUpdateInput))
@@ -225,6 +224,15 @@ func TestValidateProductUpdateInputWithValidInput(t *testing.T) {
 
 func TestValidateProductUpdateInputWithInvalidInput(t *testing.T) {
 	exampleInput := strings.NewReader(`{"testing": true}`)
+
+	req := httptest.NewRequest("GET", "http://example.com", exampleInput)
+	_, err := validateProductUpdateInput(req)
+
+	assert.NotNil(t, err)
+}
+
+func TestValidateProductUpdateInputWithCompletelyInvalidInput(t *testing.T) {
+	exampleInput := strings.NewReader(`{"testing":}`)
 
 	req := httptest.NewRequest("GET", "http://example.com", exampleInput)
 	_, err := validateProductUpdateInput(req)
@@ -350,6 +358,7 @@ func TestValidateProductCreationInput(t *testing.T) {
 		UPC:           "1234567890",
 		Quantity:      123,
 		Price:         12.34,
+		Cost:          5,
 	}
 
 	req := httptest.NewRequest("GET", "http://example.com", strings.NewReader(exampleProductCreationInput))
@@ -635,7 +644,7 @@ func TestProductDeletionHandlerWithNonexistentProduct(t *testing.T) {
 	ensureExpectationsWereMet(t, mock)
 }
 
-func TestProductCreation(t *testing.T) {
+func TestProductCreationHandler(t *testing.T) {
 	expectedProgenitor := &ProductProgenitor{
 		ID:            2,
 		Name:          "Skateboard",
@@ -676,6 +685,7 @@ func TestProductCreation(t *testing.T) {
 		UPC:                 NullString{sql.NullString{String: "1234567890", Valid: true}},
 		Quantity:            123,
 		Price:               lolFloats,
+		Cost:                5.0,
 		CreatedAt:           exampleTime,
 	}
 
@@ -702,7 +712,7 @@ func TestProductCreation(t *testing.T) {
 	ensureExpectationsWereMet(t, mock)
 }
 
-func TestProductCreationWhereCommitReturnsAnError(t *testing.T) {
+func TestProductCreationHandlerWhereCommitReturnsAnError(t *testing.T) {
 	expectedProgenitor := &ProductProgenitor{
 		ID:            2,
 		Name:          "Skateboard",
@@ -743,6 +753,7 @@ func TestProductCreationWhereCommitReturnsAnError(t *testing.T) {
 		UPC:                 NullString{sql.NullString{String: "1234567890", Valid: true}},
 		Quantity:            123,
 		Price:               lolFloats,
+		Cost:                5.0,
 		CreatedAt:           exampleTime,
 	}
 
@@ -769,7 +780,7 @@ func TestProductCreationWhereCommitReturnsAnError(t *testing.T) {
 	ensureExpectationsWereMet(t, mock)
 }
 
-func TestProductCreationWhereTransactionFailsToBegin(t *testing.T) {
+func TestProductCreationHandlerWhereTransactionFailsToBegin(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -786,7 +797,7 @@ func TestProductCreationWhereTransactionFailsToBegin(t *testing.T) {
 	ensureExpectationsWereMet(t, mock)
 }
 
-func TestProductCreationWithoutAttributes(t *testing.T) {
+func TestProductCreationHandlerWithoutAttributes(t *testing.T) {
 	expectedProgenitor := &ProductProgenitor{
 		ID:            2,
 		Name:          "Skateboard",
@@ -827,6 +838,7 @@ func TestProductCreationWithoutAttributes(t *testing.T) {
 		UPC:                 NullString{sql.NullString{String: "1234567890", Valid: true}},
 		Quantity:            123,
 		Price:               lolFloats,
+		Cost:                5.0,
 		CreatedAt:           exampleTime,
 	}
 
@@ -849,7 +861,7 @@ func TestProductCreationWithoutAttributes(t *testing.T) {
 	ensureExpectationsWereMet(t, mock)
 }
 
-func TestProductCreationWithInvalidProductInput(t *testing.T) {
+func TestProductCreationHandlerWithInvalidProductInput(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -863,7 +875,7 @@ func TestProductCreationWithInvalidProductInput(t *testing.T) {
 	ensureExpectationsWereMet(t, mock)
 }
 
-func TestProductCreationForAlreadyExistentProduct(t *testing.T) {
+func TestProductCreationHandlerForAlreadyExistentProduct(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -878,7 +890,7 @@ func TestProductCreationForAlreadyExistentProduct(t *testing.T) {
 	ensureExpectationsWereMet(t, mock)
 }
 
-func TestProductCreationWhereProgenitorCreationFails(t *testing.T) {
+func TestProductCreationHandlerWhereProgenitorCreationFails(t *testing.T) {
 	expectedProgenitor := &ProductProgenitor{
 		ID:            2,
 		Name:          "Skateboard",
@@ -913,7 +925,7 @@ func TestProductCreationWhereProgenitorCreationFails(t *testing.T) {
 	ensureExpectationsWereMet(t, mock)
 }
 
-func TestProductCreationWithErrorCreatingAttributes(t *testing.T) {
+func TestProductCreationHandlerWithErrorCreatingAttributes(t *testing.T) {
 	expectedProgenitor := &ProductProgenitor{
 		ID:            2,
 		Name:          "Skateboard",
@@ -949,7 +961,7 @@ func TestProductCreationWithErrorCreatingAttributes(t *testing.T) {
 	ensureExpectationsWereMet(t, mock)
 }
 
-func TestProductCreationWhereProductCreationFails(t *testing.T) {
+func TestProductCreationHandlerWhereProductCreationFails(t *testing.T) {
 	expectedProgenitor := &ProductProgenitor{
 		ID:            2,
 		Name:          "Skateboard",
@@ -990,6 +1002,7 @@ func TestProductCreationWhereProductCreationFails(t *testing.T) {
 		UPC:                 NullString{sql.NullString{String: "1234567890", Valid: true}},
 		Quantity:            123,
 		Price:               lolFloats,
+		Cost:                5.0,
 		CreatedAt:           exampleTime,
 	}
 

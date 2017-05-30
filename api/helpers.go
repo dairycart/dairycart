@@ -78,28 +78,28 @@ const (
 // nil results in an empty string. The original has []byte("null"), which I think is actually worse. At least
 // an empty string is falsy in most languages. ¯\_(ツ)_/¯
 
-// NullFloat64 is a json.Marshal-able 64-bit float.
-type NullFloat64 struct {
-	sql.NullFloat64
-}
+// // NullFloat64 is a json.Marshal-able 64-bit float.
+// type NullFloat64 struct {
+// 	sql.NullFloat64
+// }
 
-// MarshalText satisfies the encoding.TestMarshaler interface
-func (nf NullFloat64) MarshalText() ([]byte, error) {
-	if nf.Valid {
-		nfv := nf.Float64
-		return []byte(strconv.FormatFloat(nfv, 'f', -1, 64)), nil
-	}
-	return nil, nil
-}
+// // MarshalText satisfies the encoding.TestMarshaler interface
+// func (nf NullFloat64) MarshalText() ([]byte, error) {
+// 	if nf.Valid {
+// 		nfv := nf.Float64
+// 		return []byte(strconv.FormatFloat(nfv, 'f', -1, 64)), nil
+// 	}
+// 	return nil, nil
+// }
 
-// UnmarshalText is a function which unmarshals a NullFloat64
-func (nf *NullFloat64) UnmarshalText(text []byte) (err error) {
-	s := string(text)
-	nf.NullFloat64.Float64, err = strconv.ParseFloat(s, 64)
-	nf.NullFloat64.Valid = err == nil
-	// returning nil because we've ensured that Float64 is set to at least zero.
-	return nil
-}
+// // UnmarshalText is a function which unmarshals a NullFloat64
+// func (nf *NullFloat64) UnmarshalText(text []byte) (err error) {
+// 	s := string(text)
+// 	nf.NullFloat64.Float64, err = strconv.ParseFloat(s, 64)
+// 	nf.NullFloat64.Valid = err == nil
+// 	// returning nil because we've ensured that Float64 is set to at least zero.
+// 	return nil
+// }
 
 // This isn't borrowed, but rather inferred from stuff I borrowed above
 

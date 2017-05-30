@@ -107,15 +107,14 @@ func TestBuildCompleteProductRetrievalQuery(t *testing.T) {
 	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
 }
 func TestBuildProductUpdateQuery(t *testing.T) {
-	expectedQuery := `UPDATE products SET name = $1, on_sale = $2, price = $3, quantity = $4, sale_price = $5, sku = $6, upc = $7, updated_at = NOW() WHERE id = $8 RETURNING *`
+	expectedQuery := `UPDATE products SET cost = $1, name = $2, price = $3, quantity = $4, sku = $5, upc = $6, updated_at = NOW() WHERE id = $7 RETURNING *`
 	actualQuery, actualArgs := buildProductUpdateQuery(exampleProduct)
 
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
-	// comparing interface equality with assert is impossible as far as I can tell
-	assert.Equal(t, 8, len(actualArgs), argsEqualityErrorMessage)
+	assert.Equal(t, 7, len(actualArgs), argsEqualityErrorMessage)
 }
 func TestBuildProductCreationQuery(t *testing.T) {
-	expected := `INSERT INTO products (product_progenitor_id,sku,name,upc,quantity,on_sale,price,sale_price) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING "id"`
+	expected := `INSERT INTO products (product_progenitor_id,sku,name,upc,quantity,price,cost) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "id"`
 	actual, _ := buildProductCreationQuery(exampleProduct)
 	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
 }

@@ -221,9 +221,8 @@ func buildProductUpdateQuery(p *Product) (string, []interface{}) {
 		"name":       p.Name,
 		"upc":        p.UPC,
 		"quantity":   p.Quantity,
-		"on_sale":    p.OnSale,
 		"price":      p.Price,
-		"sale_price": p.SalePrice,
+		"cost":       p.Cost,
 		"updated_at": squirrel.Expr("NOW()"),
 	}
 	queryBuilder := sqlBuilder.
@@ -238,8 +237,8 @@ func buildProductUpdateQuery(p *Product) (string, []interface{}) {
 func buildProductCreationQuery(p *Product) (string, []interface{}) {
 	queryBuilder := sqlBuilder.
 		Insert("products").
-		Columns("product_progenitor_id", "sku", "name", "upc", "quantity", "on_sale", "price", "sale_price").
-		Values(p.ProductProgenitorID, p.SKU, p.Name, p.UPC, p.Quantity, p.OnSale, p.Price, p.SalePrice).
+		Columns("product_progenitor_id", "sku", "name", "upc", "quantity", "price", "cost").
+		Values(p.ProductProgenitorID, p.SKU, p.Name, p.UPC, p.Quantity, p.Price, p.Cost).
 		Suffix(`RETURNING "id"`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args

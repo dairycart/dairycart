@@ -84,9 +84,9 @@ type Product struct {
 	Quantity            int        `json:"quantity"`
 
 	// Pricing Fields
-	OnSale    bool        `json:"on_sale"`
-	Price     float32     `json:"price"`
-	SalePrice NullFloat64 `json:"sale_price"`
+	Taxable bool    `json:"taxable"`
+	Price   float32 `json:"price"`
+	Cost    float32 `json:"cost"`
 
 	// // Housekeeping
 	CreatedAt  time.Time   `json:"created_at"`
@@ -105,9 +105,8 @@ func (p *Product) generateScanArgs() []interface{} {
 		&p.Name,
 		&p.UPC,
 		&p.Quantity,
-		&p.OnSale,
 		&p.Price,
-		&p.SalePrice,
+		&p.Cost,
 		&p.CreatedAt,
 		&p.UpdatedAt,
 		&p.ArchivedAt,
@@ -143,17 +142,17 @@ type ProductCreationInput struct {
 	Name                string                           `json:"name"`
 	UPC                 string                           `json:"upc"`
 	Quantity            int                              `json:"quantity"`
-	OnSale              bool                             `json:"on_sale"`
 	Price               float32                          `json:"price"`
-	SalePrice           float64                          `json:"sale_price"`
+	Cost                float32                          `json:"cost"`
 	AttributesAndValues []*ProductAttributeCreationInput `json:"attributes_and_values"`
 }
 
 func validateProductUpdateInput(req *http.Request) (*Product, error) {
 	product := &Product{}
-	decoder := json.NewDecoder(req.Body)
-	defer req.Body.Close()
-	err := decoder.Decode(product)
+	err := json.NewDecoder(req.Body).Decode(product)
+	if err != nil {
+		return nil, err
+	}
 
 	p := structs.New(product)
 	// go will happily decode an invalid input into a completely zeroed struct,
@@ -169,6 +168,7 @@ func validateProductUpdateInput(req *http.Request) (*Product, error) {
 		return nil, errors.New("Invalid input provided for product SKU")
 	}
 
+	// perform rounding on numeric fields
 	product.PackageWeight = float32(Round(float64(product.PackageWeight), .1, 2))
 	product.PackageHeight = float32(Round(float64(product.PackageHeight), .1, 2))
 	product.PackageWidth = float32(Round(float64(product.PackageWidth), .1, 2))
@@ -178,7 +178,7 @@ func validateProductUpdateInput(req *http.Request) (*Product, error) {
 	product.ProductWidth = float32(Round(float64(product.ProductWidth), .1, 2))
 	product.ProductLength = float32(Round(float64(product.ProductLength), .1, 2))
 	product.Price = float32(Round(float64(product.Price), .1, 2))
-	product.SalePrice = NullFloat64{sql.NullFloat64{Float64: Round(product.SalePrice.Float64, .1, 2), Valid: true}}
+	product.Cost = float32(Round(float64(product.Cost), .1, 2))
 
 	return product, err
 }
@@ -420,12 +420,17 @@ func buildProductCreationHandler(db *sql.DB) http.HandlerFunc {
 			UPC:                 NullString{sql.NullString{String: productInput.UPC, Valid: true}},
 			Quantity:            productInput.Quantity,
 			Price:               productInput.Price,
-			OnSale:              productInput.OnSale,
-			SalePrice:           NullFloat64{sql.NullFloat64{Float64: productInput.SalePrice}},
+			Cost:                productInput.Cost,
+		}
+
+		noop := func (i interface{}){
+			return
 		}
 
 		newProductID, err := createProductInDB(tx, newProduct)
 		if err != nil {
+			errStr := err.Error()
+			noop(errStr)
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "insert product in database")
 			return
