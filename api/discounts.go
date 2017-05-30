@@ -37,5 +37,8 @@ func (d *Discount) generateScanArgs() []interface{} {
 }
 
 func (d *Discount) discountTypeIsValid() bool {
+	// Because Go doesn't have typed enums (https://github.com/golang/go/issues/19814),
+	// this is my only real line of defense against a user attempting to load an invalid
+	// discount type into the database. It's lame, type enums aren't, here's hoping.
 	return d.Type == "percentage" || d.Type == "flat_amount"
 }
