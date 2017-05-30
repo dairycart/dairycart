@@ -39,6 +39,34 @@ const (
 		}
 	`
 
+	exampleProductCreationInputWithAttributes = `
+		{
+			"sku": "skateboard",
+			"name": "Skateboard",
+			"upc": "1234567890",
+			"quantity": 123,
+			"price": 12.34,
+			"description": "This is a skateboard. Please wear a helmet.",
+			"taxable": true,
+			"product_weight": 8,
+			"product_height": 7,
+			"product_width": 6,
+			"product_length": 5,
+			"package_weight": 4,
+			"package_height": 3,
+			"package_width": 2,
+			"package_length": 1,
+			"attributes_and_values": [{
+				"name": "something",
+				"values": [
+					"one",
+					"two",
+					"three"
+				]
+			}]
+		}
+	`
+
 	exampleProductUpdateInput = `
 		{
 			"sku": "example",
@@ -323,8 +351,15 @@ func TestValidateProductCreationInput(t *testing.T) {
 	assert.Equal(t, expected, actual, "valid product input should parse into a proper product struct")
 }
 
-func TestValidateProductCreationInputWithInvalidInput(t *testing.T) {
+func TestValidateProductCreationInputWithEmptyInput(t *testing.T) {
 	req := httptest.NewRequest("GET", "http://example.com", nil)
+	_, err := validateProductCreationInput(req)
+
+	assert.NotNil(t, err)
+}
+
+func TestValidateProductCreationInputWithInvalidInput(t *testing.T) {
+	req := httptest.NewRequest("GET", "http://example.com", strings.NewReader(exampleGarbageInput))
 	_, err := validateProductCreationInput(req)
 
 	assert.NotNil(t, err)
@@ -642,6 +677,70 @@ func TestProductCreation(t *testing.T) {
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, "skateboard", false, nil)
 	setExpectationsForProductProgenitorCreation(mock, expectedProgenitor, nil)
+	setExpectationsForProductAttributeCreation(mock, expectedCreatedProductAttribute, nil)
+	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[0], nil)
+	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[1], nil)
+	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[2], nil)
+	setExpectationsForProductCreation(mock, expectedProduct, nil)
+
+	req, err := http.NewRequest("POST", "/v1/product", strings.NewReader(exampleProductCreationInputWithAttributes))
+	assert.Nil(t, err)
+	router.ServeHTTP(res, req)
+
+	assert.Equal(t, res.Code, 200, "status code should be 200")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestProductCreationWithoutAttributes(t *testing.T) {
+	expectedProgenitor := &ProductProgenitor{
+		ID:            2,
+		Name:          "Skateboard",
+		Description:   "This is a skateboard. Please wear a helmet.",
+		Taxable:       true,
+		Price:         lolFloats,
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+		CreatedAt:     exampleTime,
+	}
+
+	expectedProduct := &Product{
+		ProductProgenitor: ProductProgenitor{
+			ID:            2,
+			Name:          "Skateboard",
+			Price:         lolFloats,
+			Description:   "This is a skateboard. Please wear a helmet.",
+			ProductWeight: 8,
+			ProductHeight: 7,
+			ProductWidth:  6,
+			ProductLength: 5,
+			PackageWeight: 4,
+			PackageHeight: 3,
+			PackageWidth:  2,
+			PackageLength: 1,
+			CreatedAt:     exampleTime,
+		},
+		ID:                  10,
+		ProductProgenitorID: 2,
+		SKU:                 "skateboard",
+		Name:                "Skateboard",
+		UPC:                 NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:            123,
+		Price:               lolFloats,
+		CreatedAt:           exampleTime,
+	}
+
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+	setExpectationsForProductExistence(mock, "skateboard", false, nil)
+	setExpectationsForProductProgenitorCreation(mock, expectedProgenitor, nil)
 	setExpectationsForProductCreation(mock, expectedProduct, nil)
 
 	req, err := http.NewRequest("POST", "/v1/product", strings.NewReader(exampleProductCreationInput))
@@ -649,6 +748,40 @@ func TestProductCreation(t *testing.T) {
 	router.ServeHTTP(res, req)
 
 	assert.Equal(t, res.Code, 200, "status code should be 200")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestProductCreationWithErrorCreatingAttributes(t *testing.T) {
+	expectedProgenitor := &ProductProgenitor{
+		ID:            2,
+		Name:          "Skateboard",
+		Description:   "This is a skateboard. Please wear a helmet.",
+		Taxable:       true,
+		Price:         lolFloats,
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+		CreatedAt:     exampleTime,
+	}
+
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+	setExpectationsForProductExistence(mock, "skateboard", false, nil)
+	setExpectationsForProductProgenitorCreation(mock, expectedProgenitor, nil)
+	setExpectationsForProductAttributeCreation(mock, expectedCreatedProductAttribute, arbitraryError)
+
+	req, err := http.NewRequest("POST", "/v1/product", strings.NewReader(exampleProductCreationInputWithAttributes))
+	assert.Nil(t, err)
+	router.ServeHTTP(res, req)
+
+	assert.Equal(t, res.Code, 500, "status code should be 500")
 	ensureExpectationsWereMet(t, mock)
 }
 

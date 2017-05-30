@@ -101,7 +101,7 @@ func newProductProgenitorFromProductCreationInput(in *ProductCreationInput) *Pro
 	}
 }
 
-func createProductProgenitorInDB(db *sql.DB, g *ProductProgenitor) (*ProductProgenitor, error) {
+func createProductProgenitorInDB(db *sql.DB, g *ProductProgenitor) (int64, error) {
 	var newProgenitorID int64
 	// using QueryRow instead of Exec because we want it to return the newly created row's ID
 	// Exec normally returns a sql.Result, which has a LastInsertedID() method, but when I tested
@@ -109,8 +109,7 @@ func createProductProgenitorInDB(db *sql.DB, g *ProductProgenitor) (*ProductProg
 	query, queryArgs := buildProgenitorCreationQuery(g)
 	err := db.QueryRow(query, queryArgs...).Scan(&newProgenitorID)
 
-	g.ID = newProgenitorID
-	return g, err
+	return newProgenitorID, err
 }
 
 // retrieveProductProgenitorFromDB retrieves a product progenitor with a given ID from the database

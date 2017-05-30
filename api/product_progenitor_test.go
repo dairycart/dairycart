@@ -102,9 +102,9 @@ func TestCreateProductProgenitorInDB(t *testing.T) {
 	defer db.Close()
 	setExpectationsForProductProgenitorCreation(mock, exampleProgenitor, nil)
 
-	newProgenitor, err := createProductProgenitorInDB(db, exampleProgenitor)
+	newProgenitorID, err := createProductProgenitorInDB(db, exampleProgenitor)
 	assert.Nil(t, err)
-	assert.Equal(t, int64(2), newProgenitor.ID, "createProductProgenitorInDB should return the correct ID for a new progenitor")
+	assert.Equal(t, int64(2), newProgenitorID, "createProductProgenitorInDB should return the correct ID for a new progenitor")
 	ensureExpectationsWereMet(t, mock)
 }
 

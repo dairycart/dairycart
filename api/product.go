@@ -129,24 +129,24 @@ type ProductsResponse struct {
 
 // ProductCreationInput is a struct that represents a product creation body
 type ProductCreationInput struct {
-	Description        string                        `json:"description"`
-	Taxable            bool                          `json:"taxable"`
-	ProductWeight      float32                       `json:"product_weight"`
-	ProductHeight      float32                       `json:"product_height"`
-	ProductWidth       float32                       `json:"product_width"`
-	ProductLength      float32                       `json:"product_length"`
-	PackageWeight      float32                       `json:"package_weight"`
-	PackageHeight      float32                       `json:"package_height"`
-	PackageWidth       float32                       `json:"package_width"`
-	PackageLength      float32                       `json:"package_length"`
-	SKU                string                        `json:"sku"`
-	Name               string                        `json:"name"`
-	UPC                string                        `json:"upc"`
-	Quantity           int                           `json:"quantity"`
-	OnSale             bool                          `json:"on_sale"`
-	Price              float32                       `json:"price"`
-	SalePrice          float64                       `json:"sale_price"`
-	AttributeAndValues ProductAttributeCreationInput `json:"attributes_and_values"`
+	Description         string                           `json:"description"`
+	Taxable             bool                             `json:"taxable"`
+	ProductWeight       float32                          `json:"product_weight"`
+	ProductHeight       float32                          `json:"product_height"`
+	ProductWidth        float32                          `json:"product_width"`
+	ProductLength       float32                          `json:"product_length"`
+	PackageWeight       float32                          `json:"package_weight"`
+	PackageHeight       float32                          `json:"package_height"`
+	PackageWidth        float32                          `json:"package_width"`
+	PackageLength       float32                          `json:"package_length"`
+	SKU                 string                           `json:"sku"`
+	Name                string                           `json:"name"`
+	UPC                 string                           `json:"upc"`
+	Quantity            int                              `json:"quantity"`
+	OnSale              bool                             `json:"on_sale"`
+	Price               float32                          `json:"price"`
+	SalePrice           float64                          `json:"sale_price"`
+	AttributesAndValues []*ProductAttributeCreationInput `json:"attributes_and_values"`
 }
 
 func validateProductUpdateInput(req *http.Request) (*Product, error) {
@@ -342,9 +342,11 @@ func buildProductUpdateHandler(db *sql.DB) http.HandlerFunc {
 
 func validateProductCreationInput(req *http.Request) (*ProductCreationInput, error) {
 	pci := &ProductCreationInput{}
-	decoder := json.NewDecoder(req.Body)
-	err := decoder.Decode(pci)
+	err := json.NewDecoder(req.Body).Decode(pci)
 	defer req.Body.Close()
+	if err != nil {
+		return nil, err
+	}
 
 	p := structs.New(pci)
 	// go will happily decode an invalid input into a completely zeroed struct,
@@ -379,25 +381,32 @@ func buildProductCreationHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		sku := productInput.SKU
 		// can't create a product with a sku that already exists!
-		exists, err := rowExistsInDB(db, "products", "sku", sku)
+		exists, err := rowExistsInDB(db, "products", "sku", productInput.SKU)
 		if err != nil || exists {
-			notifyOfInvalidRequestBody(res, fmt.Errorf("product with sku `%s` already exists", sku))
+			notifyOfInvalidRequestBody(res, fmt.Errorf("product with sku `%s` already exists", productInput.SKU))
 			return
 		}
 
 		progenitor := newProductProgenitorFromProductCreationInput(productInput)
-		newProgenitor, err := createProductProgenitorInDB(db, progenitor)
+		newProgenitorID, err := createProductProgenitorInDB(db, progenitor)
 		if err != nil {
-			errStr := err.Error()
-			notifyOfInternalIssue(res, err, errStr) //  "insert product progenitor in database")
+			notifyOfInternalIssue(res, err, "insert product progenitor in database")
 			return
+		}
+		progenitor.ID = newProgenitorID
+
+		for _, attributeAndValues := range productInput.AttributesAndValues {
+			_, err = createProductAttributeAndValuesInDBFromInput(db, attributeAndValues, progenitor.ID)
+			if err != nil {
+				notifyOfInternalIssue(res, err, "insert product attributes and values in database")
+				return
+			}
 		}
 
 		newProduct := &Product{
-			ProductProgenitor:   *newProgenitor,
-			ProductProgenitorID: newProgenitor.ID,
+			ProductProgenitor:   *progenitor,
+			ProductProgenitorID: progenitor.ID,
 			SKU:                 productInput.SKU,
 			Name:                productInput.Name,
 			UPC:                 NullString{sql.NullString{String: productInput.UPC, Valid: true}},
