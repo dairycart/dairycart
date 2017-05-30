@@ -54,6 +54,18 @@ type ProductAttributeCreationInput struct {
 	Values []string `json:"values"`
 }
 
+func productAttributeAlreadyExistsForProgenitor(db *sql.DB, in *ProductAttributeCreationInput, progenitorID string) (bool, error) {
+	var exists string
+
+	query := buildProductAttributeExistenceQueryForProductByName(in.Name, progenitorID)
+	err := db.QueryRow(query, in.Name, progenitorID).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+
+	return exists == "true", err
+}
+
 // retrieveProductAttributeFromDB retrieves a ProductAttribute with a given ID from the database
 func retrieveProductAttributeFromDB(db *sql.DB, id int64) (*ProductAttribute, error) {
 	attribute := &ProductAttribute{}
@@ -245,7 +257,7 @@ func buildProductAttributeCreationHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		// can't create an attribute that already exist!
-		attributeExists, err := rowExistsInDB(db, "product_attributes", "name", newAttributeData.Name)
+		attributeExists, err := productAttributeAlreadyExistsForProgenitor(db, newAttributeData, progenitorID)
 		if err != nil || attributeExists {
 			notifyOfInvalidRequestBody(res, fmt.Errorf("product attribute with the name `%s` already exists", newAttributeData.Name))
 			return

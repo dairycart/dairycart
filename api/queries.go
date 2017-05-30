@@ -272,16 +272,25 @@ func buildProductAttributeExistenceQuery(id int64) string {
 	return buildRowExistenceQuery("product_attributes", "id", id)
 }
 
-func buildProductAttributeExistenceQueryByName(name string) string {
-	return buildRowExistenceQuery("product_attributes", "name", name)
-}
-
 func buildProductAttributeRetrievalQuery(id int64) string {
 	return buildRowRetrievalQuery("product_attributes", "id", id)
 }
 
 func buildProductAttributeDeletionQuery(id int64) string {
 	return buildRowDeletionQuery("product_attributes", "id", id)
+}
+
+func buildProductAttributeExistenceQueryForProductByName(name, progenitorID string) string {
+	subqueryBuilder := sqlBuilder.Select("1").
+		From("product_attributes").
+		Where(squirrel.Eq{"name": name}).
+		Where(squirrel.Eq{"product_progenitor_id": progenitorID}).
+		Where(squirrel.Eq{"archived_at": nil})
+	subquery, _, _ := subqueryBuilder.ToSql()
+
+	queryBuilder := sqlBuilder.Select(fmt.Sprintf("EXISTS(%s)", subquery))
+	query, _, _ := queryBuilder.ToSql()
+	return query
 }
 
 func buildProductAttributeListQuery(progenitorID string, queryFilter *QueryFilter) string {

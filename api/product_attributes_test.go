@@ -91,11 +91,11 @@ func setExpectationsForProductAttributeExistenceByID(mock sqlmock.Sqlmock, a *Pr
 		WillReturnError(err)
 }
 
-func setExpectationsForProductAttributeExistenceByName(mock sqlmock.Sqlmock, a *ProductAttribute, exists bool, err error) {
+func setExpectationsForProductAttributeExistenceByName(mock sqlmock.Sqlmock, a *ProductAttribute, progenitorID string, exists bool, err error) {
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
-	query := buildProductAttributeExistenceQueryByName(a.Name)
+	query := buildProductAttributeExistenceQueryForProductByName(a.Name, progenitorID)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
-		WithArgs(a.Name).
+		WithArgs(a.Name, progenitorID).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
 }
@@ -322,7 +322,30 @@ func TestProductAttributeCreation(t *testing.T) {
 	res, router := setupMockRequestsAndMux(db)
 	progenitorIDString := strconv.Itoa(int(exampleProductAttribute.ProductProgenitorID))
 	setExpectationsForProductProgenitorExistence(mock, progenitorIDString, true)
-	setExpectationsForProductAttributeExistenceByName(mock, expectedCreatedProductAttribute, false, nil)
+	setExpectationsForProductAttributeExistenceByName(mock, expectedCreatedProductAttribute, progenitorIDString, false, nil)
+
+	setExpectationsForProductAttributeCreation(mock, expectedCreatedProductAttribute, nil)
+	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[0], nil)
+	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[1], nil)
+	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[2], nil)
+
+	productAttributeEndpoint := buildRoute("product_attributes", progenitorIDString)
+	req, err := http.NewRequest("POST", productAttributeEndpoint, strings.NewReader(exampleProductAttributeCreationBody))
+	assert.Nil(t, err)
+	router.ServeHTTP(res, req)
+
+	assert.Equal(t, res.Code, 200, "status code should be 200")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestProductAttributeCreationWhenAttributeWithTheSameNameCheckReturnsNoRows(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+	progenitorIDString := strconv.Itoa(int(exampleProductAttribute.ProductProgenitorID))
+	setExpectationsForProductProgenitorExistence(mock, progenitorIDString, true)
+	setExpectationsForProductAttributeExistenceByName(mock, expectedCreatedProductAttribute, progenitorIDString, false, sql.ErrNoRows)
 
 	setExpectationsForProductAttributeCreation(mock, expectedCreatedProductAttribute, nil)
 	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[0], nil)
@@ -379,7 +402,7 @@ func TestProductAttributeCreationWhenAttributeWithTheSameNameExists(t *testing.T
 	res, router := setupMockRequestsAndMux(db)
 	progenitorIDString := strconv.Itoa(int(exampleProductAttribute.ProductProgenitorID))
 	setExpectationsForProductProgenitorExistence(mock, progenitorIDString, true)
-	setExpectationsForProductAttributeExistenceByName(mock, expectedCreatedProductAttribute, true, nil)
+	setExpectationsForProductAttributeExistenceByName(mock, expectedCreatedProductAttribute, progenitorIDString, true, nil)
 
 	productAttributeEndpoint := buildRoute("product_attributes", progenitorIDString)
 	req, err := http.NewRequest("POST", productAttributeEndpoint, strings.NewReader(exampleProductAttributeCreationBody))
@@ -397,7 +420,7 @@ func TestProductAttributeCreationWithProblemsCreatingAttribute(t *testing.T) {
 	res, router := setupMockRequestsAndMux(db)
 	progenitorIDString := strconv.Itoa(int(exampleProductAttribute.ProductProgenitorID))
 	setExpectationsForProductProgenitorExistence(mock, progenitorIDString, true)
-	setExpectationsForProductAttributeExistenceByName(mock, expectedCreatedProductAttribute, false, nil)
+	setExpectationsForProductAttributeExistenceByName(mock, expectedCreatedProductAttribute, progenitorIDString, false, nil)
 	setExpectationsForProductAttributeCreation(mock, expectedCreatedProductAttribute, arbitraryError)
 
 	productAttributeEndpoint := buildRoute("product_attributes", progenitorIDString)
