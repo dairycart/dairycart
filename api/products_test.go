@@ -206,6 +206,7 @@ func setExpectationsForProductUpdateHandler(mock sqlmock.Sqlmock, p *Product, er
 }
 
 func TestValidateProductUpdateInputWithValidInput(t *testing.T) {
+	t.Parallel()
 	expected := &Product{
 		SKU:      exampleSKU,
 		Name:     "Test",
@@ -223,6 +224,7 @@ func TestValidateProductUpdateInputWithValidInput(t *testing.T) {
 }
 
 func TestValidateProductUpdateInputWithInvalidInput(t *testing.T) {
+	t.Parallel()
 	exampleInput := strings.NewReader(`{"testing": true}`)
 
 	req := httptest.NewRequest("GET", "http://example.com", exampleInput)
@@ -232,6 +234,7 @@ func TestValidateProductUpdateInputWithInvalidInput(t *testing.T) {
 }
 
 func TestValidateProductUpdateInputWithCompletelyInvalidInput(t *testing.T) {
+	t.Parallel()
 	exampleInput := strings.NewReader(`{"testing":}`)
 
 	req := httptest.NewRequest("GET", "http://example.com", exampleInput)
@@ -241,6 +244,7 @@ func TestValidateProductUpdateInputWithCompletelyInvalidInput(t *testing.T) {
 }
 
 func TestValidateProductUpdateInputWithInvalidSKU(t *testing.T) {
+	t.Parallel()
 	exampleInput := strings.NewReader(badSKUUpdateJSON)
 
 	req := httptest.NewRequest("GET", "http://example.com", exampleInput)
@@ -250,6 +254,7 @@ func TestValidateProductUpdateInputWithInvalidSKU(t *testing.T) {
 }
 
 func TestRetrieveProductFromDB(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -262,6 +267,7 @@ func TestRetrieveProductFromDB(t *testing.T) {
 }
 
 func TestRetrieveProductFromDBWhenDBReturnsError(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -273,6 +279,7 @@ func TestRetrieveProductFromDBWhenDBReturnsError(t *testing.T) {
 }
 
 func TestRetrieveProductsFromDB(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -285,6 +292,7 @@ func TestRetrieveProductsFromDB(t *testing.T) {
 }
 
 func TestRetrieveProductsFromDBWhenDBReturnsError(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -296,6 +304,7 @@ func TestRetrieveProductsFromDBWhenDBReturnsError(t *testing.T) {
 }
 
 func TestDeleteProductBySKU(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -311,6 +320,7 @@ func TestDeleteProductBySKU(t *testing.T) {
 }
 
 func TestUpdateProductInDatabase(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -322,6 +332,7 @@ func TestUpdateProductInDatabase(t *testing.T) {
 }
 
 func TestCreateProductInDB(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -342,6 +353,7 @@ func TestCreateProductInDB(t *testing.T) {
 }
 
 func TestValidateProductCreationInput(t *testing.T) {
+	t.Parallel()
 	expected := &ProductCreationInput{
 		Description:   "This is a skateboard. Please wear a helmet.",
 		Taxable:       true,
@@ -369,6 +381,7 @@ func TestValidateProductCreationInput(t *testing.T) {
 }
 
 func TestValidateProductCreationInputWithEmptyInput(t *testing.T) {
+	t.Parallel()
 	req := httptest.NewRequest("GET", "http://example.com", nil)
 	_, err := validateProductCreationInput(req)
 
@@ -376,6 +389,7 @@ func TestValidateProductCreationInputWithEmptyInput(t *testing.T) {
 }
 
 func TestValidateProductCreationInputWithInvalidInput(t *testing.T) {
+	t.Parallel()
 	req := httptest.NewRequest("GET", "http://example.com", strings.NewReader(exampleGarbageInput))
 	_, err := validateProductCreationInput(req)
 
@@ -383,6 +397,7 @@ func TestValidateProductCreationInputWithInvalidInput(t *testing.T) {
 }
 
 func TestValidateProductCreationInputWithInvalidSKU(t *testing.T) {
+	t.Parallel()
 	req := httptest.NewRequest("GET", "http://example.com", strings.NewReader(badSKUUpdateJSON))
 	_, err := validateProductCreationInput(req)
 
@@ -408,6 +423,7 @@ func TestValidateProductCreationInputWithInvalidSKU(t *testing.T) {
 //////////////////////////////////////////////////////////////
 
 func TestProductExistenceHandlerWithExistingProduct(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -423,6 +439,7 @@ func TestProductExistenceHandlerWithExistingProduct(t *testing.T) {
 }
 
 func TestProductExistenceHandlerWithNonexistentProduct(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -438,6 +455,7 @@ func TestProductExistenceHandlerWithNonexistentProduct(t *testing.T) {
 }
 
 func TestProductExistenceHandlerWithExistenceCheckerError(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -453,6 +471,7 @@ func TestProductExistenceHandlerWithExistenceCheckerError(t *testing.T) {
 }
 
 func TestProductRetrievalHandlerWithExistingProduct(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -468,6 +487,7 @@ func TestProductRetrievalHandlerWithExistingProduct(t *testing.T) {
 }
 
 func TestProductRetrievalHandlerWithDBError(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -483,6 +503,7 @@ func TestProductRetrievalHandlerWithDBError(t *testing.T) {
 }
 
 func TestProductListHandler(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -515,6 +536,7 @@ func TestProductListHandler(t *testing.T) {
 }
 
 func TestProductListHandlerWithDBError(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -530,6 +552,7 @@ func TestProductListHandlerWithDBError(t *testing.T) {
 }
 
 func TestProductUpdateHandler(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -547,6 +570,7 @@ func TestProductUpdateHandler(t *testing.T) {
 }
 
 func TestProductUpdateHandlerWithNonexistentProduct(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -562,6 +586,7 @@ func TestProductUpdateHandlerWithNonexistentProduct(t *testing.T) {
 }
 
 func TestProductUpdateHandlerWithInputValidationError(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -577,6 +602,7 @@ func TestProductUpdateHandlerWithInputValidationError(t *testing.T) {
 }
 
 func TestProductUpdateHandlerWithDBErrorRetrievingProduct(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -593,6 +619,7 @@ func TestProductUpdateHandlerWithDBErrorRetrievingProduct(t *testing.T) {
 }
 
 func TestProductUpdateHandlerWithDBErrorUpdatingProduct(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -610,6 +637,7 @@ func TestProductUpdateHandlerWithDBErrorUpdatingProduct(t *testing.T) {
 }
 
 func TestProductDeletionHandlerWithExistentProduct(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -630,6 +658,7 @@ func TestProductDeletionHandlerWithExistentProduct(t *testing.T) {
 }
 
 func TestProductDeletionHandlerWithNonexistentProduct(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -645,6 +674,7 @@ func TestProductDeletionHandlerWithNonexistentProduct(t *testing.T) {
 }
 
 func TestProductCreationHandler(t *testing.T) {
+	t.Parallel()
 	expectedProgenitor := &ProductProgenitor{
 		ID:            2,
 		Name:          "Skateboard",
@@ -713,6 +743,7 @@ func TestProductCreationHandler(t *testing.T) {
 }
 
 func TestProductCreationHandlerWhereCommitReturnsAnError(t *testing.T) {
+	t.Parallel()
 	expectedProgenitor := &ProductProgenitor{
 		ID:            2,
 		Name:          "Skateboard",
@@ -781,6 +812,7 @@ func TestProductCreationHandlerWhereCommitReturnsAnError(t *testing.T) {
 }
 
 func TestProductCreationHandlerWhereTransactionFailsToBegin(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -798,6 +830,7 @@ func TestProductCreationHandlerWhereTransactionFailsToBegin(t *testing.T) {
 }
 
 func TestProductCreationHandlerWithoutAttributes(t *testing.T) {
+	t.Parallel()
 	expectedProgenitor := &ProductProgenitor{
 		ID:            2,
 		Name:          "Skateboard",
@@ -862,6 +895,7 @@ func TestProductCreationHandlerWithoutAttributes(t *testing.T) {
 }
 
 func TestProductCreationHandlerWithInvalidProductInput(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -876,6 +910,7 @@ func TestProductCreationHandlerWithInvalidProductInput(t *testing.T) {
 }
 
 func TestProductCreationHandlerForAlreadyExistentProduct(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -891,6 +926,7 @@ func TestProductCreationHandlerForAlreadyExistentProduct(t *testing.T) {
 }
 
 func TestProductCreationHandlerWhereProgenitorCreationFails(t *testing.T) {
+	t.Parallel()
 	expectedProgenitor := &ProductProgenitor{
 		ID:            2,
 		Name:          "Skateboard",
@@ -926,6 +962,7 @@ func TestProductCreationHandlerWhereProgenitorCreationFails(t *testing.T) {
 }
 
 func TestProductCreationHandlerWithErrorCreatingAttributes(t *testing.T) {
+	t.Parallel()
 	expectedProgenitor := &ProductProgenitor{
 		ID:            2,
 		Name:          "Skateboard",
@@ -962,6 +999,7 @@ func TestProductCreationHandlerWithErrorCreatingAttributes(t *testing.T) {
 }
 
 func TestProductCreationHandlerWhereProductCreationFails(t *testing.T) {
+	t.Parallel()
 	expectedProgenitor := &ProductProgenitor{
 		ID:            2,
 		Name:          "Skateboard",

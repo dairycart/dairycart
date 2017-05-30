@@ -36,6 +36,7 @@ func init() {
 }
 
 func TestNewProductProgenitorFromProductCreationInput(t *testing.T) {
+	t.Parallel()
 	expected := &ProductProgenitor{
 		Name:          "Example",
 		Description:   "this is a description",
@@ -97,6 +98,7 @@ func setExpectationsForProductProgenitorCreation(mock sqlmock.Sqlmock, g *Produc
 }
 
 func TestCreateProductProgenitorInDB(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -127,6 +129,7 @@ func setupExpectationsForProductProgenitorRetrieval(mock sqlmock.Sqlmock) {
 }
 
 func TestRetrieveProductProgenitorFromDB(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()

@@ -138,6 +138,7 @@ func setExpectationsForProductAttributeUpdate(mock sqlmock.Sqlmock, a *ProductAt
 }
 
 func TestValidateProductAttributeUpdateInput(t *testing.T) {
+	t.Parallel()
 	expected := &ProductAttributeUpdateInput{Name: "something else"}
 	exampleInput := strings.NewReader(exampleProductAttributeUpdateBody)
 
@@ -149,6 +150,7 @@ func TestValidateProductAttributeUpdateInput(t *testing.T) {
 }
 
 func TestValidateProductAttributeUpdateInputWithInvalidInput(t *testing.T) {
+	t.Parallel()
 	exampleInput := strings.NewReader(exampleGarbageInput)
 
 	req := httptest.NewRequest("GET", "http://example.com", exampleInput)
@@ -158,6 +160,7 @@ func TestValidateProductAttributeUpdateInputWithInvalidInput(t *testing.T) {
 }
 
 func TestRetrieveProductAttributeFromDB(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -170,6 +173,7 @@ func TestRetrieveProductAttributeFromDB(t *testing.T) {
 }
 
 func TestRetrieveProductAttributeFromDBWithNoRows(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -181,6 +185,7 @@ func TestRetrieveProductAttributeFromDBWithNoRows(t *testing.T) {
 }
 
 func TestCreateProductAttributeInDB(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -202,6 +207,7 @@ func TestCreateProductAttributeInDB(t *testing.T) {
 }
 
 func TestCreateProductAttributeAndValuesInDBFromInput(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -226,6 +232,7 @@ func TestCreateProductAttributeAndValuesInDBFromInput(t *testing.T) {
 }
 
 func TestCreateProductAttributeAndValuesInDBFromInputWithIssueCreatingAttribute(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -246,6 +253,7 @@ func TestCreateProductAttributeAndValuesInDBFromInputWithIssueCreatingAttribute(
 }
 
 func TestCreateProductAttributeAndValuesInDBFromInputWithIssueCreatingAttributeValue(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -267,6 +275,7 @@ func TestCreateProductAttributeAndValuesInDBFromInputWithIssueCreatingAttributeV
 }
 
 func TestUpdateProductAttributeInDB(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -304,6 +313,7 @@ func TestUpdateProductAttributeInDB(t *testing.T) {
 //////////////////////////////////////////////////////
 
 func TestProductAttributeListHandler(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -341,6 +351,7 @@ func TestProductAttributeListHandler(t *testing.T) {
 }
 
 func TestProductAttributeListHandlerWithErrorsRetrievingValues(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -360,6 +371,7 @@ func TestProductAttributeListHandlerWithErrorsRetrievingValues(t *testing.T) {
 }
 
 func TestProductAttributeListHandlerWithDBErrors(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -376,6 +388,7 @@ func TestProductAttributeListHandlerWithDBErrors(t *testing.T) {
 }
 
 func TestProductAttributeCreationHandler(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -400,6 +413,7 @@ func TestProductAttributeCreationHandler(t *testing.T) {
 }
 
 func TestProductAttributeCreationHandlerFailureToSetupTransaction(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -419,6 +433,7 @@ func TestProductAttributeCreationHandlerFailureToSetupTransaction(t *testing.T) 
 }
 
 func TestProductAttributeCreationHandlerFailureToCommitTransaction(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -443,6 +458,7 @@ func TestProductAttributeCreationHandlerFailureToCommitTransaction(t *testing.T)
 }
 
 func TestProductAttributeCreationHandlerWhenAttributeWithTheSameNameCheckReturnsNoRows(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -467,6 +483,7 @@ func TestProductAttributeCreationHandlerWhenAttributeWithTheSameNameCheckReturns
 }
 
 func TestProductAttributeCreationHandlerWithNonExistentProgenitor(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -484,6 +501,7 @@ func TestProductAttributeCreationHandlerWithNonExistentProgenitor(t *testing.T) 
 }
 
 func TestProductAttributeCreationHandlerWithInvalidAttributeCreationInput(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -501,6 +519,7 @@ func TestProductAttributeCreationHandlerWithInvalidAttributeCreationInput(t *tes
 }
 
 func TestProductAttributeCreationHandlerWhenAttributeWithTheSameNameExists(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -519,6 +538,7 @@ func TestProductAttributeCreationHandlerWhenAttributeWithTheSameNameExists(t *te
 }
 
 func TestProductAttributeCreationHandlerWithProblemsCreatingAttribute(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -541,6 +561,7 @@ func TestProductAttributeCreationHandlerWithProblemsCreatingAttribute(t *testing
 }
 
 func TestProductAttributeUpdateHandler(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -563,6 +584,7 @@ func TestProductAttributeUpdateHandler(t *testing.T) {
 }
 
 func TestProductAttributeUpdateHandlerWithNonexistentProgenitor(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -582,6 +604,7 @@ func TestProductAttributeUpdateHandlerWithNonexistentProgenitor(t *testing.T) {
 }
 
 func TestProductAttributeUpdateHandlerWithNonexistentAttribute(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -602,6 +625,7 @@ func TestProductAttributeUpdateHandlerWithNonexistentAttribute(t *testing.T) {
 }
 
 func TestProductAttributeUpdateHandlerWithInvalidInput(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -622,6 +646,7 @@ func TestProductAttributeUpdateHandlerWithInvalidInput(t *testing.T) {
 }
 
 func TestProductAttributeUpdateHandlerWithErrorRetrievingAttribute(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -643,6 +668,7 @@ func TestProductAttributeUpdateHandlerWithErrorRetrievingAttribute(t *testing.T)
 }
 
 func TestProductAttributeUpdateHandlerWithErrorUpdatingAttribute(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()

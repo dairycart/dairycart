@@ -30,6 +30,7 @@ type rawFilterParamsTest struct {
 }
 
 // func TestNullFloat64MarshalTextReturnsFloat64IfValid(t *testing.T) {
+// 	t.Parallel()
 // 	example := NullFloat64{sql.NullFloat64{Float64: 1.23, Valid: true}}
 // 	expected := []byte("1.23")
 // 	actual, err := example.MarshalText()
@@ -38,6 +39,7 @@ type rawFilterParamsTest struct {
 // }
 
 func TestNullStringMarshalTextReturnsNilIfStringIsInvalid(t *testing.T) {
+	t.Parallel()
 	example := NullString{sql.NullString{String: "test", Valid: false}}
 	expectedNil, err := example.MarshalText()
 	assert.Nil(t, err)
@@ -45,12 +47,14 @@ func TestNullStringMarshalTextReturnsNilIfStringIsInvalid(t *testing.T) {
 }
 
 func TestRound(t *testing.T) {
+	t.Parallel()
 	assert.Equal(t, 1.24, Round(1.23456789, .1, 2), "Round output should equal expected output")
 	assert.Equal(t, 1.235, Round(1.23456789, .1, 3), "Round output should equal expected output")
 	assert.Equal(t, 1.23, Round(1.23456789, .9, 2), "Round output should equal expected output")
 }
 
 func TestParseRawFilterParams(t *testing.T) {
+	t.Parallel()
 	exampleUnixStartTime := int64(232747200)
 	exampleUnixEndTime := int64(232747200 + 10000)
 
@@ -185,6 +189,7 @@ func TestParseRawFilterParams(t *testing.T) {
 }
 
 func TestRespondThatRowDoesNotExist(t *testing.T) {
+	t.Parallel()
 	req := httptest.NewRequest("GET", "http://example.com/foo", nil)
 	w := httptest.NewRecorder()
 	respondThatRowDoesNotExist(req, w, "item", "something")
@@ -194,6 +199,7 @@ func TestRespondThatRowDoesNotExist(t *testing.T) {
 }
 
 func TestNotifyOfInvalidRequestBody(t *testing.T) {
+	t.Parallel()
 	w := httptest.NewRecorder()
 	notifyOfInvalidRequestBody(w, errors.New("test"))
 
@@ -202,6 +208,7 @@ func TestNotifyOfInvalidRequestBody(t *testing.T) {
 }
 
 func TestNotifyOfInternalIssue(t *testing.T) {
+	t.Parallel()
 	w := httptest.NewRecorder()
 
 	notifyOfInternalIssue(w, errors.New("test"), "do a thing")
@@ -211,6 +218,7 @@ func TestNotifyOfInternalIssue(t *testing.T) {
 }
 
 func TestRowExistsInDBWhenDBThrowsError(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	defer db.Close()
 	assert.Nil(t, err)
@@ -230,6 +238,7 @@ func TestRowExistsInDBWhenDBThrowsError(t *testing.T) {
 }
 
 func TestRowExistsInDBForExistingRow(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	defer db.Close()
 	assert.Nil(t, err)
@@ -250,6 +259,7 @@ func TestRowExistsInDBForExistingRow(t *testing.T) {
 }
 
 func TestRowExistsInDBForNonexistentRow(t *testing.T) {
+	t.Parallel()
 	db, mock, err := sqlmock.New()
 	defer db.Close()
 	assert.Nil(t, err)
