@@ -81,14 +81,22 @@ func retrieveProductAttributeFromDB(db *sql.DB, id int64) (*ProductAttribute, er
 func getProductAttributesForProgenitor(db *sql.DB, progenitorID string, queryFilter *QueryFilter) ([]ProductAttribute, error) {
 	var attributes []ProductAttribute
 
-	rows, err := db.Query(buildProductAttributeListQuery(progenitorID, queryFilter))
+	query := buildProductAttributeListQuery(progenitorID, queryFilter)
+	rows, err := db.Query(query)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error encountered querying for products")
+		return nil, errors.Wrap(err, "Error encountered querying for product attributes")
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var attribute ProductAttribute
 		_ = rows.Scan(attribute.generateScanArgs()...)
+
+		attributeValues, err := retrieveProductAttributeValueForAttributeFromDB(db, attribute.ID)
+		if err != nil {
+			return attributes, errors.Wrap(err, "Error retrieving product attribute values for attribute")
+		}
+		attribute.Values = attributeValues
+
 		attributes = append(attributes, attribute)
 	}
 	return attributes, nil
@@ -99,6 +107,7 @@ func buildProductAttributeListHandler(db *sql.DB) http.HandlerFunc {
 		progenitorID := mux.Vars(req)["progenitor_id"]
 		rawFilterParams := req.URL.Query()
 		queryFilter := parseRawFilterParams(rawFilterParams)
+
 		attributes, err := getProductAttributesForProgenitor(db, progenitorID, queryFilter)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve products from the database")

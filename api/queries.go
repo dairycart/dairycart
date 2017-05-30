@@ -365,6 +365,15 @@ func buildProductAttributeValueDeletionQuery(id int64) string {
 	return buildRowDeletionQuery("product_attribute_values", "id", id)
 }
 
+func buildProductAttributeValueRetrievalForAttributeIDQuery(attributeID int64) string {
+	queryBuilder := sqlBuilder.Select("*").
+		From("product_attribute_values").
+		Where(squirrel.Eq{"product_attribute_id": attributeID}).
+		Where(squirrel.Eq{"archived_at": nil})
+	query, _, _ := queryBuilder.ToSql()
+	return query
+}
+
 func buildProductAttributeValueUpdateQuery(v *ProductAttributeValue) (string, []interface{}) {
 	productAttributeUpdateSetMap := map[string]interface{}{
 		"value":      v.Value,

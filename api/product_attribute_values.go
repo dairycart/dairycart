@@ -66,6 +66,26 @@ func retrieveProductAttributeValueFromDB(db *sql.DB, id int64) (*ProductAttribut
 	return v, err
 }
 
+// retrieveProductAttributeValue retrieves a ProductAttributeValue with a given product attribute ID from the database
+func retrieveProductAttributeValueForAttributeFromDB(db *sql.DB, attributeID int64) ([]*ProductAttributeValue, error) {
+	var values []*ProductAttributeValue
+
+	query := buildProductAttributeValueRetrievalForAttributeIDQuery(attributeID)
+	rows, err := db.Query(query, attributeID)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Error encountered querying for products")
+	}
+	defer rows.Close()
+	for rows.Next() {
+		value := &ProductAttributeValue{}
+		_ = rows.Scan(value.generateScanArgs()...)
+		values = append(values, value)
+	}
+	return values, nil
+
+}
+
 func loadProductAttributeValueInput(req *http.Request) (*ProductAttributeValue, error) {
 	pav := &ProductAttributeValue{}
 	decoder := json.NewDecoder(req.Body)

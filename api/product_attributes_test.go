@@ -272,6 +272,9 @@ func TestProductAttributeListHandler(t *testing.T) {
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductAttributeListQuery(mock, exampleProductAttribute, nil)
+	setExpectationsForProductAttributeValueRetrievalByAttributeID(mock, exampleProductAttribute, nil)
+	setExpectationsForProductAttributeValueRetrievalByAttributeID(mock, exampleProductAttribute, nil)
+	setExpectationsForProductAttributeValueRetrievalByAttributeID(mock, exampleProductAttribute, nil)
 
 	productAttributeEndpoint := buildRoute("product_attributes", strconv.Itoa(int(exampleProgenitor.ID)))
 	req, err := http.NewRequest("GET", productAttributeEndpoint, nil)
@@ -280,7 +283,7 @@ func TestProductAttributeListHandler(t *testing.T) {
 	router.ServeHTTP(res, req)
 	assert.Equal(t, res.Code, 200, "status code should be 200")
 
-	expected := &ProductsResponse{
+	expected := &ProductAttributesResponse{
 		ListResponse: ListResponse{
 			Page:  1,
 			Limit: 25,
@@ -288,14 +291,34 @@ func TestProductAttributeListHandler(t *testing.T) {
 		},
 	}
 
-	actual := &ProductsResponse{}
-	err = json.NewDecoder(strings.NewReader(res.Body.String())).Decode(actual)
+	actual := &ProductAttributesResponse{}
+	bodyString := res.Body.String()
+	err = json.NewDecoder(strings.NewReader(bodyString)).Decode(actual)
 	assert.Nil(t, err)
 
 	assert.Equal(t, expected.Page, actual.Page, "expected and actual product attribute pages should be equal")
 	assert.Equal(t, expected.Limit, actual.Limit, "expected and actual product attribute limits should be equal")
 	assert.Equal(t, expected.Count, actual.Count, "expected and actual product attribute counts should be equal")
 	assert.Equal(t, uint64(len(actual.Data)), actual.Count, "actual product attribute counts and product response count field should be equal")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestProductAttributeListHandlerWithErrorsRetrievingValues(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+	setExpectationsForProductAttributeListQuery(mock, exampleProductAttribute, nil)
+	setExpectationsForProductAttributeValueRetrievalByAttributeID(mock, exampleProductAttribute, nil)
+	setExpectationsForProductAttributeValueRetrievalByAttributeID(mock, exampleProductAttribute, nil)
+	setExpectationsForProductAttributeValueRetrievalByAttributeID(mock, exampleProductAttribute, arbitraryError)
+
+	productAttributeEndpoint := buildRoute("product_attributes", strconv.Itoa(int(exampleProgenitor.ID)))
+	req, err := http.NewRequest("GET", productAttributeEndpoint, nil)
+	assert.Nil(t, err)
+
+	router.ServeHTTP(res, req)
+	assert.Equal(t, res.Code, 500, "status code should be 500")
 	ensureExpectationsWereMet(t, mock)
 }
 
