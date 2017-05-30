@@ -119,17 +119,14 @@ func validateProductAttributeUpdateInput(req *http.Request) (*ProductAttributeUp
 }
 
 func updateProductAttributeInDB(db *sql.DB, a *ProductAttribute) error {
-	productUpdateQuery, queryArgs := buildProductAttributeUpdateQuery(a)
-	row := db.QueryRow(productUpdateQuery, queryArgs...)
-	scanArgs := a.generateScanArgs()
-	err := row.Scan(scanArgs...)
-	//err := db.QueryRow(productUpdateQuery, queryArgs...).Scan(a.generateScanArgs()...)
+	attributeUpdateQuery, queryArgs := buildProductAttributeUpdateQuery(a)
+	err := db.QueryRow(attributeUpdateQuery, queryArgs...).Scan(a.generateScanArgs()...)
 	return err
 }
 
 func buildProductAttributeUpdateHandler(db *sql.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		// ProductUpdateHandler is a request handler that can update products
+		// ProductAttributeUpdateHandler is a request handler that can update product attributes
 		reqVars := mux.Vars(req)
 		progenitorID := reqVars["progenitor_id"]
 		attributeID := reqVars["attribute_id"]
@@ -228,7 +225,7 @@ func createProductAttributeAndValuesInDBFromInput(db *sql.DB, in *ProductAttribu
 
 func buildProductAttributeCreationHandler(db *sql.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		// ProductUpdateHandler is a request handler that can update products
+		// ProductAttributeCreationHandler is a request handler that can create product attributes
 		progenitorID := mux.Vars(req)["progenitor_id"]
 		// eating this error because Mux should valdiate this for us.
 		progenitorIDInt, _ := strconv.Atoi(progenitorID)

@@ -36,6 +36,25 @@ func (pav *ProductAttributeValue) generateScanArgs() []interface{} {
 	}
 }
 
+// ProductAttributeValueUpdateInput is a struct to use for updating product attribute values
+type ProductAttributeValueUpdateInput struct {
+	Value string `json:"value"`
+}
+
+func validateProductAttributeValueUpdateInput(req *http.Request) (*ProductAttributeValueUpdateInput, error) {
+	i := &ProductAttributeValueUpdateInput{}
+	json.NewDecoder(req.Body).Decode(i)
+
+	s := structs.New(i)
+	// go will happily decode an invalid input into a completely zeroed struct,
+	// so we gotta do checks like this because we're bad at programming.
+	if s.IsZero() {
+		return nil, errors.New("Invalid input provided for product attribute body")
+	}
+
+	return i, nil
+}
+
 // retrieveProductAttributeValue retrieves a ProductAttributeValue with a given ID from the database
 func retrieveProductAttributeValueFromDB(db *sql.DB, id int64) (*ProductAttributeValue, error) {
 	v := &ProductAttributeValue{}
@@ -61,6 +80,59 @@ func loadProductAttributeValueInput(req *http.Request) (*ProductAttributeValue, 
 	}
 
 	return pav, err
+}
+
+func updateProductAttributeValueInDB(db *sql.DB, v *ProductAttributeValue) error {
+	valueUpdateQuery, queryArgs := buildProductAttributeValueUpdateQuery(v)
+	err := db.QueryRow(valueUpdateQuery, queryArgs...).Scan(v.generateScanArgs()...)
+	return err
+}
+
+func buildProductAttributeValueUpdateHandler(db *sql.DB) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		// ProductAttributeValueUpdateHandler is a request handler that can update product attribute values
+		reqVars := mux.Vars(req)
+		attributeID := reqVars["attribute_id"]
+		attributeValueID := reqVars["attribute_value_id"]
+		// eating these errors because Mux should validate these for us.
+		attributeValueIDInt, _ := strconv.Atoi(attributeValueID)
+
+		// can't update an attribute that doesn't exist!
+		attributeExists, err := rowExistsInDB(db, "product_attributes", "id", attributeID)
+		if err != nil || !attributeExists {
+			respondThatRowDoesNotExist(req, res, "product attribute", attributeID)
+			return
+		}
+
+		// can't update an attribute value that doesn't exist!
+		attributeValueExists, err := rowExistsInDB(db, "product_attribute_values", "id", attributeValueID)
+		if err != nil || !attributeValueExists {
+			respondThatRowDoesNotExist(req, res, "product attribute value", attributeValueID)
+			return
+		}
+
+		updatedValueData, err := validateProductAttributeValueUpdateInput(req)
+		if err != nil {
+			notifyOfInvalidRequestBody(res, err)
+			return
+		}
+
+		existingAttributeValue, err := retrieveProductAttributeValueFromDB(db, int64(attributeValueIDInt))
+		if err != nil {
+			notifyOfInternalIssue(res, err, "retrieve product attribute from the database")
+			return
+		}
+		existingAttributeValue.Value = updatedValueData.Value
+
+		err = updateProductAttributeValueInDB(db, existingAttributeValue)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "update product attribute in the database")
+			return
+		}
+
+		json.NewEncoder(res).Encode(existingAttributeValue)
+
+	}
 }
 
 // createProductAttributeValueInDB creates a ProductAttributeValue tied to a ProductAttribute

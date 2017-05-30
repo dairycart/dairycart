@@ -340,6 +340,10 @@ func buildProductAttributeCreationQuery(a *ProductAttribute) (string, []interfac
 //                                                 //
 /////////////////////////////////////////////////////
 
+func buildProductAttributeValueExistenceQuery(id int64) string {
+	return buildRowExistenceQuery("product_attribute_values", "id", id)
+}
+
 func buildProductAttributeValueRetrievalQuery(id int64) string {
 	return buildRowRetrievalQuery("product_attribute_values", "id", id)
 }

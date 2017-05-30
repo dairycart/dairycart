@@ -245,9 +245,10 @@ func rowExistsInDB(db *sql.DB, table, identifier, id string) (bool, error) {
 
 func respondThatRowDoesNotExist(req *http.Request, res http.ResponseWriter, itemType, id string) {
 	itemTypeToIdentifierMap := map[string]string{
-		"product attribute":  "id",
-		"product progenitor": "id",
-		"product":            "sku",
+		"product attribute":       "id",
+		"product attribute value": "id",
+		"product progenitor":      "id",
+		"product":                 "sku",
 	}
 
 	// in case we forget one, default to ID
