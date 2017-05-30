@@ -44,6 +44,15 @@ func setExpectationsForProductAttributeValueRetrieval(mock sqlmock.Sqlmock, v *P
 	mock.ExpectQuery(query).WithArgs(v.ID).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
+func setExpectationsForProductAttributeValueCreation(mock sqlmock.Sqlmock, v *ProductAttributeValue, err error) {
+	exampleRows := sqlmock.NewRows([]string{"id"}).AddRow(exampleProductAttributeValue.ID)
+	query, _ := buildProductAttributeValueCreationQuery(v)
+	mock.ExpectQuery(formatQueryForSQLMock(query)).
+		WithArgs(v.ProductAttributeID, v.Value).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
 func TestRetrieveProductAttributeValueFromDB(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
@@ -65,15 +74,6 @@ func TestRetrieveProductAttributeValueFromDBThatDoesNotExist(t *testing.T) {
 	_, err = retrieveProductAttributeValueFromDB(db, exampleProductAttributeValue.ID)
 	assert.NotNil(t, err)
 	ensureExpectationsWereMet(t, mock)
-}
-
-func setExpectationsForProductAttributeValueCreation(mock sqlmock.Sqlmock, v *ProductAttributeValue, err error) {
-	exampleRows := sqlmock.NewRows([]string{"id"}).AddRow(exampleProductAttributeValue.ID)
-	query, _ := buildProductAttributeValueCreationQuery(v)
-	mock.ExpectQuery(formatQueryForSQLMock(query)).
-		WithArgs(v.ProductAttributeID, v.Value).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
 }
 
 func TestCreateProductAttributeValue(t *testing.T) {

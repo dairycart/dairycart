@@ -57,6 +57,7 @@ var examplePlainProductData []driver.Value
 var productJoinHeaders []string
 var exampleProductJoinData []driver.Value
 var exampleProduct *Product
+var exampleUpdatedProduct *Product
 
 func init() {
 	plainProductHeaders = []string{"id", "product_progenitor_id", "sku", "name", "upc", "quantity", "on_sale", "price", "sale_price", "created_at", "updated_at", "archived_at"}
@@ -89,6 +90,17 @@ func init() {
 		Price:               12.34,
 		CreatedAt:           exampleTime,
 	}
+	exampleUpdatedProduct = &Product{
+		ID:        exampleProduct.ID,
+		SKU:       "example",
+		Name:      "Test",
+		UPC:       NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:  666,
+		SalePrice: NullFloat64{sql.NullFloat64{Float64: 0}},
+		Price:     lolFloats,
+		CreatedAt: exampleTime,
+	}
+
 }
 
 func setExpectationsForProductExistence(mock sqlmock.Sqlmock, SKU string, exists bool, err error) {
@@ -108,6 +120,64 @@ func setExpectationsForProductListQuery(mock sqlmock.Sqlmock, err error) {
 
 	allProductsRetrievalQuery, _ := buildAllProductsRetrievalQuery(defaultQueryFilter)
 	mock.ExpectQuery(formatQueryForSQLMock(allProductsRetrievalQuery)).WillReturnRows(exampleRows).WillReturnError(err)
+}
+
+func setExpectationsForProductRetrieval(mock sqlmock.Sqlmock, err error) {
+	exampleRows := sqlmock.NewRows(productJoinHeaders).AddRow(exampleProductJoinData...)
+
+	skuRetrievalQuery := formatQueryForSQLMock(buildCompleteProductRetrievalQuery(exampleSKU))
+	mock.ExpectQuery(skuRetrievalQuery).WithArgs(exampleSKU).WillReturnRows(exampleRows).WillReturnError(err)
+}
+
+func setExpectationsForProductUpdate(mock sqlmock.Sqlmock, p *Product, err error) {
+	exampleRows := sqlmock.NewRows(plainProductHeaders).
+		AddRow(examplePlainProductData...)
+
+	productUpdateQuery, _ := buildProductUpdateQuery(p)
+	mock.ExpectQuery(formatQueryForSQLMock(productUpdateQuery)).
+		WithArgs(p.Name, p.OnSale, p.Price, p.Quantity, p.SalePrice, p.SKU, p.UPC, p.ID).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
+func setExpectationsForProductCreation(mock sqlmock.Sqlmock, p *Product, err error) {
+	exampleRows := sqlmock.NewRows(plainProductHeaders).
+		AddRow(examplePlainProductData...)
+
+	productCreationQuery, args := buildProductCreationQuery(exampleProduct)
+	queryArgs := argsToDriverValues(args)
+	mock.ExpectQuery(formatQueryForSQLMock(productCreationQuery)).
+		WithArgs(queryArgs...).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
+func setExpectationsForSingleProductRetrieval(mock sqlmock.Sqlmock, err error) {
+	exampleRows := sqlmock.NewRows(productJoinHeaders).AddRow(exampleProductJoinData...)
+	skuJoinRetrievalQuery := buildCompleteProductRetrievalQuery(exampleProduct.SKU)
+	mock.ExpectQuery(formatQueryForSQLMock(skuJoinRetrievalQuery)).
+		WithArgs(exampleProduct.SKU).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
+func setExpectationsForProductUpdateHandler(mock sqlmock.Sqlmock, p *Product, err error) {
+	exampleRows := sqlmock.NewRows(plainProductHeaders).
+		AddRow(examplePlainProductData...)
+
+	productUpdateQuery, _ := buildProductUpdateQuery(exampleProduct)
+	mock.ExpectQuery(formatQueryForSQLMock(productUpdateQuery)).
+		WithArgs(
+			p.Name,
+			p.OnSale,
+			p.Price,
+			p.Quantity,
+			p.SalePrice.Float64,
+			p.SKU,
+			p.UPC.String,
+			p.ID,
+		).WillReturnRows(exampleRows).
+		WillReturnError(err)
 }
 
 func TestValidateProductUpdateInputWithValidInput(t *testing.T) {
@@ -143,13 +213,6 @@ func TestValidateProductUpdateInputWithInvalidSKU(t *testing.T) {
 	_, err := validateProductUpdateInput(req)
 
 	assert.NotNil(t, err)
-}
-
-func setExpectationsForProductRetrieval(mock sqlmock.Sqlmock, err error) {
-	exampleRows := sqlmock.NewRows(productJoinHeaders).AddRow(exampleProductJoinData...)
-
-	skuRetrievalQuery := formatQueryForSQLMock(buildCompleteProductRetrievalQuery(exampleSKU))
-	mock.ExpectQuery(skuRetrievalQuery).WithArgs(exampleSKU).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
 func TestRetrieveProductFromDB(t *testing.T) {
@@ -213,46 +276,15 @@ func TestDeleteProductBySKU(t *testing.T) {
 	ensureExpectationsWereMet(t, mock)
 }
 
-func setExpectationsForProductUpdate(mock sqlmock.Sqlmock, err error) {
-	exampleRows := sqlmock.NewRows(plainProductHeaders).
-		AddRow(examplePlainProductData...)
-
-	productUpdateQuery, _ := buildProductUpdateQuery(exampleProduct)
-	mock.ExpectQuery(formatQueryForSQLMock(productUpdateQuery)).
-		WithArgs(
-			exampleProduct.Name,
-			exampleProduct.OnSale,
-			exampleProduct.Price,
-			exampleProduct.Quantity,
-			exampleProduct.SalePrice,
-			exampleProduct.SKU,
-			exampleProduct.UPC,
-			exampleProduct.ID,
-		).WillReturnRows(exampleRows).
-		WillReturnError(err)
-}
-
 func TestUpdateProductInDatabase(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
-	setExpectationsForProductUpdate(mock, nil)
+	setExpectationsForProductUpdate(mock, exampleProduct, nil)
 
 	err = updateProductInDatabase(db, exampleProduct)
 	assert.Nil(t, err)
 	ensureExpectationsWereMet(t, mock)
-}
-
-func setExpectationsForProductCreation(mock sqlmock.Sqlmock, p *Product, err error) {
-	exampleRows := sqlmock.NewRows(plainProductHeaders).
-		AddRow(examplePlainProductData...)
-
-	productCreationQuery, args := buildProductCreationQuery(exampleProduct)
-	queryArgs := argsToDriverValues(args)
-	mock.ExpectQuery(formatQueryForSQLMock(productCreationQuery)).
-		WithArgs(queryArgs...).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
 }
 
 func TestCreateProductInDB(t *testing.T) {
@@ -369,15 +401,6 @@ func TestProductExistenceHandlerWithExistenceCheckerError(t *testing.T) {
 	ensureExpectationsWereMet(t, mock)
 }
 
-func setExpectationsForSingleProductRetrieval(mock sqlmock.Sqlmock, err error) {
-	exampleRows := sqlmock.NewRows(productJoinHeaders).AddRow(exampleProductJoinData...)
-	skuJoinRetrievalQuery := buildCompleteProductRetrievalQuery(exampleProduct.SKU)
-	mock.ExpectQuery(formatQueryForSQLMock(skuJoinRetrievalQuery)).
-		WithArgs(exampleProduct.SKU).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
-}
-
 func TestProductRetrievalHandlerWithExistingProduct(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
@@ -455,25 +478,6 @@ func TestProductListHandlerWithDBError(t *testing.T) {
 	ensureExpectationsWereMet(t, mock)
 }
 
-func setExpectationsForProductUpdateHandler(mock sqlmock.Sqlmock, err error) {
-	exampleRows := sqlmock.NewRows(plainProductHeaders).
-		AddRow(examplePlainProductData...)
-
-	productUpdateQuery, _ := buildProductUpdateQuery(exampleProduct)
-	mock.ExpectQuery(formatQueryForSQLMock(productUpdateQuery)).
-		WithArgs(
-			"Test",
-			false,
-			lolFloats,
-			666,
-			float64(0),
-			"example",
-			"1234567890",
-			exampleProduct.ID,
-		).WillReturnRows(exampleRows).
-		WillReturnError(err)
-}
-
 func TestProductUpdateHandler(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
@@ -481,7 +485,7 @@ func TestProductUpdateHandler(t *testing.T) {
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, exampleSKU, true, nil)
 	setExpectationsForProductRetrieval(mock, nil)
-	setExpectationsForProductUpdateHandler(mock, nil)
+	setExpectationsForProductUpdateHandler(mock, exampleUpdatedProduct, nil)
 
 	req, err := http.NewRequest("PUT", "/v1/product/example", strings.NewReader(exampleProductUpdateInput))
 	assert.Nil(t, err)
@@ -544,7 +548,7 @@ func TestProductUpdateHandlerWithDBErrorUpdatingProduct(t *testing.T) {
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, exampleSKU, true, nil)
 	setExpectationsForProductRetrieval(mock, nil)
-	setExpectationsForProductUpdateHandler(mock, arbitraryError)
+	setExpectationsForProductUpdateHandler(mock, exampleUpdatedProduct, arbitraryError)
 
 	req, err := http.NewRequest("PUT", "/v1/product/example", strings.NewReader(exampleProductUpdateInput))
 	assert.Nil(t, err)

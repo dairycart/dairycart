@@ -268,7 +268,7 @@ func buildProductCreationQuery(p *Product) (string, []interface{}) {
 //                                                         //
 /////////////////////////////////////////////////////////////
 
-func buildProductAttributeexistenceQuery(id int64) string {
+func buildProductAttributeExistenceQuery(id int64) string {
 	return buildRowExistenceQuery("product_attributes", "id", id)
 }
 

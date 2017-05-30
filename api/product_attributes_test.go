@@ -99,7 +99,7 @@ func setExpectationsForProductAttributeListQuery(mock sqlmock.Sqlmock, a *Produc
 
 func setExpectationsForProductAttributeExistence(mock sqlmock.Sqlmock, a *ProductAttribute, exists bool, err error) {
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
-	query := buildProductAttributeexistenceQuery(a.ID)
+	query := buildProductAttributeExistenceQuery(a.ID)
 	stringID := strconv.Itoa(int(a.ID))
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
 		WithArgs(stringID).
