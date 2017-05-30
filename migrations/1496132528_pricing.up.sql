@@ -5,6 +5,8 @@ CREATE TABLE sales_and_discounts (
     "type" discount_type,
     "amount" numeric(7, 2),
     "product_id" bigint,
+    "starts_on" timestamp,
+    "expires_on" timestamp,
     "created_at" timestamp DEFAULT NOW(),
     "updated_at" timestamp,
     "archived_at" timestamp,
