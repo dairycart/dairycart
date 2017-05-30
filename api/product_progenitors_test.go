@@ -20,6 +20,7 @@ func init() {
 		Name:          "Skateboard",
 		Description:   "This is a skateboard. Please wear a helmet.",
 		Price:         99.99,
+		Cost:          50.00,
 		ProductWeight: 8,
 		ProductHeight: 7,
 		ProductWidth:  6,
@@ -30,8 +31,8 @@ func init() {
 		PackageLength: 1,
 		CreatedAt:     exampleTime,
 	}
-	productProgenitorHeaders = []string{"id", "name", "description", "taxable", "price", "product_weight", "product_height", "product_width", "product_length", "package_weight", "package_height", "package_width", "package_length", "created_at", "updated_at", "archived_at"}
-	exampleProgenitorData = []driver.Value{2, "Skateboard", "This is a skateboard. Please wear a helmet.", false, 99.99, 8, 7, 6, 5, 4, 3, 2, 1, exampleTime, nil, nil}
+	productProgenitorHeaders = []string{"id", "name", "description", "taxable", "price", "cost", "product_weight", "product_height", "product_width", "product_length", "package_weight", "package_height", "package_width", "package_length", "created_at", "updated_at", "archived_at"}
+	exampleProgenitorData = []driver.Value{2, "Skateboard", "This is a skateboard. Please wear a helmet.", false, 99.99, 50.00, 8, 7, 6, 5, 4, 3, 2, 1, exampleTime, nil, nil}
 
 }
 
@@ -76,24 +77,11 @@ func setExpectationsForProductProgenitorExistence(mock sqlmock.Sqlmock, id strin
 }
 
 func setExpectationsForProductProgenitorCreation(mock sqlmock.Sqlmock, g *ProductProgenitor, err error) {
-	q, _ := buildProgenitorCreationQuery(exampleProgenitor)
-	query := formatQueryForSQLMock(q)
-	mock.ExpectQuery(query).
-		WithArgs(
-			g.Name,
-			g.Description,
-			g.Taxable,
-			g.Price,
-			g.ProductWeight,
-			g.ProductHeight,
-			g.ProductWidth,
-			g.ProductLength,
-			g.PackageWeight,
-			g.PackageHeight,
-			g.PackageWidth,
-			g.PackageLength,
-		).WillReturnRows(sqlmock.NewRows([]string{"id"}).
-		AddRow(exampleProgenitor.ID)).
+	exampleRows := sqlmock.NewRows([]string{"id"}).AddRow(exampleProgenitor.ID)
+	query, args := buildProgenitorCreationQuery(g)
+	mock.ExpectQuery(formatQueryForSQLMock(query)).
+		WithArgs(argsToDriverValues(args)...).
+		WillReturnRows(exampleRows).
 		WillReturnError(err)
 }
 

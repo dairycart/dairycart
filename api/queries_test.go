@@ -49,11 +49,11 @@ func TestBuildProgenitorExistenceQuery(t *testing.T) {
 
 func TestBuildProgenitorCreationQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `INSERT INTO product_progenitors (name,description,taxable,price,product_weight,product_height,product_width,product_length,package_weight,package_height,package_width,package_length) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING "id"`
+	expectedQuery := `INSERT INTO product_progenitors (name,description,taxable,price,cost,product_weight,product_height,product_width,product_length,package_weight,package_height,package_width,package_length) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING "id"`
 	actualQuery, actualArgs := buildProgenitorCreationQuery(exampleProgenitor)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	// comparing interface equality with assert is impossible as far as I can tell
-	assert.Equal(t, 12, len(actualArgs), argsEqualityErrorMessage)
+	assert.Equal(t, 13, len(actualArgs), argsEqualityErrorMessage)
 }
 
 func TestBuildProductExistenceQuery(t *testing.T) {

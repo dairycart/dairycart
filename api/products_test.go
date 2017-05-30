@@ -91,13 +91,14 @@ func init() {
 	plainProductHeaders = []string{"id", "product_progenitor_id", "sku", "name", "upc", "quantity", "price", "cost", "created_at", "updated_at", "archived_at"}
 	examplePlainProductData = []driver.Value{10, 2, "skateboard", "Skateboard", "1234567890", 123, 12.34, 5.00, exampleTime, nil, nil}
 
-	productJoinHeaders = []string{"id", "product_progenitor_id", "sku", "name", "upc", "quantity", "price", "cost", "created_at", "updated_at", "archived_at", "id", "name", "description", "taxable", "price", "product_weight", "product_height", "product_width", "product_length", "package_weight", "package_height", "package_width", "package_length", "created_at", "updated_at", "archived_at"}
-	exampleProductJoinData = []driver.Value{10, 2, "skateboard", "Skateboard", "1234567890", 123, 12.34, 5.00, exampleTime, nil, nil, 2, "Skateboard", "This is a skateboard. Please wear a helmet.", false, 99.99, 8, 7, 6, 5, 4, 3, 2, 1, exampleTime, nil, nil}
+	productJoinHeaders = []string{"id", "product_progenitor_id", "sku", "name", "upc", "quantity", "price", "cost", "created_at", "updated_at", "archived_at", "id", "name", "description", "taxable", "price", "cost", "product_weight", "product_height", "product_width", "product_length", "package_weight", "package_height", "package_width", "package_length", "created_at", "updated_at", "archived_at"}
+	exampleProductJoinData = []driver.Value{10, 2, "skateboard", "Skateboard", "1234567890", 123, 12.34, 5.00, exampleTime, nil, nil, 2, "Skateboard", "This is a skateboard. Please wear a helmet.", false, 99.99, 50.00, 8, 7, 6, 5, 4, 3, 2, 1, exampleTime, nil, nil}
 	exampleProduct = &Product{
 		ProductProgenitor: ProductProgenitor{
 			ID:            2,
 			Name:          "Skateboard",
 			Price:         99.99,
+			Cost:          50.00,
 			Description:   "This is a skateboard. Please wear a helmet.",
 			ProductWeight: 8,
 			ProductHeight: 7,
@@ -681,6 +682,7 @@ func TestProductCreationHandler(t *testing.T) {
 		Description:   "This is a skateboard. Please wear a helmet.",
 		Taxable:       true,
 		Price:         lolFloats,
+		Cost:          5,
 		ProductWeight: 8,
 		ProductHeight: 7,
 		ProductWidth:  6,
@@ -697,6 +699,7 @@ func TestProductCreationHandler(t *testing.T) {
 			ID:            2,
 			Name:          "Skateboard",
 			Price:         lolFloats,
+			Cost:          5,
 			Description:   "This is a skateboard. Please wear a helmet.",
 			ProductWeight: 8,
 			ProductHeight: 7,
@@ -750,6 +753,7 @@ func TestProductCreationHandlerWhereCommitReturnsAnError(t *testing.T) {
 		Description:   "This is a skateboard. Please wear a helmet.",
 		Taxable:       true,
 		Price:         lolFloats,
+		Cost:          5,
 		ProductWeight: 8,
 		ProductHeight: 7,
 		ProductWidth:  6,
@@ -766,6 +770,7 @@ func TestProductCreationHandlerWhereCommitReturnsAnError(t *testing.T) {
 			ID:            2,
 			Name:          "Skateboard",
 			Price:         lolFloats,
+			Cost:          5,
 			Description:   "This is a skateboard. Please wear a helmet.",
 			ProductWeight: 8,
 			ProductHeight: 7,
@@ -837,6 +842,7 @@ func TestProductCreationHandlerWithoutAttributes(t *testing.T) {
 		Description:   "This is a skateboard. Please wear a helmet.",
 		Taxable:       true,
 		Price:         lolFloats,
+		Cost:          5,
 		ProductWeight: 8,
 		ProductHeight: 7,
 		ProductWidth:  6,
@@ -853,6 +859,7 @@ func TestProductCreationHandlerWithoutAttributes(t *testing.T) {
 			ID:            2,
 			Name:          "Skateboard",
 			Price:         lolFloats,
+			Cost:          5,
 			Description:   "This is a skateboard. Please wear a helmet.",
 			ProductWeight: 8,
 			ProductHeight: 7,
@@ -933,6 +940,7 @@ func TestProductCreationHandlerWhereProgenitorCreationFails(t *testing.T) {
 		Description:   "This is a skateboard. Please wear a helmet.",
 		Taxable:       true,
 		Price:         lolFloats,
+		Cost:          5,
 		ProductWeight: 8,
 		ProductHeight: 7,
 		ProductWidth:  6,
@@ -969,6 +977,7 @@ func TestProductCreationHandlerWithErrorCreatingAttributes(t *testing.T) {
 		Description:   "This is a skateboard. Please wear a helmet.",
 		Taxable:       true,
 		Price:         lolFloats,
+		Cost:          5,
 		ProductWeight: 8,
 		ProductHeight: 7,
 		ProductWidth:  6,
@@ -1006,6 +1015,7 @@ func TestProductCreationHandlerWhereProductCreationFails(t *testing.T) {
 		Description:   "This is a skateboard. Please wear a helmet.",
 		Taxable:       true,
 		Price:         lolFloats,
+		Cost:          5,
 		ProductWeight: 8,
 		ProductHeight: 7,
 		ProductWidth:  6,
@@ -1022,6 +1032,7 @@ func TestProductCreationHandlerWhereProductCreationFails(t *testing.T) {
 			ID:            2,
 			Name:          "Skateboard",
 			Price:         lolFloats,
+			Cost:          5,
 			Description:   "This is a skateboard. Please wear a helmet.",
 			ProductWeight: 8,
 			ProductHeight: 7,

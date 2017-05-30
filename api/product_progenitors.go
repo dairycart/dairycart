@@ -43,6 +43,7 @@ type ProductProgenitor struct {
 	// Pricing Fields
 	Taxable bool    `json:"taxable"`
 	Price   float32 `json:"price"`
+	Cost    float32 `json:"cost"`
 
 	// Product Dimensions
 	ProductWeight float32 `json:"product_weight"`
@@ -70,6 +71,7 @@ func (g *ProductProgenitor) generateScanArgs() []interface{} {
 		&g.Description,
 		&g.Taxable,
 		&g.Price,
+		&g.Cost,
 		&g.ProductWeight,
 		&g.ProductHeight,
 		&g.ProductWidth,
@@ -90,6 +92,7 @@ func newProductProgenitorFromProductCreationInput(in *ProductCreationInput) *Pro
 		Description:   in.Description,
 		Taxable:       in.Taxable,
 		Price:         in.Price,
+		Cost:          in.Cost,
 		ProductWeight: in.ProductWeight,
 		ProductHeight: in.ProductHeight,
 		ProductWidth:  in.ProductWidth,

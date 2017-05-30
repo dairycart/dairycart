@@ -314,8 +314,7 @@ func buildProductUpdateHandler(db *sql.DB) http.HandlerFunc {
 
 		err = updateProductInDatabase(db, newerProduct)
 		if err != nil {
-			errStr := err.Error()
-			notifyOfInternalIssue(res, err, errStr) // "update product in database")
+			notifyOfInternalIssue(res, err, "update product in database")
 			return
 		}
 
@@ -373,7 +372,7 @@ func buildProductCreationHandler(db *sql.DB) http.HandlerFunc {
 
 		tx, err := db.Begin()
 		if err != nil {
-			notifyOfInternalIssue(res, err, "insert product progenitor in database")
+			notifyOfInternalIssue(res, err, "create new database transaction")
 			return
 		}
 
@@ -406,14 +405,8 @@ func buildProductCreationHandler(db *sql.DB) http.HandlerFunc {
 			Cost:                productInput.Cost,
 		}
 
-		noop := func(i interface{}) {
-			return
-		}
-
 		newProductID, err := createProductInDB(tx, newProduct)
 		if err != nil {
-			errStr := err.Error()
-			noop(errStr)
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "insert product in database")
 			return

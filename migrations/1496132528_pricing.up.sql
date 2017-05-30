@@ -1,12 +1,12 @@
 CREATE TYPE discount_type AS ENUM ('percentage', 'flat_amount');
 CREATE TABLE sales_and_discounts (
     "id" bigserial,
-    "name" text not null,
+    "name" text NOT NULL,
     "type" discount_type,
     "amount" numeric(7, 2),
     "product_id" bigint,
-    "starts_on" timestamp not null,
-    "expires_on" timestamp not null,
+    "starts_on" timestamp NOT NULL,
+    "expires_on" timestamp NOT NULL,
     "created_at" timestamp DEFAULT NOW(),
     "updated_at" timestamp,
     "archived_at" timestamp,
