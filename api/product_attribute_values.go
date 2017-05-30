@@ -36,12 +36,18 @@ func (pav *ProductAttributeValue) generateScanArgs() []interface{} {
 	}
 }
 
+// ProductAttributeValueCreationInput is a struct to use for creating product attribute values
+type ProductAttributeValueCreationInput struct {
+	ProductAttributeID int64
+	Value              string `json:"value"`
+}
+
 // ProductAttributeValueUpdateInput is a struct to use for updating product attribute values
 type ProductAttributeValueUpdateInput struct {
 	Value string `json:"value"`
 }
 
-func validateProductAttributeValueUpdateInput(req *http.Request) (*ProductAttributeValueUpdateInput, error) {
+func validateProductAttributeValueUpdateInput(req *http.Request) (*ProductAttributeValue, error) {
 	i := &ProductAttributeValueUpdateInput{}
 	json.NewDecoder(req.Body).Decode(i)
 
@@ -52,7 +58,11 @@ func validateProductAttributeValueUpdateInput(req *http.Request) (*ProductAttrib
 		return nil, errors.New("Invalid input provided for product attribute body")
 	}
 
-	return i, nil
+	out := &ProductAttributeValue{
+		Value: i.Value,
+	}
+
+	return out, nil
 }
 
 // retrieveProductAttributeValue retrieves a ProductAttributeValue with a given ID from the database
@@ -83,23 +93,28 @@ func retrieveProductAttributeValueForAttributeFromDB(db *sql.DB, attributeID int
 		values = append(values, value)
 	}
 	return values, nil
-
 }
 
-func loadProductAttributeValueInput(req *http.Request) (*ProductAttributeValue, error) {
-	pav := &ProductAttributeValue{}
-	decoder := json.NewDecoder(req.Body)
+func validateProductAttributeValueCreationInput(req *http.Request) (*ProductAttributeValue, error) {
+	i := &ProductAttributeValueCreationInput{}
+	err := json.NewDecoder(req.Body).Decode(i)
+	if err != nil {
+		return nil, err
+	}
 	defer req.Body.Close()
-	err := decoder.Decode(pav)
 
-	s := structs.New(pav)
+	s := structs.New(i)
 	// go will happily decode an invalid input into a completely zeroed struct,
 	// so we gotta do checks like this because we're bad at programming.
 	if s.IsZero() {
 		return nil, errors.New("Invalid input provided for product attribute value body")
 	}
 
-	return pav, err
+	v := &ProductAttributeValue{
+		Value: i.Value,
+	}
+
+	return v, err
 }
 
 func updateProductAttributeValueInDB(db *sql.DB, v *ProductAttributeValue) error {
@@ -156,10 +171,10 @@ func buildProductAttributeValueUpdateHandler(db *sql.DB) http.HandlerFunc {
 }
 
 // createProductAttributeValueInDB creates a ProductAttributeValue tied to a ProductAttribute
-func createProductAttributeValueInDB(db *sql.DB, v *ProductAttributeValue) (int64, error) {
+func createProductAttributeValueInDB(tx *sql.Tx, v *ProductAttributeValue) (int64, error) {
 	var newAttributeValueID int64
 	query, args := buildProductAttributeValueCreationQuery(v)
-	err := db.QueryRow(query, args...).Scan(&newAttributeValueID)
+	err := tx.QueryRow(query, args...).Scan(&newAttributeValueID)
 	return newAttributeValueID, err
 }
 
@@ -177,19 +192,32 @@ func buildProductAttributeValueCreationHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		newProductAttributeValue, err := loadProductAttributeValueInput(req)
+		newProductAttributeValue, err := validateProductAttributeValueCreationInput(req)
 		if err != nil {
 			notifyOfInvalidRequestBody(res, err)
 			return
 		}
 		newProductAttributeValue.ProductAttributeID = attributeIDInt
 
-		newProductAttributeValueID, err := createProductAttributeValueInDB(db, newProductAttributeValue)
+		tx, err := db.Begin()
 		if err != nil {
+			notifyOfInternalIssue(res, err, "starting a transasction")
+			return
+		}
+
+		newProductAttributeValueID, err := createProductAttributeValueInDB(tx, newProductAttributeValue)
+		if err != nil {
+			tx.Rollback()
 			notifyOfInternalIssue(res, err, "insert product in database")
 			return
 		}
 		newProductAttributeValue.ID = newProductAttributeValueID
+
+		err = tx.Commit()
+		if err != nil {
+			notifyOfInternalIssue(res, err, "closing out transaction")
+			return
+		}
 
 		json.NewEncoder(res).Encode(newProductAttributeValue)
 	}

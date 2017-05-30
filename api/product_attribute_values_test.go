@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"net/http"
+	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
@@ -89,6 +90,27 @@ func setExpectationsForProductAttributeValueUpdate(mock sqlmock.Sqlmock, v *Prod
 		WillReturnError(err)
 }
 
+func TestValidateProductAttributeValueCreationInput(t *testing.T) {
+	expected := &ProductAttributeValue{Value: "something"}
+	req := httptest.NewRequest("GET", "http://example.com", strings.NewReader(exampleProductAttributeValueCreationBody))
+	actual, err := validateProductAttributeValueCreationInput(req)
+
+	assert.Nil(t, err)
+	assert.Equal(t, expected, actual, "ProductAttributeUpdateInput should match expectation")
+}
+
+func TestValidateProductAttributeValueCreationInputWithCompletelyInvalidInput(t *testing.T) {
+	req := httptest.NewRequest("GET", "http://example.com", nil)
+	_, err := validateProductAttributeValueCreationInput(req)
+	assert.NotNil(t, err)
+}
+
+func TestValidateProductAttributeValueCreationInputWithGarbageInput(t *testing.T) {
+	req := httptest.NewRequest("GET", "http://example.com", strings.NewReader(exampleGarbageInput))
+	_, err := validateProductAttributeValueCreationInput(req)
+	assert.NotNil(t, err)
+}
+
 func TestRetrieveProductAttributeValueFromDB(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
@@ -116,11 +138,20 @@ func TestCreateProductAttributeValue(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
-	setExpectationsForProductAttributeValueCreation(mock, exampleProductAttributeValue, nil)
 
-	actual, err := createProductAttributeValueInDB(db, exampleProductAttributeValue)
+	mock.ExpectBegin()
+	setExpectationsForProductAttributeValueCreation(mock, exampleProductAttributeValue, nil)
+	mock.ExpectCommit()
+
+	tx, err := db.Begin()
+	assert.Nil(t, err)
+
+	actual, err := createProductAttributeValueInDB(tx, exampleProductAttributeValue)
 	assert.Nil(t, err)
 	assert.Equal(t, exampleProductAttributeValue.ID, actual, "AttributeValue should be returned after successful creation")
+
+	err = tx.Commit()
+	assert.Nil(t, err)
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -158,14 +189,52 @@ func TestProductAttributeValueCreationHandler(t *testing.T) {
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductAttributeExistenceByID(mock, exampleProductAttribute, true, nil)
+	mock.ExpectBegin()
 	setExpectationsForProductAttributeValueCreation(mock, exampleProductAttributeValue, nil)
+	mock.ExpectCommit()
 
 	attributeValueEndpoint := buildRoute("product_attribute_values", "123")
 	req, err := http.NewRequest("POST", attributeValueEndpoint, strings.NewReader(exampleProductAttributeValueCreationBody))
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 200, "status code should be 200")
+	assert.Equal(t, 200, res.Code, "status code should be 200")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestProductAttributeValueCreationHandlerWhenTransactionFailsToBegin(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+	setExpectationsForProductAttributeExistenceByID(mock, exampleProductAttribute, true, nil)
+	mock.ExpectBegin().WillReturnError(arbitraryError)
+
+	attributeValueEndpoint := buildRoute("product_attribute_values", "123")
+	req, err := http.NewRequest("POST", attributeValueEndpoint, strings.NewReader(exampleProductAttributeValueCreationBody))
+	assert.Nil(t, err)
+	router.ServeHTTP(res, req)
+
+	assert.Equal(t, 500, res.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestProductAttributeValueCreationHandlerWhenTransactionFailsToCommit(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+	setExpectationsForProductAttributeExistenceByID(mock, exampleProductAttribute, true, nil)
+	mock.ExpectBegin()
+	setExpectationsForProductAttributeValueCreation(mock, exampleProductAttributeValue, nil)
+	mock.ExpectCommit().WillReturnError(arbitraryError)
+
+	attributeValueEndpoint := buildRoute("product_attribute_values", "123")
+	req, err := http.NewRequest("POST", attributeValueEndpoint, strings.NewReader(exampleProductAttributeValueCreationBody))
+	assert.Nil(t, err)
+	router.ServeHTTP(res, req)
+
+	assert.Equal(t, 500, res.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -181,7 +250,7 @@ func TestProductAttributeValueCreationHandlerWithNonexistentProductAttribute(t *
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 404, "status code should be 404")
+	assert.Equal(t, 404, res.Code, "status code should be 404")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -197,7 +266,7 @@ func TestProductAttributeValueCreationHandlerWithInvalidValueBody(t *testing.T) 
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 400, "status code should be 400")
+	assert.Equal(t, 400, res.Code, "status code should be 400")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -207,14 +276,16 @@ func TestProductAttributeValueCreationHandlerWithRowCreationError(t *testing.T) 
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductAttributeExistenceByID(mock, exampleProductAttribute, true, nil)
+	mock.ExpectBegin()
 	setExpectationsForProductAttributeValueCreation(mock, exampleProductAttributeValue, arbitraryError)
+	mock.ExpectRollback()
 
 	attributeValueEndpoint := buildRoute("product_attribute_values", "123")
 	req, err := http.NewRequest("POST", attributeValueEndpoint, strings.NewReader(exampleProductAttributeValueCreationBody))
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 500, "status code should be 500")
+	assert.Equal(t, 500, res.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -236,7 +307,7 @@ func TestProductAttributeValueUpdateHandler(t *testing.T) {
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 200, "status code should be 200")
+	assert.Equal(t, 200, res.Code, "status code should be 200")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -255,7 +326,7 @@ func TestProductAttributeValueUpdateHandlerWhereAttributeDoesNotExist(t *testing
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 404, "status code should be 404")
+	assert.Equal(t, 404, res.Code, "status code should be 404")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -275,7 +346,7 @@ func TestProductAttributeValueUpdateHandlerWhereAttributeValueDoesNotExist(t *te
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 404, "status code should be 404")
+	assert.Equal(t, 404, res.Code, "status code should be 404")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -295,7 +366,7 @@ func TestProductAttributeValueUpdateHandlerWhereInputIsInvalid(t *testing.T) {
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 400, "status code should be 400")
+	assert.Equal(t, 400, res.Code, "status code should be 400")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -316,7 +387,7 @@ func TestProductAttributeValueUpdateHandlerWhereErrorEncounteredRetrievingAttrib
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 500, "status code should be 500")
+	assert.Equal(t, 500, res.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -338,6 +409,6 @@ func TestProductAttributeValueUpdateHandlerWhereErrorEncounteredUpdatingAttribut
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 500, "status code should be 500")
+	assert.Equal(t, 500, res.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, mock)
 }

@@ -207,24 +207,25 @@ func validateProductAttributeCreationInput(req *http.Request) (*ProductAttribute
 	return i, nil
 }
 
-func createProductAttributeInDB(db *sql.DB, a *ProductAttribute) (*ProductAttribute, error) {
+func createProductAttributeInDB(tx *sql.Tx, a *ProductAttribute) (*ProductAttribute, error) {
 	var newAttributeID int64
 	// using QueryRow instead of Exec because we want it to return the newly created row's ID
 	// Exec normally returns a sql.Result, which has a LastInsertedID() method, but when I tested
 	// this locally, it never worked. ¯\_(ツ)_/¯
 	query, queryArgs := buildProductAttributeCreationQuery(a)
-	err := db.QueryRow(query, queryArgs...).Scan(&newAttributeID)
+	err := tx.QueryRow(query, queryArgs...).Scan(&newAttributeID)
 
 	a.ID = newAttributeID
 	return a, err
 }
 
-func createProductAttributeAndValuesInDBFromInput(db *sql.DB, in *ProductAttributeCreationInput, progenitorID int64) (*ProductAttribute, error) {
+func createProductAttributeAndValuesInDBFromInput(tx *sql.Tx, in *ProductAttributeCreationInput, progenitorID int64) (*ProductAttribute, error) {
 	newProductAttribute := &ProductAttribute{
 		Name:                in.Name,
 		ProductProgenitorID: progenitorID,
 	}
-	newProductAttribute, err := createProductAttributeInDB(db, newProductAttribute)
+
+	newProductAttribute, err := createProductAttributeInDB(tx, newProductAttribute)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +235,7 @@ func createProductAttributeAndValuesInDBFromInput(db *sql.DB, in *ProductAttribu
 			ProductAttributeID: newProductAttribute.ID,
 			Value:              value,
 		}
-		newAttributeValueID, err := createProductAttributeValueInDB(db, newAttributeValue)
+		newAttributeValueID, err := createProductAttributeValueInDB(tx, newAttributeValue)
 		if err != nil {
 			return nil, err
 		}
@@ -249,7 +250,7 @@ func buildProductAttributeCreationHandler(db *sql.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		// ProductAttributeCreationHandler is a request handler that can create product attributes
 		progenitorID := mux.Vars(req)["progenitor_id"]
-		// eating this error because Mux should valdiate this for us.
+		// eating this error because Mux should validate this for us.
 		progenitorIDInt, _ := strconv.Atoi(progenitorID)
 
 		// can't create an attribute for a product progenitor that doesn't exist!
@@ -272,9 +273,23 @@ func buildProductAttributeCreationHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		newProductAttribute, err := createProductAttributeAndValuesInDBFromInput(db, newAttributeData, int64(progenitorIDInt))
+		tx, err := db.Begin()
 		if err != nil {
+			notifyOfInternalIssue(res, err, "starting a new transaction")
+			return
+		}
+
+
+		newProductAttribute, err := createProductAttributeAndValuesInDBFromInput(tx, newAttributeData, int64(progenitorIDInt))
+		if err != nil {
+			tx.Rollback()
 			notifyOfInternalIssue(res, err, "create product attribute in the database")
+			return
+		}
+
+		err = tx.Commit()
+		if err != nil {
+			notifyOfInternalIssue(res, err, "closing out transaction")
 			return
 		}
 

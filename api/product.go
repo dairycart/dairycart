@@ -366,10 +366,10 @@ func validateProductCreationInput(req *http.Request) (*ProductCreationInput, err
 }
 
 // createProductInDB takes a marshaled Product object and creates an entry for it and a base_product in the database
-func createProductInDB(db *sql.DB, np *Product) (int64, error) {
+func createProductInDB(tx *sql.Tx, np *Product) (int64, error) {
 	var newProductID int64
 	productCreationQuery, queryArgs := buildProductCreationQuery(np)
-	err := db.QueryRow(productCreationQuery, queryArgs...).Scan(&newProductID)
+	err := tx.QueryRow(productCreationQuery, queryArgs...).Scan(&newProductID)
 	return newProductID, err
 }
 
@@ -388,17 +388,25 @@ func buildProductCreationHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		progenitor := newProductProgenitorFromProductCreationInput(productInput)
-		newProgenitorID, err := createProductProgenitorInDB(db, progenitor)
+		tx, err := db.Begin()
 		if err != nil {
+			notifyOfInternalIssue(res, err, "insert product progenitor in database")
+			return
+		}
+
+		progenitor := newProductProgenitorFromProductCreationInput(productInput)
+		newProgenitorID, err := createProductProgenitorInDB(tx, progenitor)
+		if err != nil {
+			tx.Rollback()
 			notifyOfInternalIssue(res, err, "insert product progenitor in database")
 			return
 		}
 		progenitor.ID = newProgenitorID
 
 		for _, attributeAndValues := range productInput.AttributesAndValues {
-			_, err = createProductAttributeAndValuesInDBFromInput(db, attributeAndValues, progenitor.ID)
+			_, err = createProductAttributeAndValuesInDBFromInput(tx, attributeAndValues, progenitor.ID)
 			if err != nil {
+				tx.Rollback()
 				notifyOfInternalIssue(res, err, "insert product attributes and values in database")
 				return
 			}
@@ -416,12 +424,19 @@ func buildProductCreationHandler(db *sql.DB) http.HandlerFunc {
 			SalePrice:           NullFloat64{sql.NullFloat64{Float64: productInput.SalePrice}},
 		}
 
-		newProductID, err := createProductInDB(db, newProduct)
+		newProductID, err := createProductInDB(tx, newProduct)
 		if err != nil {
+			tx.Rollback()
 			notifyOfInternalIssue(res, err, "insert product in database")
 			return
 		}
 		newProduct.ID = newProductID
+
+		err = tx.Commit()
+		if err != nil {
+			notifyOfInternalIssue(res, err, "closing out transaction")
+			return
+		}
 
 		json.NewEncoder(res).Encode(newProduct)
 	}

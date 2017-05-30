@@ -184,25 +184,44 @@ func TestCreateProductAttributeInDB(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
+	mock.ExpectBegin()
 	setExpectationsForProductAttributeCreation(mock, exampleProductAttribute, nil)
+	mock.ExpectCommit()
 
-	actual, err := createProductAttributeInDB(db, exampleProductAttribute)
+	tx, err := db.Begin()
+	assert.Nil(t, err)
+
+	actual, err := createProductAttributeInDB(tx, exampleProductAttribute)
 	assert.Nil(t, err)
 	assert.Equal(t, exampleProductAttribute, actual, "Creating a product attribute should return the created product attribute")
+
+	err = tx.Commit()
+	assert.Nil(t, err)
+
+	ensureExpectationsWereMet(t, mock)
 }
 
 func TestCreateProductAttributeAndValuesInDBFromInput(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
+	mock.ExpectBegin()
 	setExpectationsForProductAttributeCreation(mock, expectedCreatedProductAttribute, nil)
 	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[0], nil)
 	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[1], nil)
 	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[2], nil)
+	mock.ExpectCommit()
 
-	actual, err := createProductAttributeAndValuesInDBFromInput(db, exampleProductAttributeInput, expectedCreatedProductAttribute.ProductProgenitorID)
+	tx, err := db.Begin()
+	assert.Nil(t, err)
+
+	actual, err := createProductAttributeAndValuesInDBFromInput(tx, exampleProductAttributeInput, expectedCreatedProductAttribute.ProductProgenitorID)
 	assert.Nil(t, err)
 	assert.Equal(t, expectedCreatedProductAttribute, actual, "output from product attribute creation should match expectation")
+
+	err = tx.Commit()
+	assert.Nil(t, err)
+
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -210,10 +229,19 @@ func TestCreateProductAttributeAndValuesInDBFromInputWithIssueCreatingAttribute(
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
+	mock.ExpectBegin()
 	setExpectationsForProductAttributeCreation(mock, expectedCreatedProductAttribute, arbitraryError)
+	mock.ExpectCommit()
 
-	_, err = createProductAttributeAndValuesInDBFromInput(db, exampleProductAttributeInput, expectedCreatedProductAttribute.ProductProgenitorID)
+	tx, err := db.Begin()
+	assert.Nil(t, err)
+
+	_, err = createProductAttributeAndValuesInDBFromInput(tx, exampleProductAttributeInput, expectedCreatedProductAttribute.ProductProgenitorID)
 	assert.NotNil(t, err)
+
+	err = tx.Commit()
+	assert.Nil(t, err)
+
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -221,11 +249,20 @@ func TestCreateProductAttributeAndValuesInDBFromInputWithIssueCreatingAttributeV
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
+	mock.ExpectBegin()
 	setExpectationsForProductAttributeCreation(mock, expectedCreatedProductAttribute, nil)
 	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[0], arbitraryError)
+	mock.ExpectCommit()
 
-	_, err = createProductAttributeAndValuesInDBFromInput(db, exampleProductAttributeInput, expectedCreatedProductAttribute.ProductProgenitorID)
+	tx, err := db.Begin()
+	assert.Nil(t, err)
+
+	_, err = createProductAttributeAndValuesInDBFromInput(tx, exampleProductAttributeInput, expectedCreatedProductAttribute.ProductProgenitorID)
 	assert.NotNil(t, err)
+
+	err = tx.Commit()
+	assert.Nil(t, err)
+
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -281,7 +318,7 @@ func TestProductAttributeListHandler(t *testing.T) {
 	assert.Nil(t, err)
 
 	router.ServeHTTP(res, req)
-	assert.Equal(t, res.Code, 200, "status code should be 200")
+	assert.Equal(t, 200, res.Code, "status code should be 200")
 
 	expected := &ProductAttributesResponse{
 		ListResponse: ListResponse{
@@ -318,7 +355,7 @@ func TestProductAttributeListHandlerWithErrorsRetrievingValues(t *testing.T) {
 	assert.Nil(t, err)
 
 	router.ServeHTTP(res, req)
-	assert.Equal(t, res.Code, 500, "status code should be 500")
+	assert.Equal(t, 500, res.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -334,11 +371,11 @@ func TestProductAttributeListHandlerWithDBErrors(t *testing.T) {
 	assert.Nil(t, err)
 
 	router.ServeHTTP(res, req)
-	assert.Equal(t, res.Code, 500, "status code should be 500")
+	assert.Equal(t, 500, res.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, mock)
 }
 
-func TestProductAttributeCreation(t *testing.T) {
+func TestProductAttributeCreationHandler(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -346,22 +383,66 @@ func TestProductAttributeCreation(t *testing.T) {
 	progenitorIDString := strconv.Itoa(int(exampleProductAttribute.ProductProgenitorID))
 	setExpectationsForProductProgenitorExistence(mock, progenitorIDString, true)
 	setExpectationsForProductAttributeExistenceByName(mock, expectedCreatedProductAttribute, progenitorIDString, false, nil)
-
+	mock.ExpectBegin()
 	setExpectationsForProductAttributeCreation(mock, expectedCreatedProductAttribute, nil)
 	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[0], nil)
 	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[1], nil)
 	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[2], nil)
+	mock.ExpectCommit()
 
 	productAttributeEndpoint := buildRoute("product_attributes", progenitorIDString)
 	req, err := http.NewRequest("POST", productAttributeEndpoint, strings.NewReader(exampleProductAttributeCreationBody))
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 200, "status code should be 200")
+	assert.Equal(t, 200, res.Code, "status code should be 200")
 	ensureExpectationsWereMet(t, mock)
 }
 
-func TestProductAttributeCreationWhenAttributeWithTheSameNameCheckReturnsNoRows(t *testing.T) {
+func TestProductAttributeCreationHandlerFailureToSetupTransaction(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+	progenitorIDString := strconv.Itoa(int(exampleProductAttribute.ProductProgenitorID))
+	setExpectationsForProductProgenitorExistence(mock, progenitorIDString, true)
+	setExpectationsForProductAttributeExistenceByName(mock, expectedCreatedProductAttribute, progenitorIDString, false, nil)
+	mock.ExpectBegin().WillReturnError(arbitraryError)
+
+	productAttributeEndpoint := buildRoute("product_attributes", progenitorIDString)
+	req, err := http.NewRequest("POST", productAttributeEndpoint, strings.NewReader(exampleProductAttributeCreationBody))
+	assert.Nil(t, err)
+	router.ServeHTTP(res, req)
+
+	assert.Equal(t, 500, res.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestProductAttributeCreationHandlerFailureToCommitTransaction(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+	progenitorIDString := strconv.Itoa(int(exampleProductAttribute.ProductProgenitorID))
+	setExpectationsForProductProgenitorExistence(mock, progenitorIDString, true)
+	setExpectationsForProductAttributeExistenceByName(mock, expectedCreatedProductAttribute, progenitorIDString, false, nil)
+	mock.ExpectBegin()
+	setExpectationsForProductAttributeCreation(mock, expectedCreatedProductAttribute, nil)
+	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[0], nil)
+	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[1], nil)
+	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[2], nil)
+	mock.ExpectCommit().WillReturnError(arbitraryError)
+
+	productAttributeEndpoint := buildRoute("product_attributes", progenitorIDString)
+	req, err := http.NewRequest("POST", productAttributeEndpoint, strings.NewReader(exampleProductAttributeCreationBody))
+	assert.Nil(t, err)
+	router.ServeHTTP(res, req)
+
+	assert.Equal(t, 500, res.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestProductAttributeCreationHandlerWhenAttributeWithTheSameNameCheckReturnsNoRows(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -369,22 +450,23 @@ func TestProductAttributeCreationWhenAttributeWithTheSameNameCheckReturnsNoRows(
 	progenitorIDString := strconv.Itoa(int(exampleProductAttribute.ProductProgenitorID))
 	setExpectationsForProductProgenitorExistence(mock, progenitorIDString, true)
 	setExpectationsForProductAttributeExistenceByName(mock, expectedCreatedProductAttribute, progenitorIDString, false, sql.ErrNoRows)
-
+	mock.ExpectBegin()
 	setExpectationsForProductAttributeCreation(mock, expectedCreatedProductAttribute, nil)
 	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[0], nil)
 	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[1], nil)
 	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[2], nil)
+	mock.ExpectCommit()
 
 	productAttributeEndpoint := buildRoute("product_attributes", progenitorIDString)
 	req, err := http.NewRequest("POST", productAttributeEndpoint, strings.NewReader(exampleProductAttributeCreationBody))
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 200, "status code should be 200")
+	assert.Equal(t, 200, res.Code, "status code should be 200")
 	ensureExpectationsWereMet(t, mock)
 }
 
-func TestProductAttributeCreationWithNonExistentProgenitor(t *testing.T) {
+func TestProductAttributeCreationHandlerWithNonExistentProgenitor(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -397,11 +479,11 @@ func TestProductAttributeCreationWithNonExistentProgenitor(t *testing.T) {
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 404, "status code should be 404")
+	assert.Equal(t, 404, res.Code, "status code should be 404")
 	ensureExpectationsWereMet(t, mock)
 }
 
-func TestProductAttributeCreationWithInvalidAttributeCreationInput(t *testing.T) {
+func TestProductAttributeCreationHandlerWithInvalidAttributeCreationInput(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -414,11 +496,11 @@ func TestProductAttributeCreationWithInvalidAttributeCreationInput(t *testing.T)
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 400, "status code should be 400")
+	assert.Equal(t, 400, res.Code, "status code should be 400")
 	ensureExpectationsWereMet(t, mock)
 }
 
-func TestProductAttributeCreationWhenAttributeWithTheSameNameExists(t *testing.T) {
+func TestProductAttributeCreationHandlerWhenAttributeWithTheSameNameExists(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -432,11 +514,11 @@ func TestProductAttributeCreationWhenAttributeWithTheSameNameExists(t *testing.T
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 400, "status code should be 400")
+	assert.Equal(t, 400, res.Code, "status code should be 400")
 	ensureExpectationsWereMet(t, mock)
 }
 
-func TestProductAttributeCreationWithProblemsCreatingAttribute(t *testing.T) {
+func TestProductAttributeCreationHandlerWithProblemsCreatingAttribute(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
@@ -444,14 +526,17 @@ func TestProductAttributeCreationWithProblemsCreatingAttribute(t *testing.T) {
 	progenitorIDString := strconv.Itoa(int(exampleProductAttribute.ProductProgenitorID))
 	setExpectationsForProductProgenitorExistence(mock, progenitorIDString, true)
 	setExpectationsForProductAttributeExistenceByName(mock, expectedCreatedProductAttribute, progenitorIDString, false, nil)
+
+	mock.ExpectBegin()
 	setExpectationsForProductAttributeCreation(mock, expectedCreatedProductAttribute, arbitraryError)
+	mock.ExpectRollback()
 
 	productAttributeEndpoint := buildRoute("product_attributes", progenitorIDString)
 	req, err := http.NewRequest("POST", productAttributeEndpoint, strings.NewReader(exampleProductAttributeCreationBody))
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 500, "status code should be 500")
+	assert.Equal(t, 500, res.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -473,7 +558,7 @@ func TestProductAttributeUpdateHandler(t *testing.T) {
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 200, "status code should be 200")
+	assert.Equal(t, 200, res.Code, "status code should be 200")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -492,7 +577,7 @@ func TestProductAttributeUpdateHandlerWithNonexistentProgenitor(t *testing.T) {
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 404, "status code should be 404")
+	assert.Equal(t, 404, res.Code, "status code should be 404")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -512,7 +597,7 @@ func TestProductAttributeUpdateHandlerWithNonexistentAttribute(t *testing.T) {
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 404, "status code should be 404")
+	assert.Equal(t, 404, res.Code, "status code should be 404")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -532,7 +617,7 @@ func TestProductAttributeUpdateHandlerWithInvalidInput(t *testing.T) {
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 400, "status code should be 400")
+	assert.Equal(t, 400, res.Code, "status code should be 400")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -553,7 +638,7 @@ func TestProductAttributeUpdateHandlerWithErrorRetrievingAttribute(t *testing.T)
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 500, "status code should be 500")
+	assert.Equal(t, 500, res.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -575,6 +660,6 @@ func TestProductAttributeUpdateHandlerWithErrorUpdatingAttribute(t *testing.T) {
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 500, "status code should be 500")
+	assert.Equal(t, 500, res.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, mock)
 }

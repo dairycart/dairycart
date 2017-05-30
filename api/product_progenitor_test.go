@@ -100,11 +100,19 @@ func TestCreateProductProgenitorInDB(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
+	mock.ExpectBegin()
 	setExpectationsForProductProgenitorCreation(mock, exampleProgenitor, nil)
+	mock.ExpectCommit()
 
-	newProgenitorID, err := createProductProgenitorInDB(db, exampleProgenitor)
+	tx, err := db.Begin()
+	assert.Nil(t, err)
+
+	newProgenitorID, err := createProductProgenitorInDB(tx, exampleProgenitor)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(2), newProgenitorID, "createProductProgenitorInDB should return the correct ID for a new progenitor")
+
+	err = tx.Commit()
+	assert.Nil(t, err)
 	ensureExpectationsWereMet(t, mock)
 }
 

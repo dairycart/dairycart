@@ -317,11 +317,19 @@ func TestCreateProductInDB(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
+	mock.ExpectBegin()
 	setExpectationsForProductCreation(mock, exampleProduct, nil)
+	mock.ExpectCommit()
 
-	newID, err := createProductInDB(db, exampleProduct)
+	tx, err := db.Begin()
+	assert.Nil(t, err)
+
+	newID, err := createProductInDB(tx, exampleProduct)
 	assert.Nil(t, err)
 	assert.Equal(t, exampleProduct.ID, newID, "createProductInDB should return the created ID")
+
+	err = tx.Commit()
+	assert.Nil(t, err)
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -401,7 +409,7 @@ func TestProductExistenceHandlerWithExistingProduct(t *testing.T) {
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 200, "status code should be 200")
+	assert.Equal(t, 200, res.Code, "status code should be 200")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -416,7 +424,7 @@ func TestProductExistenceHandlerWithNonexistentProduct(t *testing.T) {
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 404, "status code should be 404")
+	assert.Equal(t, 404, res.Code, "status code should be 404")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -431,7 +439,7 @@ func TestProductExistenceHandlerWithExistenceCheckerError(t *testing.T) {
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 404, "status code should be 404")
+	assert.Equal(t, 404, res.Code, "status code should be 404")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -446,7 +454,7 @@ func TestProductRetrievalHandlerWithExistingProduct(t *testing.T) {
 	assert.Nil(t, err)
 
 	router.ServeHTTP(res, req)
-	assert.Equal(t, res.Code, 200, "status code should be 200")
+	assert.Equal(t, 200, res.Code, "status code should be 200")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -461,7 +469,7 @@ func TestProductRetrievalHandlerWithDBError(t *testing.T) {
 	assert.Nil(t, err)
 
 	router.ServeHTTP(res, req)
-	assert.Equal(t, res.Code, 404, "status code should be 404")
+	assert.Equal(t, 404, res.Code, "status code should be 404")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -476,7 +484,7 @@ func TestProductListHandler(t *testing.T) {
 	assert.Nil(t, err)
 
 	router.ServeHTTP(res, req)
-	assert.Equal(t, res.Code, 200, "status code should be 200")
+	assert.Equal(t, 200, res.Code, "status code should be 200")
 
 	expected := &ProductsResponse{
 		ListResponse: ListResponse{
@@ -508,7 +516,7 @@ func TestProductListHandlerWithDBError(t *testing.T) {
 	assert.Nil(t, err)
 
 	router.ServeHTTP(res, req)
-	assert.Equal(t, res.Code, 500, "status code should be 500")
+	assert.Equal(t, 500, res.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -525,7 +533,7 @@ func TestProductUpdateHandler(t *testing.T) {
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 200, "status code should be 200")
+	assert.Equal(t, 200, res.Code, "status code should be 200")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -540,7 +548,7 @@ func TestProductUpdateHandlerWithNonexistentProduct(t *testing.T) {
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 404, "status code should be 404")
+	assert.Equal(t, 404, res.Code, "status code should be 404")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -555,7 +563,7 @@ func TestProductUpdateHandlerWithInputValidationError(t *testing.T) {
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 400, "status code should be 400")
+	assert.Equal(t, 400, res.Code, "status code should be 400")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -571,7 +579,7 @@ func TestProductUpdateHandlerWithDBErrorRetrievingProduct(t *testing.T) {
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 500, "status code should be 500")
+	assert.Equal(t, 500, res.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -588,7 +596,7 @@ func TestProductUpdateHandlerWithDBErrorUpdatingProduct(t *testing.T) {
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 500, "status code should be 500")
+	assert.Equal(t, 500, res.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -608,7 +616,7 @@ func TestProductDeletionHandlerWithExistentProduct(t *testing.T) {
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 200, "status code should be 200")
+	assert.Equal(t, 200, res.Code, "status code should be 200")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -623,7 +631,7 @@ func TestProductDeletionHandlerWithNonexistentProduct(t *testing.T) {
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 404, "status code should be 404")
+	assert.Equal(t, 404, res.Code, "status code should be 404")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -676,18 +684,105 @@ func TestProductCreation(t *testing.T) {
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, "skateboard", false, nil)
+
+	mock.ExpectBegin()
 	setExpectationsForProductProgenitorCreation(mock, expectedProgenitor, nil)
 	setExpectationsForProductAttributeCreation(mock, expectedCreatedProductAttribute, nil)
 	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[0], nil)
 	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[1], nil)
 	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[2], nil)
 	setExpectationsForProductCreation(mock, expectedProduct, nil)
+	mock.ExpectCommit()
 
 	req, err := http.NewRequest("POST", "/v1/product", strings.NewReader(exampleProductCreationInputWithAttributes))
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 200, "status code should be 200")
+	assert.Equal(t, 200, res.Code, "status code should be 200")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestProductCreationWhereCommitReturnsAnError(t *testing.T) {
+	expectedProgenitor := &ProductProgenitor{
+		ID:            2,
+		Name:          "Skateboard",
+		Description:   "This is a skateboard. Please wear a helmet.",
+		Taxable:       true,
+		Price:         lolFloats,
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+		CreatedAt:     exampleTime,
+	}
+
+	expectedProduct := &Product{
+		ProductProgenitor: ProductProgenitor{
+			ID:            2,
+			Name:          "Skateboard",
+			Price:         lolFloats,
+			Description:   "This is a skateboard. Please wear a helmet.",
+			ProductWeight: 8,
+			ProductHeight: 7,
+			ProductWidth:  6,
+			ProductLength: 5,
+			PackageWeight: 4,
+			PackageHeight: 3,
+			PackageWidth:  2,
+			PackageLength: 1,
+			CreatedAt:     exampleTime,
+		},
+		ID:                  10,
+		ProductProgenitorID: 2,
+		SKU:                 "skateboard",
+		Name:                "Skateboard",
+		UPC:                 NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:            123,
+		Price:               lolFloats,
+		CreatedAt:           exampleTime,
+	}
+
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+	setExpectationsForProductExistence(mock, "skateboard", false, nil)
+
+	mock.ExpectBegin()
+	setExpectationsForProductProgenitorCreation(mock, expectedProgenitor, nil)
+	setExpectationsForProductAttributeCreation(mock, expectedCreatedProductAttribute, nil)
+	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[0], nil)
+	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[1], nil)
+	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[2], nil)
+	setExpectationsForProductCreation(mock, expectedProduct, nil)
+	mock.ExpectCommit().WillReturnError(arbitraryError)
+
+	req, err := http.NewRequest("POST", "/v1/product", strings.NewReader(exampleProductCreationInputWithAttributes))
+	assert.Nil(t, err)
+	router.ServeHTTP(res, req)
+
+	assert.Equal(t, 500, res.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestProductCreationWhereTransactionFailsToBegin(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+	setExpectationsForProductExistence(mock, "skateboard", false, nil)
+
+	mock.ExpectBegin().WillReturnError(arbitraryError)
+
+	req, err := http.NewRequest("POST", "/v1/product", strings.NewReader(exampleProductCreationInputWithAttributes))
+	assert.Nil(t, err)
+	router.ServeHTTP(res, req)
+
+	assert.Equal(t, 500, res.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -740,48 +835,17 @@ func TestProductCreationWithoutAttributes(t *testing.T) {
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, "skateboard", false, nil)
+
+	mock.ExpectBegin()
 	setExpectationsForProductProgenitorCreation(mock, expectedProgenitor, nil)
 	setExpectationsForProductCreation(mock, expectedProduct, nil)
+	mock.ExpectCommit()
 
 	req, err := http.NewRequest("POST", "/v1/product", strings.NewReader(exampleProductCreationInput))
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 200, "status code should be 200")
-	ensureExpectationsWereMet(t, mock)
-}
-
-func TestProductCreationWithErrorCreatingAttributes(t *testing.T) {
-	expectedProgenitor := &ProductProgenitor{
-		ID:            2,
-		Name:          "Skateboard",
-		Description:   "This is a skateboard. Please wear a helmet.",
-		Taxable:       true,
-		Price:         lolFloats,
-		ProductWeight: 8,
-		ProductHeight: 7,
-		ProductWidth:  6,
-		ProductLength: 5,
-		PackageWeight: 4,
-		PackageHeight: 3,
-		PackageWidth:  2,
-		PackageLength: 1,
-		CreatedAt:     exampleTime,
-	}
-
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
-	res, router := setupMockRequestsAndMux(db)
-	setExpectationsForProductExistence(mock, "skateboard", false, nil)
-	setExpectationsForProductProgenitorCreation(mock, expectedProgenitor, nil)
-	setExpectationsForProductAttributeCreation(mock, expectedCreatedProductAttribute, arbitraryError)
-
-	req, err := http.NewRequest("POST", "/v1/product", strings.NewReader(exampleProductCreationInputWithAttributes))
-	assert.Nil(t, err)
-	router.ServeHTTP(res, req)
-
-	assert.Equal(t, res.Code, 500, "status code should be 500")
+	assert.Equal(t, 200, res.Code, "status code should be 200")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -795,7 +859,7 @@ func TestProductCreationWithInvalidProductInput(t *testing.T) {
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 400, "status code should be 400")
+	assert.Equal(t, 400, res.Code, "status code should be 400")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -810,7 +874,7 @@ func TestProductCreationForAlreadyExistentProduct(t *testing.T) {
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 400, "status code should be 400")
+	assert.Equal(t, 400, res.Code, "status code should be 400")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -837,13 +901,51 @@ func TestProductCreationWhereProgenitorCreationFails(t *testing.T) {
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, "skateboard", false, nil)
+	mock.ExpectBegin()
 	setExpectationsForProductProgenitorCreation(mock, expectedProgenitor, arbitraryError)
+	mock.ExpectRollback()
 
 	req, err := http.NewRequest("POST", "/v1/product", strings.NewReader(exampleProductCreationInput))
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 500, "status code should be 500")
+	assert.Equal(t, 500, res.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestProductCreationWithErrorCreatingAttributes(t *testing.T) {
+	expectedProgenitor := &ProductProgenitor{
+		ID:            2,
+		Name:          "Skateboard",
+		Description:   "This is a skateboard. Please wear a helmet.",
+		Taxable:       true,
+		Price:         lolFloats,
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+		CreatedAt:     exampleTime,
+	}
+
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+	setExpectationsForProductExistence(mock, "skateboard", false, nil)
+	mock.ExpectBegin()
+	setExpectationsForProductProgenitorCreation(mock, expectedProgenitor, nil)
+	setExpectationsForProductAttributeCreation(mock, expectedCreatedProductAttribute, arbitraryError)
+	mock.ExpectRollback()
+
+	req, err := http.NewRequest("POST", "/v1/product", strings.NewReader(exampleProductCreationInputWithAttributes))
+	assert.Nil(t, err)
+	router.ServeHTTP(res, req)
+
+	assert.Equal(t, 500, res.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -896,13 +998,15 @@ func TestProductCreationWhereProductCreationFails(t *testing.T) {
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, "skateboard", false, nil)
+	mock.ExpectBegin()
 	setExpectationsForProductProgenitorCreation(mock, expectedProgenitor, nil)
 	setExpectationsForProductCreation(mock, expectedProduct, arbitraryError)
+	mock.ExpectRollback()
 
 	req, err := http.NewRequest("POST", "/v1/product", strings.NewReader(exampleProductCreationInput))
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, res.Code, 500, "status code should be 500")
+	assert.Equal(t, 500, res.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, mock)
 }
