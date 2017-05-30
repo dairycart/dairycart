@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -230,14 +231,12 @@ func buildProductAttributeCreationHandler(db *sql.DB) http.HandlerFunc {
 		// eating this error because Mux should valdiate this for us.
 		progenitorIDInt, _ := strconv.Atoi(progenitorID)
 
-		// can't update an attribute for a product progenitor that doesn't exist!
-		exists, err := rowExistsInDB(db, "product_progenitors", "id", progenitorID)
-		if err != nil || !exists {
+		// can't create an attribute for a product progenitor that doesn't exist!
+		progenitorExists, err := rowExistsInDB(db, "product_progenitors", "id", progenitorID)
+		if err != nil || !progenitorExists {
 			respondThatRowDoesNotExist(req, res, "product progenitor", progenitorID)
 			return
 		}
-
-		// TODO: check that an existing attribute with that name doesn't exist
 
 		newAttributeData, err := validateProductAttributeCreationInput(req)
 		if err != nil {
@@ -245,9 +244,16 @@ func buildProductAttributeCreationHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
+		// can't create an attribute that already exist!
+		attributeExists, err := rowExistsInDB(db, "product_attributes", "name", newAttributeData.Name)
+		if err != nil || attributeExists {
+			notifyOfInvalidRequestBody(res, fmt.Errorf("product attribute with the name `%s` already exists", newAttributeData.Name))
+			return
+		}
+
 		newProductAttribute, err := createProductAttributeAndValuesInDBFromInput(db, newAttributeData, int64(progenitorIDInt))
 		if err != nil {
-			notifyOfInternalIssue(res, err, "retrieve products from the database")
+			notifyOfInternalIssue(res, err, "create product attribute in the database")
 			return
 		}
 

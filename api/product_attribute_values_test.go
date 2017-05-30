@@ -151,7 +151,7 @@ func TestProductAttributeValueCreationHandler(t *testing.T) {
 	assert.Nil(t, err)
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
-	setExpectationsForProductAttributeExistence(mock, exampleProductAttribute, true, nil)
+	setExpectationsForProductAttributeExistenceByID(mock, exampleProductAttribute, true, nil)
 	setExpectationsForProductAttributeValueCreation(mock, exampleProductAttributeValue, nil)
 
 	attributeValueEndpoint := buildRoute("product_attribute_values", "123")
@@ -168,7 +168,7 @@ func TestProductAttributeValueCreationHandlerWithNonexistentProductAttribute(t *
 	assert.Nil(t, err)
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
-	setExpectationsForProductAttributeExistence(mock, exampleProductAttribute, true, arbitraryError)
+	setExpectationsForProductAttributeExistenceByID(mock, exampleProductAttribute, true, arbitraryError)
 
 	attributeValueEndpoint := buildRoute("product_attribute_values", "123")
 	req, err := http.NewRequest("POST", attributeValueEndpoint, strings.NewReader(exampleProductAttributeValueCreationBody))
@@ -184,7 +184,7 @@ func TestProductAttributeValueCreationHandlerWithInvalidValueBody(t *testing.T) 
 	assert.Nil(t, err)
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
-	setExpectationsForProductAttributeExistence(mock, exampleProductAttribute, true, nil)
+	setExpectationsForProductAttributeExistenceByID(mock, exampleProductAttribute, true, nil)
 
 	attributeValueEndpoint := buildRoute("product_attribute_values", "123")
 	req, err := http.NewRequest("POST", attributeValueEndpoint, strings.NewReader(exampleGarbageInput))
@@ -200,7 +200,7 @@ func TestProductAttributeValueCreationHandlerWithRowCreationError(t *testing.T) 
 	assert.Nil(t, err)
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
-	setExpectationsForProductAttributeExistence(mock, exampleProductAttribute, true, nil)
+	setExpectationsForProductAttributeExistenceByID(mock, exampleProductAttribute, true, nil)
 	setExpectationsForProductAttributeValueCreation(mock, exampleProductAttributeValue, arbitraryError)
 
 	attributeValueEndpoint := buildRoute("product_attribute_values", "123")
@@ -220,7 +220,7 @@ func TestProductAttributeValueUpdateHandler(t *testing.T) {
 	attributeIDString := strconv.Itoa(int(exampleProductAttributeValue.ProductAttributeID))
 	attributeValueIDString := strconv.Itoa(int(exampleProductAttributeValue.ID))
 
-	setExpectationsForProductAttributeExistence(mock, exampleProductAttribute, true, nil)
+	setExpectationsForProductAttributeExistenceByID(mock, exampleProductAttribute, true, nil)
 	setExpectationsForProductAttributeValueExistence(mock, exampleProductAttributeValue, true, nil)
 	setExpectationsForProductAttributeValueRetrieval(mock, exampleProductAttributeValue, nil)
 	setExpectationsForProductAttributeValueUpdate(mock, exampleUpdatedProductAttributeValue, nil)
@@ -242,7 +242,7 @@ func TestProductAttributeValueUpdateHandlerWhereAttributeDoesNotExist(t *testing
 	attributeIDString := strconv.Itoa(int(exampleProductAttributeValue.ProductAttributeID))
 	attributeValueIDString := strconv.Itoa(int(exampleProductAttributeValue.ID))
 
-	setExpectationsForProductAttributeExistence(mock, exampleProductAttribute, false, nil)
+	setExpectationsForProductAttributeExistenceByID(mock, exampleProductAttribute, false, nil)
 
 	productAttributeValueEndpoint := buildRoute("product_attribute_values", attributeIDString, attributeValueIDString)
 	req, err := http.NewRequest("PUT", productAttributeValueEndpoint, strings.NewReader(exampleProductAttributeValueUpdateBody))
@@ -261,7 +261,7 @@ func TestProductAttributeValueUpdateHandlerWhereAttributeValueDoesNotExist(t *te
 	attributeIDString := strconv.Itoa(int(exampleProductAttributeValue.ProductAttributeID))
 	attributeValueIDString := strconv.Itoa(int(exampleProductAttributeValue.ID))
 
-	setExpectationsForProductAttributeExistence(mock, exampleProductAttribute, true, nil)
+	setExpectationsForProductAttributeExistenceByID(mock, exampleProductAttribute, true, nil)
 	setExpectationsForProductAttributeValueExistence(mock, exampleProductAttributeValue, false, nil)
 
 	productAttributeValueEndpoint := buildRoute("product_attribute_values", attributeIDString, attributeValueIDString)
@@ -281,7 +281,7 @@ func TestProductAttributeValueUpdateHandlerWhereInputIsInvalid(t *testing.T) {
 	attributeIDString := strconv.Itoa(int(exampleProductAttributeValue.ProductAttributeID))
 	attributeValueIDString := strconv.Itoa(int(exampleProductAttributeValue.ID))
 
-	setExpectationsForProductAttributeExistence(mock, exampleProductAttribute, true, nil)
+	setExpectationsForProductAttributeExistenceByID(mock, exampleProductAttribute, true, nil)
 	setExpectationsForProductAttributeValueExistence(mock, exampleProductAttributeValue, true, nil)
 
 	productAttributeValueEndpoint := buildRoute("product_attribute_values", attributeIDString, attributeValueIDString)
@@ -301,7 +301,7 @@ func TestProductAttributeValueUpdateHandlerWhereErrorEncounteredRetrievingAttrib
 	attributeIDString := strconv.Itoa(int(exampleProductAttributeValue.ProductAttributeID))
 	attributeValueIDString := strconv.Itoa(int(exampleProductAttributeValue.ID))
 
-	setExpectationsForProductAttributeExistence(mock, exampleProductAttribute, true, nil)
+	setExpectationsForProductAttributeExistenceByID(mock, exampleProductAttribute, true, nil)
 	setExpectationsForProductAttributeValueExistence(mock, exampleProductAttributeValue, true, nil)
 	setExpectationsForProductAttributeValueRetrieval(mock, exampleProductAttributeValue, arbitraryError)
 
@@ -322,7 +322,7 @@ func TestProductAttributeValueUpdateHandlerWhereErrorEncounteredUpdatingAttribut
 	attributeIDString := strconv.Itoa(int(exampleProductAttributeValue.ProductAttributeID))
 	attributeValueIDString := strconv.Itoa(int(exampleProductAttributeValue.ID))
 
-	setExpectationsForProductAttributeExistence(mock, exampleProductAttribute, true, nil)
+	setExpectationsForProductAttributeExistenceByID(mock, exampleProductAttribute, true, nil)
 	setExpectationsForProductAttributeValueExistence(mock, exampleProductAttributeValue, true, nil)
 	setExpectationsForProductAttributeValueRetrieval(mock, exampleProductAttributeValue, nil)
 	setExpectationsForProductAttributeValueUpdate(mock, exampleUpdatedProductAttributeValue, arbitraryError)

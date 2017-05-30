@@ -272,6 +272,10 @@ func buildProductAttributeExistenceQuery(id int64) string {
 	return buildRowExistenceQuery("product_attributes", "id", id)
 }
 
+func buildProductAttributeExistenceQueryByName(name string) string {
+	return buildRowExistenceQuery("product_attributes", "name", name)
+}
+
 func buildProductAttributeRetrievalQuery(id int64) string {
 	return buildRowRetrievalQuery("product_attributes", "id", id)
 }
