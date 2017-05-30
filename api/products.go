@@ -103,6 +103,34 @@ func (p *Product) generateJoinScanArgs() []interface{} {
 	return append(productScanArgs, progenitorScanArgs...)
 }
 
+func (p *Product) roundNumericFields() {
+	p.PackageWeight = float32(Round(float64(p.PackageWeight), .1, 2))
+	p.PackageHeight = float32(Round(float64(p.PackageHeight), .1, 2))
+	p.PackageWidth = float32(Round(float64(p.PackageWidth), .1, 2))
+	p.PackageLength = float32(Round(float64(p.PackageLength), .1, 2))
+	p.ProductWeight = float32(Round(float64(p.ProductWeight), .1, 2))
+	p.ProductHeight = float32(Round(float64(p.ProductHeight), .1, 2))
+	p.ProductWidth = float32(Round(float64(p.ProductWidth), .1, 2))
+	p.ProductLength = float32(Round(float64(p.ProductLength), .1, 2))
+	p.Price = float32(Round(float64(p.Price), .1, 2))
+	p.Cost = float32(Round(float64(p.Cost), .1, 2))
+}
+
+// NewProductFromCreationInputAndProgenitor creates a new product from a ProductProgenitor and a ProductCreationInput
+func NewProductFromCreationInputAndProgenitor(g *ProductProgenitor, in *ProductCreationInput) *Product {
+	np := &Product{
+		ProductProgenitor:   *g,
+		ProductProgenitorID: g.ID,
+		SKU:                 in.SKU,
+		Name:                in.Name,
+		UPC:                 NullString{sql.NullString{String: in.UPC, Valid: in.UPC != ""}},
+		Quantity:            in.Quantity,
+		Price:               in.Price,
+		Cost:                in.Cost,
+	}
+	return np
+}
+
 // ProductsResponse is a product response struct
 type ProductsResponse struct {
 	ListResponse
@@ -150,18 +178,7 @@ func validateProductUpdateInput(req *http.Request) (*Product, error) {
 	if !s.IsZero() && !skuValidator.MatchString(product.SKU) {
 		return nil, errors.New("Invalid input provided for product SKU")
 	}
-
-	// perform rounding on numeric fields
-	product.PackageWeight = float32(Round(float64(product.PackageWeight), .1, 2))
-	product.PackageHeight = float32(Round(float64(product.PackageHeight), .1, 2))
-	product.PackageWidth = float32(Round(float64(product.PackageWidth), .1, 2))
-	product.PackageLength = float32(Round(float64(product.PackageLength), .1, 2))
-	product.ProductWeight = float32(Round(float64(product.ProductWeight), .1, 2))
-	product.ProductHeight = float32(Round(float64(product.ProductHeight), .1, 2))
-	product.ProductWidth = float32(Round(float64(product.ProductWidth), .1, 2))
-	product.ProductLength = float32(Round(float64(product.ProductLength), .1, 2))
-	product.Price = float32(Round(float64(product.Price), .1, 2))
-	product.Cost = float32(Round(float64(product.Cost), .1, 2))
+	product.roundNumericFields()
 
 	return product, err
 }
@@ -394,17 +411,7 @@ func buildProductCreationHandler(db *sql.DB) http.HandlerFunc {
 			}
 		}
 
-		newProduct := &Product{
-			ProductProgenitor:   *progenitor,
-			ProductProgenitorID: progenitor.ID,
-			SKU:                 productInput.SKU,
-			Name:                productInput.Name,
-			UPC:                 NullString{sql.NullString{String: productInput.UPC, Valid: true}},
-			Quantity:            productInput.Quantity,
-			Price:               productInput.Price,
-			Cost:                productInput.Cost,
-		}
-
+		newProduct := NewProductFromCreationInputAndProgenitor(progenitor, productInput)
 		newProductID, err := createProductInDB(tx, newProduct)
 		if err != nil {
 			tx.Rollback()
