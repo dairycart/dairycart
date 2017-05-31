@@ -100,8 +100,8 @@ func TestProductRetrievalRoute(t *testing.T) {
 	assert.Equal(t, expected, actual, "product retrieval response should contain a complete product")
 }
 
-func TestProductListRoute(t *testing.T) {
-	resp, err := retrieveListOfProducts()
+func TestProductListRouteWithDefaultFilter(t *testing.T) {
+	resp, err := retrieveListOfProducts(nil)
 	assert.Nil(t, err)
 	assert.Equal(t, 200, resp.StatusCode, "requesting a list of products should respond 200")
 
@@ -110,6 +110,23 @@ func TestProductListRoute(t *testing.T) {
 	actual := replaceTimeStringsForTests(respBody)
 
 	expected := minifyExampleJSON(t, readTestFile(t, "product_list_response"))
+	assert.Equal(t, expected, actual, "product list route should respond with a list of products")
+}
+
+func TestProductListRouteWithCustomFilter(t *testing.T) {
+	customFilter := map[string]string{
+		"page":  "2",
+		"limit": "5",
+	}
+	resp, err := retrieveListOfProducts(customFilter)
+	assert.Nil(t, err)
+	assert.Equal(t, 200, resp.StatusCode, "requesting a list of products should respond 200")
+
+	respBody, err := turnResponseBodyIntoString(resp)
+	assert.Nil(t, err)
+	actual := replaceTimeStringsForTests(respBody)
+
+	expected := minifyExampleJSON(t, readTestFile(t, "product_list_response_second_page_limit_five"))
 	assert.Equal(t, expected, actual, "product list route should respond with a list of products")
 }
 

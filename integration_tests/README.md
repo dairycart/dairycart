@@ -9,8 +9,8 @@ Product existence route:
 
 Product list route:
 
-- [x] Default pagination ([TestProductListRoute](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/33cde37591cf2cc441670bf099896348e050648f/integration_tests/main_test.go#L103))
-- [ ] Custom pagination
+- [x] Default pagination ([TestProductListRouteWithDefaultFilter](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/33cde37591cf2cc441670bf099896348e050648f/integration_tests/main_test.go#L103))
+- [x] Custom pagination (TestProductListRouteWithCustomFilter)
 
 Single product route:
 

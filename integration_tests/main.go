@@ -21,17 +21,32 @@ func init() {
 	client = &http.Client{}
 }
 
-func buildURL(parts ...string) *url.URL {
-	url, _ := url.Parse(fmt.Sprintf("%s/%s", baseURL, strings.Join(parts, "/")))
-	return url
+func buildPath(parts ...string) string {
+	return fmt.Sprintf("%s/%s", baseURL, strings.Join(parts, "/"))
+}
+
+func mapToQueryValues(in map[string]string) string {
+	out := url.Values{}
+	for k, v := range in {
+		out.Set(k, v)
+	}
+	return out.Encode()
+}
+
+func buildURL(path string, queryParams map[string]string) string {
+	url, _ := url.Parse(path)
+	queryString := mapToQueryValues(queryParams)
+	url.RawQuery = queryString
+	return url.String()
 }
 
 func ensureThatDairycartIsAlive() error {
-	url := buildURL("health")
+	path := buildPath("health")
+	url := buildURL(path, nil)
 	dairyCartIsDown := true
 	numberOfAttempts := 0
 	for dairyCartIsDown {
-		_, err := http.Get(url.String())
+		_, err := http.Get(url)
 		if err != nil {
 			log.Printf("waiting half a second before pinging Dairycart again")
 			time.Sleep(500 * time.Millisecond)
@@ -47,8 +62,9 @@ func ensureThatDairycartIsAlive() error {
 }
 
 func checkProductExistence(sku string) (*http.Response, error) {
-	url := buildURL("product", sku)
-	req, err := http.NewRequest(http.MethodHead, url.String(), nil)
+	path := buildPath("product", sku)
+	url := buildURL(path, nil)
+	req, err := http.NewRequest(http.MethodHead, url, nil)
 	if err != nil {
 		log.Fatalf("failed to build request: %v", err)
 	}
@@ -56,17 +72,19 @@ func checkProductExistence(sku string) (*http.Response, error) {
 }
 
 func retrieveProduct(sku string) (*http.Response, error) {
-	url := buildURL("product", sku)
-	req, err := http.NewRequest(http.MethodGet, url.String(), nil)
+	path := buildPath("product", sku)
+	url := buildURL(path, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		log.Fatalf("failed to build request: %v", err)
 	}
 	return client.Do(req)
 }
 
-func retrieveListOfProducts() (*http.Response, error) {
-	url := buildURL("products")
-	req, err := http.NewRequest(http.MethodGet, url.String(), nil)
+func retrieveListOfProducts(queryFilter map[string]string) (*http.Response, error) {
+	path := buildPath("products")
+	url := buildURL(path, queryFilter)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		log.Fatalf("failed to build request: %v", err)
 	}
@@ -75,8 +93,9 @@ func retrieveListOfProducts() (*http.Response, error) {
 
 func createProduct(JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
-	url := buildURL("product")
-	req, err := http.NewRequest(http.MethodPost, url.String(), body)
+	path := buildPath("product")
+	url := buildURL(path, nil)
+	req, err := http.NewRequest(http.MethodPost, url, body)
 	if err != nil {
 		log.Fatalf("failed to build request: %v", err)
 	}
@@ -85,8 +104,9 @@ func createProduct(JSONBody string) (*http.Response, error) {
 
 func updateProduct(sku string, JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
-	url := buildURL("product", sku)
-	req, err := http.NewRequest(http.MethodPut, url.String(), body)
+	path := buildPath("product", sku)
+	url := buildURL(path, nil)
+	req, err := http.NewRequest(http.MethodPut, url, body)
 	if err != nil {
 		log.Fatalf("failed to build request: %v", err)
 	}
@@ -94,8 +114,9 @@ func updateProduct(sku string, JSONBody string) (*http.Response, error) {
 }
 
 func deleteProduct(sku string) (*http.Response, error) {
-	url := buildURL("product", sku)
-	req, err := http.NewRequest(http.MethodDelete, url.String(), nil)
+	path := buildPath("product", sku)
+	url := buildURL(path, nil)
+	req, err := http.NewRequest(http.MethodDelete, url, nil)
 	if err != nil {
 		log.Fatalf("failed to build request: %v", err)
 	}
