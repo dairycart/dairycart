@@ -1,38 +1,39 @@
-# Tests checklist
+# Integration tests checklist
 
 ## Product routes
 
 Product existence route:
 
-- [ ] Existent SKU
-- [ ] Nonexistent SKU
+- [x] Existent SKU ([TestProductExistenceRouteForExistingProduct](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/33cde37591cf2cc441670bf099896348e050648f/integration_tests/main_test.go#L60))
+- [x] Nonexistent SKU ([TestProductExistenceRouteForNonexistentProduct](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/33cde37591cf2cc441670bf099896348e050648f/integration_tests/main_test.go#L70))
 
 Product list route:
 
-- [ ] Default pagination
+- [x] Default pagination ([TestProductListRoute](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/33cde37591cf2cc441670bf099896348e050648f/integration_tests/main_test.go#L103))
 - [ ] Custom pagination
 
 Single product route:
 
-- [ ] Existent SKU
-- [ ] Nonexistent SKU
+- [x] Existent SKU ([TestProductRetrievalRoute](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/33cde37591cf2cc441670bf099896348e050648f/integration_tests/main_test.go#L89))
+- [x] Nonexistent SKU ([TestProductRetrievalRouteForNonexistentProduct](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/33cde37591cf2cc441670bf099896348e050648f/integration_tests/main_test.go#L80))
 
 Update product route:
 
-- [ ] Valid input
-- [ ] Invalid input
-- [ ] Nonexistent SKU
+- [x] Valid input ([TestProductUpdateRoute](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/33cde37591cf2cc441670bf099896348e050648f/integration_tests/main_test.go#L116))
+- [x] Invalid  ([TestProductUpdateRouteWithCompletelyInvalidInput](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/33cde37591cf2cc441670bf099896348e050648f/integration_tests/main_test.go#L131))
+- [x] Invalid SKU input ([TestProductUpdateRouteWithInvalidSKU](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/33cde37591cf2cc441670bf099896348e050648f/integration_tests/main_test.go#L138))
+- [x] Nonexistent SKU ([TestProductUpdateRouteForNonexistentProduct](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/33cde37591cf2cc441670bf099896348e050648f/integration_tests/main_test.go#L145))
 
 Create product route:
 
-- [ ] Valid input
+- [x] Valid input ([TestProductCreation](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/33cde37591cf2cc441670bf099896348e050648f/integration_tests/main_test.go#L155))
 - [ ] Invalid input
-- [ ] Existent SKU
+- [x] Existent SKU ([TestProductCreationWithAlreadyExistentSKU](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/33cde37591cf2cc441670bf099896348e050648f/integration_tests/main_test.go#L169))
 
 Delete product route:
 
-- [ ] Existent SKU
-- [ ] Nonexistent SKU
+- [x] Newly Created SKU ([TestProductDeletionRouteForNewlyCreatedProduct](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/33cde37591cf2cc441670bf099896348e050648f/integration_tests/main_test.go#L181))
+- [x] Nonexistent SKU ([TestProductDeletionRouteForNonexistentProduct](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/33cde37591cf2cc441670bf099896348e050648f/integration_tests/main_test.go#L191))
 
 ## Product Attributes
 
