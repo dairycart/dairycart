@@ -29,9 +29,11 @@ func main() {
 	functionNamePattern := `Test[a-zA-Z]+`
 	checklistNamePattern := `\(Test[a-zA-Z]+\)`
 	validationPattern := fmt.Sprintf(`func %s\(t \*testing\.T\) \{`, functionNamePattern)
+	commitPattern := `[0-9a-f]{40}`
 	funcValidator := regexp.MustCompile(validationPattern)
 	checklistValidator := regexp.MustCompile(checklistNamePattern)
 	nameValidator := regexp.MustCompile(functionNamePattern)
+	commitValidator := regexp.MustCompile(commitPattern)
 
 	functionNamesToLineNumberMap := map[string]int{}
 
@@ -77,6 +79,13 @@ func main() {
 			}
 			link := fmt.Sprintf(`[%s](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/%s/integration_tests/main_test.go#L%d)`, functionName, commit, functionNamesToLineNumberMap[functionName])
 			newLine := strings.Replace(line, functionName, link, 1)
+			_, err := newChecklistFile.WriteString(fmt.Sprintf("%s\n", newLine))
+			if err != nil {
+				log.Fatal(err)
+			}
+		} else if commitValidator.MatchString(line) {
+			oldCommit := string(commitValidator.Find([]byte(line)))
+			newLine := strings.Replace(line, oldCommit, commit, 1)
 			_, err := newChecklistFile.WriteString(fmt.Sprintf("%s\n", newLine))
 			if err != nil {
 				log.Fatal(err)
