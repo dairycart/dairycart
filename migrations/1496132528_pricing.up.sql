@@ -1,5 +1,5 @@
 CREATE TYPE discount_type AS ENUM ('percentage', 'flat_amount');
-CREATE TABLE sales_and_discounts (
+CREATE TABLE discounts (
     "id" bigserial,
     "name" text NOT NULL,
     "type" discount_type,

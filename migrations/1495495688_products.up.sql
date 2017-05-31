@@ -53,7 +53,6 @@ CREATE TABLE product_attribute_values (
     "id" bigserial,
     "product_attribute_id" bigint,
     "value" text NOT NULL,
-    "products_created" boolean,
     "created_at" timestamp DEFAULT NOW(),
     "updated_at" timestamp,
     "archived_at" timestamp,
