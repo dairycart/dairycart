@@ -1,2 +1,2 @@
 command -v golocc >/dev/null 2>&1 || { go get github.com/warmans/golocc; }
-golocc --no-vendor ./...
+(cd .; golocc --no-vendor ./...)

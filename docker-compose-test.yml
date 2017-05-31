@@ -4,7 +4,7 @@ services:
   dairycart:
     build:
       context: .
-      dockerfile: dairycart.Dockerfile
+      dockerfile: dockerfiles/dairycart.Dockerfile
     ports:
       - '8080:80'
     depends_on:
@@ -19,7 +19,7 @@ services:
   test:
     build:
       context: .
-      dockerfile: integration_tests.Dockerfile
+      dockerfile: dockerfiles/integration_tests.Dockerfile
     links:
       - dairycart
   database:
