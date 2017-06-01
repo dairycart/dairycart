@@ -45,6 +45,7 @@ CREATE TABLE product_attributes (
     "created_at" timestamp DEFAULT NOW(),
     "updated_at" timestamp,
     "archived_at" timestamp,
+    UNIQUE ("product_progenitor_id", "name"),
     PRIMARY KEY ("id"),
     FOREIGN KEY ("product_progenitor_id") REFERENCES "product_progenitors"("id")
 );
@@ -56,6 +57,7 @@ CREATE TABLE product_attribute_values (
     "created_at" timestamp DEFAULT NOW(),
     "updated_at" timestamp,
     "archived_at" timestamp,
+    UNIQUE ("product_attribute_id", "value"),
     PRIMARY KEY ("id"),
     FOREIGN KEY ("product_attribute_id") REFERENCES "product_attributes"("id")
 );

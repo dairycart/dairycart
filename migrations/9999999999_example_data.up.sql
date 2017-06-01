@@ -55,8 +55,8 @@ INSERT INTO product_attribute_values
 )
 VALUES
 (1, 'red'),
-(1, 'red'),
-(1, 'red'),
+(1, 'green'),
+(1, 'blue'),
 (2, 'small'),
 (2, 'medium'),
 (2, 'large');
