@@ -71,12 +71,13 @@ type Product struct {
 	Price   float32 `json:"price"`
 	Cost    float32 `json:"cost"`
 
+	// Inheritor
+	ProductProgenitor
+
 	// Housekeeping
 	CreatedAt  time.Time   `json:"created_at"`
 	UpdatedAt  pq.NullTime `json:"-"`
 	ArchivedAt pq.NullTime `json:"-"`
-
-	ProductProgenitor
 }
 
 // generateScanArgs generates an array of pointers to struct fields for sql.Scan to populate

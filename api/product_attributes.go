@@ -82,7 +82,7 @@ func getProductAttributesForProgenitor(db *sql.DB, progenitorID string, queryFil
 	var attributes []ProductAttribute
 
 	query := buildProductAttributeListQuery(progenitorID, queryFilter)
-	rows, err := db.Query(query)
+	rows, err := db.Query(query, progenitorID)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error encountered querying for product attributes")
 	}
@@ -278,7 +278,6 @@ func buildProductAttributeCreationHandler(db *sql.DB) http.HandlerFunc {
 			notifyOfInternalIssue(res, err, "starting a new transaction")
 			return
 		}
-
 
 		newProductAttribute, err := createProductAttributeAndValuesInDBFromInput(tx, newAttributeData, int64(progenitorIDInt))
 		if err != nil {
