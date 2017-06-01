@@ -39,8 +39,8 @@ Delete product route:
 
 Product attribute list route:
 
-- [ ] Default pagination
-- [ ] Custom pagination
+- [x] Default pagination (TestProductAttributeListRetrievalWithDefaultFilter)
+- [x] Custom pagination (TestProductAttributeListRetrievalWithCustomFilter)
 
 Create product attribute route:
 
