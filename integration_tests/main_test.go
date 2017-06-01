@@ -38,8 +38,8 @@ func init() {
 	jsonMinifier.AddFunc(applicationJSON, jsonMinify.Minify)
 }
 
-func readTestFile(t *testing.T, filename string) string {
-	bodyBytes, err := ioutil.ReadFile(fmt.Sprintf("test_files/%s.json", filename))
+func readTestFile(t *testing.T, folder string, filename string) string {
+	bodyBytes, err := ioutil.ReadFile(fmt.Sprintf("expected_responses/%s/%s.json", folder, filename))
 	assert.Nil(t, err)
 	return strings.TrimSpace(string(bodyBytes))
 }
@@ -97,7 +97,7 @@ func TestProductRetrievalRoute(t *testing.T) {
 	body, err := turnResponseBodyIntoString(resp)
 	assert.Nil(t, err)
 
-	skateboardProductJSON := readTestFile(t, existentSKU)
+	skateboardProductJSON := readTestFile(t, "products", "skateboard")
 	actual := replaceTimeStringsForTests(body)
 	expected := minifyJSON(t, skateboardProductJSON)
 	assert.Equal(t, expected, actual, "product retrieval response should contain a complete product")
@@ -112,7 +112,7 @@ func TestProductListRouteWithDefaultFilter(t *testing.T) {
 	assert.Nil(t, err)
 	actual := replaceTimeStringsForTests(respBody)
 
-	expected := minifyJSON(t, readTestFile(t, "product_list_response"))
+	expected := minifyJSON(t, readTestFile(t, "products", "list_with_default_filter"))
 	assert.Equal(t, expected, actual, "product list route should respond with a list of products")
 }
 
@@ -129,7 +129,7 @@ func TestProductListRouteWithCustomFilter(t *testing.T) {
 	assert.Nil(t, err)
 	actual := replaceTimeStringsForTests(respBody)
 
-	expected := minifyJSON(t, readTestFile(t, "product_list_response_second_page_limit_five"))
+	expected := minifyJSON(t, readTestFile(t, "products", "list_with_custom_filter"))
 	assert.Equal(t, expected, actual, "product list route should respond with a list of products")
 }
 
@@ -143,7 +143,7 @@ func TestProductUpdateRoute(t *testing.T) {
 	assert.Nil(t, err)
 
 	actual := replaceTimeStringsForTests(body)
-	minified := minifyJSON(t, readTestFile(t, existentSKU))
+	minified := minifyJSON(t, readTestFile(t, "products", "skateboard"))
 	expected := strings.Replace(minified, `"quantity":123`, `"quantity":666`, 1)
 	assert.Equal(t, expected, actual, "product response upon update should reflect the updated fields")
 }
@@ -173,7 +173,7 @@ func TestProductUpdateRouteForNonexistentProduct(t *testing.T) {
 }
 
 func TestProductCreation(t *testing.T) {
-	newProductJSON := readTestFile(t, "example_new_product")
+	newProductJSON := readTestFile(t, "products", "new_product_body")
 	resp, err := createProduct(newProductJSON)
 	assert.Nil(t, err)
 	assert.Equal(t, 200, resp.StatusCode, "creating a product that doesn't exist should respond 200")
@@ -182,14 +182,13 @@ func TestProductCreation(t *testing.T) {
 	assert.Nil(t, err)
 	actual := replaceTimeStringsForTests(respBody)
 
-	expected := minifyJSON(t, readTestFile(t, "created_product_response"))
+	expected := minifyJSON(t, readTestFile(t, "products", "created_response"))
 	assert.Equal(t, expected, actual, "product creation route should respond with created product body")
 }
 
 func TestProductCreationWithAlreadyExistentSKU(t *testing.T) {
-	newProductJSON := readTestFile(t, "example_new_product")
-	bodyToUse := strings.Replace(newProductJSON, `"sku": "new-product"`, `"sku": "skateboard"`, 1)
-	resp, err := createProduct(bodyToUse)
+	existentProductJSON := readTestFile(t, "products", "skateboard")
+	resp, err := createProduct(existentProductJSON)
 	assert.Nil(t, err)
 	assert.Equal(t, 400, resp.StatusCode, "creating a product that already exists should respond 400")
 
@@ -227,8 +226,25 @@ func TestProductAttributeListRetrievalWithDefaultFilter(t *testing.T) {
 	assert.Nil(t, err)
 	actual := replaceTimeStringsForTests(body)
 
-	expected := minifyJSON(t, readTestFile(t, "product_attributes_default_response"))
-	assert.Equal(t, expected, actual, "product list route should respond with a list of products")
+	expected := minifyJSON(t, readTestFile(t, "product_attributes", "list_with_default_filter"))
+	assert.Equal(t, expected, actual, "product attribute list route should respond with a list of product attributes and their values")
+}
+
+func TestProductAttributeListRetrievalWithCustomFilter(t *testing.T) {
+	customFilter := map[string]string{
+		"page":  "2",
+		"limit": "1",
+	}
+	resp, err := retrieveProductAttributes("1", customFilter)
+	assert.Nil(t, err)
+	assert.Equal(t, 200, resp.StatusCode, "requesting a list of products should respond 200")
+
+	body, err := turnResponseBodyIntoString(resp)
+	assert.Nil(t, err)
+	actual := replaceTimeStringsForTests(body)
+
+	expected := minifyJSON(t, readTestFile(t, "product_attributes", "list_with_custom_filter"))
+	assert.Equal(t, expected, actual, "product attribute list route should respond with a list of product attributes and their values")
 }
 
 func TestProductDeletionRouteForNonexistentProduct(t *testing.T) {
