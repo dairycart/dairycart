@@ -44,7 +44,7 @@ Product attribute list route:
 
 Create product attribute route:
 
-- [ ] Valid input
+- [ ] Valid input (TestProductAttributeCreation)
 - [ ] Invalid input
 - [ ] Existent attribute name
 

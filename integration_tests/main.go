@@ -122,3 +122,12 @@ func retrieveProductAttributes(progenitorID string, queryFilter map[string]strin
 	failIfError(requestBuildingErr)
 	return client.Do(req)
 }
+
+func createProductAttributeForProgenitor(progenitorID string, JSONBody string) (*http.Response, error) {
+	body := strings.NewReader(JSONBody)
+	path := buildPath("product_attributes", progenitorID)
+	url := buildURL(path, nil)
+	req, requestBuildingErr := http.NewRequest(http.MethodPost, url, body)
+	failIfError(requestBuildingErr)
+	return client.Do(req)
+}
