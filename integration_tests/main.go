@@ -1,7 +1,6 @@
 package dairytest
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -40,7 +39,13 @@ func buildURL(path string, queryParams map[string]string) string {
 	return url.String()
 }
 
-func ensureThatDairycartIsAlive() error {
+func failIfError(err error) {
+	if err != nil {
+		log.Fatalf("failed to build request: %v", err)
+	}
+}
+
+func ensureThatDairycartIsAlive() {
 	path := buildPath("health")
 	url := buildURL(path, nil)
 	dairyCartIsDown := true
@@ -52,42 +57,35 @@ func ensureThatDairycartIsAlive() error {
 			time.Sleep(500 * time.Millisecond)
 			numberOfAttempts++
 			if numberOfAttempts >= maxAttempts {
-				return errors.New("Maximum number of attempts made, something's gone awry")
+				log.Fatalf("Maximum number of attempts made, something's gone awry")
 			}
 		} else {
 			dairyCartIsDown = false
 		}
 	}
-	return nil
 }
 
 func checkProductExistence(sku string) (*http.Response, error) {
 	path := buildPath("product", sku)
 	url := buildURL(path, nil)
-	req, err := http.NewRequest(http.MethodHead, url, nil)
-	if err != nil {
-		log.Fatalf("failed to build request: %v", err)
-	}
+	req, requestBuildingErr := http.NewRequest(http.MethodHead, url, nil)
+	failIfError(requestBuildingErr)
 	return client.Do(req)
 }
 
 func retrieveProduct(sku string) (*http.Response, error) {
 	path := buildPath("product", sku)
 	url := buildURL(path, nil)
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		log.Fatalf("failed to build request: %v", err)
-	}
+	req, requestBuildingErr := http.NewRequest(http.MethodGet, url, nil)
+	failIfError(requestBuildingErr)
 	return client.Do(req)
 }
 
 func retrieveListOfProducts(queryFilter map[string]string) (*http.Response, error) {
 	path := buildPath("products")
 	url := buildURL(path, queryFilter)
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		log.Fatalf("failed to build request: %v", err)
-	}
+	req, requestBuildingErr := http.NewRequest(http.MethodGet, url, nil)
+	failIfError(requestBuildingErr)
 	return client.Do(req)
 }
 
@@ -95,10 +93,8 @@ func createProduct(JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
 	path := buildPath("product")
 	url := buildURL(path, nil)
-	req, err := http.NewRequest(http.MethodPost, url, body)
-	if err != nil {
-		log.Fatalf("failed to build request: %v", err)
-	}
+	req, requestBuildingErr := http.NewRequest(http.MethodPost, url, body)
+	failIfError(requestBuildingErr)
 	return client.Do(req)
 }
 
@@ -106,19 +102,23 @@ func updateProduct(sku string, JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
 	path := buildPath("product", sku)
 	url := buildURL(path, nil)
-	req, err := http.NewRequest(http.MethodPut, url, body)
-	if err != nil {
-		log.Fatalf("failed to build request: %v", err)
-	}
+	req, requestBuildingErr := http.NewRequest(http.MethodPut, url, body)
+	failIfError(requestBuildingErr)
 	return client.Do(req)
 }
 
 func deleteProduct(sku string) (*http.Response, error) {
 	path := buildPath("product", sku)
 	url := buildURL(path, nil)
-	req, err := http.NewRequest(http.MethodDelete, url, nil)
-	if err != nil {
-		log.Fatalf("failed to build request: %v", err)
-	}
+	req, requestBuildingErr := http.NewRequest(http.MethodDelete, url, nil)
+	failIfError(requestBuildingErr)
+	return client.Do(req)
+}
+
+func retrieveProductAttributes(progenitorID string, queryFilter map[string]string) (*http.Response, error) {
+	path := buildPath("product_attributes", progenitorID)
+	url := buildURL(path, queryFilter)
+	req, requestBuildingErr := http.NewRequest(http.MethodGet, url, nil)
+	failIfError(requestBuildingErr)
 	return client.Do(req)
 }

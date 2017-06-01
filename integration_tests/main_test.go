@@ -3,7 +3,6 @@ package dairytest
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -17,20 +16,24 @@ import (
 var jsonMinifier *minify.M
 
 const (
-	// we can't reliably predict what the `updated_at` or `archived_at` columns could possibly equal, so we strip them out of the body becuase we're bad at programming.
-	timeFieldReplacementPatterns = `,"(created_at|updated_at|archived_at)":({"Time":)?"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z"(,"Valid":(true|false))?(})?`
-	applicationJSON              = "application/json"
+	// we can't reliably predict what the `updated_at` or `archived_at` columns could possibly equal,
+	// so we strip them out of the body becuase we're bad at programming. The (sort of) plus side to
+	// this is that we ensure our timestamps have a particular format (because if they didn't, this
+	// function, and as a consequence, the tests, would fail spectacularly).
+	//
+	// Note that this pattern needs to be run as ungreedy because of the possiblity of prefix and or
+	// suffixed commas
+	timeFieldReplacementPattern = `(?U)(,?)"(created_at|updated_at|archived_at)":"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z"(,?)`
+	applicationJSON             = "application/json"
 
 	existentSKU            = "skateboard"
 	nonexistentSKU         = "nonexistent"
+	exampelGarbageInput    = `{"testing_garbage_input": true}`
 	expected404SKUResponse = "The product you were looking for (sku `nonexistent`) does not exist"
 )
 
 func init() {
-	err := ensureThatDairycartIsAlive()
-	if err != nil {
-		log.Fatalf("dairycart isn't up: %v", err)
-	}
+	ensureThatDairycartIsAlive()
 	jsonMinifier = minify.New()
 	jsonMinifier.AddFunc(applicationJSON, jsonMinify.Minify)
 }
@@ -42,7 +45,7 @@ func readTestFile(t *testing.T, filename string) string {
 }
 
 func replaceTimeStringsForTests(body string) string {
-	re := regexp.MustCompile(timeFieldReplacementPatterns)
+	re := regexp.MustCompile(timeFieldReplacementPattern)
 	return strings.TrimSpace(re.ReplaceAllString(body, ""))
 }
 
@@ -51,7 +54,7 @@ func turnResponseBodyIntoString(res *http.Response) (string, error) {
 	return strings.TrimSpace(string(bodyBytes)), err
 }
 
-func minifyExampleJSON(t *testing.T, json string) string {
+func minifyJSON(t *testing.T, json string) string {
 	minified, err := jsonMinifier.String(applicationJSON, json)
 	assert.Nil(t, err)
 	return minified
@@ -96,7 +99,7 @@ func TestProductRetrievalRoute(t *testing.T) {
 
 	skateboardProductJSON := readTestFile(t, existentSKU)
 	actual := replaceTimeStringsForTests(body)
-	expected := minifyExampleJSON(t, skateboardProductJSON)
+	expected := minifyJSON(t, skateboardProductJSON)
 	assert.Equal(t, expected, actual, "product retrieval response should contain a complete product")
 }
 
@@ -109,7 +112,7 @@ func TestProductListRouteWithDefaultFilter(t *testing.T) {
 	assert.Nil(t, err)
 	actual := replaceTimeStringsForTests(respBody)
 
-	expected := minifyExampleJSON(t, readTestFile(t, "product_list_response"))
+	expected := minifyJSON(t, readTestFile(t, "product_list_response"))
 	assert.Equal(t, expected, actual, "product list route should respond with a list of products")
 }
 
@@ -126,7 +129,7 @@ func TestProductListRouteWithCustomFilter(t *testing.T) {
 	assert.Nil(t, err)
 	actual := replaceTimeStringsForTests(respBody)
 
-	expected := minifyExampleJSON(t, readTestFile(t, "product_list_response_second_page_limit_five"))
+	expected := minifyJSON(t, readTestFile(t, "product_list_response_second_page_limit_five"))
 	assert.Equal(t, expected, actual, "product list route should respond with a list of products")
 }
 
@@ -140,7 +143,7 @@ func TestProductUpdateRoute(t *testing.T) {
 	assert.Nil(t, err)
 
 	actual := replaceTimeStringsForTests(body)
-	minified := minifyExampleJSON(t, readTestFile(t, existentSKU))
+	minified := minifyJSON(t, readTestFile(t, existentSKU))
 	expected := strings.Replace(minified, `"quantity":123`, `"quantity":666`, 1)
 	assert.Equal(t, expected, actual, "product response upon update should reflect the updated fields")
 }
@@ -179,7 +182,7 @@ func TestProductCreation(t *testing.T) {
 	assert.Nil(t, err)
 	actual := replaceTimeStringsForTests(respBody)
 
-	expected := minifyExampleJSON(t, readTestFile(t, "created_product_response"))
+	expected := minifyJSON(t, readTestFile(t, "created_product_response"))
 	assert.Equal(t, expected, actual, "product creation route should respond with created product body")
 }
 
@@ -195,6 +198,16 @@ func TestProductCreationWithAlreadyExistentSKU(t *testing.T) {
 	assert.Equal(t, expected, actual, "product creation route should respond with failure message when you try to create a sku that already exists")
 }
 
+func TestProductCreationWithInvalidInput(t *testing.T) {
+	resp, err := createProduct(exampelGarbageInput)
+	assert.Nil(t, err)
+	assert.Equal(t, 400, resp.StatusCode, "creating a product that already exists should respond 400")
+
+	actual, err := turnResponseBodyIntoString(resp)
+	expected := "Invalid input provided for product body"
+	assert.Equal(t, expected, actual, "product creation route should respond with failure message when you try to create a sku that already exists")
+}
+
 func TestProductDeletionRouteForNewlyCreatedProduct(t *testing.T) {
 	resp, err := deleteProduct("new-product")
 	assert.Nil(t, err)
@@ -203,6 +216,19 @@ func TestProductDeletionRouteForNewlyCreatedProduct(t *testing.T) {
 	actual, err := turnResponseBodyIntoString(resp)
 	expected := "Successfully deleted product `new-product`"
 	assert.Equal(t, expected, actual, "product deletion route should respond with affirmative message upon successful deletion")
+}
+
+func TestProductAttributeListRetrievalWithDefaultFilter(t *testing.T) {
+	resp, err := retrieveProductAttributes("1", nil)
+	assert.Nil(t, err)
+	assert.Equal(t, 200, resp.StatusCode, "requesting a list of products should respond 200")
+
+	body, err := turnResponseBodyIntoString(resp)
+	assert.Nil(t, err)
+	actual := replaceTimeStringsForTests(body)
+
+	expected := minifyJSON(t, readTestFile(t, "product_attributes_default_response"))
+	assert.Equal(t, expected, actual, "product list route should respond with a list of products")
 }
 
 func TestProductDeletionRouteForNonexistentProduct(t *testing.T) {

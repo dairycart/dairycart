@@ -27,7 +27,7 @@ Update product route:
 Create product route:
 
 - [x] Valid input ([TestProductCreation](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/927d2991f32c0ded3b81a2f1a94f680b043b488a/integration_tests/main_test.go#L155))
-- [ ] Invalid input
+- [x] Invalid input (TestProductCreationWithInvalidInput)
 - [x] Existent SKU ([TestProductCreationWithAlreadyExistentSKU](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/927d2991f32c0ded3b81a2f1a94f680b043b488a/integration_tests/main_test.go#L169))
 
 Delete product route:
