@@ -126,9 +126,9 @@ func createProductAttributeValueForAttribute(attributeID string, JSONBody string
 	return client.Do(req)
 }
 
-// func updateProductAttributeValueForAttribute(valueID string, JSONBody string) (*http.Response, error) {
-// 	body := strings.NewReader(JSONBody)
-// 	url := buildPath("product_attribute_values", valueID)
-// 	req, _ := http.NewRequest(http.MethodPut, url, body)
-// 	return client.Do(req)
-// }
+func updateProductAttributeValueForAttribute(valueID string, JSONBody string) (*http.Response, error) {
+	body := strings.NewReader(JSONBody)
+	url := buildPath("product_attribute_values", valueID)
+	req, _ := http.NewRequest(http.MethodPut, url, body)
+	return client.Do(req)
+}

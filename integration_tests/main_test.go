@@ -349,6 +349,41 @@ func TestProductAttributeValueCreationWithAlreadyExistentValue(t *testing.T) {
 	assert.Equal(t, expected, actual, "product attribute value creation route should respond with failure message when you try to create a value that already exists")
 }
 
+func TestProductAttributeValueUpdate(t *testing.T) {
+	updatedAttributeValueJSON := loadExampleInput(t, "product_attribute_values", "update")
+	resp, err := updateProductAttributeValueForAttribute(existentID, updatedAttributeValueJSON)
+	assert.Nil(t, err)
+	assert.Equal(t, 200, resp.StatusCode, "successfully updating a product should respond 200")
+
+	body := turnResponseBodyIntoString(t, resp)
+	actual := replaceTimeStringsForTests(body)
+	expected := minifyJSON(t, loadExpectedResponse(t, "product_attribute_values", "updated"))
+	assert.Equal(t, expected, actual, "product attribute update response should reflect the updated fields")
+}
+
+func TestProductAttributeValueUpdateWithInvalidInput(t *testing.T) {
+	resp, err := updateProductAttributeValueForAttribute(existentID, exampleGarbageInput)
+	assert.Nil(t, err)
+	assert.Equal(t, 400, resp.StatusCode, "successfully updating a product should respond 400")
+
+	body := turnResponseBodyIntoString(t, resp)
+	actual := replaceTimeStringsForTests(body)
+	expected := "Invalid input provided for product attribute body"
+	assert.Equal(t, expected, actual, "product attribute update route should respond with failure message when you provide it invalid input")
+}
+
+func TestProductAttributeValueUpdateForNonexistentAttribute(t *testing.T) {
+	updatedAttributeValueJSON := loadExampleInput(t, "product_attribute_values", "update")
+	resp, err := updateProductAttributeValueForAttribute(nonexistentID, updatedAttributeValueJSON)
+	assert.Nil(t, err)
+	assert.Equal(t, 404, resp.StatusCode, "successfully updating a product should respond 404")
+
+	body := turnResponseBodyIntoString(t, resp)
+	actual := replaceTimeStringsForTests(body)
+	expected := "The product attribute value you were looking for (id `9999999999`) does not exist"
+	assert.Equal(t, expected, actual, "product attribute update route should respond with 404 message when you try to delete a product that doesn't exist")
+}
+
 // I'd like to keep these functions last if at all possible.
 
 func TestProductDeletionRouteForNonexistentProduct(t *testing.T) {

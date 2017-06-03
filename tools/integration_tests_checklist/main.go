@@ -65,6 +65,7 @@ func replaceLinksInChecklistFile(old *os.File, new *os.File, nameValidator *rege
 			newLine := fmt.Sprintf("%s%s", checklistPart, link)
 			_, err := new.WriteString(fmt.Sprintf("%s\n", newLine))
 			failIfErr(err)
+			delete(functionNamesToLineNumberMap, functionName)
 		} else {
 			_, err := new.WriteString(fmt.Sprintf("%s\n", line))
 			failIfErr(err)
@@ -97,4 +98,11 @@ func main() {
 	replaceLinksInChecklistFile(checklistFile, newChecklistFile, nameValidator, functionNamesToLineNumberMap)
 	failIfErr(os.Remove(checklistFilePath))
 	failIfErr(os.Rename(newChecklistFilePath, checklistFilePath))
+
+	if len(functionNamesToLineNumberMap) != 0 {
+		log.Fatalf("Tests exist which are unaccounted for in the README: ")
+		for f, ln := range functionNamesToLineNumberMap {
+			log.Printf("\t%s (line %d)\n", f, ln)
+		}
+	}
 }
