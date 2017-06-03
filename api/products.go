@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"regexp"
 	"time"
 
 	"github.com/fatih/structs"
@@ -15,16 +14,6 @@ import (
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
 )
-
-const (
-	skuValidationPattern = `^[a-zA-Z\-_]+$`
-)
-
-var skuValidator *regexp.Regexp
-
-func init() {
-	skuValidator = regexp.MustCompile(skuValidationPattern)
-}
 
 ////////////////////////////////////////////////////////////////////////
 //                                                                    //
@@ -176,7 +165,7 @@ func validateProductUpdateInput(req *http.Request) (*Product, error) {
 	// we need to be certain that if a user passed us a SKU, that it isn't set
 	// to something that mux won't disallow them from retrieving later
 	s := p.Field("SKU")
-	if !s.IsZero() && !skuValidator.MatchString(product.SKU) {
+	if !s.IsZero() && !dataValueIsValid(product.SKU) {
 		return nil, errors.New("Invalid input provided for product SKU")
 	}
 	product.roundNumericFields()
@@ -358,7 +347,7 @@ func validateProductCreationInput(req *http.Request) (*ProductCreationInput, err
 	// we need to be certain that if a user passed us a SKU, that it isn't set
 	// to something that mux won't disallow them from retrieving later
 	s := p.Field("SKU")
-	if !s.IsZero() && !skuValidator.MatchString(pci.SKU) {
+	if !s.IsZero() && !dataValueIsValid(pci.SKU) {
 		return nil, errors.New("Invalid input provided for product SKU")
 	}
 

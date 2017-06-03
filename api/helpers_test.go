@@ -188,6 +188,47 @@ func TestParseRawFilterParams(t *testing.T) {
 
 }
 
+// func valueIsValid(input string) bool {
+// 	return dbValueValidator.MatchString(input)
+// }
+
+func TestDataValueIsValid(t *testing.T) {
+	testCases := []struct {
+		Input        string
+		ShouldPass   bool
+		ErrorMessage string
+	}{
+		{
+			Input:        "this_sku_is_fine",
+			ShouldPass:   true,
+			ErrorMessage: "ordinary sku example should pass",
+		},
+		{
+			Input:        "this string has spaces",
+			ShouldPass:   false,
+			ErrorMessage: "database values should not have spaces",
+		},
+		{
+			Input:        "this_entry_is_just_way_way_way_way_way_way_way_way_way_way_too_long",
+			ShouldPass:   false,
+			ErrorMessage: "nothing longer than fifty characters",
+		},
+		{
+			Input:        "ⓖⓞⓞⓕⓨ ⓣⓔⓧⓣ ⓝⓞⓣ ⓐⓛⓛⓞⓦⓔⓓ",
+			ShouldPass:   false,
+			ErrorMessage: "goofy text should not be allowed",
+		},
+	}
+
+	for _, test := range testCases {
+		if test.ShouldPass {
+			assert.True(t, dataValueIsValid(test.Input), test.ErrorMessage)
+		} else {
+			assert.False(t, dataValueIsValid(test.Input), test.ErrorMessage)
+		}
+	}
+}
+
 func TestRespondThatRowDoesNotExist(t *testing.T) {
 	t.Parallel()
 	req := httptest.NewRequest("GET", "http://example.com/foo", nil)

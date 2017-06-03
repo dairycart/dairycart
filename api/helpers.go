@@ -6,6 +6,7 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -19,6 +20,8 @@ const (
 	DefaultLimitString = "25"
 	// MaxLimit is the maximum number of objects Dairycart will return in a response
 	MaxLimit = 50
+
+	dataValidationPattern = `^[a-zA-Z\-_]{1,50}$`
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -228,6 +231,14 @@ func parseRawFilterParams(rawFilterParams url.Values) *QueryFilter {
 	}
 
 	return qf
+}
+
+func dataValueIsValid(input string) bool {
+	// This is a rather simple function, but is sort of strictly meant to
+	// ensure that certain values (like skus, attribute values, attribute names)
+	// aren't allowed to have crazy values in the database
+	dataValidator := regexp.MustCompile(dataValidationPattern)
+	return dataValidator.MatchString(input)
 }
 
 // rowExistsInDB will return whether or not a product/attribute/etc with a given identifier exists in the database
