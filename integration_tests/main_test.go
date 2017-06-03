@@ -272,7 +272,7 @@ func TestProductAttributeCreationWithAlreadyExistentName(t *testing.T) {
 	existingAttributeJSON := strings.Replace(newAttributeJSON, "example_value", "color", 1)
 	resp, err := createProductAttributeForProgenitor(existentID, existingAttributeJSON)
 	assert.Nil(t, err)
-	assert.Equal(t, 400, resp.StatusCode, "creating a product attribute that doesn't exist should respond 400")
+	assert.Equal(t, 400, resp.StatusCode, "creating a product attribute that already exists should respond 400")
 
 	actual := turnResponseBodyIntoString(t, resp)
 	expected := "product attribute with the name `color` already exists"
@@ -312,6 +312,41 @@ func TestProductAttributeUpdateForNonexistentAttribute(t *testing.T) {
 	actual := replaceTimeStringsForTests(body)
 	expected := "The product attribute you were looking for (id `9999999999`) does not exist"
 	assert.Equal(t, expected, actual, "product attribute update route should respond with 404 message when you try to delete a product that doesn't exist")
+}
+
+func TestProductAttributeValueCreation(t *testing.T) {
+	newAttributeValueJSON := loadExampleInput(t, "product_attribute_values", "new")
+	resp, err := createProductAttributeValueForAttribute(existentID, newAttributeValueJSON)
+	assert.Nil(t, err)
+	assert.Equal(t, 200, resp.StatusCode, "creating a product attribute value that doesn't exist should respond 200")
+
+	respBody := turnResponseBodyIntoString(t, resp)
+	actual := replaceTimeStringsForTests(respBody)
+	expected := minifyJSON(t, loadExpectedResponse(t, "product_attribute_values", "created"))
+	assert.Equal(t, expected, actual, "product attribute value creation route should respond with created product attribute body")
+}
+
+func TestProductAttributeValueCreationWithInvalidInput(t *testing.T) {
+	t.Parallel()
+	resp, err := createProductAttributeValueForAttribute(existentID, exampleGarbageInput)
+	assert.Nil(t, err)
+	assert.Equal(t, 400, resp.StatusCode, "trying to create a new product attribute value with invalid input should respond 400")
+
+	actual := turnResponseBodyIntoString(t, resp)
+	expected := "Invalid input provided for product attribute value body"
+	assert.Equal(t, expected, actual, "product attribute value creation route should respond with failure message when you provide it invalid input")
+}
+
+func TestProductAttributeValueCreationWithAlreadyExistentValue(t *testing.T) {
+	newAttributeJSON := loadExampleInput(t, "product_attribute_values", "new")
+	existingAttributeJSON := strings.Replace(newAttributeJSON, "example_value", "blue", 1)
+	resp, err := createProductAttributeValueForAttribute(existentID, existingAttributeJSON)
+	assert.Nil(t, err)
+	assert.Equal(t, 400, resp.StatusCode, "creating a product attribute value that already exists should respond 400")
+
+	actual := turnResponseBodyIntoString(t, resp)
+	expected := "product attribute value `blue` already exists for attribute ID 1"
+	assert.Equal(t, expected, actual, "product attribute value creation route should respond with failure message when you try to create a value that already exists")
 }
 
 // I'd like to keep these functions last if at all possible.

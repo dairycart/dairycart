@@ -118,3 +118,17 @@ func updateProductAttribute(attributeID string, JSONBody string) (*http.Response
 	req, _ := http.NewRequest(http.MethodPut, url, body)
 	return client.Do(req)
 }
+
+func createProductAttributeValueForAttribute(attributeID string, JSONBody string) (*http.Response, error) {
+	body := strings.NewReader(JSONBody)
+	url := buildPath("product_attributes", attributeID, "value")
+	req, _ := http.NewRequest(http.MethodPost, url, body)
+	return client.Do(req)
+}
+
+// func updateProductAttributeValueForAttribute(valueID string, JSONBody string) (*http.Response, error) {
+// 	body := strings.NewReader(JSONBody)
+// 	url := buildPath("product_attribute_values", valueID)
+// 	req, _ := http.NewRequest(http.MethodPut, url, body)
+// 	return client.Do(req)
+// }

@@ -375,6 +375,19 @@ func buildProductAttributeValueRetrievalForAttributeIDQuery(attributeID int64) s
 	return query
 }
 
+func buildProductAttributeValueExistenceForAttributeIDQuery(attributeID int64, value string) (string, []interface{}) {
+	subqueryBuilder := sqlBuilder.Select("1").
+		From("product_attribute_values").
+		Where(squirrel.Eq{"product_attribute_id": attributeID}).
+		Where(squirrel.Eq{"value": value}).
+		Where(squirrel.Eq{"archived_at": nil})
+	subquery, args, _ := subqueryBuilder.ToSql()
+
+	queryBuilder := sqlBuilder.Select(fmt.Sprintf("EXISTS(%s)", subquery))
+	query, _, _ := queryBuilder.ToSql()
+	return query, args
+}
+
 func buildProductAttributeValueUpdateQuery(v *ProductAttributeValue) (string, []interface{}) {
 	productAttributeUpdateSetMap := map[string]interface{}{
 		"value":      v.Value,

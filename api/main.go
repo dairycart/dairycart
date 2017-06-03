@@ -60,8 +60,8 @@ func SetupAPIRoutes(router *mux.Router, db *sql.DB) {
 	router.HandleFunc(specificAttributeEndpoint, buildProductAttributeUpdateHandler(db)).Methods("PUT")
 
 	// Product Attribute Values
-	attributeValueEndpoint := buildRoute("product_attribute_values", "{attribute_id:[0-9]+}")
-	specificAttributeValueEndpoint := buildRoute("product_attribute_values", "{attribute_id:[0-9]+}", "{attribute_value_id:[0-9]+}")
+	attributeValueEndpoint := buildRoute("product_attributes", "{attribute_id:[0-9]+}", "value")
+	specificAttributeValueEndpoint := buildRoute("product_attribute_values", "{attribute_value_id:[0-9]+}")
 	router.HandleFunc(attributeValueEndpoint, buildProductAttributeValueCreationHandler(db)).Methods("POST")
 	router.HandleFunc(specificAttributeValueEndpoint, buildProductAttributeValueUpdateHandler(db)).Methods("PUT")
 }

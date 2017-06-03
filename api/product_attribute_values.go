@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -127,17 +128,9 @@ func buildProductAttributeValueUpdateHandler(db *sql.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		// ProductAttributeValueUpdateHandler is a request handler that can update product attribute values
 		reqVars := mux.Vars(req)
-		attributeID := reqVars["attribute_id"]
 		attributeValueID := reqVars["attribute_value_id"]
 		// eating these errors because Mux should validate these for us.
 		attributeValueIDInt, _ := strconv.Atoi(attributeValueID)
-
-		// can't update an attribute that doesn't exist!
-		attributeExists, err := rowExistsInDB(db, "product_attributes", "id", attributeID)
-		if err != nil || !attributeExists {
-			respondThatRowDoesNotExist(req, res, "product attribute", attributeID)
-			return
-		}
 
 		// can't update an attribute value that doesn't exist!
 		attributeValueExists, err := rowExistsInDB(db, "product_attribute_values", "id", attributeValueID)
@@ -178,6 +171,18 @@ func createProductAttributeValueInDB(tx *sql.Tx, v *ProductAttributeValue) (int6
 	return newAttributeValueID, err
 }
 
+func attributeValueAlreadyExistsForAttribute(db *sql.DB, attributeID int64, value string) (bool, error) {
+	var exists string
+
+	query, args := buildProductAttributeValueExistenceForAttributeIDQuery(attributeID, value)
+	err := db.QueryRow(query, args...).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+
+	return exists == "true", err
+}
+
 func buildProductAttributeValueCreationHandler(db *sql.DB) http.HandlerFunc {
 	// productAttributeValueCreationHandler is a product creation handler
 	return func(res http.ResponseWriter, req *http.Request) {
@@ -186,8 +191,9 @@ func buildProductAttributeValueCreationHandler(db *sql.DB) http.HandlerFunc {
 		// we can eat this error because Mux takes care of validating route params for us
 		attributeIDInt, _ := strconv.ParseInt(attributeID, 10, 64)
 
-		productAttributeExists, err := rowExistsInDB(db, "product_attributes", "id", attributeID)
-		if err != nil || !productAttributeExists {
+		// can't create values for a product attribute that doesn't exist
+		productAttributeValueExistsByID, err := rowExistsInDB(db, "product_attributes", "id", attributeID)
+		if err != nil || !productAttributeValueExistsByID {
 			respondThatRowDoesNotExist(req, res, "product attribute", attributeID)
 			return
 		}
@@ -198,6 +204,13 @@ func buildProductAttributeValueCreationHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 		newProductAttributeValue.ProductAttributeID = attributeIDInt
+
+		// can't create a product attribute value that already exists
+		productAttributeValueExistsByValue, err := attributeValueAlreadyExistsForAttribute(db, attributeIDInt, newProductAttributeValue.Value)
+		if err != nil || productAttributeValueExistsByValue {
+			notifyOfInvalidRequestBody(res, fmt.Errorf("product attribute value `%s` already exists for attribute ID %s", newProductAttributeValue.Value, attributeID))
+			return
+		}
 
 		tx, err := db.Begin()
 		if err != nil {
