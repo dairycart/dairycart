@@ -32,8 +32,8 @@ Create product route:
 
 Delete product route:
 
-- [x] Newly Created SKU ([TestProductDeletionRouteForNewlyCreatedProduct](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L399))
-- [x] Nonexistent SKU ([TestProductDeletionRouteForNonexistentProduct](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L389))
+- [x] Newly Created SKU ([TestProductDeletionRouteForNewlyCreatedProduct](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L417))
+- [x] Nonexistent SKU ([TestProductDeletionRouteForNonexistentProduct](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L407))
 
 ## Product Attributes
 
@@ -66,4 +66,5 @@ Update product attribute value route:
 
 - [x] Valid input ([TestProductAttributeValueUpdate](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L352))
 - [x] Invalid input ([TestProductAttributeValueUpdateWithInvalidInput](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L364))
-- [x] Nonexistent attribute ([TestProductAttributeValueUpdateForNonexistentAttribute](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L375))
+- [x] Nonexistent attribute value ([TestProductAttributeValueUpdateForNonexistentAttribute](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L375))
+- [x] Duplicate attribute value ([TestProductAttributeValueUpdateForAlreadyExistentValue](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L387))

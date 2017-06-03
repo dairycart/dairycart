@@ -384,6 +384,24 @@ func TestProductAttributeValueUpdateForNonexistentAttribute(t *testing.T) {
 	assert.Equal(t, expected, actual, "product attribute update route should respond with 404 message when you try to delete a product that doesn't exist")
 }
 
+func TestProductAttributeValueUpdateForAlreadyExistentValue(t *testing.T) {
+	duplicatedAttributeValueJSON := loadExampleInput(t, "product_attribute_values", "duplicate")
+	resp, err := updateProductAttributeValueForAttribute("4", duplicatedAttributeValueJSON)
+	assert.Nil(t, err)
+	assert.Equal(t, 500, resp.StatusCode, "successfully updating a product should respond 500")
+
+	body := turnResponseBodyIntoString(t, resp)
+	actual := replaceTimeStringsForTests(body)
+	// Say you have a product attribute called `color`, and it has three values (`red`, `green`, and `blue`).
+	// Let's say you try to change `red` to `blue` for whatever reason. That will fail at the database level,
+	// because the schema ensures a unique combination of value and attribute ID. Should I prevent users from
+	// being able to do this? On the one hand, it adds yet another query to a route that should presumably never
+	// experience that issue at all. On the other hand it does provide a convenient and clear explanation
+	// for why a given problem occurred.
+	expected := "Unexpected internal error"
+	assert.Equal(t, expected, actual, "product attribute update route should respond with 404 message when you try to delete a product that doesn't exist")
+}
+
 // I'd like to keep these functions last if at all possible.
 
 func TestProductDeletionRouteForNonexistentProduct(t *testing.T) {
