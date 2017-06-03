@@ -12,39 +12,42 @@ const (
 	argsEqualityErrorMessage  = "Generated SQL arguments should match expected arguments"
 )
 
+// Note: comparing interface equality with assert is impossible as far as I can tell,
+// so generally these tests ensure that the correct number of args are returned.
+
 func TestBuildRowExistenceQuery(t *testing.T) {
 	t.Parallel()
-	expected := `SELECT EXISTS(SELECT 1 FROM things WHERE stuff = $1 AND archived_at IS NULL)`
-	actual := buildRowExistenceQuery("things", "stuff", "abritrary")
-	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
+	expectedQuery := `SELECT EXISTS(SELECT 1 FROM things WHERE stuff = $1 AND archived_at IS NULL)`
+	actualQuery := buildRowExistenceQuery("things", "stuff", "abritrary")
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 
 func TestBuildRowRetrievalQuery(t *testing.T) {
 	t.Parallel()
-	expected := `SELECT * FROM things WHERE stuff = $1 AND archived_at IS NULL`
-	actual := buildRowRetrievalQuery("things", "stuff", "abritrary")
-	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
+	expectedQuery := `SELECT * FROM things WHERE stuff = $1 AND archived_at IS NULL`
+	actualQuery := buildRowRetrievalQuery("things", "stuff", "abritrary")
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 
 func TestBuildRowDeletionQuery(t *testing.T) {
 	t.Parallel()
-	expected := `UPDATE things SET archived_at = NOW() WHERE stuff = $1 AND archived_at IS NULL`
-	actual := buildRowDeletionQuery("things", "stuff", "abritrary")
-	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
+	expectedQuery := `UPDATE things SET archived_at = NOW() WHERE stuff = $1 AND archived_at IS NULL`
+	actualQuery := buildRowDeletionQuery("things", "stuff", "abritrary")
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 
 func TestBuildProgenitorRetrievalQuery(t *testing.T) {
 	t.Parallel()
-	expected := `SELECT * FROM product_progenitors WHERE id = $1 AND archived_at IS NULL`
-	actual := buildProgenitorRetrievalQuery(1)
-	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
+	expectedQuery := `SELECT * FROM product_progenitors WHERE id = $1 AND archived_at IS NULL`
+	actualQuery := buildProgenitorRetrievalQuery(1)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 
 func TestBuildProgenitorExistenceQuery(t *testing.T) {
 	t.Parallel()
-	expected := `SELECT EXISTS(SELECT 1 FROM product_progenitors WHERE id = $1 AND archived_at IS NULL)`
-	actual := buildProgenitorExistenceQuery("1")
-	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
+	expectedQuery := `SELECT EXISTS(SELECT 1 FROM product_progenitors WHERE id = $1 AND archived_at IS NULL)`
+	actualQuery := buildProgenitorExistenceQuery("1")
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 
 func TestBuildProgenitorCreationQuery(t *testing.T) {
@@ -52,21 +55,20 @@ func TestBuildProgenitorCreationQuery(t *testing.T) {
 	expectedQuery := `INSERT INTO product_progenitors (name,description,taxable,price,cost,product_weight,product_height,product_width,product_length,package_weight,package_height,package_width,package_length) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING "id"`
 	actualQuery, actualArgs := buildProgenitorCreationQuery(exampleProgenitor)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
-	// comparing interface equality with assert is impossible as far as I can tell
 	assert.Equal(t, 13, len(actualArgs), argsEqualityErrorMessage)
 }
 
 func TestBuildProductExistenceQuery(t *testing.T) {
 	t.Parallel()
-	expected := `SELECT EXISTS(SELECT 1 FROM products WHERE sku = $1 AND archived_at IS NULL)`
-	actual := buildProductExistenceQuery(exampleSKU)
-	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
+	expectedQuery := `SELECT EXISTS(SELECT 1 FROM products WHERE sku = $1 AND archived_at IS NULL)`
+	actualQuery := buildProductExistenceQuery(exampleSKU)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 func TestBuildProductRetrievalQuery(t *testing.T) {
 	t.Parallel()
-	expected := `SELECT * FROM products WHERE sku = $1 AND archived_at IS NULL`
-	actual := buildProductRetrievalQuery(exampleSKU)
-	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
+	expectedQuery := `SELECT * FROM products WHERE sku = $1 AND archived_at IS NULL`
+	actualQuery := buildProductRetrievalQuery(exampleSKU)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 
 func TestBuildAllProductsRetrievalQuery(t *testing.T) {
@@ -109,16 +111,18 @@ func TestBuildAllProductsRetrievalQueryWithCompletelyCustomQueryFilter(t *testin
 
 func TestBuildProductDeletionQuery(t *testing.T) {
 	t.Parallel()
-	expected := `UPDATE products SET archived_at = NOW() WHERE sku = $1 AND archived_at IS NULL`
-	actual := buildProductDeletionQuery(exampleSKU)
-	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
+	expectedQuery := `UPDATE products SET archived_at = NOW() WHERE sku = $1 AND archived_at IS NULL`
+	actualQuery := buildProductDeletionQuery(exampleSKU)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
+
 func TestBuildCompleteProductRetrievalQuery(t *testing.T) {
 	t.Parallel()
-	expected := `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.sku = $1 AND p.archived_at IS NULL`
-	actual := buildCompleteProductRetrievalQuery(exampleSKU)
-	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
+	expectedQuery := `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.sku = $1 AND p.archived_at IS NULL`
+	actualQuery := buildCompleteProductRetrievalQuery(exampleSKU)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
+
 func TestBuildProductUpdateQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `UPDATE products SET cost = $1, name = $2, price = $3, quantity = $4, sku = $5, upc = $6, updated_at = NOW() WHERE id = $7 RETURNING *`
@@ -127,32 +131,34 @@ func TestBuildProductUpdateQuery(t *testing.T) {
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 7, len(actualArgs), argsEqualityErrorMessage)
 }
+
 func TestBuildProductCreationQuery(t *testing.T) {
 	t.Parallel()
-	expected := `INSERT INTO products (product_progenitor_id,sku,name,upc,quantity,price,cost) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "id"`
-	actual, _ := buildProductCreationQuery(exampleProduct)
-	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
+	expectedQuery := `INSERT INTO products (product_progenitor_id,sku,name,upc,quantity,price,cost) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "id"`
+	actualQuery, actualArgs := buildProductCreationQuery(exampleProduct)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 7, len(actualArgs), argsEqualityErrorMessage)
 }
 
 func TestBuildProductAttributeRetrievalQuery(t *testing.T) {
 	t.Parallel()
-	expected := `SELECT * FROM product_attributes WHERE id = $1 AND archived_at IS NULL`
-	actual := buildProductAttributeRetrievalQuery(1)
-	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
+	expectedQuery := `SELECT * FROM product_attributes WHERE id = $1 AND archived_at IS NULL`
+	actualQuery := buildProductAttributeRetrievalQuery(1)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 
 func TestBuildProductAttributeListQuery(t *testing.T) {
 	t.Parallel()
-	expected := `SELECT * FROM product_attributes WHERE product_progenitor_id = $1 AND archived_at IS NULL LIMIT 25`
-	actual := buildProductAttributeListQuery("1", &QueryFilter{})
-	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
+	expectedQuery := `SELECT * FROM product_attributes WHERE product_progenitor_id = $1 AND archived_at IS NULL LIMIT 25`
+	actualQuery := buildProductAttributeListQuery("1", &QueryFilter{})
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 
 func TestBuildProductAttributeDeletionQuery(t *testing.T) {
 	t.Parallel()
-	expected := `UPDATE product_attributes SET archived_at = NOW() WHERE id = $1 AND archived_at IS NULL`
-	actual := buildProductAttributeDeletionQuery(1)
-	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
+	expectedQuery := `UPDATE product_attributes SET archived_at = NOW() WHERE id = $1 AND archived_at IS NULL`
+	actualQuery := buildProductAttributeDeletionQuery(1)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 
 func TestBuildProductAttributeUpdateQuery(t *testing.T) {
@@ -168,22 +174,21 @@ func TestBuildProductAttributeCreationQuery(t *testing.T) {
 	expectedQuery := `INSERT INTO product_attributes (name,product_progenitor_id) VALUES ($1,$2) RETURNING "id"`
 	actualQuery, actualArgs := buildProductAttributeCreationQuery(&ProductAttribute{})
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
-	// comparing interface equality with assert is impossible as far as I can tell
 	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
 }
 
 func TestBuildProductAttributeValueRetrievalQuery(t *testing.T) {
 	t.Parallel()
-	expected := `SELECT * FROM product_attribute_values WHERE id = $1 AND archived_at IS NULL`
-	actual := buildProductAttributeValueRetrievalQuery(1)
-	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
+	expectedQuery := `SELECT * FROM product_attribute_values WHERE id = $1 AND archived_at IS NULL`
+	actualQuery := buildProductAttributeValueRetrievalQuery(1)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 
 func TestBuildProductAttributeValueDeletionQuery(t *testing.T) {
 	t.Parallel()
-	expected := `UPDATE product_attribute_values SET archived_at = NOW() WHERE id = $1 AND archived_at IS NULL`
-	actual := buildProductAttributeValueDeletionQuery(1)
-	assert.Equal(t, expected, actual, queryEqualityErrorMessage)
+	expectedQuery := `UPDATE product_attribute_values SET archived_at = NOW() WHERE id = $1 AND archived_at IS NULL`
+	actualQuery := buildProductAttributeValueDeletionQuery(1)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 
 func TestBuildProductAttributeValueExistenceForAttributeIDQuery(t *testing.T) {
@@ -207,6 +212,5 @@ func TestBuildProductAttributeValueCreationQuery(t *testing.T) {
 	expectedQuery := `INSERT INTO product_attribute_values (product_attribute_id,value) VALUES ($1,$2) RETURNING "id"`
 	actualQuery, actualArgs := buildProductAttributeValueCreationQuery(&ProductAttributeValue{})
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
-	// comparing interface equality with assert is impossible as far as I can tell
 	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
 }

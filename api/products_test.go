@@ -149,20 +149,22 @@ func setExpectationsForProductListQuery(mock sqlmock.Sqlmock, err error) {
 		AddRow(exampleProductJoinData...)
 
 	allProductsRetrievalQuery, _ := buildAllProductsRetrievalQuery(defaultQueryFilter)
-	mock.ExpectQuery(formatQueryForSQLMock(allProductsRetrievalQuery)).WillReturnRows(exampleRows).WillReturnError(err)
+	mock.ExpectQuery(formatQueryForSQLMock(allProductsRetrievalQuery)).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
 }
 
 func setExpectationsForProductRetrieval(mock sqlmock.Sqlmock, err error) {
 	exampleRows := sqlmock.NewRows(productJoinHeaders).AddRow(exampleProductJoinData...)
-
 	skuRetrievalQuery := formatQueryForSQLMock(buildCompleteProductRetrievalQuery(exampleSKU))
-	mock.ExpectQuery(skuRetrievalQuery).WithArgs(exampleSKU).WillReturnRows(exampleRows).WillReturnError(err)
+	mock.ExpectQuery(skuRetrievalQuery).
+		WithArgs(exampleSKU).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
 }
 
 func setExpectationsForProductUpdate(mock sqlmock.Sqlmock, p *Product, err error) {
-	exampleRows := sqlmock.NewRows(plainProductHeaders).
-		AddRow(examplePlainProductData...)
-
+	exampleRows := sqlmock.NewRows(plainProductHeaders).AddRow(examplePlainProductData...)
 	productUpdateQuery, queryArgs := buildProductUpdateQuery(p)
 	args := argsToDriverValues(queryArgs)
 	mock.ExpectQuery(formatQueryForSQLMock(productUpdateQuery)).
@@ -204,6 +206,13 @@ func setExpectationsForProductUpdateHandler(mock sqlmock.Sqlmock, p *Product, er
 			p.ID,
 		).WillReturnRows(exampleRows).
 		WillReturnError(err)
+}
+
+func setExpectationsForProductDeletion(mock sqlmock.Sqlmock, sku string) {
+	skuDeletionQuery := buildProductDeletionQuery(sku)
+	mock.ExpectExec(formatQueryForSQLMock(skuDeletionQuery)).
+		WithArgs(sku).
+		WillReturnResult(sqlmock.NewResult(1, 1))
 }
 
 func TestValidateProductUpdateInputWithValidInput(t *testing.T) {
@@ -309,11 +318,7 @@ func TestDeleteProductBySKU(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
 	defer db.Close()
-
-	skuDeletionQuery := buildProductDeletionQuery(exampleSKU)
-	mock.ExpectExec(formatQueryForSQLMock(skuDeletionQuery)).
-		WithArgs(exampleSKU).
-		WillReturnResult(sqlmock.NewResult(1, 1))
+	setExpectationsForProductDeletion(mock, exampleSKU)
 
 	err = deleteProductBySKU(db, exampleSKU)
 	assert.Nil(t, err)
@@ -644,11 +649,7 @@ func TestProductDeletionHandlerWithExistentProduct(t *testing.T) {
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, exampleSKU, true, nil)
-
-	skuDeletionQuery := buildProductDeletionQuery(exampleSKU)
-	mock.ExpectExec(formatQueryForSQLMock(skuDeletionQuery)).
-		WithArgs(exampleSKU).
-		WillReturnResult(sqlmock.NewResult(1, 1))
+	setExpectationsForProductDeletion(mock, exampleSKU)
 
 	req, err := http.NewRequest("DELETE", "/v1/product/example", nil)
 	assert.Nil(t, err)

@@ -104,7 +104,10 @@ func setExpectationsForProductAttributeRetrievalQuery(mock sqlmock.Sqlmock, a *P
 	exampleRows := sqlmock.NewRows(productAttributeHeaders).
 		AddRow([]driver.Value{a.ID, a.Name, a.ProductProgenitorID, exampleTime, nil, nil}...)
 	query := formatQueryForSQLMock(buildProductAttributeRetrievalQuery(a.ID))
-	mock.ExpectQuery(query).WithArgs(a.ID).WillReturnRows(exampleRows).WillReturnError(err)
+	mock.ExpectQuery(query).
+		WithArgs(a.ID).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
 }
 
 func setExpectationsForProductAttributeListQuery(mock sqlmock.Sqlmock, a *ProductAttribute, err error) {
@@ -113,7 +116,9 @@ func setExpectationsForProductAttributeListQuery(mock sqlmock.Sqlmock, a *Produc
 		AddRow([]driver.Value{a.ID, a.Name, a.ProductProgenitorID, exampleTime, nil, nil}...).
 		AddRow([]driver.Value{a.ID, a.Name, a.ProductProgenitorID, exampleTime, nil, nil}...)
 	query := buildProductAttributeListQuery(strconv.Itoa(int(exampleProgenitor.ID)), defaultQueryFilter)
-	mock.ExpectQuery(formatQueryForSQLMock(query)).WillReturnRows(exampleRows).WillReturnError(err)
+	mock.ExpectQuery(formatQueryForSQLMock(query)).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
 }
 
 func setExpectationsForProductAttributeCreation(mock sqlmock.Sqlmock, a *ProductAttribute, err error) {
