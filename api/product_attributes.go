@@ -150,17 +150,9 @@ func buildProductAttributeUpdateHandler(db *sql.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		// ProductAttributeUpdateHandler is a request handler that can update product attributes
 		reqVars := mux.Vars(req)
-		progenitorID := reqVars["progenitor_id"]
 		attributeID := reqVars["attribute_id"]
 		// eating this error because Mux should validate this for us.
 		attributeIDInt, _ := strconv.Atoi(attributeID)
-
-		// can't update an attribute for a product progenitor that doesn't exist!
-		progenitorExists, err := rowExistsInDB(db, "product_progenitors", "id", progenitorID)
-		if err != nil || !progenitorExists {
-			respondThatRowDoesNotExist(req, res, "product progenitor", progenitorID)
-			return
-		}
 
 		// can't update an attribute that doesn't exist!
 		attributeExists, err := rowExistsInDB(db, "product_attributes", "id", attributeID)

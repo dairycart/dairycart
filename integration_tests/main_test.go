@@ -27,7 +27,8 @@ const (
 	timeFieldReplacementPattern = `(?U)(,?)"(created_at|updated_at|archived_at)":"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z"(,?)`
 	applicationJSON             = "application/json"
 
-	existentProgenitorID   = "1"
+	existentID             = "1"
+	nonexistentID          = "9999999999"
 	existentSKU            = "skateboard"
 	nonexistentSKU         = "nonexistent"
 	exampleGarbageInput    = `{"testing_garbage_input": true}`
@@ -43,12 +44,14 @@ func init() {
 func loadExpectedResponse(t *testing.T, folder string, filename string) string {
 	bodyBytes, err := ioutil.ReadFile(fmt.Sprintf("expected_responses/%s/%s.json", folder, filename))
 	assert.Nil(t, err)
+	assert.NotEmpty(t, bodyBytes, "example response file requested is empty and should not be")
 	return strings.TrimSpace(string(bodyBytes))
 }
 
 func loadExampleInput(t *testing.T, folder string, filename string) string {
 	bodyBytes, err := ioutil.ReadFile(fmt.Sprintf("example_inputs/%s/%s.json", folder, filename))
 	assert.Nil(t, err)
+	assert.NotEmpty(t, bodyBytes, "example input file requested is empty and should not be")
 	return strings.TrimSpace(string(bodyBytes))
 }
 
@@ -144,7 +147,6 @@ func TestProductUpdateRoute(t *testing.T) {
 	assert.Equal(t, 200, resp.StatusCode, "successfully updating a product should respond 200")
 
 	body := turnResponseBodyIntoString(t, resp)
-
 	actual := replaceTimeStringsForTests(body)
 	minified := minifyJSON(t, loadExpectedResponse(t, "products", "skateboard"))
 	expected := strings.Replace(minified, `"quantity":123`, `"quantity":666`, 1)
@@ -244,7 +246,7 @@ func TestProductAttributeListRetrievalWithCustomFilter(t *testing.T) {
 
 func TestProductAttributeCreation(t *testing.T) {
 	newAttributeJSON := loadExampleInput(t, "product_attributes", "new")
-	resp, err := createProductAttributeForProgenitor(existentProgenitorID, newAttributeJSON)
+	resp, err := createProductAttributeForProgenitor(existentID, newAttributeJSON)
 	assert.Nil(t, err)
 	assert.Equal(t, 200, resp.StatusCode, "creating a product attribute that doesn't exist should respond 200")
 
@@ -256,7 +258,7 @@ func TestProductAttributeCreation(t *testing.T) {
 
 func TestProductAttributeCreationWithInvalidInput(t *testing.T) {
 	t.Parallel()
-	resp, err := createProductAttributeForProgenitor(existentProgenitorID, exampleGarbageInput)
+	resp, err := createProductAttributeForProgenitor(existentID, exampleGarbageInput)
 	assert.Nil(t, err)
 	assert.Equal(t, 400, resp.StatusCode, "trying to create a new product attribute with invalid input should respond 400")
 
@@ -268,13 +270,48 @@ func TestProductAttributeCreationWithInvalidInput(t *testing.T) {
 func TestProductAttributeCreationWithAlreadyExistentName(t *testing.T) {
 	newAttributeJSON := loadExampleInput(t, "product_attributes", "new")
 	existingAttributeJSON := strings.Replace(newAttributeJSON, "example_value", "color", 1)
-	resp, err := createProductAttributeForProgenitor(existentProgenitorID, existingAttributeJSON)
+	resp, err := createProductAttributeForProgenitor(existentID, existingAttributeJSON)
 	assert.Nil(t, err)
 	assert.Equal(t, 400, resp.StatusCode, "creating a product attribute that doesn't exist should respond 400")
 
 	actual := turnResponseBodyIntoString(t, resp)
 	expected := "product attribute with the name `color` already exists"
 	assert.Equal(t, expected, actual, "product attribute creation route should respond with failure message when you try to create a value that already exists")
+}
+
+func TestProductAttributeUpdate(t *testing.T) {
+	updatedAttributeJSON := loadExampleInput(t, "product_attributes", "update")
+	resp, err := updateProductAttribute(existentID, updatedAttributeJSON)
+	assert.Nil(t, err)
+	assert.Equal(t, 200, resp.StatusCode, "successfully updating a product should respond 200")
+
+	body := turnResponseBodyIntoString(t, resp)
+	actual := replaceTimeStringsForTests(body)
+	expected := minifyJSON(t, loadExpectedResponse(t, "product_attributes", "updated"))
+	assert.Equal(t, expected, actual, "product attribute update response should reflect the updated fields")
+}
+
+func TestProductAttributeUpdateWithInvalidInput(t *testing.T) {
+	resp, err := updateProductAttribute(existentID, exampleGarbageInput)
+	assert.Nil(t, err)
+	assert.Equal(t, 400, resp.StatusCode, "successfully updating a product should respond 400")
+
+	body := turnResponseBodyIntoString(t, resp)
+	actual := replaceTimeStringsForTests(body)
+	expected := "Invalid input provided for product attribute body"
+	assert.Equal(t, expected, actual, "product attribute update route should respond with failure message when you provide it invalid input")
+}
+
+func TestProductAttributeUpdateForNonexistentAttribute(t *testing.T) {
+	updatedAttributeJSON := loadExampleInput(t, "product_attributes", "update")
+	resp, err := updateProductAttribute(nonexistentID, updatedAttributeJSON)
+	assert.Nil(t, err)
+	assert.Equal(t, 404, resp.StatusCode, "successfully updating a product should respond 404")
+
+	body := turnResponseBodyIntoString(t, resp)
+	actual := replaceTimeStringsForTests(body)
+	expected := "The product attribute you were looking for (id `9999999999`) does not exist"
+	assert.Equal(t, expected, actual, "product attribute update route should respond with 404 message when you try to delete a product that doesn't exist")
 }
 
 // I'd like to keep these functions last if at all possible.

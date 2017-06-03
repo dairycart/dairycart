@@ -566,40 +566,18 @@ func TestProductAttributeUpdateHandler(t *testing.T) {
 	assert.Nil(t, err)
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
-	progenitorIDString := strconv.Itoa(int(exampleProductAttribute.ProductProgenitorID))
 	attributeIDString := strconv.Itoa(int(exampleProductAttribute.ID))
 
-	setExpectationsForProductProgenitorExistence(mock, progenitorIDString, true)
 	setExpectationsForProductAttributeExistenceByID(mock, exampleProductAttribute, true, nil)
 	setExpectationsForProductAttributeRetrievalQuery(mock, exampleProductAttribute, nil)
 	setExpectationsForProductAttributeUpdate(mock, exampleUpdatedProductAttribute, nil)
 
-	productAttributeEndpoint := buildRoute("product_attributes", progenitorIDString, attributeIDString)
+	productAttributeEndpoint := buildRoute("product_attributes", attributeIDString)
 	req, err := http.NewRequest("PUT", productAttributeEndpoint, strings.NewReader(exampleProductAttributeUpdateBody))
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
 	assert.Equal(t, 200, res.Code, "status code should be 200")
-	ensureExpectationsWereMet(t, mock)
-}
-
-func TestProductAttributeUpdateHandlerWithNonexistentProgenitor(t *testing.T) {
-	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
-	res, router := setupMockRequestsAndMux(db)
-	progenitorIDString := strconv.Itoa(int(exampleProductAttribute.ProductProgenitorID))
-	attributeIDString := strconv.Itoa(int(exampleProductAttribute.ID))
-
-	setExpectationsForProductProgenitorExistence(mock, progenitorIDString, false)
-
-	productAttributeEndpoint := buildRoute("product_attributes", progenitorIDString, attributeIDString)
-	req, err := http.NewRequest("PUT", productAttributeEndpoint, strings.NewReader(exampleProductAttributeUpdateBody))
-	assert.Nil(t, err)
-	router.ServeHTTP(res, req)
-
-	assert.Equal(t, 404, res.Code, "status code should be 404")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -609,13 +587,11 @@ func TestProductAttributeUpdateHandlerWithNonexistentAttribute(t *testing.T) {
 	assert.Nil(t, err)
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
-	progenitorIDString := strconv.Itoa(int(exampleProductAttribute.ProductProgenitorID))
 	attributeIDString := strconv.Itoa(int(exampleProductAttribute.ID))
 
-	setExpectationsForProductProgenitorExistence(mock, progenitorIDString, true)
 	setExpectationsForProductAttributeExistenceByID(mock, exampleProductAttribute, false, nil)
 
-	productAttributeEndpoint := buildRoute("product_attributes", progenitorIDString, attributeIDString)
+	productAttributeEndpoint := buildRoute("product_attributes", attributeIDString)
 	req, err := http.NewRequest("PUT", productAttributeEndpoint, strings.NewReader(exampleProductAttributeUpdateBody))
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
@@ -630,13 +606,11 @@ func TestProductAttributeUpdateHandlerWithInvalidInput(t *testing.T) {
 	assert.Nil(t, err)
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
-	progenitorIDString := strconv.Itoa(int(exampleProductAttribute.ProductProgenitorID))
 	attributeIDString := strconv.Itoa(int(exampleProductAttribute.ID))
 
-	setExpectationsForProductProgenitorExistence(mock, progenitorIDString, true)
 	setExpectationsForProductAttributeExistenceByID(mock, exampleProductAttribute, true, nil)
 
-	productAttributeEndpoint := buildRoute("product_attributes", progenitorIDString, attributeIDString)
+	productAttributeEndpoint := buildRoute("product_attributes", attributeIDString)
 	req, err := http.NewRequest("PUT", productAttributeEndpoint, strings.NewReader(exampleGarbageInput))
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
@@ -651,14 +625,12 @@ func TestProductAttributeUpdateHandlerWithErrorRetrievingAttribute(t *testing.T)
 	assert.Nil(t, err)
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
-	progenitorIDString := strconv.Itoa(int(exampleProductAttribute.ProductProgenitorID))
 	attributeIDString := strconv.Itoa(int(exampleProductAttribute.ID))
 
-	setExpectationsForProductProgenitorExistence(mock, progenitorIDString, true)
 	setExpectationsForProductAttributeExistenceByID(mock, exampleProductAttribute, true, nil)
 	setExpectationsForProductAttributeRetrievalQuery(mock, exampleProductAttribute, arbitraryError)
 
-	productAttributeEndpoint := buildRoute("product_attributes", progenitorIDString, attributeIDString)
+	productAttributeEndpoint := buildRoute("product_attributes", attributeIDString)
 	req, err := http.NewRequest("PUT", productAttributeEndpoint, strings.NewReader(exampleProductAttributeUpdateBody))
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
@@ -673,15 +645,13 @@ func TestProductAttributeUpdateHandlerWithErrorUpdatingAttribute(t *testing.T) {
 	assert.Nil(t, err)
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
-	progenitorIDString := strconv.Itoa(int(exampleProductAttribute.ProductProgenitorID))
 	attributeIDString := strconv.Itoa(int(exampleProductAttribute.ID))
 
-	setExpectationsForProductProgenitorExistence(mock, progenitorIDString, true)
 	setExpectationsForProductAttributeExistenceByID(mock, exampleProductAttribute, true, nil)
 	setExpectationsForProductAttributeRetrievalQuery(mock, exampleProductAttribute, nil)
 	setExpectationsForProductAttributeUpdate(mock, exampleUpdatedProductAttribute, arbitraryError)
 
-	productAttributeEndpoint := buildRoute("product_attributes", progenitorIDString, attributeIDString)
+	productAttributeEndpoint := buildRoute("product_attributes", attributeIDString)
 	req, err := http.NewRequest("PUT", productAttributeEndpoint, strings.NewReader(exampleProductAttributeUpdateBody))
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)

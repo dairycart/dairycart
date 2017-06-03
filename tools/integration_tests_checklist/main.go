@@ -13,8 +13,10 @@ const (
 	checklistNamePattern = `(\()(\[)?Test[a-zA-Z]+(\]?)`
 	functionNamePattern  = `Test[a-zA-Z]+`
 
-	checklistFilePath    = "../../integration_tests/README.md"
-	newChecklistFilePath = "../../integration_tests/README_linked.md"
+	// This tool should be run from two directories up.
+	testsFilePath        = "integration_tests/main_test.go"
+	checklistFilePath    = "integration_tests/README.md"
+	newChecklistFilePath = "integration_tests/README_linked.md"
 )
 
 func failIfErr(err error) {
@@ -75,7 +77,7 @@ func replaceLinksInChecklistFile(old *os.File, new *os.File, nameValidator *rege
 }
 
 func main() {
-	testsFile, err := os.Open("../../integration_tests/main_test.go")
+	testsFile, err := os.Open(testsFilePath)
 	if err != nil {
 		log.Fatal(err)
 	}
