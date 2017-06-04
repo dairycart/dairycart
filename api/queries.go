@@ -296,17 +296,6 @@ func buildProductAttributeExistenceQueryForProductByName(name, progenitorID stri
 
 func buildProductAttributeListQuery(progenitorID string, queryFilter *QueryFilter) string {
 	queryBuilder := sqlBuilder.
-		Select("*").
-		From("product_attributes").
-		Where(squirrel.Eq{"product_progenitor_id": progenitorID}).
-		Where(squirrel.Eq{"archived_at": nil})
-	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter)
-	query, _, _ := queryBuilder.ToSql()
-	return query
-}
-
-func buildProductAttributeListQueryWithCount(progenitorID string, queryFilter *QueryFilter) string {
-	queryBuilder := sqlBuilder.
 		Select("count(id) over (), *").
 		From("product_attributes").
 		Where(squirrel.Eq{"product_progenitor_id": progenitorID}).

@@ -110,23 +110,12 @@ func setExpectationsForProductAttributeRetrievalQuery(mock sqlmock.Sqlmock, a *P
 		WillReturnError(err)
 }
 
-func setExpectationsForProductAttributeListQuery(mock sqlmock.Sqlmock, a *ProductAttribute, err error) {
-	exampleRows := sqlmock.NewRows(productAttributeHeaders).
-		AddRow([]driver.Value{a.ID, a.Name, a.ProductProgenitorID, exampleTime, nil, nil}...).
-		AddRow([]driver.Value{a.ID, a.Name, a.ProductProgenitorID, exampleTime, nil, nil}...).
-		AddRow([]driver.Value{a.ID, a.Name, a.ProductProgenitorID, exampleTime, nil, nil}...)
-	query := buildProductAttributeListQuery(strconv.Itoa(int(exampleProgenitor.ID)), defaultQueryFilter)
-	mock.ExpectQuery(formatQueryForSQLMock(query)).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
-}
-
 func setExpectationsForProductAttributeListQueryWithCount(mock sqlmock.Sqlmock, a *ProductAttribute, err error) {
 	exampleRows := sqlmock.NewRows([]string{"count", "id", "name", "product_progenitor_id", "created_at", "updated_at", "archived_at"}).
 		AddRow([]driver.Value{3, a.ID, a.Name, a.ProductProgenitorID, exampleTime, nil, nil}...).
 		AddRow([]driver.Value{3, a.ID, a.Name, a.ProductProgenitorID, exampleTime, nil, nil}...).
 		AddRow([]driver.Value{3, a.ID, a.Name, a.ProductProgenitorID, exampleTime, nil, nil}...)
-	query := buildProductAttributeListQueryWithCount(strconv.Itoa(int(exampleProgenitor.ID)), defaultQueryFilter)
+	query := buildProductAttributeListQuery(strconv.Itoa(int(exampleProgenitor.ID)), defaultQueryFilter)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)

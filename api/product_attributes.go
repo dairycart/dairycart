@@ -88,7 +88,7 @@ func getProductAttributesForProgenitor(db *sql.DB, progenitorID string, queryFil
 	var attributes []ProductAttribute
 	var count uint64
 
-	query := buildProductAttributeListQueryWithCount(progenitorID, queryFilter)
+	query := buildProductAttributeListQuery(progenitorID, queryFilter)
 	rows, err := db.Query(query, progenitorID)
 	if err != nil {
 		return nil, 0, errors.Wrap(err, "Error encountered querying for product attributes")
