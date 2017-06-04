@@ -204,6 +204,10 @@ func TestDataValueIsValid(t *testing.T) {
 			ErrorMessage: "ordinary sku example should pass",
 		},
 		{
+			ShouldPass:   false,
+			ErrorMessage: "empty or uninitialized strings should fail",
+		},
+		{
 			Input:        "this string has spaces",
 			ShouldPass:   false,
 			ErrorMessage: "database values should not have spaces",
