@@ -109,6 +109,44 @@ func TestBuildAllProductsRetrievalQueryWithCompletelyCustomQueryFilter(t *testin
 	assert.Equal(t, 4, len(actualArgs), argsEqualityErrorMessage)
 }
 
+func TestBuildAllProductsRetrievalQueryWithCount(t *testing.T) {
+	t.Parallel()
+	expectedQuery := `SELECT count(id) over (), * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.archived_at IS NULL LIMIT 25`
+	actualQuery, actualArgs := buildAllProductsRetrievalQueryWithCount(defaultQueryFilter)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 0, len(actualArgs), argsEqualityErrorMessage)
+}
+
+func TestBuildAllProductsRetrievalQueryWithCountAndPartiallyCustomQueryFilter(t *testing.T) {
+	t.Parallel()
+	queryFilter := &QueryFilter{
+		Page:          3,
+		Limit:         25,
+		UpdatedBefore: time.Unix(int64(232747200), 0),
+		UpdatedAfter:  time.Unix(int64(232747200+10000), 0),
+	}
+	expectedQuery := `SELECT count(id) over (), * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.archived_at IS NULL AND p.updated_at > $1 AND p.updated_at < $2 LIMIT 25 OFFSET 50`
+	actualQuery, actualArgs := buildAllProductsRetrievalQueryWithCount(queryFilter)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
+}
+
+func TestBuildAllProductsRetrievalQueryWithCountAndCompletelyCustomQueryFilter(t *testing.T) {
+	t.Parallel()
+	queryFilter := &QueryFilter{
+		Page:          3,
+		Limit:         46,
+		UpdatedBefore: time.Unix(int64(232747200), 0),
+		UpdatedAfter:  time.Unix(int64(232747200+10000), 0),
+		CreatedBefore: time.Unix(int64(232747200), 0),
+		CreatedAfter:  time.Unix(int64(232747200+10000), 0),
+	}
+	expectedQuery := `SELECT count(id) over (), * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.archived_at IS NULL AND p.created_at > $1 AND p.created_at < $2 AND p.updated_at > $3 AND p.updated_at < $4 LIMIT 46 OFFSET 92`
+	actualQuery, actualArgs := buildAllProductsRetrievalQueryWithCount(queryFilter)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 4, len(actualArgs), argsEqualityErrorMessage)
+}
+
 func TestBuildProductDeletionQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `UPDATE products SET archived_at = NOW() WHERE sku = $1 AND archived_at IS NULL`
