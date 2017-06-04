@@ -4,7 +4,7 @@ CREATE TABLE discounts (
     "name" text NOT NULL,
     "type" discount_type,
     "amount" numeric(7, 2),
-    "product_id" bigint,
+    "product_id" bigint NOT NULL,
     "starts_on" timestamp NOT NULL,
     "expires_on" timestamp NOT NULL,
     "created_at" timestamp DEFAULT NOW(),

@@ -21,7 +21,7 @@ CREATE TABLE product_progenitors (
 
 CREATE TABLE products (
     "id" bigserial,
-    "product_progenitor_id" bigint,
+    "product_progenitor_id" bigint NOT NULL,
     "sku" text NOT NULL,
     "name" text NOT NULL,
     "upc" text,
@@ -41,7 +41,7 @@ CREATE TABLE products (
 CREATE TABLE product_attributes (
     "id" bigserial,
     "name" text NOT NULL,
-    "product_progenitor_id" bigint,
+    "product_progenitor_id" bigint NOT NULL,
     "created_at" timestamp DEFAULT NOW(),
     "updated_at" timestamp,
     "archived_at" timestamp,
@@ -52,7 +52,7 @@ CREATE TABLE product_attributes (
 
 CREATE TABLE product_attribute_values (
     "id" bigserial,
-    "product_attribute_id" bigint,
+    "product_attribute_id" bigint NOT NULL,
     "value" text NOT NULL,
     "created_at" timestamp DEFAULT NOW(),
     "updated_at" timestamp,
