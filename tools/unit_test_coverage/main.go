@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"os"
 	"regexp"
@@ -36,7 +37,17 @@ func findFunctionsInFile(f *os.File) []string {
 	return functionNames
 }
 
-func findFunctionReferencesInTestFile(f *os.File, functionNames []string) {
+func sliceIndex(item string, slice []string) int {
+	for i, v := range slice {
+		if v == item {
+			return i
+		}
+	}
+	// this should never happen at all
+	return -1
+}
+
+func findFunctionReferencesInTestFile(f *os.File, functionNames []string) []string {
 	scanner := bufio.NewScanner(f)
 	lineNumber := 0
 	for scanner.Scan() {
@@ -45,11 +56,13 @@ func findFunctionReferencesInTestFile(f *os.File, functionNames []string) {
 
 		for _, name := range functionNames {
 			if strings.Contains(line, name) {
-				log.Printf("function %s referenced on line %d of %s\n", name, lineNumber, f.Name())
-				// delete that value from the slice here
+				i := sliceIndex(name, functionNames)
+				functionNames = append(functionNames[:i], functionNames[i+1:]...)
+				break
 			}
 		}
 	}
+	return functionNames
 }
 
 func main() {
@@ -72,10 +85,10 @@ func main() {
 
 		tf, err := os.Open(testFile)
 		failIfErr(err)
-		findFunctionReferencesInTestFile(tf, functionNames)
-	}
+		remainingFunctionNames := findFunctionReferencesInTestFile(tf, functionNames)
 
-	log.Printf(`
-	functionsInEachFile: %+v
-	`, functionsInEachFile)
+		if len(remainingFunctionNames) > 0 {
+			fmt.Printf("untested functions in %s:\n\t%s\n\n", testFile, strings.Join(remainingFunctionNames, "\n\t"))
+		}
+	}
 }
