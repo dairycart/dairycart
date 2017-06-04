@@ -192,23 +192,9 @@ func buildProductDeletionQuery(sku string) string {
 	return buildRowDeletionQuery("products", "sku", sku)
 }
 
-func buildAllProductsRetrievalQuery(queryFilter *QueryFilter) (string, []interface{}) {
+func buildProductListQuery(queryFilter *QueryFilter) (string, []interface{}) {
 	queryBuilder := sqlBuilder.
-		Select("*").
-		From("products p").
-		Join("product_progenitors g ON p.product_progenitor_id = g.id").
-		Where(squirrel.Eq{"p.archived_at": nil}).
-		Limit(uint64(queryFilter.Limit))
-
-	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter)
-
-	query, args, _ := queryBuilder.ToSql()
-	return query, args
-}
-
-func buildAllProductsRetrievalQueryWithCount(queryFilter *QueryFilter) (string, []interface{}) {
-	queryBuilder := sqlBuilder.
-		Select("count(id) over (), *").
+		Select("count(p.id) over (), *").
 		From("products p").
 		Join("product_progenitors g ON p.product_progenitor_id = g.id").
 		Where(squirrel.Eq{"p.archived_at": nil}).

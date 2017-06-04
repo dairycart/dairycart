@@ -84,6 +84,8 @@ var plainProductHeaders []string
 var examplePlainProductData []driver.Value
 var productJoinHeaders []string
 var exampleProductJoinData []driver.Value
+var productJoinHeadersWithCount []string
+var exampleProductJoinDataWithCount []driver.Value
 var exampleProduct *Product
 var exampleUpdatedProduct *Product
 
@@ -93,6 +95,10 @@ func init() {
 
 	productJoinHeaders = []string{"id", "product_progenitor_id", "sku", "name", "upc", "quantity", "price", "cost", "created_at", "updated_at", "archived_at", "id", "name", "description", "taxable", "price", "cost", "product_weight", "product_height", "product_width", "product_length", "package_weight", "package_height", "package_width", "package_length", "created_at", "updated_at", "archived_at"}
 	exampleProductJoinData = []driver.Value{10, 2, "skateboard", "Skateboard", "1234567890", 123, 12.34, 5.00, exampleTime, nil, nil, 2, "Skateboard", "This is a skateboard. Please wear a helmet.", false, 99.99, 50.00, 8, 7, 6, 5, 4, 3, 2, 1, exampleTime, nil, nil}
+
+	productJoinHeadersWithCount = []string{"count", "id", "product_progenitor_id", "sku", "name", "upc", "quantity", "price", "cost", "created_at", "updated_at", "archived_at", "id", "name", "description", "taxable", "price", "cost", "product_weight", "product_height", "product_width", "product_length", "package_weight", "package_height", "package_width", "package_length", "created_at", "updated_at", "archived_at"}
+	exampleProductJoinDataWithCount = []driver.Value{3, 10, 2, "skateboard", "Skateboard", "1234567890", 123, 12.34, 5.00, exampleTime, nil, nil, 2, "Skateboard", "This is a skateboard. Please wear a helmet.", false, 99.99, 50.00, 8, 7, 6, 5, 4, 3, 2, 1, exampleTime, nil, nil}
+
 	exampleProduct = &Product{
 		ProductProgenitor: ProductProgenitor{
 			ID:            2,
@@ -143,12 +149,12 @@ func setExpectationsForProductExistence(mock sqlmock.Sqlmock, SKU string, exists
 }
 
 func setExpectationsForProductListQuery(mock sqlmock.Sqlmock, err error) {
-	exampleRows := sqlmock.NewRows(productJoinHeaders).
-		AddRow(exampleProductJoinData...).
-		AddRow(exampleProductJoinData...).
-		AddRow(exampleProductJoinData...)
+	exampleRows := sqlmock.NewRows(productJoinHeadersWithCount).
+		AddRow(exampleProductJoinDataWithCount...).
+		AddRow(exampleProductJoinDataWithCount...).
+		AddRow(exampleProductJoinDataWithCount...)
 
-	allProductsRetrievalQuery, _ := buildAllProductsRetrievalQuery(defaultQueryFilter)
+	allProductsRetrievalQuery, _ := buildProductListQuery(defaultQueryFilter)
 	mock.ExpectQuery(formatQueryForSQLMock(allProductsRetrievalQuery)).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
@@ -295,9 +301,10 @@ func TestRetrieveProductsFromDB(t *testing.T) {
 	defer db.Close()
 	setExpectationsForProductListQuery(mock, nil)
 
-	products, err := retrieveProductsFromDB(db, defaultQueryFilter)
+	products, count, err := retrieveProductsFromDB(db, defaultQueryFilter)
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(products), "there should be 3 products")
+	assert.Equal(t, uint64(3), count, "there should be 3 products")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -308,8 +315,9 @@ func TestRetrieveProductsFromDBWhenDBReturnsError(t *testing.T) {
 	defer db.Close()
 	setExpectationsForProductListQuery(mock, sql.ErrNoRows)
 
-	_, err = retrieveProductsFromDB(db, defaultQueryFilter)
+	_, count, err := retrieveProductsFromDB(db, defaultQueryFilter)
 	assert.NotNil(t, err)
+	assert.Equal(t, uint64(0), count, "count returned should be zero when error is encountered")
 	ensureExpectationsWereMet(t, mock)
 }
 

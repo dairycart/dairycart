@@ -176,7 +176,7 @@ func parseRawFilterParams(rawFilterParams url.Values) *QueryFilter {
 		if err != nil {
 			log.Printf("encountered error when trying to parse query filter param %s: %v", `Page`, err)
 		} else {
-			qf.Page = i
+			qf.Page = uint64(math.Max(float64(i), 1))
 		}
 	}
 

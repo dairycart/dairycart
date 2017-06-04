@@ -141,6 +141,11 @@ func TestParseRawFilterParams(t *testing.T) {
 			failureMessage: "URL with all relevant filters should have a completely custom QueryFilter value",
 		},
 		{
+			input:          "https://test.com/example?page=0",
+			expected:       defaultQueryFilter,
+			failureMessage: "URL with page set to zero should default to page 1",
+		},
+		{
 			input:          fmt.Sprintf("https://test.com/example?rage=2&dimit=35&upgraded_after=%v&agitated_before=%v", exampleUnixStartTime, exampleUnixEndTime),
 			expected:       defaultQueryFilter,
 			failureMessage: "URL with no relevant values should parsee to the default query filter",

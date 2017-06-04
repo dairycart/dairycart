@@ -93,6 +93,16 @@ func (p *Product) generateJoinScanArgs() []interface{} {
 	return append(productScanArgs, progenitorScanArgs...)
 }
 
+// generateJoinScanArgsWithCount does everything generateJoinScanArgs does,
+// only with an added count parameter
+func (p *Product) generateJoinScanArgsWithCount(count *uint64) []interface{} {
+	scanArgs := []interface{}{count}
+	productScanArgs := p.generateScanArgs()
+	progenitorScanArgs := p.ProductProgenitor.generateScanArgs()
+	scanArgs = append(scanArgs, productScanArgs...)
+	return append(scanArgs, progenitorScanArgs...)
+}
+
 func (p *Product) roundNumericFields() {
 	p.PackageWeight = float32(Round(float64(p.PackageWeight), .1, 2))
 	p.PackageHeight = float32(Round(float64(p.PackageHeight), .1, 2))
@@ -221,21 +231,32 @@ func buildSingleProductHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func retrieveProductsFromDB(db *sql.DB, queryFilter *QueryFilter) ([]Product, error) {
+func retrieveProductsFromDB(db *sql.DB, queryFilter *QueryFilter) ([]Product, uint64, error) {
 	var products []Product
+	var count uint64
 
-	query, args := buildAllProductsRetrievalQuery(queryFilter)
+	query, args := buildProductListQuery(queryFilter)
 	rows, err := db.Query(query, args...)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error encountered querying for products")
+		return nil, 0, errors.Wrap(err, "Error encountered querying for products")
 	}
+
 	defer rows.Close()
 	for rows.Next() {
 		var product Product
-		_ = rows.Scan(product.generateJoinScanArgs()...)
+		var queryCount uint64
+
+		scanArgs := product.generateJoinScanArgsWithCount(&queryCount)
+		_ = rows.Scan(scanArgs...)
+
+		// I suppose technically we need to only do that once, but it doesn't
+		// hurt to do it more than once, and doing it only once requires a
+		// conditional check that would probably take as many lines than this comment.
+		count = queryCount
+
 		products = append(products, product)
 	}
-	return products, nil
+	return products, count, nil
 }
 
 func buildProductListHandler(db *sql.DB) http.HandlerFunc {
@@ -243,7 +264,7 @@ func buildProductListHandler(db *sql.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		rawFilterParams := req.URL.Query()
 		queryFilter := parseRawFilterParams(rawFilterParams)
-		products, err := retrieveProductsFromDB(db, queryFilter)
+		products, count, err := retrieveProductsFromDB(db, queryFilter)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve products from the database")
 			return
@@ -253,7 +274,7 @@ func buildProductListHandler(db *sql.DB) http.HandlerFunc {
 			ListResponse: ListResponse{
 				Page:  queryFilter.Page,
 				Limit: queryFilter.Limit,
-				Count: uint64(len(products)),
+				Count: count,
 			},
 			Data: products,
 		}
