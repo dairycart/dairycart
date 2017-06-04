@@ -305,6 +305,17 @@ func buildProductAttributeListQuery(progenitorID string, queryFilter *QueryFilte
 	return query
 }
 
+func buildProductAttributeListQueryWithCount(progenitorID string, queryFilter *QueryFilter) string {
+	queryBuilder := sqlBuilder.
+		Select("count(id) over (), *").
+		From("product_attributes").
+		Where(squirrel.Eq{"product_progenitor_id": progenitorID}).
+		Where(squirrel.Eq{"archived_at": nil})
+	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter)
+	query, _, _ := queryBuilder.ToSql()
+	return query
+}
+
 func buildProductAttributeUpdateQuery(a *ProductAttribute) (string, []interface{}) {
 	productAttributeUpdateSetMap := map[string]interface{}{
 		"name":       a.Name,

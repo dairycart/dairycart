@@ -37,6 +37,12 @@ func (a *ProductAttribute) generateScanArgs() []interface{} {
 	}
 }
 
+func (a *ProductAttribute) generateScanArgsWithCount(count *uint64) []interface{} {
+	scanArgs := []interface{}{count}
+	attributeScanArgs := a.generateScanArgs()
+	return append(scanArgs, attributeScanArgs...)
+}
+
 // ProductAttributesResponse is a product attribute response struct
 type ProductAttributesResponse struct {
 	ListResponse
@@ -78,28 +84,34 @@ func retrieveProductAttributeFromDB(db *sql.DB, id int64) (*ProductAttribute, er
 	return attribute, err
 }
 
-func getProductAttributesForProgenitor(db *sql.DB, progenitorID string, queryFilter *QueryFilter) ([]ProductAttribute, error) {
+func getProductAttributesForProgenitor(db *sql.DB, progenitorID string, queryFilter *QueryFilter) ([]ProductAttribute, uint64, error) {
 	var attributes []ProductAttribute
+	var count uint64
 
-	query := buildProductAttributeListQuery(progenitorID, queryFilter)
+	query := buildProductAttributeListQueryWithCount(progenitorID, queryFilter)
 	rows, err := db.Query(query, progenitorID)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error encountered querying for product attributes")
+		return nil, 0, errors.Wrap(err, "Error encountered querying for product attributes")
 	}
+
 	defer rows.Close()
 	for rows.Next() {
 		var attribute ProductAttribute
-		_ = rows.Scan(attribute.generateScanArgs()...)
+		var queryCount uint64
 
+		scanArgs := attribute.generateScanArgsWithCount(&queryCount)
+		_ = rows.Scan(scanArgs...)
+
+		count = queryCount
 		attributeValues, err := retrieveProductAttributeValueForAttributeFromDB(db, attribute.ID)
 		if err != nil {
-			return attributes, errors.Wrap(err, "Error retrieving product attribute values for attribute")
+			return attributes, 0, errors.Wrap(err, "Error retrieving product attribute values for attribute")
 		}
 		attribute.Values = attributeValues
 
 		attributes = append(attributes, attribute)
 	}
-	return attributes, nil
+	return attributes, count, nil
 }
 
 func buildProductAttributeListHandler(db *sql.DB) http.HandlerFunc {
@@ -108,7 +120,7 @@ func buildProductAttributeListHandler(db *sql.DB) http.HandlerFunc {
 		rawFilterParams := req.URL.Query()
 		queryFilter := parseRawFilterParams(rawFilterParams)
 
-		attributes, err := getProductAttributesForProgenitor(db, progenitorID, queryFilter)
+		attributes, count, err := getProductAttributesForProgenitor(db, progenitorID, queryFilter)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve products from the database")
 			return
@@ -118,7 +130,7 @@ func buildProductAttributeListHandler(db *sql.DB) http.HandlerFunc {
 			ListResponse: ListResponse{
 				Page:  queryFilter.Page,
 				Limit: queryFilter.Limit,
-				Count: uint64(len(attributes)),
+				Count: count,
 			},
 			Data: attributes,
 		}

@@ -249,11 +249,7 @@ func retrieveProductsFromDB(db *sql.DB, queryFilter *QueryFilter) ([]Product, ui
 		scanArgs := product.generateJoinScanArgsWithCount(&queryCount)
 		_ = rows.Scan(scanArgs...)
 
-		// I suppose technically we need to only do that once, but it doesn't
-		// hurt to do it more than once, and doing it only once requires a
-		// conditional check that would probably take as many lines than this comment.
 		count = queryCount
-
 		products = append(products, product)
 	}
 	return products, count, nil

@@ -154,6 +154,13 @@ func TestBuildProductAttributeListQuery(t *testing.T) {
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 
+func TestBuildProductAttributeListQueryWithCount(t *testing.T) {
+	t.Parallel()
+	expectedQuery := `SELECT count(id) over (), * FROM product_attributes WHERE product_progenitor_id = $1 AND archived_at IS NULL LIMIT 25`
+	actualQuery := buildProductAttributeListQueryWithCount("1", &QueryFilter{})
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+}
+
 func TestBuildProductAttributeDeletionQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `UPDATE product_attributes SET archived_at = NOW() WHERE id = $1 AND archived_at IS NULL`
