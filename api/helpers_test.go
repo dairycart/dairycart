@@ -209,6 +209,10 @@ func TestDataValueIsValid(t *testing.T) {
 			ErrorMessage: "database values should not have spaces",
 		},
 		{
+			ShouldPass:   false,
+			ErrorMessage: "empty/zero values should fail",
+		},
+		{
 			Input:        "this_entry_is_just_way_way_way_way_way_way_way_way_way_way_too_long",
 			ShouldPass:   false,
 			ErrorMessage: "nothing longer than fifty characters",

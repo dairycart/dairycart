@@ -164,8 +164,7 @@ func validateProductUpdateInput(req *http.Request) (*Product, error) {
 
 	// we need to be certain that if a user passed us a SKU, that it isn't set
 	// to something that mux won't disallow them from retrieving later
-	s := p.Field("SKU")
-	if !s.IsZero() && !dataValueIsValid(product.SKU) {
+	if !dataValueIsValid(product.SKU) {
 		return nil, errors.New("Invalid input provided for product SKU")
 	}
 	product.roundNumericFields()
