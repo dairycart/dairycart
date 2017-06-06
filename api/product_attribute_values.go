@@ -14,6 +14,31 @@ import (
 	"github.com/pkg/errors"
 )
 
+///////////////////////////////////////////////
+//                                           //
+//      Product                 _(\_/)       //
+//        Attribute           ,((((^`\       //
+//            Values         ((((  (6 \      //
+//                         ,((((( ,    \     //
+//     ,,,_              ,(((((  /"._  ,`,   //
+//    ((((\\ ,...       ,((((   /    `-.-'   //
+//    )))  ;'    `"'"'""((((   (             //
+//   (((  /            (((      \            //
+//    )) |                      |            //
+//   ((  |        .       '     |            //
+//   ))  \     _ '      `t   ,.')            //
+//   (   |   y;- -,-""'"-.\   \/             //
+//   )   / ./  ) /         `\  \             //
+//      |./   ( (           / /'             //
+//      ||     \\          //'|              //
+//      ||      \\       _//'||              //
+//      ||       ))     |_/  ||              //
+//      \_\     |_/          ||              //
+//      `'"                  \_\             //
+//                           `'"             //
+//                                           //
+///////////////////////////////////////////////
+
 // ProductAttributeValue represents a products variant attribute values. If you have a t-shirt that comes in three colors
 // and three sizes, then there are two ProductAttributes for that base_product, color and size, and six ProductAttributeValues,
 // One for each color and one for each size.
