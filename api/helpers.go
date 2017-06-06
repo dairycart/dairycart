@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"math"
 	"net/http"
@@ -154,6 +155,12 @@ type ListResponse struct {
 	Page  uint64 `json:"page"`
 }
 
+// ErrorResponse is a handy struct we can respond with in the event we have an error to report
+type ErrorResponse struct {
+	Status  int    `json:"status"`
+	Message string `json:"message"`
+}
+
 // QueryFilter represents a query filter
 type QueryFilter struct {
 	Page          uint64
@@ -269,15 +276,30 @@ func respondThatRowDoesNotExist(req *http.Request, res http.ResponseWriter, item
 	}
 
 	log.Printf("informing user that the %s they were looking for (%s %s) does not exist", itemType, identifier, id)
-	http.Error(res, fmt.Sprintf("The %s you were looking for (%s `%s`) does not exist", itemType, identifier, id), http.StatusNotFound)
+	res.WriteHeader(http.StatusNotFound)
+	errRes := &ErrorResponse{
+		Status:  http.StatusNotFound,
+		Message: fmt.Sprintf("The %s you were looking for (%s `%s`) does not exist", itemType, identifier, id),
+	}
+	json.NewEncoder(res).Encode(errRes)
 }
 
 func notifyOfInvalidRequestBody(res http.ResponseWriter, err error) {
 	log.Printf("Encountered this error decoding a request body: %v", err)
-	http.Error(res, err.Error(), http.StatusBadRequest)
+	res.WriteHeader(http.StatusBadRequest)
+	errRes := &ErrorResponse{
+		Status:  http.StatusBadRequest,
+		Message: err.Error(),
+	}
+	json.NewEncoder(res).Encode(errRes)
 }
 
 func notifyOfInternalIssue(res http.ResponseWriter, err error, attemptedTask string) {
 	log.Println(fmt.Sprintf("Encountered this error trying to %s: %v", attemptedTask, err))
-	http.Error(res, "Unexpected internal error", http.StatusInternalServerError)
+	res.WriteHeader(http.StatusInternalServerError)
+	errRes := &ErrorResponse{
+		Status:  http.StatusInternalServerError,
+		Message: "Unexpected internal error occurred",
+	}
+	json.NewEncoder(res).Encode(errRes)
 }

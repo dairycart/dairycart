@@ -1,0 +1,4 @@
+{
+	"status": 400,
+	"message": "product attribute with the name `color` already exists"
+}

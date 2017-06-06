@@ -56,7 +56,7 @@ func validateProductAttributeValueUpdateInput(req *http.Request) (*ProductAttrib
 	// go will happily decode an invalid input into a completely zeroed struct,
 	// so we gotta do checks like this because we're bad at programming.
 	if s.IsZero() {
-		return nil, errors.New("Invalid input provided for product attribute body")
+		return nil, errors.New("Invalid input provided for product attribute value body")
 	}
 
 	out := &ProductAttributeValue{
@@ -147,14 +147,14 @@ func buildProductAttributeValueUpdateHandler(db *sql.DB) http.HandlerFunc {
 
 		existingAttributeValue, err := retrieveProductAttributeValueFromDB(db, int64(attributeValueIDInt))
 		if err != nil {
-			notifyOfInternalIssue(res, err, "retrieve product attribute from the database")
+			notifyOfInternalIssue(res, err, "retrieve product attribute value from the database")
 			return
 		}
 		existingAttributeValue.Value = updatedValueData.Value
 
 		err = updateProductAttributeValueInDB(db, existingAttributeValue)
 		if err != nil {
-			notifyOfInternalIssue(res, err, "update product attribute in the database")
+			notifyOfInternalIssue(res, err, "update product attribute value in the database")
 			return
 		}
 
