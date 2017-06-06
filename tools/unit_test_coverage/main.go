@@ -29,7 +29,7 @@ func findFunctionsInFile(f *os.File) []string {
 		if funcValidator.MatchString(line) {
 			submatches := funcValidator.FindStringSubmatch(line)
 			functionName := submatches[1]
-			if functionName != `init` {
+			if functionName != "init" {
 				functionNames = append(functionNames, functionName)
 			}
 		}
@@ -49,9 +49,7 @@ func sliceIndex(item string, slice []string) int {
 
 func findFunctionReferencesInTestFile(f *os.File, functionNames []string) []string {
 	scanner := bufio.NewScanner(f)
-	lineNumber := 0
 	for scanner.Scan() {
-		lineNumber++
 		line := scanner.Text()
 
 		for _, name := range functionNames {
@@ -66,6 +64,10 @@ func findFunctionReferencesInTestFile(f *os.File, functionNames []string) []stri
 }
 
 func main() {
+	/*
+		Should this be derived from a walk func? yeah probably, but I hate writing them
+		and this code doesn't matter anyway.
+	*/
 	codeFilesToTestFilesMap := map[string]string{
 		"api/helpers.go":                  "api/helpers_test.go",
 		"api/product_attribute_values.go": "api/product_attribute_values_test.go",
@@ -73,9 +75,10 @@ func main() {
 		"api/product_progenitors.go":      "api/product_progenitors_test.go",
 		"api/products.go":                 "api/products_test.go",
 		"api/queries.go":                  "api/queries_test.go",
+		"api/discounts.go":                "api/discounts_test.go",
 	}
-	functionsInEachFile := map[string][]string{}
 
+	functionsInEachFile := map[string][]string{}
 	for codeFile, testFile := range codeFilesToTestFilesMap {
 		cf, err := os.Open(codeFile)
 		failIfErr(err)

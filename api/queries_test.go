@@ -8,6 +8,8 @@ import (
 )
 
 const (
+	existingID                = 1
+	existingIDString          = "1"
 	queryEqualityErrorMessage = "Generated SQL query should match expected SQL query"
 	argsEqualityErrorMessage  = "Generated SQL arguments should match expected arguments"
 )
@@ -39,14 +41,14 @@ func TestBuildRowDeletionQuery(t *testing.T) {
 func TestBuildProgenitorRetrievalQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `SELECT * FROM product_progenitors WHERE id = $1 AND archived_at IS NULL`
-	actualQuery := buildProgenitorRetrievalQuery(1)
+	actualQuery := buildProgenitorRetrievalQuery(existingID)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 
 func TestBuildProgenitorExistenceQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `SELECT EXISTS(SELECT 1 FROM product_progenitors WHERE id = $1 AND archived_at IS NULL)`
-	actualQuery := buildProgenitorExistenceQuery("1")
+	actualQuery := buildProgenitorExistenceQuery(existingIDString)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 
@@ -143,21 +145,21 @@ func TestBuildProductCreationQuery(t *testing.T) {
 func TestBuildProductAttributeRetrievalQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `SELECT * FROM product_attributes WHERE id = $1 AND archived_at IS NULL`
-	actualQuery := buildProductAttributeRetrievalQuery(1)
+	actualQuery := buildProductAttributeRetrievalQuery(existingID)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 
 func TestBuildProductAttributeListQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `SELECT count(id) over (), * FROM product_attributes WHERE product_progenitor_id = $1 AND archived_at IS NULL LIMIT 25`
-	actualQuery := buildProductAttributeListQuery("1", &QueryFilter{})
+	actualQuery := buildProductAttributeListQuery(existingIDString, &QueryFilter{})
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 
 func TestBuildProductAttributeDeletionQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `UPDATE product_attributes SET archived_at = NOW() WHERE id = $1 AND archived_at IS NULL`
-	actualQuery := buildProductAttributeDeletionQuery(1)
+	actualQuery := buildProductAttributeDeletionQuery(existingID)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 
@@ -180,14 +182,14 @@ func TestBuildProductAttributeCreationQuery(t *testing.T) {
 func TestBuildProductAttributeValueRetrievalQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `SELECT * FROM product_attribute_values WHERE id = $1 AND archived_at IS NULL`
-	actualQuery := buildProductAttributeValueRetrievalQuery(1)
+	actualQuery := buildProductAttributeValueRetrievalQuery(existingID)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 
 func TestBuildProductAttributeValueDeletionQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `UPDATE product_attribute_values SET archived_at = NOW() WHERE id = $1 AND archived_at IS NULL`
-	actualQuery := buildProductAttributeValueDeletionQuery(1)
+	actualQuery := buildProductAttributeValueDeletionQuery(existingID)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 
@@ -213,4 +215,25 @@ func TestBuildProductAttributeValueCreationQuery(t *testing.T) {
 	actualQuery, actualArgs := buildProductAttributeValueCreationQuery(&ProductAttributeValue{})
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
+}
+
+func TestBuildDiscountExistenceQuery(t *testing.T) {
+	t.Parallel()
+	expectedQuery := `SELECT EXISTS(SELECT 1 FROM discounts WHERE id = $1 AND archived_at IS NULL)`
+	actualQuery := buildDiscountExistenceQuery(existingID)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+}
+
+func TestBuildDiscountRetrievalQuery(t *testing.T) {
+	t.Parallel()
+	expectedQuery := `SELECT * FROM discounts WHERE id = $1 AND archived_at IS NULL`
+	actualQuery := buildDiscountRetrievalQuery(existingID)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+}
+
+func TestBuildDiscountDeletionQuery(t *testing.T) {
+	t.Parallel()
+	expectedQuery := `UPDATE discounts SET archived_at = NOW() WHERE id = $1 AND archived_at IS NULL`
+	actualQuery := buildDiscountDeletionQuery(existingID)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
