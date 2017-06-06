@@ -1,32 +1,16 @@
 package api
 
 import (
+	"database/sql"
+	"encoding/json"
+	"log"
+	"net/http"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/lib/pq"
+	"github.com/pkg/errors"
 )
-
-////////////////////////////////////////////////////////////////////////////////
-//                                                                            //
-//                ,                                                           //
-//          (`.  : \               __..----..__                               //
-//           `.`.| |:          _,-':::''' '  `:`-._                           //
-//             `.:\||       _,':::::'         `::::`-.                        //
-//               \\`|    _,':::::::'     `:.     `':::`.                      //
-//                ;` `-''  `::::::.                  `::\                     //
-//             ,-'      .::'  `:::::.         `::..    `:\                    //
-//           ,' /_) -.            `::.           `:.     |                    //
-//         ,'.:     `    `:.        `:.     .::.          \                   //
-//    __,-'   ___,..-''-.  `:.        `.   /::::.         |                   //
-//   |):'_,--'           `.    `::..       |::::::.      ::\                  //
-//    `-'                 |`--.:_::::|_____\::::::::.__  ::|                  //
-//                        |   _/|::::|      \::::::|::/\  :|                  //
-//       Discounts        /:./  |:::/        \__:::):/  \  :\                 //
-//                      ,'::'  /:::|        ,'::::/_/    `. ``-.__            //
-//                     ''''   (//|/\      ,';':,-'         `-.__  `'--..__    //
-//                                                              `''---::::'   //
-//                                                                            //
-////////////////////////////////////////////////////////////////////////////////
 
 // Discount represents pricing changes that apply temporarily to products
 type Discount struct {
@@ -48,8 +32,10 @@ type Discount struct {
 func (d *Discount) generateScanArgs() []interface{} {
 	return []interface{}{
 		&d.ID,
-		&d.ProductID,
+		&d.Name,
+		&d.Type,
 		&d.Amount,
+		&d.ProductID,
 		&d.StartsOn,
 		&d.ExpiresOn,
 		&d.CreatedAt,
@@ -63,4 +49,44 @@ func (d *Discount) discountTypeIsValid() bool {
 	// this is my only real line of defense against a user attempting to load an invalid
 	// discount type into the database. It's lame, type enums aren't, here's hoping.
 	return d.Type == "percentage" || d.Type == "flat_amount"
+}
+
+// retrieveDiscountFromDB retrieves a discount with a given ID from the database
+func retrieveDiscountFromDB(db *sql.DB, discountID string) (*Discount, error) {
+	discount := &Discount{}
+	scanArgs := discount.generateScanArgs()
+	discountRetrievalQuery := buildDiscountRetrievalQuery(discountID)
+	err := db.QueryRow(discountRetrievalQuery, discountID).Scan(scanArgs...)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	} else if err != nil {
+		return nil, errors.Wrap(err, "Error querying for discount")
+	}
+
+	return discount, err
+}
+
+func buildDiscountRetrievalHandler(db *sql.DB) http.HandlerFunc {
+	// DiscountRetrievalHandler is a request handler that returns a single Discount
+	return func(res http.ResponseWriter, req *http.Request) {
+		discountID := mux.Vars(req)["discount_id"]
+
+		discount, err := retrieveDiscountFromDB(db, discountID)
+		if discount == nil {
+			respondThatRowDoesNotExist(req, res, "discount", discountID)
+			return
+		}
+		if err != nil {
+			log.Printf(`
+
+			received the following error trying to retrieve discount #%s:
+				%s
+
+			`, discountID, err.Error())
+			notifyOfInternalIssue(res, err, "retrieving discount from database")
+			return
+		}
+
+		json.NewEncoder(res).Encode(discount)
+	}
 }

@@ -77,5 +77,5 @@ VALUES
     10.00,
     10,
     NOW(),
-    'Infinity'
+    NOW() + (1 * interval '1 month')
 );

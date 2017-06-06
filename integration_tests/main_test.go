@@ -26,7 +26,7 @@ const (
 	timeFieldReplacementPattern = `(?U)(,?)"(created_at|updated_at|archived_at)":"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z"(,?)`
 
 	existentID     = "1"
-	nonexistentID  = "9999999999"
+	nonexistentID  = "999999999"
 	existentSKU    = "skateboard"
 	nonexistentSKU = "nonexistent"
 
@@ -398,11 +398,46 @@ func TestProductAttributeValueUpdateForAlreadyExistentValue(t *testing.T) {
 	duplicatedAttributeValueJSON := loadExampleInput(t, "product_attribute_values", "duplicate")
 	resp, err := updateProductAttributeValueForAttribute("4", duplicatedAttributeValueJSON)
 	assert.Nil(t, err)
-	assert.Equal(t, 500, resp.StatusCode, "successfully updating a product should respond 500")
+	assert.Equal(t, 500, resp.StatusCode, "updating a product attribute value with an already existent value should respond 500")
 
 	body := turnResponseBodyIntoString(t, resp)
 	actual := replaceTimeStringsForTests(body)
 	assert.Equal(t, expectedInternalErrorResponse, actual, "product attribute update route should respond with 404 message when you try to delete a product that doesn't exist")
+}
+
+////////////////////////////////////////////////////////
+//                                                    //
+//                Discount Route Tests                //
+//                                                    //
+////////////////////////////////////////////////////////
+
+func replaceTimeStringsForDiscountTests(body string) string {
+	re := regexp.MustCompile(`(?U)(,?)"(starts_on|expires_on)":"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z"(,?)`)
+	return strings.TrimSpace(re.ReplaceAllString(body, ""))
+}
+
+func TestDiscountRetrievalForExistingDiscount(t *testing.T) {
+	resp, err := getDiscountByID(existentID)
+	assert.Nil(t, err)
+	assert.Equal(t, 200, resp.StatusCode, "a successfully retrieved discount should respond 200")
+
+	body := turnResponseBodyIntoString(t, resp)
+	removedTimeFields := replaceTimeStringsForTests(body)
+	actual := replaceTimeStringsForDiscountTests(removedTimeFields)
+	expected := minifyJSON(t, loadExpectedResponse(t, "discounts", "retrieved"))
+	assert.Equal(t, expected, actual, "discount route should return a serialized discount object")
+}
+
+func TestDiscountRetrievalForNonexistentDiscount(t *testing.T) {
+	resp, err := getDiscountByID(nonexistentID)
+	assert.Nil(t, err)
+	assert.Equal(t, 404, resp.StatusCode, "a request for a nonexistent discount should respond 404")
+
+	body := turnResponseBodyIntoString(t, resp)
+	actual := replaceTimeStringsForTests(body)
+	expected := minifyJSON(t, loadExpectedResponse(t, "discounts", "error_discount_does_not_exist"))
+	assert.Equal(t, expected, actual, "product attribute update route should respond with 404 message when you try to delete a product that doesn't exist")
+
 }
 
 // I'd like to keep these functions last if at all possible.

@@ -1,0 +1,7 @@
+{
+	"id": 1,
+	"name": "10% off",
+	"type": "percentage",
+	"product_id": 10,
+	"amount": 10
+}

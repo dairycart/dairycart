@@ -220,20 +220,20 @@ func TestBuildProductAttributeValueCreationQuery(t *testing.T) {
 func TestBuildDiscountExistenceQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `SELECT EXISTS(SELECT 1 FROM discounts WHERE id = $1 AND archived_at IS NULL)`
-	actualQuery := buildDiscountExistenceQuery(existingID)
+	actualQuery := buildDiscountExistenceQuery(existingIDString)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 
 func TestBuildDiscountRetrievalQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `SELECT * FROM discounts WHERE id = $1 AND archived_at IS NULL`
-	actualQuery := buildDiscountRetrievalQuery(existingID)
+	actualQuery := buildDiscountRetrievalQuery(existingIDString)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 
 func TestBuildDiscountDeletionQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `UPDATE discounts SET archived_at = NOW() WHERE id = $1 AND archived_at IS NULL`
-	actualQuery := buildDiscountDeletionQuery(existingID)
+	actualQuery := buildDiscountDeletionQuery(existingIDString)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }

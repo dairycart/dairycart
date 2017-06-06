@@ -132,3 +132,9 @@ func updateProductAttributeValueForAttribute(valueID string, JSONBody string) (*
 	req, _ := http.NewRequest(http.MethodPut, url, body)
 	return client.Do(req)
 }
+
+func getDiscountByID(discountID string) (*http.Response, error) {
+	url := buildPath("discount", discountID)
+	req, _ := http.NewRequest(http.MethodGet, url, nil)
+	return client.Do(req)
+}

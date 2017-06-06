@@ -20,22 +20,6 @@ func init() {
 	sqlBuilder = squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 }
 
-//////////////////////////////////////////////////////////////////////////////////////
-//                                                                                  //
-//      _______________                                       ||*\_/*|________      //
-//     |  ___________  |             .-.     .-.              ||_/-\_|______  |     //
-//     | |           | |            .****. .****.             | |           | |     //
-//     | |   0   0   | |            .*****.*****.             | |   0   0   | |     //
-//     | |     -     | |             .*********.              | |     -     | |     //
-//     | |   \___/   | |              .*******.               | |   \___/   | |     //
-//     | |___     ___| |               .*****.                | |___________| |     //
-//     |_____|\_/|_____|                .***.                 |_______________|     //
-//       _|__|/ \|_|_.....................*......................_|________|_       //
-//      / ********** \                   ^^^                    / ********** \      //
-//    /  ************  \       (Dairycart API Traffic)         / ************* \    //
-//   --------------------                                     -------------------   //
-//////////////////////////////////////////////////////////////////////////////////////
-
 func buildRoute(routeParts ...string) string {
 	allRouteParts := append([]string{"v1"}, routeParts...)
 	return fmt.Sprintf("/%s", strings.Join(allRouteParts, "/"))
@@ -64,4 +48,8 @@ func SetupAPIRoutes(router *mux.Router, db *sql.DB) {
 	specificAttributeValueEndpoint := buildRoute("product_attribute_values", "{attribute_value_id:[0-9]+}")
 	router.HandleFunc(attributeValueEndpoint, buildProductAttributeValueCreationHandler(db)).Methods("POST")
 	router.HandleFunc(specificAttributeValueEndpoint, buildProductAttributeValueUpdateHandler(db)).Methods("PUT")
+
+	// Discounts
+	specificDiscountEndpoint := buildRoute("discount", "{discount_id:[0-9]+}")
+	router.HandleFunc(specificDiscountEndpoint, buildDiscountRetrievalHandler(db)).Methods("GET")
 }
