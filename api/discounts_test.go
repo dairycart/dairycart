@@ -86,6 +86,19 @@ func TestRetrieveDiscountFromDBWhenDBReturnsNoRows(t *testing.T) {
 	setExpectationsForDiscountRetrievalByID(mock, discountIDString, sql.ErrNoRows)
 
 	_, err = retrieveDiscountFromDB(db, discountIDString)
+	assert.Nil(t, err)
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestRetrieveDiscountFromDBWhenDBReturnsError(t *testing.T) {
+	t.Parallel()
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	discountIDString := strconv.Itoa(int(exampleDiscount.ID))
+	setExpectationsForDiscountRetrievalByID(mock, discountIDString, arbitraryError)
+
+	_, err = retrieveDiscountFromDB(db, discountIDString)
 	assert.NotNil(t, err)
 	ensureExpectationsWereMet(t, mock)
 }
@@ -113,7 +126,7 @@ func TestDiscountRetrievalHandlerWithExistingDiscount(t *testing.T) {
 	ensureExpectationsWereMet(t, mock)
 }
 
-func TestDiscountRetrievalHandlerWithDBError(t *testing.T) {
+func TestDiscountRetrievalHandlerWithNoRowsFromDB(t *testing.T) {
 	t.Parallel()
 	db, mock, err := sqlmock.New()
 	assert.Nil(t, err)
@@ -127,5 +140,22 @@ func TestDiscountRetrievalHandlerWithDBError(t *testing.T) {
 
 	router.ServeHTTP(res, req)
 	assert.Equal(t, 404, res.Code, "status code should be 404")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestDiscountRetrievalHandlerWithDBError(t *testing.T) {
+	t.Parallel()
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+	discountIDString := strconv.Itoa(int(exampleDiscount.ID))
+	setExpectationsForDiscountRetrievalByID(mock, discountIDString, arbitraryError)
+
+	req, err := http.NewRequest("GET", "/v1/discount/1", nil)
+	assert.Nil(t, err)
+
+	router.ServeHTTP(res, req)
+	assert.Equal(t, 500, res.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, mock)
 }

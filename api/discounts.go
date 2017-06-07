@@ -3,7 +3,6 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
-	"log"
 	"net/http"
 	"time"
 
@@ -72,18 +71,12 @@ func buildDiscountRetrievalHandler(db *sql.DB) http.HandlerFunc {
 		discountID := mux.Vars(req)["discount_id"]
 
 		discount, err := retrieveDiscountFromDB(db, discountID)
-		if discount == nil {
-			respondThatRowDoesNotExist(req, res, "discount", discountID)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "retrieving discount from database")
 			return
 		}
-		if err != nil {
-			log.Printf(`
-
-			received the following error trying to retrieve discount #%s:
-				%s
-
-			`, discountID, err.Error())
-			notifyOfInternalIssue(res, err, "retrieving discount from database")
+		if discount == nil {
+			respondThatRowDoesNotExist(req, res, "discount", discountID)
 			return
 		}
 
