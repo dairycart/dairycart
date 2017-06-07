@@ -22,15 +22,28 @@ func init() {
 		ID:        1,
 		Name:      "Example Discount",
 		Type:      "flat_discount",
-		ProductID: 10, // == exampleProduct.ID
 		Amount:    12.34,
 		StartsOn:  exampleTime,
 		ExpiresOn: exampleTime.Add(30 * (24 * time.Hour)),
 		CreatedAt: exampleTime,
 	}
 
-	discountHeaders = []string{"id", "name", "type", "amount", "product_id", "starts_on", "expires_on", "created_at", "updated_at", "archived_at"}
-	exampleDiscountData = []driver.Value{exampleDiscount.ID, exampleDiscount.Name, exampleDiscount.Type, exampleDiscount.Amount, exampleDiscount.ProductID, exampleDiscount.StartsOn, exampleDiscount.ExpiresOn, exampleDiscount.CreatedAt, nil, nil}
+	discountHeaders = []string{"id", "name", "type", "amount", "starts_on", "expires_on", "requires_code", "code", "limited_use", "number_of_uses", "login_required", "created_at", "updated_at", "archived_at"}
+	exampleDiscountData = []driver.Value{
+		exampleDiscount.ID,
+		exampleDiscount.Name,
+		exampleDiscount.Type,
+		exampleDiscount.Amount,
+		exampleDiscount.StartsOn,
+		exampleDiscount.ExpiresOn,
+		exampleDiscount.RequiresCode,
+		exampleDiscount.Code,
+		exampleDiscount.LimitedUse,
+		exampleDiscount.NumberOfUses,
+		exampleDiscount.LoginRequired,
+		exampleDiscount.CreatedAt,
+		nil,
+		nil}
 }
 
 func setExpectationsForDiscountRetrievalByID(mock sqlmock.Sqlmock, id string, err error) {
@@ -41,14 +54,6 @@ func setExpectationsForDiscountRetrievalByID(mock sqlmock.Sqlmock, id string, er
 		WithArgs(id).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
-}
-
-func TestDiscountGenerateScanArgs(t *testing.T) {
-	// this test will go away soon, but for now I can't stand having less than 100% test coverage
-	t.Parallel()
-	d := &Discount{}
-	actual := d.generateScanArgs()
-	assert.Equal(t, 10, len(actual), "there should be eight scan args for discounts")
 }
 
 func TestDiscountTypeIsValidWithValidInput(t *testing.T) {

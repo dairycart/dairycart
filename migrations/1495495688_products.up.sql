@@ -25,7 +25,7 @@ CREATE TABLE products (
     "sku" text NOT NULL,
     "name" text NOT NULL,
     "upc" text,
-    "quantity" integer,
+    "quantity" integer NOT NULL DEFAULT 0,
     "price" numeric(7, 2) NOT NULL,
     "cost" numeric(7, 2) NOT NULL,
     "created_at" timestamp DEFAULT NOW(),

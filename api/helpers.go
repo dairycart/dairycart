@@ -56,7 +56,7 @@ const (
 
 // This isn't borrowed, but rather inferred from stuff I borrowed above
 
-// NullString is a json.Marshal-able String.
+// NullString is a json.Marshal-able sql.NullString.
 type NullString struct {
 	sql.NullString
 }
@@ -64,8 +64,7 @@ type NullString struct {
 // MarshalText satisfies the encoding.TestMarshaler interface
 func (ns NullString) MarshalText() ([]byte, error) {
 	if ns.Valid {
-		nsv := ns.String
-		return []byte(nsv), nil
+		return []byte(ns.String), nil
 	}
 	return nil, nil
 }

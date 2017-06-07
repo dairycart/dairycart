@@ -2,6 +2,8 @@
 	"id": 1,
 	"name": "10% off",
 	"type": "percentage",
-	"product_id": 10,
-	"amount": 10
+	"amount": 10,
+	"requires_code": false,
+	"limited_use": false,
+	"login_required": false
 }

@@ -16,10 +16,17 @@ type Discount struct {
 	ID        int64     `json:"id"`
 	Name      string    `json:"name"`
 	Type      string    `json:"type"`
-	ProductID int64     `json:"product_id"`
 	Amount    float32   `json:"amount"`
 	StartsOn  time.Time `json:"starts_on"`
 	ExpiresOn time.Time `json:"expires_on"`
+
+	RequiresCode bool   `json:"requires_code"`
+	Code         string `json:"code,omitempty"`
+
+	LimitedUse   bool  `json:"limited_use"`
+	NumberOfUses int64 `json:"number_of_uses,omitempty"`
+
+	LoginRequired bool `json:"login_required"`
 
 	// Housekeeping
 	CreatedAt  time.Time   `json:"created_at"`
@@ -34,9 +41,13 @@ func (d *Discount) generateScanArgs() []interface{} {
 		&d.Name,
 		&d.Type,
 		&d.Amount,
-		&d.ProductID,
 		&d.StartsOn,
 		&d.ExpiresOn,
+		&d.RequiresCode,
+		&d.Code,
+		&d.LimitedUse,
+		&d.NumberOfUses,
+		&d.LoginRequired,
 		&d.CreatedAt,
 		&d.UpdatedAt,
 		&d.ArchivedAt,

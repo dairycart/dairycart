@@ -66,7 +66,6 @@ INSERT INTO discounts
     "name",
     "type",
     "amount",
-    "product_id",
     "starts_on",
     "expires_on"
 )
@@ -75,7 +74,6 @@ VALUES
     '10% off',
     'percentage',
     10.00,
-    10,
     NOW(),
     NOW() + (1 * interval '1 month')
 );
