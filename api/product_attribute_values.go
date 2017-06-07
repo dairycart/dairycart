@@ -159,7 +159,6 @@ func buildProductAttributeValueUpdateHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		json.NewEncoder(res).Encode(existingAttributeValue)
-
 	}
 }
 
@@ -232,6 +231,7 @@ func buildProductAttributeValueCreationHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
+		res.WriteHeader(http.StatusCreated)
 		json.NewEncoder(res).Encode(newProductAttributeValue)
 	}
 }

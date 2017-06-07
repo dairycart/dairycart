@@ -738,7 +738,7 @@ func TestProductCreationHandler(t *testing.T) {
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, 200, res.Code, "status code should be 200")
+	assert.Equal(t, 201, res.Code, "status code should be 201")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -894,7 +894,7 @@ func TestProductCreationHandlerWithoutAttributes(t *testing.T) {
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
-	assert.Equal(t, 200, res.Code, "status code should be 200")
+	assert.Equal(t, 201, res.Code, "status code should be 201")
 	ensureExpectationsWereMet(t, mock)
 }
 

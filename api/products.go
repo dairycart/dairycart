@@ -403,6 +403,7 @@ func buildProductCreationHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
+		res.WriteHeader(http.StatusCreated)
 		json.NewEncoder(res).Encode(newProduct)
 	}
 }

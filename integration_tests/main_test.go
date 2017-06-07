@@ -188,7 +188,7 @@ func TestProductCreation(t *testing.T) {
 	newProductJSON := loadExampleInput(t, "products", "new")
 	resp, err := createProduct(newProductJSON)
 	assert.Nil(t, err)
-	assert.Equal(t, 200, resp.StatusCode, "creating a product that doesn't exist should respond 200")
+	assert.Equal(t, 201, resp.StatusCode, "creating a product that doesn't exist should respond 201")
 
 	respBody := turnResponseBodyIntoString(t, resp)
 	actual := replaceTimeStringsForTests(respBody)
@@ -249,7 +249,7 @@ func TestProductAttributeCreation(t *testing.T) {
 	newAttributeJSON := loadExampleInput(t, "product_attributes", "new")
 	resp, err := createProductAttributeForProgenitor(existentID, newAttributeJSON)
 	assert.Nil(t, err)
-	assert.Equal(t, 200, resp.StatusCode, "creating a product attribute that doesn't exist should respond 200")
+	assert.Equal(t, 201, resp.StatusCode, "creating a product attribute that doesn't exist should respond 201")
 
 	respBody := turnResponseBodyIntoString(t, resp)
 	actual := replaceTimeStringsForTests(respBody)
@@ -320,7 +320,7 @@ func TestProductAttributeValueCreation(t *testing.T) {
 	newAttributeValueJSON := loadExampleInput(t, "product_attribute_values", "new")
 	resp, err := createProductAttributeValueForAttribute(existentID, newAttributeValueJSON)
 	assert.Nil(t, err)
-	assert.Equal(t, 200, resp.StatusCode, "creating a product attribute value that doesn't exist should respond 200")
+	assert.Equal(t, 201, resp.StatusCode, "creating a product attribute value that doesn't exist should respond 201")
 
 	respBody := turnResponseBodyIntoString(t, resp)
 	actual := replaceTimeStringsForTests(respBody)
