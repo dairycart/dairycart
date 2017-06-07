@@ -11,7 +11,6 @@ import (
 	"github.com/fatih/structs"
 	"github.com/gorilla/mux"
 	"github.com/imdario/mergo"
-	"github.com/lib/pq"
 	"github.com/pkg/errors"
 )
 
@@ -34,9 +33,9 @@ type Product struct {
 	ProductProgenitor
 
 	// Housekeeping
-	CreatedAt  time.Time   `json:"created_at"`
-	UpdatedAt  pq.NullTime `json:"-"`
-	ArchivedAt pq.NullTime `json:"-"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  NullTime  `json:"updated_at,omitempty"`
+	ArchivedAt NullTime  `json:"archived_at,omitempty"`
 }
 
 // generateScanArgs generates an array of pointers to struct fields for sql.Scan to populate

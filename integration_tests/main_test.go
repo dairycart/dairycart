@@ -23,7 +23,7 @@ const (
 	// function, and as a consequence, the tests, would fail spectacularly).
 	// Note that this pattern needs to be run as ungreedy because of the possiblity of prefix and or
 	// suffixed commas
-	timeFieldReplacementPattern = `(?U)(,?)"(created_at|updated_at|archived_at)":"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z"(,?)`
+	timeFieldReplacementPattern = `(?U)(,?)"(created_at|updated_at|archived_at)":"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z)?"(,?)`
 
 	existentID     = "1"
 	nonexistentID  = "999999999"

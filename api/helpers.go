@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -23,6 +24,7 @@ const (
 	MaxLimit = 50
 
 	dataValidationPattern = `^[a-zA-Z\-_]{1,50}$`
+	timeLayout            = "2006-01-02T15:04:05.000000Z"
 )
 
 // borrowed from http://stackoverflow.com/questions/32825640/custom-marshaltext-for-golang-sql-null-types
@@ -56,6 +58,33 @@ const (
 
 // This isn't borrowed, but rather inferred from stuff I borrowed above
 
+// NullTime is a json.Marshal-able pq.NullTime.
+type NullTime struct {
+	pq.NullTime
+}
+
+// MarshalText satisfies the encoding.TestMarshaler interface
+func (nt NullTime) MarshalText() ([]byte, error) {
+	if nt.Valid {
+		return []byte(nt.Time.Format(timeLayout)), nil
+	}
+	return nil, nil
+}
+
+// UnmarshalText is a function which unmarshals a NullTime
+func (nt *NullTime) UnmarshalText(text []byte) (err error) {
+	if len(text) == 0 {
+		nt.Time = time.Time{}
+		nt.Valid = true
+		return nil
+	}
+
+	t, _ := time.Parse(timeLayout, string(text))
+	nt.Time = t
+	nt.Valid = true
+	return nil
+}
+
 // NullString is a json.Marshal-able sql.NullString.
 type NullString struct {
 	sql.NullString
@@ -69,7 +98,7 @@ func (ns NullString) MarshalText() ([]byte, error) {
 	return nil, nil
 }
 
-// UnmarshalText is a function which unmarshals a NullString so that gorilla/schema can parse it
+// UnmarshalText is a function which unmarshals a NullString
 func (ns *NullString) UnmarshalText(text []byte) (err error) {
 	ns.String = string(text)
 	ns.Valid = true

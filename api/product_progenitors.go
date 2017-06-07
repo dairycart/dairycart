@@ -3,8 +3,6 @@ package api
 import (
 	"database/sql"
 	"time"
-
-	"github.com/lib/pq"
 )
 
 // ProductProgenitor is the parent product for every product
@@ -32,9 +30,9 @@ type ProductProgenitor struct {
 	PackageLength float32 `json:"package_length"`
 
 	// // Housekeeping
-	CreatedAt  time.Time   `json:"created_at"`
-	UpdatedAt  pq.NullTime `json:"-"`
-	ArchivedAt pq.NullTime `json:"-"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  NullTime  `json:"updated_at,omitempty"`
+	ArchivedAt NullTime  `json:"archived_at,omitempty"`
 }
 
 // generateScanArgs generates an array of pointers to struct fields for sql.Scan to populate

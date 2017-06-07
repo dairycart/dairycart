@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 
 	log "github.com/sirupsen/logrus"
@@ -30,9 +31,27 @@ func init() {
 func TestNullStringMarshalTextReturnsNilIfStringIsInvalid(t *testing.T) {
 	t.Parallel()
 	example := NullString{sql.NullString{String: "test", Valid: false}}
-	expectedNil, err := example.MarshalText()
+	alsoNil, err := example.MarshalText()
 	assert.Nil(t, err)
-	assert.Nil(t, expectedNil)
+	assert.Nil(t, alsoNil)
+}
+
+func TestNullTimeMarshalText(t *testing.T) {
+	t.Parallel()
+	expected := []byte("2017-01-01T12:00:00.000000Z")
+	example := NullTime{pq.NullTime{Time: exampleTime, Valid: true}}
+	actual, err := example.MarshalText()
+
+	assert.Nil(t, err)
+	assert.Equal(t, expected, actual, "Marshaled time string should marshal correctly")
+}
+
+func TestNullTimeUnmarshalText(t *testing.T) {
+	t.Parallel()
+	example := []byte("2017-01-01T12:00:00.000000Z")
+	nt := NullTime{}
+	err := nt.UnmarshalText(example)
+	assert.Nil(t, err)
 }
 
 func TestRound(t *testing.T) {

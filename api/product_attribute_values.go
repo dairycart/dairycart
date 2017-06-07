@@ -10,7 +10,6 @@ import (
 
 	"github.com/fatih/structs"
 	"github.com/gorilla/mux"
-	"github.com/lib/pq"
 	"github.com/pkg/errors"
 )
 
@@ -18,12 +17,12 @@ import (
 // and three sizes, then there are two ProductAttributes for that base_product, color and size, and six ProductAttributeValues,
 // One for each color and one for each size.
 type ProductAttributeValue struct {
-	ID                 int64       `json:"id"`
-	ProductAttributeID int64       `json:"product_attribute_id"`
-	Value              string      `json:"value"`
-	CreatedAt          time.Time   `json:"created_at"`
-	UpdatedAt          pq.NullTime `json:"-"`
-	ArchivedAt         pq.NullTime `json:"-"`
+	ID                 int64     `json:"id"`
+	ProductAttributeID int64     `json:"product_attribute_id"`
+	Value              string    `json:"value"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          NullTime  `json:"updated_at,omitempty"`
+	ArchivedAt         NullTime  `json:"archived_at,omitempty"`
 }
 
 func (pav *ProductAttributeValue) generateScanArgs() []interface{} {

@@ -126,6 +126,7 @@ func init() {
 		Cost:                5.00,
 		CreatedAt:           exampleTime,
 	}
+
 	exampleUpdatedProduct = &Product{
 		ID:        exampleProduct.ID,
 		SKU:       "example",

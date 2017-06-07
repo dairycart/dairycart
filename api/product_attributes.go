@@ -10,7 +10,6 @@ import (
 
 	"github.com/fatih/structs"
 	"github.com/gorilla/mux"
-	"github.com/lib/pq"
 	"github.com/pkg/errors"
 )
 
@@ -22,8 +21,8 @@ type ProductAttribute struct {
 	ProductProgenitorID int64                    `json:"product_progenitor_id"`
 	Values              []*ProductAttributeValue `json:"values"`
 	CreatedAt           time.Time                `json:"created_at"`
-	UpdatedAt           pq.NullTime              `json:"-"`
-	ArchivedAt          pq.NullTime              `json:"-"`
+	UpdatedAt           NullTime                 `json:"updated_at,omitempty"`
+	ArchivedAt          NullTime                 `json:"archived_at,omitempty"`
 }
 
 func (a *ProductAttribute) generateScanArgs() []interface{} {

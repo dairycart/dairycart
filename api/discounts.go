@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/lib/pq"
 	"github.com/pkg/errors"
 )
 
@@ -29,9 +28,9 @@ type Discount struct {
 	LoginRequired bool `json:"login_required"`
 
 	// Housekeeping
-	CreatedAt  time.Time   `json:"created_at"`
-	UpdatedAt  pq.NullTime `json:"-"`
-	ArchivedAt pq.NullTime `json:"-"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  NullTime  `json:"updated_at,omitempty"`
+	ArchivedAt NullTime  `json:"archived_at,omitempty"`
 }
 
 // generateScanArgs generates an array of pointers to struct fields for sql.Scan to populate
