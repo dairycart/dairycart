@@ -86,7 +86,7 @@ func setExpectationsForProductAttributeValueCreation(mock sqlmock.Sqlmock, v *Pr
 }
 
 func setExpectationsForProductAttributeValueUpdate(mock sqlmock.Sqlmock, v *ProductAttributeValue, err error) {
-	exampleRows := sqlmock.NewRows(productAttributeHeaders).
+	exampleRows := sqlmock.NewRows(productAttributeValueHeaders).
 		AddRow([]driver.Value{v.ID, v.ProductAttributeID, v.Value, exampleTime, nil, nil}...)
 	query, args := buildProductAttributeValueUpdateQuery(v)
 	queryArgs := argsToDriverValues(args)

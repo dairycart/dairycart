@@ -16,20 +16,18 @@ import (
 // ProductAttribute represents a products variant attributes. If you have a t-shirt that comes in three colors
 // and three sizes, then there are two ProductAttributes for that base_product, color and size.
 type ProductAttribute struct {
-	ID                  int64                    `json:"id"`
-	Name                string                   `json:"name"`
-	ProductProgenitorID int64                    `json:"product_progenitor_id"`
-	Values              []*ProductAttributeValue `json:"values"`
-	CreatedAt           time.Time                `json:"created_at"`
-	UpdatedAt           NullTime                 `json:"updated_at,omitempty"`
-	ArchivedAt          NullTime                 `json:"archived_at,omitempty"`
+	ID         int64                    `json:"id"`
+	Name       string                   `json:"name"`
+	Values     []*ProductAttributeValue `json:"values"`
+	CreatedAt  time.Time                `json:"created_at"`
+	UpdatedAt  NullTime                 `json:"updated_at,omitempty"`
+	ArchivedAt NullTime                 `json:"archived_at,omitempty"`
 }
 
 func (a *ProductAttribute) generateScanArgs() []interface{} {
 	return []interface{}{
 		&a.ID,
 		&a.Name,
-		&a.ProductProgenitorID,
 		&a.CreatedAt,
 		&a.UpdatedAt,
 		&a.ArchivedAt,
@@ -59,11 +57,11 @@ type ProductAttributeCreationInput struct {
 	Values []string `json:"values"`
 }
 
-func productAttributeAlreadyExistsForProgenitor(db *sql.DB, in *ProductAttributeCreationInput, progenitorID string) (bool, error) {
+func productAttributeAlreadyExists(db *sql.DB, in *ProductAttributeCreationInput) (bool, error) {
 	var exists string
 
-	query := buildProductAttributeExistenceQueryForProductByName(in.Name, progenitorID)
-	err := db.QueryRow(query, in.Name, progenitorID).Scan(&exists)
+	query := buildProductAttributeExistenceQueryForProductByName(in.Name)
+	err := db.QueryRow(query, in.Name).Scan(&exists)
 	if err == sql.ErrNoRows {
 		return false, nil
 	}
@@ -83,12 +81,12 @@ func retrieveProductAttributeFromDB(db *sql.DB, id int64) (*ProductAttribute, er
 	return attribute, err
 }
 
-func getProductAttributesForProgenitor(db *sql.DB, progenitorID string, queryFilter *QueryFilter) ([]ProductAttribute, uint64, error) {
+func getProductAttributesList(db *sql.DB, queryFilter *QueryFilter) ([]ProductAttribute, uint64, error) {
 	var attributes []ProductAttribute
 	var count uint64
 
-	query := buildProductAttributeListQuery(progenitorID, queryFilter)
-	rows, err := db.Query(query, progenitorID)
+	query := buildProductAttributeListQuery(queryFilter)
+	rows, err := db.Query(query)
 	if err != nil {
 		return nil, 0, errors.Wrap(err, "Error encountered querying for product attributes")
 	}
@@ -115,11 +113,10 @@ func getProductAttributesForProgenitor(db *sql.DB, progenitorID string, queryFil
 
 func buildProductAttributeListHandler(db *sql.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		progenitorID := mux.Vars(req)["progenitor_id"]
 		rawFilterParams := req.URL.Query()
 		queryFilter := parseRawFilterParams(rawFilterParams)
 
-		attributes, count, err := getProductAttributesForProgenitor(db, progenitorID, queryFilter)
+		attributes, count, err := getProductAttributesList(db, queryFilter)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve products from the database")
 			return
@@ -221,10 +218,9 @@ func createProductAttributeInDB(tx *sql.Tx, a *ProductAttribute) (*ProductAttrib
 	return a, err
 }
 
-func createProductAttributeAndValuesInDBFromInput(tx *sql.Tx, in *ProductAttributeCreationInput, progenitorID int64) (*ProductAttribute, error) {
+func createProductAttributeAndValuesInDBFromInput(tx *sql.Tx, in *ProductAttributeCreationInput) (*ProductAttribute, error) {
 	newProductAttribute := &ProductAttribute{
-		Name:                in.Name,
-		ProductProgenitorID: progenitorID,
+		Name: in.Name,
 	}
 
 	newProductAttribute, err := createProductAttributeInDB(tx, newProductAttribute)
@@ -251,16 +247,6 @@ func createProductAttributeAndValuesInDBFromInput(tx *sql.Tx, in *ProductAttribu
 func buildProductAttributeCreationHandler(db *sql.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		// ProductAttributeCreationHandler is a request handler that can create product attributes
-		progenitorID := mux.Vars(req)["progenitor_id"]
-		// eating this error because Mux should validate this for us.
-		progenitorIDInt, _ := strconv.Atoi(progenitorID)
-
-		// can't create an attribute for a product progenitor that doesn't exist!
-		progenitorExists, err := rowExistsInDB(db, "product_progenitors", "id", progenitorID)
-		if err != nil || !progenitorExists {
-			respondThatRowDoesNotExist(req, res, "product progenitor", progenitorID)
-			return
-		}
 
 		newAttributeData, err := validateProductAttributeCreationInput(req)
 		if err != nil {
@@ -269,7 +255,7 @@ func buildProductAttributeCreationHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		// can't create an attribute that already exist!
-		attributeExists, err := productAttributeAlreadyExistsForProgenitor(db, newAttributeData, progenitorID)
+		attributeExists, err := productAttributeAlreadyExists(db, newAttributeData)
 		if err != nil || attributeExists {
 			notifyOfInvalidRequestBody(res, fmt.Errorf("product attribute with the name `%s` already exists", newAttributeData.Name))
 			return
@@ -281,7 +267,7 @@ func buildProductAttributeCreationHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		newProductAttribute, err := createProductAttributeAndValuesInDBFromInput(tx, newAttributeData, int64(progenitorIDInt))
+		newProductAttribute, err := createProductAttributeAndValuesInDBFromInput(tx, newAttributeData)
 		if err != nil {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "create product attribute in the database")

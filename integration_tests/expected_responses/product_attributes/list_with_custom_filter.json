@@ -5,7 +5,6 @@
 	"data": [{
 		"id": 2,
 		"name": "size",
-		"product_progenitor_id": 1,
 		"values": [{
 			"id": 4,
 			"product_attribute_id": 2,

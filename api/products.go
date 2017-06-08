@@ -379,7 +379,7 @@ func buildProductCreationHandler(db *sql.DB) http.HandlerFunc {
 		progenitor.ID = newProgenitorID
 
 		for _, attributeAndValues := range productInput.AttributesAndValues {
-			_, err = createProductAttributeAndValuesInDBFromInput(tx, attributeAndValues, progenitor.ID)
+			_, err = createProductAttributeAndValuesInDBFromInput(tx, attributeAndValues)
 			if err != nil {
 				tx.Rollback()
 				notifyOfInternalIssue(res, err, "insert product attributes and values in database")

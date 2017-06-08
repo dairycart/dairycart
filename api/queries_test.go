@@ -55,7 +55,7 @@ func TestBuildProgenitorExistenceQuery(t *testing.T) {
 func TestBuildProgenitorCreationQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `INSERT INTO product_progenitors (name,description,taxable,price,cost,product_weight,product_height,product_width,product_length,package_weight,package_height,package_width,package_length) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING "id"`
-	actualQuery, actualArgs := buildProgenitorCreationQuery(exampleProgenitor)
+	actualQuery, actualArgs := buildProgenitorCreationQuery(&exampleProgenitor)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 13, len(actualArgs), argsEqualityErrorMessage)
 }
@@ -151,8 +151,8 @@ func TestBuildProductAttributeRetrievalQuery(t *testing.T) {
 
 func TestBuildProductAttributeListQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `SELECT count(id) over (), * FROM product_attributes WHERE product_progenitor_id = $1 AND archived_at IS NULL LIMIT 25`
-	actualQuery := buildProductAttributeListQuery(existingIDString, &QueryFilter{})
+	expectedQuery := `SELECT count(id) over (), * FROM product_attributes WHERE archived_at IS NULL LIMIT 25`
+	actualQuery := buildProductAttributeListQuery(&QueryFilter{})
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 
@@ -173,10 +173,10 @@ func TestBuildProductAttributeUpdateQuery(t *testing.T) {
 
 func TestBuildProductAttributeCreationQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `INSERT INTO product_attributes (name,product_progenitor_id) VALUES ($1,$2) RETURNING "id"`
+	expectedQuery := `INSERT INTO product_attributes (name) VALUES ($1) RETURNING "id"`
 	actualQuery, actualArgs := buildProductAttributeCreationQuery(&ProductAttribute{})
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
-	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
+	assert.Equal(t, 1, len(actualArgs), argsEqualityErrorMessage)
 }
 
 func TestBuildProductAttributeValueRetrievalQuery(t *testing.T) {

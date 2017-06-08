@@ -1,7 +1,6 @@
 {
 	"id": 3,
 	"name": "example_value",
-	"product_progenitor_id": 1,
 	"values": [{
 		"id": 7,
 		"product_attribute_id": 3,

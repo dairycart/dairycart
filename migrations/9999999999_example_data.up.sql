@@ -41,12 +41,11 @@ VALUES
 
 INSERT INTO product_attributes
 (
-    "name",
-    "product_progenitor_id"
+    "name"
 )
 VALUES
-('color', 1),
-('size', 1);
+('color'),
+('size');
 
 INSERT INTO product_attribute_values
 (

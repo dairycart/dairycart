@@ -220,7 +220,7 @@ func TestProductCreationWithInvalidInput(t *testing.T) {
 }
 
 func TestProductAttributeListRetrievalWithDefaultFilter(t *testing.T) {
-	resp, err := retrieveProductAttributes("1", nil)
+	resp, err := retrieveProductAttributes(nil)
 	assert.Nil(t, err)
 	assert.Equal(t, 200, resp.StatusCode, "requesting a list of products should respond 200")
 
@@ -235,7 +235,7 @@ func TestProductAttributeListRetrievalWithCustomFilter(t *testing.T) {
 		"page":  "2",
 		"limit": "1",
 	}
-	resp, err := retrieveProductAttributes("1", customFilter)
+	resp, err := retrieveProductAttributes(customFilter)
 	assert.Nil(t, err)
 	assert.Equal(t, 200, resp.StatusCode, "requesting a list of products should respond 200")
 
@@ -247,7 +247,7 @@ func TestProductAttributeListRetrievalWithCustomFilter(t *testing.T) {
 
 func TestProductAttributeCreation(t *testing.T) {
 	newAttributeJSON := loadExampleInput(t, "product_attributes", "new")
-	resp, err := createProductAttributeForProgenitor(existentID, newAttributeJSON)
+	resp, err := createProductAttribute(newAttributeJSON)
 	assert.Nil(t, err)
 	assert.Equal(t, 201, resp.StatusCode, "creating a product attribute that doesn't exist should respond 201")
 
@@ -259,7 +259,7 @@ func TestProductAttributeCreation(t *testing.T) {
 
 func TestProductAttributeCreationWithInvalidInput(t *testing.T) {
 	t.Parallel()
-	resp, err := createProductAttributeForProgenitor(existentID, exampleGarbageInput)
+	resp, err := createProductAttribute(exampleGarbageInput)
 	assert.Nil(t, err)
 	assert.Equal(t, 400, resp.StatusCode, "trying to create a new product attribute with invalid input should respond 400")
 
@@ -271,7 +271,7 @@ func TestProductAttributeCreationWithInvalidInput(t *testing.T) {
 func TestProductAttributeCreationWithAlreadyExistentName(t *testing.T) {
 	newAttributeJSON := loadExampleInput(t, "product_attributes", "new")
 	existingAttributeJSON := strings.Replace(newAttributeJSON, "example_value", "color", 1)
-	resp, err := createProductAttributeForProgenitor(existentID, existingAttributeJSON)
+	resp, err := createProductAttribute(existingAttributeJSON)
 	assert.Nil(t, err)
 	assert.Equal(t, 400, resp.StatusCode, "creating a product attribute that already exists should respond 400")
 
