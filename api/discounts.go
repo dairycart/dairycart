@@ -17,7 +17,7 @@ type Discount struct {
 	Type      string    `json:"type"`
 	Amount    float32   `json:"amount"`
 	StartsOn  time.Time `json:"starts_on"`
-	ExpiresOn time.Time `json:"expires_on"`
+	ExpiresOn NullTime  `json:"expires_on"`
 
 	RequiresCode bool   `json:"requires_code"`
 	Code         string `json:"code,omitempty"`

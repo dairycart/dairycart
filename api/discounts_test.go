@@ -10,6 +10,7 @@ import (
 
 	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 
+	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,7 +25,7 @@ func init() {
 		Type:      "flat_discount",
 		Amount:    12.34,
 		StartsOn:  exampleTime,
-		ExpiresOn: exampleTime.Add(30 * (24 * time.Hour)),
+		ExpiresOn: NullTime{pq.NullTime{Time: exampleTime.Add(30 * (24 * time.Hour)), Valid: true}},
 		CreatedAt: exampleTime,
 	}
 
@@ -35,7 +36,7 @@ func init() {
 		exampleDiscount.Type,
 		exampleDiscount.Amount,
 		exampleDiscount.StartsOn,
-		exampleDiscount.ExpiresOn,
+		exampleDiscount.ExpiresOn.Time,
 		exampleDiscount.RequiresCode,
 		exampleDiscount.Code,
 		exampleDiscount.LimitedUse,
