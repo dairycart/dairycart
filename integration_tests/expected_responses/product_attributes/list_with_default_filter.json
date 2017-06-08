@@ -4,39 +4,31 @@
 	"page": 1,
 	"data": [{
 		"id": 1,
-		"name": "Concave Shape",
+		"name": "Material",
 		"values": [{
 			"id": 1,
 			"product_attribute_id": 1,
-			"value": "Radial"
+			"value": "Cotton"
 		}, {
 			"id": 2,
 			"product_attribute_id": 1,
-			"value": "Progressive"
+			"value": "Polyester"
 		}, {
 			"id": 3,
 			"product_attribute_id": 1,
-			"value": "W-Concave"
-		}, {
-			"id": 4,
-			"product_attribute_id": 1,
-			"value": "Flatcave"
-		}, {
-			"id": 5,
-			"product_attribute_id": 1,
-			"value": "Flat"
+			"value": "Hemp"
 		}]
 	}, {
 		"id": 2,
-		"name": "Ply Count",
+		"name": "Neckline",
 		"values": [{
-			"id": 6,
+			"id": 4,
 			"product_attribute_id": 2,
-			"value": "7-ply"
+			"value": "V"
 		}, {
-			"id": 7,
+			"id": 5,
 			"product_attribute_id": 2,
-			"value": "9-ply"
+			"value": "Crew"
 		}]
 	}]
 }

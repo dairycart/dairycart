@@ -66,8 +66,8 @@ INSERT INTO product_attributes
     "name"
 )
 VALUES
-('Concave Shape'),
-('Ply Count');
+('Material'),
+('Neckline');
 
 INSERT INTO product_attribute_values
 (
@@ -75,13 +75,11 @@ INSERT INTO product_attribute_values
     "value"
 )
 VALUES
-(1, 'Radial'),
-(1, 'Progressive'),
-(1, 'W-Concave'),
-(1, 'Flatcave'),
-(1, 'Flat'),
-(2, '7-ply'),
-(2, '9-ply');
+(1, 'Cotton'),
+(1, 'Polyester'),
+(1, 'Hemp'),
+(2, 'V'),
+(2, 'Crew');
 
 
 INSERT INTO discounts

@@ -270,7 +270,7 @@ func TestProductAttributeCreationWithInvalidInput(t *testing.T) {
 
 func TestProductAttributeCreationWithAlreadyExistentName(t *testing.T) {
 	newAttributeJSON := loadExampleInput(t, "product_attributes", "new")
-	existingAttributeJSON := strings.Replace(newAttributeJSON, "example_value", "Ply Count", 1)
+	existingAttributeJSON := strings.Replace(newAttributeJSON, "example_value", "Material", 1)
 	resp, err := createProductAttribute(existingAttributeJSON)
 	assert.Nil(t, err)
 	assert.Equal(t, 400, resp.StatusCode, "creating a product attribute that already exists should respond 400")
@@ -341,7 +341,7 @@ func TestProductAttributeValueCreationWithInvalidInput(t *testing.T) {
 
 func TestProductAttributeValueCreationWithAlreadyExistentValue(t *testing.T) {
 	newAttributeJSON := loadExampleInput(t, "product_attribute_values", "new")
-	existingAttributeJSON := strings.Replace(newAttributeJSON, "example_value", "Flat", 1)
+	existingAttributeJSON := strings.Replace(newAttributeJSON, "example_value", "Cotton", 1)
 	resp, err := createProductAttributeValueForAttribute(existentID, existingAttributeJSON)
 	assert.Nil(t, err)
 	assert.Equal(t, 400, resp.StatusCode, "creating a product attribute value that already exists should respond 400")

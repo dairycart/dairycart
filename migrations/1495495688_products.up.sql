@@ -38,6 +38,40 @@ CREATE TABLE products (
     FOREIGN KEY ("product_progenitor_id") REFERENCES "product_progenitors"("id")
 );
 
+CREATE TABLE product_attributes (
+    "id" bigserial,
+    "name" text NOT NULL,
+    "created_at" timestamp DEFAULT NOW(),
+    "updated_at" timestamp,
+    "archived_at" timestamp,
+    UNIQUE ("name"),
+    PRIMARY KEY ("id")
+);
+
+CREATE TABLE product_attribute_values (
+    "id" bigserial,
+    "product_attribute_id" bigint NOT NULL,
+    "value" text NOT NULL,
+    "created_at" timestamp DEFAULT NOW(),
+    "updated_at" timestamp,
+    "archived_at" timestamp,
+    UNIQUE ("product_attribute_id", "value"),
+    PRIMARY KEY ("id"),
+    FOREIGN KEY ("product_attribute_id") REFERENCES "product_attributes"("id")
+);
+
+CREATE TABLE product_attribute_value_assignments (
+    "id" bigserial,
+    "product_id" bigint NOT NULL,
+    "product_attribute_value_id" bigint NOT NULL,
+    "created_at" timestamp DEFAULT NOW(),
+    "updated_at" timestamp,
+    "archived_at" timestamp,
+    PRIMARY KEY ("id"),
+    FOREIGN KEY ("product_id") REFERENCES "products"("id"),
+    FOREIGN KEY ("product_attribute_value_id") REFERENCES "product_attribute_values"("id")
+);
+
 CREATE TABLE product_options (
     "id" bigserial,
     "name" text NOT NULL,
@@ -60,26 +94,4 @@ CREATE TABLE product_option_values (
     UNIQUE ("product_option_id", "value"),
     PRIMARY KEY ("id"),
 FOREIGN KEY ("product_option_id") REFERENCES "product_options"("id")
-);
-
-CREATE TABLE product_attributes (
-    "id" bigserial,
-    "name" text NOT NULL,
-    "created_at" timestamp DEFAULT NOW(),
-    "updated_at" timestamp,
-    "archived_at" timestamp,
-    UNIQUE ("name"),
-    PRIMARY KEY ("id")
-);
-
-CREATE TABLE product_attribute_values (
-    "id" bigserial,
-    "product_attribute_id" bigint NOT NULL,
-    "value" text NOT NULL,
-    "created_at" timestamp DEFAULT NOW(),
-    "updated_at" timestamp,
-    "archived_at" timestamp,
-    UNIQUE ("product_attribute_id", "value"),
-    PRIMARY KEY ("id"),
-    FOREIGN KEY ("product_attribute_id") REFERENCES "product_attributes"("id")
 );

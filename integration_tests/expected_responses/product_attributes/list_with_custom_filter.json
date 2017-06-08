@@ -4,15 +4,15 @@
 	"page": 2,
 	"data": [{
 		"id": 2,
-		"name": "Ply Count",
+		"name": "Neckline",
 		"values": [{
-			"id": 6,
+			"id": 4,
 			"product_attribute_id": 2,
-			"value": "7-ply"
+			"value": "V"
 		}, {
-			"id": 7,
+			"id": 5,
 			"product_attribute_id": 2,
-			"value": "9-ply"
+			"value": "Crew"
 		}]
 	}]
 }
