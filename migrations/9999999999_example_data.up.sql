@@ -39,7 +39,7 @@ VALUES
 (1, 't-shirt-large-blue', 'Blue T-Shirt (Large)', null, 12.34, 5, 123),
 (2, 'skateboard', 'Skateboard', '1234567890', 99.99, 50, 123);
 
-INSERT INTO product_attributes
+INSERT INTO product_options
 (
     "name",
     "product_progenitor_id"
@@ -48,9 +48,9 @@ VALUES
 ('color', 1),
 ('size', 1);
 
-INSERT INTO product_attribute_values
+INSERT INTO product_option_values
 (
-    "product_attribute_id",
+    "product_option_id",
     "value"
 )
 VALUES

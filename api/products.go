@@ -108,23 +108,23 @@ type ProductsResponse struct {
 
 // ProductCreationInput is a struct that represents a product creation body
 type ProductCreationInput struct {
-	Description         string                           `json:"description"`
-	Taxable             bool                             `json:"taxable"`
-	ProductWeight       float32                          `json:"product_weight"`
-	ProductHeight       float32                          `json:"product_height"`
-	ProductWidth        float32                          `json:"product_width"`
-	ProductLength       float32                          `json:"product_length"`
-	PackageWeight       float32                          `json:"package_weight"`
-	PackageHeight       float32                          `json:"package_height"`
-	PackageWidth        float32                          `json:"package_width"`
-	PackageLength       float32                          `json:"package_length"`
-	SKU                 string                           `json:"sku"`
-	Name                string                           `json:"name"`
-	UPC                 string                           `json:"upc"`
-	Quantity            int                              `json:"quantity"`
-	Price               float32                          `json:"price"`
-	Cost                float32                          `json:"cost"`
-	AttributesAndValues []*ProductAttributeCreationInput `json:"attributes_and_values"`
+	Description   string                        `json:"description"`
+	Taxable       bool                          `json:"taxable"`
+	ProductWeight float32                       `json:"product_weight"`
+	ProductHeight float32                       `json:"product_height"`
+	ProductWidth  float32                       `json:"product_width"`
+	ProductLength float32                       `json:"product_length"`
+	PackageWeight float32                       `json:"package_weight"`
+	PackageHeight float32                       `json:"package_height"`
+	PackageWidth  float32                       `json:"package_width"`
+	PackageLength float32                       `json:"package_length"`
+	SKU           string                        `json:"sku"`
+	Name          string                        `json:"name"`
+	UPC           string                        `json:"upc"`
+	Quantity      int                           `json:"quantity"`
+	Price         float32                       `json:"price"`
+	Cost          float32                       `json:"cost"`
+	Options       []*ProductOptionCreationInput `json:"options"`
 }
 
 func validateProductUpdateInput(req *http.Request) (*Product, error) {
@@ -378,11 +378,11 @@ func buildProductCreationHandler(db *sql.DB) http.HandlerFunc {
 		}
 		progenitor.ID = newProgenitorID
 
-		for _, attributeAndValues := range productInput.AttributesAndValues {
-			_, err = createProductAttributeAndValuesInDBFromInput(tx, attributeAndValues, progenitor.ID)
+		for _, optionAndValues := range productInput.Options {
+			_, err = createProductOptionAndValuesInDBFromInput(tx, optionAndValues, progenitor.ID)
 			if err != nil {
 				tx.Rollback()
-				notifyOfInternalIssue(res, err, "insert product attributes and values in database")
+				notifyOfInternalIssue(res, err, "insert product options and values in database")
 				return
 			}
 		}

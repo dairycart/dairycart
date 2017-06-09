@@ -69,13 +69,13 @@ func main() {
 		and this code doesn't matter anyway.
 	*/
 	codeFilesToTestFilesMap := map[string]string{
-		"api/helpers.go":                  "api/helpers_test.go",
-		"api/product_attribute_values.go": "api/product_attribute_values_test.go",
-		"api/product_attributes.go":       "api/product_attributes_test.go",
-		"api/product_progenitors.go":      "api/product_progenitors_test.go",
-		"api/products.go":                 "api/products_test.go",
-		"api/queries.go":                  "api/queries_test.go",
-		"api/discounts.go":                "api/discounts_test.go",
+		"api/helpers.go":               "api/helpers_test.go",
+		"api/product_option_values.go": "api/product_option_values_test.go",
+		"api/product_options.go":       "api/product_options_test.go",
+		"api/product_progenitors.go":   "api/product_progenitors_test.go",
+		"api/products.go":              "api/products_test.go",
+		"api/queries.go":               "api/queries_test.go",
+		"api/discounts.go":             "api/discounts_test.go",
 	}
 
 	functionsInEachFile := map[string][]string{}

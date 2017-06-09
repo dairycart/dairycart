@@ -98,37 +98,37 @@ func deleteProduct(sku string) (*http.Response, error) {
 	return client.Do(req)
 }
 
-func retrieveProductAttributes(progenitorID string, queryFilter map[string]string) (*http.Response, error) {
-	path := buildPath("product_attributes", progenitorID)
+func retrieveProductOptions(progenitorID string, queryFilter map[string]string) (*http.Response, error) {
+	path := buildPath("product_options", progenitorID)
 	url := buildURL(path, queryFilter)
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
 	return client.Do(req)
 }
 
-func createProductAttributeForProgenitor(progenitorID string, JSONBody string) (*http.Response, error) {
+func createProductOptionForProgenitor(progenitorID string, JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
-	url := buildPath("product_attributes", progenitorID)
+	url := buildPath("product_options", progenitorID)
 	req, _ := http.NewRequest(http.MethodPost, url, body)
 	return client.Do(req)
 }
 
-func updateProductAttribute(attributeID string, JSONBody string) (*http.Response, error) {
+func updateProductOption(optionID string, JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
-	url := buildPath("product_attributes", attributeID)
+	url := buildPath("product_options", optionID)
 	req, _ := http.NewRequest(http.MethodPut, url, body)
 	return client.Do(req)
 }
 
-func createProductAttributeValueForAttribute(attributeID string, JSONBody string) (*http.Response, error) {
+func createProductOptionValueForOption(optionID string, JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
-	url := buildPath("product_attributes", attributeID, "value")
+	url := buildPath("product_options", optionID, "value")
 	req, _ := http.NewRequest(http.MethodPost, url, body)
 	return client.Do(req)
 }
 
-func updateProductAttributeValueForAttribute(valueID string, JSONBody string) (*http.Response, error) {
+func updateProductOptionValueForOption(valueID string, JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
-	url := buildPath("product_attribute_values", valueID)
+	url := buildPath("product_option_values", valueID)
 	req, _ := http.NewRequest(http.MethodPut, url, body)
 	return client.Do(req)
 }

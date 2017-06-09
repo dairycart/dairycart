@@ -27,36 +27,7 @@ const (
 	timeLayout            = "2006-01-02T15:04:05.000000Z"
 )
 
-// borrowed from http://stackoverflow.com/questions/32825640/custom-marshaltext-for-golang-sql-null-types
-
-// There's not really a great solution for these two stinkers here. Because []byte is what's expected, passing
-// nil results in an empty string. The original has []byte("null"), which I think is actually worse. At least
-// an empty string is falsy in most languages. ¯\_(ツ)_/¯
-
-// // NullFloat64 is a json.Marshal-able 64-bit float.
-// type NullFloat64 struct {
-// 	sql.NullFloat64
-// }
-
-// // MarshalText satisfies the encoding.TestMarshaler interface
-// func (nf NullFloat64) MarshalText() ([]byte, error) {
-// 	if nf.Valid {
-// 		nfv := nf.Float64
-// 		return []byte(strconv.FormatFloat(nfv, 'f', -1, 64)), nil
-// 	}
-// 	return nil, nil
-// }
-
-// // UnmarshalText is a function which unmarshals a NullFloat64
-// func (nf *NullFloat64) UnmarshalText(text []byte) (err error) {
-// 	s := string(text)
-// 	nf.NullFloat64.Float64, err = strconv.ParseFloat(s, 64)
-// 	nf.NullFloat64.Valid = err == nil
-// 	// returning nil because we've ensured that Float64 is set to at least zero.
-// 	return nil
-// }
-
-// This isn't borrowed, but rather inferred from stuff I borrowed above
+// Modified from code borrowed from http://stackoverflow.com/questions/32825640/custom-marshaltext-for-golang-sql-null-types
 
 // NullTime is a json.Marshal-able pq.NullTime.
 type NullTime struct {
@@ -219,13 +190,13 @@ func parseRawFilterParams(rawFilterParams url.Values) *QueryFilter {
 
 func dataValueIsValid(input string) bool {
 	// This is a rather simple function, but is sort of strictly meant to
-	// ensure that certain values (like skus, attribute values, attribute names)
+	// ensure that certain values (like skus, option values, option names)
 	// aren't allowed to have crazy values in the database
 	dataValidator := regexp.MustCompile(dataValidationPattern)
 	return dataValidator.MatchString(input)
 }
 
-// rowExistsInDB will return whether or not a product/attribute/etc with a given identifier exists in the database
+// rowExistsInDB will return whether or not a product/option/etc with a given identifier exists in the database
 func rowExistsInDB(db *sql.DB, table, identifier, id string) (bool, error) {
 	var exists string
 
@@ -240,11 +211,11 @@ func rowExistsInDB(db *sql.DB, table, identifier, id string) (bool, error) {
 
 func respondThatRowDoesNotExist(req *http.Request, res http.ResponseWriter, itemType, id string) {
 	itemTypeToIdentifierMap := map[string]string{
-		"product attribute":       "id",
-		"product attribute value": "id",
-		"product progenitor":      "id",
-		"product":                 "sku",
-		"discount":                "id",
+		"product option":       "id",
+		"product option value": "id",
+		"product progenitor":   "id",
+		"product":              "sku",
+		"discount":             "id",
 	}
 
 	// in case we forget one, default to ID

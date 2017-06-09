@@ -199,25 +199,25 @@ func buildProductCreationQuery(p *Product) (string, []interface{}) {
 
 ////////////////////////////////////////////////////////
 //                                                    //
-//                Product Attributes                  //
+//                Product Options                  //
 //                                                    //
 ////////////////////////////////////////////////////////
 
-func buildProductAttributeExistenceQuery(id int64) string {
-	return buildRowExistenceQuery("product_attributes", "id", id)
+func buildProductOptionExistenceQuery(id int64) string {
+	return buildRowExistenceQuery("product_options", "id", id)
 }
 
-func buildProductAttributeRetrievalQuery(id int64) string {
-	return buildRowRetrievalQuery("product_attributes", "id", id)
+func buildProductOptionRetrievalQuery(id int64) string {
+	return buildRowRetrievalQuery("product_options", "id", id)
 }
 
-func buildProductAttributeDeletionQuery(id int64) string {
-	return buildRowDeletionQuery("product_attributes", "id", id)
+func buildProductOptionDeletionQuery(id int64) string {
+	return buildRowDeletionQuery("product_options", "id", id)
 }
 
-func buildProductAttributeExistenceQueryForProductByName(name, progenitorID string) string {
+func buildProductOptionExistenceQueryForProductByName(name, progenitorID string) string {
 	subqueryBuilder := sqlBuilder.Select("1").
-		From("product_attributes").
+		From("product_options").
 		Where(squirrel.Eq{"name": name}).
 		Where(squirrel.Eq{"product_progenitor_id": progenitorID}).
 		Where(squirrel.Eq{"archived_at": nil})
@@ -228,10 +228,10 @@ func buildProductAttributeExistenceQueryForProductByName(name, progenitorID stri
 	return query
 }
 
-func buildProductAttributeListQuery(progenitorID string, queryFilter *QueryFilter) string {
+func buildProductOptionListQuery(progenitorID string, queryFilter *QueryFilter) string {
 	queryBuilder := sqlBuilder.
 		Select("count(id) over (), *").
-		From("product_attributes").
+		From("product_options").
 		Where(squirrel.Eq{"product_progenitor_id": progenitorID}).
 		Where(squirrel.Eq{"archived_at": nil})
 	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter)
@@ -239,23 +239,23 @@ func buildProductAttributeListQuery(progenitorID string, queryFilter *QueryFilte
 	return query
 }
 
-func buildProductAttributeUpdateQuery(a *ProductAttribute) (string, []interface{}) {
-	productAttributeUpdateSetMap := map[string]interface{}{
+func buildProductOptionUpdateQuery(a *ProductOption) (string, []interface{}) {
+	productOptionUpdateSetMap := map[string]interface{}{
 		"name":       a.Name,
 		"updated_at": squirrel.Expr("NOW()"),
 	}
 	queryBuilder := sqlBuilder.
-		Update("product_attributes").
-		SetMap(productAttributeUpdateSetMap).
+		Update("product_options").
+		SetMap(productOptionUpdateSetMap).
 		Where(squirrel.Eq{"id": a.ID}).
 		Suffix(`RETURNING *`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
 
-func buildProductAttributeCreationQuery(a *ProductAttribute) (string, []interface{}) {
+func buildProductOptionCreationQuery(a *ProductOption) (string, []interface{}) {
 	queryBuilder := sqlBuilder.
-		Insert("product_attributes").
+		Insert("product_options").
 		Columns("name", "product_progenitor_id").
 		Values(a.Name, a.ProductProgenitorID).
 		Suffix(`RETURNING "id"`)
@@ -265,35 +265,35 @@ func buildProductAttributeCreationQuery(a *ProductAttribute) (string, []interfac
 
 ////////////////////////////////////////////////////////
 //                                                    //
-//             Product Attribute Values               //
+//             Product Option Values               //
 //                                                    //
 ////////////////////////////////////////////////////////
 
-func buildProductAttributeValueExistenceQuery(id int64) string {
-	return buildRowExistenceQuery("product_attribute_values", "id", id)
+func buildProductOptionValueExistenceQuery(id int64) string {
+	return buildRowExistenceQuery("product_option_values", "id", id)
 }
 
-func buildProductAttributeValueRetrievalQuery(id int64) string {
-	return buildRowRetrievalQuery("product_attribute_values", "id", id)
+func buildProductOptionValueRetrievalQuery(id int64) string {
+	return buildRowRetrievalQuery("product_option_values", "id", id)
 }
 
-func buildProductAttributeValueDeletionQuery(id int64) string {
-	return buildRowDeletionQuery("product_attribute_values", "id", id)
+func buildProductOptionValueDeletionQuery(id int64) string {
+	return buildRowDeletionQuery("product_option_values", "id", id)
 }
 
-func buildProductAttributeValueRetrievalForAttributeIDQuery(attributeID int64) string {
+func buildProductOptionValueRetrievalForOptionIDQuery(optionID int64) string {
 	queryBuilder := sqlBuilder.Select("*").
-		From("product_attribute_values").
-		Where(squirrel.Eq{"product_attribute_id": attributeID}).
+		From("product_option_values").
+		Where(squirrel.Eq{"product_option_id": optionID}).
 		Where(squirrel.Eq{"archived_at": nil})
 	query, _, _ := queryBuilder.ToSql()
 	return query
 }
 
-func buildProductAttributeValueExistenceForAttributeIDQuery(attributeID int64, value string) (string, []interface{}) {
+func buildProductOptionValueExistenceForOptionIDQuery(optionID int64, value string) (string, []interface{}) {
 	subqueryBuilder := sqlBuilder.Select("1").
-		From("product_attribute_values").
-		Where(squirrel.Eq{"product_attribute_id": attributeID}).
+		From("product_option_values").
+		Where(squirrel.Eq{"product_option_id": optionID}).
 		Where(squirrel.Eq{"value": value}).
 		Where(squirrel.Eq{"archived_at": nil})
 	subquery, args, _ := subqueryBuilder.ToSql()
@@ -303,25 +303,25 @@ func buildProductAttributeValueExistenceForAttributeIDQuery(attributeID int64, v
 	return query, args
 }
 
-func buildProductAttributeValueUpdateQuery(v *ProductAttributeValue) (string, []interface{}) {
-	productAttributeUpdateSetMap := map[string]interface{}{
+func buildProductOptionValueUpdateQuery(v *ProductOptionValue) (string, []interface{}) {
+	productOptionUpdateSetMap := map[string]interface{}{
 		"value":      v.Value,
 		"updated_at": squirrel.Expr("NOW()"),
 	}
 	queryBuilder := sqlBuilder.
-		Update("product_attribute_values").
-		SetMap(productAttributeUpdateSetMap).
+		Update("product_option_values").
+		SetMap(productOptionUpdateSetMap).
 		Where(squirrel.Eq{"id": v.ID}).
 		Suffix(`RETURNING *`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
 
-func buildProductAttributeValueCreationQuery(v *ProductAttributeValue) (string, []interface{}) {
+func buildProductOptionValueCreationQuery(v *ProductOptionValue) (string, []interface{}) {
 	queryBuilder := sqlBuilder.
-		Insert("product_attribute_values").
-		Columns("product_attribute_id", "value").
-		Values(v.ProductAttributeID, v.Value).
+		Insert("product_option_values").
+		Columns("product_option_id", "value").
+		Values(v.ProductOptionID, v.Value).
 		Suffix(`RETURNING "id"`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args

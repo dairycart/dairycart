@@ -40,7 +40,7 @@ const (
 		}
 	`
 
-	exampleProductCreationInputWithAttributes = `
+	exampleProductCreationInputWithOptions = `
 		{
 			"sku": "skateboard",
 			"name": "Skateboard",
@@ -58,7 +58,7 @@ const (
 			"package_height": 3,
 			"package_width": 2,
 			"package_length": 1,
-			"attributes_and_values": [{
+			"options": [{
 				"name": "something",
 				"values": [
 					"one",
@@ -728,14 +728,14 @@ func TestProductCreationHandler(t *testing.T) {
 
 	mock.ExpectBegin()
 	setExpectationsForProductProgenitorCreation(mock, expectedProgenitor, nil)
-	setExpectationsForProductAttributeCreation(mock, expectedCreatedProductAttribute, nil)
-	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[0], nil)
-	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[1], nil)
-	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[2], nil)
+	setExpectationsForProductOptionCreation(mock, expectedCreatedProductOption, nil)
+	setExpectationsForProductOptionValueCreation(mock, expectedCreatedProductOption.Values[0], nil)
+	setExpectationsForProductOptionValueCreation(mock, expectedCreatedProductOption.Values[1], nil)
+	setExpectationsForProductOptionValueCreation(mock, expectedCreatedProductOption.Values[2], nil)
 	setExpectationsForProductCreation(mock, expectedProduct, nil)
 	mock.ExpectCommit()
 
-	req, err := http.NewRequest("POST", "/v1/product", strings.NewReader(exampleProductCreationInputWithAttributes))
+	req, err := http.NewRequest("POST", "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
@@ -799,14 +799,14 @@ func TestProductCreationHandlerWhereCommitReturnsAnError(t *testing.T) {
 
 	mock.ExpectBegin()
 	setExpectationsForProductProgenitorCreation(mock, expectedProgenitor, nil)
-	setExpectationsForProductAttributeCreation(mock, expectedCreatedProductAttribute, nil)
-	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[0], nil)
-	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[1], nil)
-	setExpectationsForProductAttributeValueCreation(mock, expectedCreatedProductAttribute.Values[2], nil)
+	setExpectationsForProductOptionCreation(mock, expectedCreatedProductOption, nil)
+	setExpectationsForProductOptionValueCreation(mock, expectedCreatedProductOption.Values[0], nil)
+	setExpectationsForProductOptionValueCreation(mock, expectedCreatedProductOption.Values[1], nil)
+	setExpectationsForProductOptionValueCreation(mock, expectedCreatedProductOption.Values[2], nil)
 	setExpectationsForProductCreation(mock, expectedProduct, nil)
 	mock.ExpectCommit().WillReturnError(arbitraryError)
 
-	req, err := http.NewRequest("POST", "/v1/product", strings.NewReader(exampleProductCreationInputWithAttributes))
+	req, err := http.NewRequest("POST", "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
@@ -824,7 +824,7 @@ func TestProductCreationHandlerWhereTransactionFailsToBegin(t *testing.T) {
 
 	mock.ExpectBegin().WillReturnError(arbitraryError)
 
-	req, err := http.NewRequest("POST", "/v1/product", strings.NewReader(exampleProductCreationInputWithAttributes))
+	req, err := http.NewRequest("POST", "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 
@@ -832,7 +832,7 @@ func TestProductCreationHandlerWhereTransactionFailsToBegin(t *testing.T) {
 	ensureExpectationsWereMet(t, mock)
 }
 
-func TestProductCreationHandlerWithoutAttributes(t *testing.T) {
+func TestProductCreationHandlerWithoutOptions(t *testing.T) {
 	t.Parallel()
 	expectedProgenitor := &ProductProgenitor{
 		ID:            2,
@@ -967,7 +967,7 @@ func TestProductCreationHandlerWhereProgenitorCreationFails(t *testing.T) {
 	ensureExpectationsWereMet(t, mock)
 }
 
-func TestProductCreationHandlerWithErrorCreatingAttributes(t *testing.T) {
+func TestProductCreationHandlerWithErrorCreatingOptions(t *testing.T) {
 	t.Parallel()
 	expectedProgenitor := &ProductProgenitor{
 		ID:            2,
@@ -994,10 +994,10 @@ func TestProductCreationHandlerWithErrorCreatingAttributes(t *testing.T) {
 	setExpectationsForProductExistence(mock, "skateboard", false, nil)
 	mock.ExpectBegin()
 	setExpectationsForProductProgenitorCreation(mock, expectedProgenitor, nil)
-	setExpectationsForProductAttributeCreation(mock, expectedCreatedProductAttribute, arbitraryError)
+	setExpectationsForProductOptionCreation(mock, expectedCreatedProductOption, arbitraryError)
 	mock.ExpectRollback()
 
-	req, err := http.NewRequest("POST", "/v1/product", strings.NewReader(exampleProductCreationInputWithAttributes))
+	req, err := http.NewRequest("POST", "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
 	assert.Nil(t, err)
 	router.ServeHTTP(res, req)
 

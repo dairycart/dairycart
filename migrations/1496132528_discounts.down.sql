@@ -1,2 +1,2 @@
-DROP TABLE sales_and_discounts;
+DROP TABLE discounts;
 DROP TYPE discount_type;

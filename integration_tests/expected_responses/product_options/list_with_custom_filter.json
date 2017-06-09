@@ -8,15 +8,15 @@
 		"product_progenitor_id": 1,
 		"values": [{
 			"id": 4,
-			"product_attribute_id": 2,
+			"product_option_id": 2,
 			"value": "small"
 		}, {
 			"id": 5,
-			"product_attribute_id": 2,
+			"product_option_id": 2,
 			"value": "medium"
 		}, {
 			"id": 6,
-			"product_attribute_id": 2,
+			"product_option_id": 2,
 			"value": "large"
 		}]
 	}]

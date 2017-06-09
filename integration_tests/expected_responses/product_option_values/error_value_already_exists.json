@@ -1,0 +1,4 @@
+{
+	"status": 400,
+	"message": "product option value `blue` already exists for option ID 1"
+}

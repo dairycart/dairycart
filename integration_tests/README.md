@@ -35,39 +35,39 @@ Delete product route:
 - [x] Newly Created SKU ([TestProductDeletionRouteForNewlyCreatedProduct](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L456))
 - [x] Nonexistent SKU ([TestProductDeletionRouteForNonexistentProduct](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L445))
 
-## Product Attributes
+## Product Options
 
-Product attribute list route:
+Product option list route:
 
-- [x] Default pagination ([TestProductAttributeListRetrievalWithDefaultFilter](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L222))
-- [x] Custom pagination ([TestProductAttributeListRetrievalWithCustomFilter](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L233))
+- [x] Default pagination ([TestProductOptionListRetrievalWithDefaultFilter](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L222))
+- [x] Custom pagination ([TestProductOptionListRetrievalWithCustomFilter](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L233))
 
-Create product attribute route:
+Create product option route:
 
-- [x] Valid input ([TestProductAttributeCreation](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L248))
-- [ ] Invalid input ([TestProductAttributeCreationWithInvalidInput](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L260))
-- [ ] Existent attribute name ([TestProductAttributeCreationWithAlreadyExistentName](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L271))
+- [x] Valid input ([TestProductOptionCreation](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L248))
+- [ ] Invalid input ([TestProductOptionCreationWithInvalidInput](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L260))
+- [ ] Existent option name ([TestProductOptionCreationWithAlreadyExistentName](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L271))
 
-Update product attribute route:
+Update product option route:
 
-- [x] Valid input ([TestProductAttributeUpdate](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L283))
-- [x] Invalid input ([TestProductAttributeUpdateWithInvalidInput](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L295))
-- [x] Nonexistent attribute ([TestProductAttributeUpdateForNonexistentAttribute](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L306))
+- [x] Valid input ([TestProductOptionUpdate](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L283))
+- [x] Invalid input ([TestProductOptionUpdateWithInvalidInput](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L295))
+- [x] Nonexistent option ([TestProductOptionUpdateForNonexistentOption](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L306))
 
-## Product Attribute Values
+## Product Option Values
 
-Create product attribute values route:
+Create product option values route:
 
-- [x] Valid input ([TestProductAttributeValueCreation](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L319))
-- [x] Invalid input ([TestProductAttributeValueCreationWithInvalidInput](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L331))
-- [x] Existent attribute value ([TestProductAttributeValueCreationWithAlreadyExistentValue](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L342))
+- [x] Valid input ([TestProductOptionValueCreation](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L319))
+- [x] Invalid input ([TestProductOptionValueCreationWithInvalidInput](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L331))
+- [x] Existent option value ([TestProductOptionValueCreationWithAlreadyExistentValue](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L342))
 
-Update product attribute value route:
+Update product option value route:
 
-- [x] Valid input ([TestProductAttributeValueUpdate](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L354))
-- [x] Invalid input ([TestProductAttributeValueUpdateWithInvalidInput](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L366))
-- [x] Nonexistent attribute value ([TestProductAttributeValueUpdateForNonexistentAttribute](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L378))
-- [x] Duplicate attribute value ([TestProductAttributeValueUpdateForAlreadyExistentValue](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L391))
+- [x] Valid input ([TestProductOptionValueUpdate](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L354))
+- [x] Invalid input ([TestProductOptionValueUpdateWithInvalidInput](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L366))
+- [x] Nonexistent option value ([TestProductOptionValueUpdateForNonexistentOption](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L378))
+- [x] Duplicate option value ([TestProductOptionValueUpdateForAlreadyExistentValue](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/main_test.go#L391))
 
 Single discount route:
 

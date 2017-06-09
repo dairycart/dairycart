@@ -142,77 +142,77 @@ func TestBuildProductCreationQuery(t *testing.T) {
 	assert.Equal(t, 7, len(actualArgs), argsEqualityErrorMessage)
 }
 
-func TestBuildProductAttributeRetrievalQuery(t *testing.T) {
+func TestBuildProductOptionRetrievalQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `SELECT * FROM product_attributes WHERE id = $1 AND archived_at IS NULL`
-	actualQuery := buildProductAttributeRetrievalQuery(existingID)
+	expectedQuery := `SELECT * FROM product_options WHERE id = $1 AND archived_at IS NULL`
+	actualQuery := buildProductOptionRetrievalQuery(existingID)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 
-func TestBuildProductAttributeListQuery(t *testing.T) {
+func TestBuildProductOptionListQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `SELECT count(id) over (), * FROM product_attributes WHERE product_progenitor_id = $1 AND archived_at IS NULL LIMIT 25`
-	actualQuery := buildProductAttributeListQuery(existingIDString, &QueryFilter{})
+	expectedQuery := `SELECT count(id) over (), * FROM product_options WHERE product_progenitor_id = $1 AND archived_at IS NULL LIMIT 25`
+	actualQuery := buildProductOptionListQuery(existingIDString, &QueryFilter{})
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 
-func TestBuildProductAttributeDeletionQuery(t *testing.T) {
+func TestBuildProductOptionDeletionQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `UPDATE product_attributes SET archived_at = NOW() WHERE id = $1 AND archived_at IS NULL`
-	actualQuery := buildProductAttributeDeletionQuery(existingID)
+	expectedQuery := `UPDATE product_options SET archived_at = NOW() WHERE id = $1 AND archived_at IS NULL`
+	actualQuery := buildProductOptionDeletionQuery(existingID)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 
-func TestBuildProductAttributeUpdateQuery(t *testing.T) {
+func TestBuildProductOptionUpdateQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `UPDATE product_attributes SET name = $1, updated_at = NOW() WHERE id = $2 RETURNING *`
-	actualQuery, actualArgs := buildProductAttributeUpdateQuery(&ProductAttribute{})
-	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
-	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
-}
-
-func TestBuildProductAttributeCreationQuery(t *testing.T) {
-	t.Parallel()
-	expectedQuery := `INSERT INTO product_attributes (name,product_progenitor_id) VALUES ($1,$2) RETURNING "id"`
-	actualQuery, actualArgs := buildProductAttributeCreationQuery(&ProductAttribute{})
+	expectedQuery := `UPDATE product_options SET name = $1, updated_at = NOW() WHERE id = $2 RETURNING *`
+	actualQuery, actualArgs := buildProductOptionUpdateQuery(&ProductOption{})
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
 }
 
-func TestBuildProductAttributeValueRetrievalQuery(t *testing.T) {
+func TestBuildProductOptionCreationQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `SELECT * FROM product_attribute_values WHERE id = $1 AND archived_at IS NULL`
-	actualQuery := buildProductAttributeValueRetrievalQuery(existingID)
-	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
-}
-
-func TestBuildProductAttributeValueDeletionQuery(t *testing.T) {
-	t.Parallel()
-	expectedQuery := `UPDATE product_attribute_values SET archived_at = NOW() WHERE id = $1 AND archived_at IS NULL`
-	actualQuery := buildProductAttributeValueDeletionQuery(existingID)
-	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
-}
-
-func TestBuildProductAttributeValueExistenceForAttributeIDQuery(t *testing.T) {
-	t.Parallel()
-	expectedQuery := `SELECT EXISTS(SELECT 1 FROM product_attribute_values WHERE product_attribute_id = $1 AND value = $2 AND archived_at IS NULL)`
-	actualQuery, actualArgs := buildProductAttributeValueExistenceForAttributeIDQuery(1, "value")
+	expectedQuery := `INSERT INTO product_options (name,product_progenitor_id) VALUES ($1,$2) RETURNING "id"`
+	actualQuery, actualArgs := buildProductOptionCreationQuery(&ProductOption{})
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
 }
 
-func TestBuildProductAttributeValueUpdateQuery(t *testing.T) {
+func TestBuildProductOptionValueRetrievalQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `UPDATE product_attribute_values SET updated_at = NOW(), value = $1 WHERE id = $2 RETURNING *`
-	actualQuery, actualArgs := buildProductAttributeValueUpdateQuery(&ProductAttributeValue{})
+	expectedQuery := `SELECT * FROM product_option_values WHERE id = $1 AND archived_at IS NULL`
+	actualQuery := buildProductOptionValueRetrievalQuery(existingID)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+}
+
+func TestBuildProductOptionValueDeletionQuery(t *testing.T) {
+	t.Parallel()
+	expectedQuery := `UPDATE product_option_values SET archived_at = NOW() WHERE id = $1 AND archived_at IS NULL`
+	actualQuery := buildProductOptionValueDeletionQuery(existingID)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+}
+
+func TestBuildProductOptionValueExistenceForOptionIDQuery(t *testing.T) {
+	t.Parallel()
+	expectedQuery := `SELECT EXISTS(SELECT 1 FROM product_option_values WHERE product_option_id = $1 AND value = $2 AND archived_at IS NULL)`
+	actualQuery, actualArgs := buildProductOptionValueExistenceForOptionIDQuery(1, "value")
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
 }
 
-func TestBuildProductAttributeValueCreationQuery(t *testing.T) {
+func TestBuildProductOptionValueUpdateQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `INSERT INTO product_attribute_values (product_attribute_id,value) VALUES ($1,$2) RETURNING "id"`
-	actualQuery, actualArgs := buildProductAttributeValueCreationQuery(&ProductAttributeValue{})
+	expectedQuery := `UPDATE product_option_values SET updated_at = NOW(), value = $1 WHERE id = $2 RETURNING *`
+	actualQuery, actualArgs := buildProductOptionValueUpdateQuery(&ProductOptionValue{})
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
+}
+
+func TestBuildProductOptionValueCreationQuery(t *testing.T) {
+	t.Parallel()
+	expectedQuery := `INSERT INTO product_option_values (product_option_id,value) VALUES ($1,$2) RETURNING "id"`
+	actualQuery, actualArgs := buildProductOptionValueCreationQuery(&ProductOptionValue{})
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
 }

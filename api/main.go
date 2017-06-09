@@ -29,18 +29,18 @@ func SetupAPIRoutes(router *mux.Router, db *sql.DB) {
 	router.HandleFunc(productEndpoint, buildProductExistenceHandler(db)).Methods("HEAD")
 	router.HandleFunc(productEndpoint, buildProductDeletionHandler(db)).Methods("DELETE")
 
-	// Product Attributes
-	productAttributeEndpoint := buildRoute("product_attributes", "{progenitor_id:[0-9]+}")
-	specificAttributeEndpoint := buildRoute("product_attributes", "{attribute_id:[0-9]+}")
-	router.HandleFunc(productAttributeEndpoint, buildProductAttributeListHandler(db)).Methods("GET")
-	router.HandleFunc(productAttributeEndpoint, buildProductAttributeCreationHandler(db)).Methods("POST")
-	router.HandleFunc(specificAttributeEndpoint, buildProductAttributeUpdateHandler(db)).Methods("PUT")
+	// Product Options
+	productOptionEndpoint := buildRoute("product_options", "{progenitor_id:[0-9]+}")
+	specificOptionEndpoint := buildRoute("product_options", "{option_id:[0-9]+}")
+	router.HandleFunc(productOptionEndpoint, buildProductOptionListHandler(db)).Methods("GET")
+	router.HandleFunc(productOptionEndpoint, buildProductOptionCreationHandler(db)).Methods("POST")
+	router.HandleFunc(specificOptionEndpoint, buildProductOptionUpdateHandler(db)).Methods("PUT")
 
-	// Product Attribute Values
-	attributeValueEndpoint := buildRoute("product_attributes", "{attribute_id:[0-9]+}", "value")
-	specificAttributeValueEndpoint := buildRoute("product_attribute_values", "{attribute_value_id:[0-9]+}")
-	router.HandleFunc(attributeValueEndpoint, buildProductAttributeValueCreationHandler(db)).Methods("POST")
-	router.HandleFunc(specificAttributeValueEndpoint, buildProductAttributeValueUpdateHandler(db)).Methods("PUT")
+	// Product Option Values
+	optionValueEndpoint := buildRoute("product_options", "{option_id:[0-9]+}", "value")
+	specificOptionValueEndpoint := buildRoute("product_option_values", "{option_value_id:[0-9]+}")
+	router.HandleFunc(optionValueEndpoint, buildProductOptionValueCreationHandler(db)).Methods("POST")
+	router.HandleFunc(specificOptionValueEndpoint, buildProductOptionValueUpdateHandler(db)).Methods("PUT")
 
 	// Discounts
 	specificDiscountEndpoint := buildRoute("discount", "{discount_id:[0-9]+}")
