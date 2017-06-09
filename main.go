@@ -24,16 +24,6 @@ import (
 	"github.com/verygoodsoftwarenotvirus/dairycart/api"
 )
 
-var db *sql.DB
-
-func init() {
-	// Output to stdout instead of the default stderr
-	log.SetOutput(os.Stdout)
-
-	// Only log the warning severity or above.
-	log.SetLevel(log.InfoLevel)
-}
-
 func determineMigrationCount() int {
 	files, err := ioutil.ReadDir("migrations")
 	if err != nil {
@@ -77,10 +67,15 @@ func migrateDatabase(db *sql.DB, migrationCount int) {
 }
 
 func main() {
+	// Output to stdout instead of the default stderr
+	log.SetOutput(os.Stdout)
+	// Only log the warning severity or above.
+	log.SetLevel(log.InfoLevel)
+
 	// Connect to the database
 	dbURL := os.Getenv("DAIRYCART_DB_URL")
 	var err error
-	db, err = sql.Open("postgres", dbURL)
+	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatalf("error encountered connecting to database: %v", err)
 	}

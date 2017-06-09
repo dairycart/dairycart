@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Masterminds/squirrel"
 	"github.com/gorilla/mux"
 )
 
@@ -13,12 +12,6 @@ const (
 	// SKUPattern represents the valid characters a sku can contain
 	SKUPattern = `[a-zA-Z\-_]+`
 )
-
-var sqlBuilder squirrel.StatementBuilderType
-
-func init() {
-	sqlBuilder = squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-}
 
 func buildRoute(routeParts ...string) string {
 	allRouteParts := append([]string{"v1"}, routeParts...)

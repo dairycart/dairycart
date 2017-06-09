@@ -6,6 +6,12 @@ import (
 	"github.com/Masterminds/squirrel"
 )
 
+var sqlBuilder squirrel.StatementBuilderType
+
+func init() {
+	sqlBuilder = squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+}
+
 ////////////////////////////////////////////////////////
 //                                                    //
 //               General Query Builders               //
