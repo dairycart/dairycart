@@ -11,7 +11,6 @@ import (
 )
 
 const (
-	discountExistenceQuery = `SELECT EXISTS(SELECT 1 FROM discounts WHERE id = $1 AND archived_at IS NULL)`
 	discountRetrievalQuery = `SELECT * FROM discounts WHERE id = $1 AND archived_at IS NULL`
 	discountDeletionQuery  = `UPDATE discounts SET archived_at = NOW() WHERE id = $1 AND archived_at IS NULL`
 )
@@ -59,6 +58,20 @@ func (d *Discount) generateScanArgs() []interface{} {
 	}
 }
 
+// generateJoinScanArgsWithCount does everything generateJoinScanArgs does,
+// only with an added count parameter
+func (d *Discount) generateJoinScanArgsWithCount(count *uint64) []interface{} {
+	scanArgs := []interface{}{count}
+	discountScanArgs := d.generateScanArgs()
+	return append(scanArgs, discountScanArgs...)
+}
+
+// DiscountsResponse is a discount response struct
+type DiscountsResponse struct {
+	ListResponse
+	Data []Discount `json:"data"`
+}
+
 func (d *Discount) discountTypeIsValid() bool {
 	// Because Go doesn't have typed enums (https://github.com/golang/go/issues/19814),
 	// this is my only real line of defense against a user attempting to load an invalid
@@ -96,5 +109,53 @@ func buildDiscountRetrievalHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		json.NewEncoder(res).Encode(discount)
+	}
+}
+
+// retrieveListOfDiscountsFromDB retrieves a list of discounts from the database
+func retrieveListOfDiscountsFromDB(db *sql.DB, queryFilter *QueryFilter) ([]Discount, uint64, error) {
+	var discounts []Discount
+	var count uint64
+
+	query, args := buildProductListQuery(queryFilter)
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "Error encountered querying for discounts")
+	}
+
+	defer rows.Close()
+	for rows.Next() {
+		var discount Discount
+		var queryCount uint64
+
+		scanArgs := discount.generateJoinScanArgsWithCount(&queryCount)
+		_ = rows.Scan(scanArgs...)
+
+		count = queryCount
+		discounts = append(discounts, discount)
+	}
+	return discounts, count, nil
+}
+
+func buildDiscountListRetrievalHandler(db *sql.DB) http.HandlerFunc {
+	// DiscountListRetrievalHandler is a request handler that returns a list of Discounts
+	return func(res http.ResponseWriter, req *http.Request) {
+		rawFilterParams := req.URL.Query()
+		queryFilter := parseRawFilterParams(rawFilterParams)
+		discounts, count, err := retrieveListOfDiscountsFromDB(db, queryFilter)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "retrieve discounts from the database")
+			return
+		}
+
+		discountsResponse := &DiscountsResponse{
+			ListResponse: ListResponse{
+				Page:  queryFilter.Page,
+				Limit: queryFilter.Limit,
+				Count: count,
+			},
+			Data: discounts,
+		}
+		json.NewEncoder(res).Encode(discountsResponse)
 	}
 }

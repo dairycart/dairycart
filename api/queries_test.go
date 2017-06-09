@@ -120,3 +120,11 @@ func TestBuildProductOptionValueCreationQuery(t *testing.T) {
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
 }
+
+func TestBuildDiscountListQuery(t *testing.T) {
+	t.Parallel()
+	expectedQuery := `SELECT count(id) over (), * FROM discounts WHERE (expires_at IS NULL OR expires_at < $1) AND archived_at IS NULL LIMIT 25`
+	actualQuery, actualArgs := buildDiscountListQuery(defaultQueryFilter)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 1, len(actualArgs), argsEqualityErrorMessage)
+}

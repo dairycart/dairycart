@@ -18,7 +18,7 @@ import (
 
 const (
 	exampleSKU          = "example"
-	exampleTimeString   = "2017-01-01 12:00:00.000000"
+	exampleTimeString   = "2016-12-01 12:00:00.000000"
 	exampleGarbageInput = `{"things": "stuff"}`
 )
 
@@ -32,16 +32,20 @@ const (
 
 var arbitraryError error
 var exampleTime time.Time
+var exampleOlderTime time.Time
+var exampleNewerTime time.Time
 
 func init() {
 	log.SetOutput(ioutil.Discard)
 	arbitraryError = fmt.Errorf("arbitrary error")
 
 	var timeParseErr error
-	exampleTime, timeParseErr = time.Parse("2006-01-02 03:04:00.000000", exampleTimeString)
+	exampleOlderTime, timeParseErr = time.Parse("2006-01-02 03:04:00.000000", exampleTimeString)
 	if timeParseErr != nil {
 		log.Fatalf("error parsing time")
 	}
+	exampleTime = exampleOlderTime.Add(30 * (24 * time.Hour))
+	exampleNewerTime = exampleTime.Add(30 * (24 * time.Hour))
 }
 
 func setupMockRequestsAndMux(db *sql.DB) (*httptest.ResponseRecorder, *mux.Router) {

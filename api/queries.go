@@ -204,3 +204,24 @@ func buildProductOptionValueCreationQuery(v *ProductOptionValue) (string, []inte
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
+
+////////////////////////////////////////////////////////
+//                                                    //
+//                     Discounts                      //
+//                                                    //
+////////////////////////////////////////////////////////
+
+func buildDiscountListQuery(queryFilter *QueryFilter) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		Select("count(id) over (), *").
+		From("discounts").
+		Where(squirrel.Or{squirrel.Eq{"expires_on": nil}, squirrel.Lt{"expires_on": "NOW()"}}).
+		Where(squirrel.Eq{"archived_at": nil}).
+		Limit(uint64(queryFilter.Limit))
+
+	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter)
+
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}
