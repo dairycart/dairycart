@@ -98,10 +98,9 @@ func setExpectationsForProductOptionValueUpdate(mock sqlmock.Sqlmock, v *Product
 
 func setExpectationsForProductOptionValueForOptionExistence(mock sqlmock.Sqlmock, a *ProductOption, v *ProductOptionValue, exists bool, err error) {
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
-	query, args := buildProductOptionValueExistenceForOptionIDQuery(a.ID, v.Value)
-	queryArgs := argsToDriverValues(args)
-	mock.ExpectQuery(formatQueryForSQLMock(query)).
-		WithArgs(queryArgs...).
+	query := formatQueryForSQLMock(productOptionValueExistenceForOptionIDQuery)
+	mock.ExpectQuery(query).
+		WithArgs(a.ID, v.Value).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
 }

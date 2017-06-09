@@ -54,13 +54,6 @@ func TestNullTimeUnmarshalText(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestRound(t *testing.T) {
-	t.Parallel()
-	assert.Equal(t, 1.24, Round(1.23456789, .1, 2), "Round output should equal expected output")
-	assert.Equal(t, 1.235, Round(1.23456789, .1, 3), "Round output should equal expected output")
-	assert.Equal(t, 1.23, Round(1.23456789, .9, 2), "Round output should equal expected output")
-}
-
 func TestParseRawFilterParams(t *testing.T) {
 	t.Parallel()
 	exampleUnixStartTime := int64(232747200)

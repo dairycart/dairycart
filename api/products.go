@@ -78,19 +78,6 @@ func (p *Product) generateJoinScanArgsWithCount(count *uint64) []interface{} {
 	return append(scanArgs, progenitorScanArgs...)
 }
 
-func (p *Product) roundNumericFields() {
-	p.PackageWeight = float32(Round(float64(p.PackageWeight), .1, 2))
-	p.PackageHeight = float32(Round(float64(p.PackageHeight), .1, 2))
-	p.PackageWidth = float32(Round(float64(p.PackageWidth), .1, 2))
-	p.PackageLength = float32(Round(float64(p.PackageLength), .1, 2))
-	p.ProductWeight = float32(Round(float64(p.ProductWeight), .1, 2))
-	p.ProductHeight = float32(Round(float64(p.ProductHeight), .1, 2))
-	p.ProductWidth = float32(Round(float64(p.ProductWidth), .1, 2))
-	p.ProductLength = float32(Round(float64(p.ProductLength), .1, 2))
-	p.Price = float32(Round(float64(p.Price), .1, 2))
-	p.Cost = float32(Round(float64(p.Cost), .1, 2))
-}
-
 // NewProductFromCreationInputAndProgenitor creates a new product from a ProductProgenitor and a ProductCreationInput
 func NewProductFromCreationInputAndProgenitor(g *ProductProgenitor, in *ProductCreationInput) *Product {
 	np := &Product{
@@ -153,7 +140,6 @@ func validateProductUpdateInput(req *http.Request) (*Product, error) {
 	if !s.IsZero() && !dataValueIsValid(product.SKU) {
 		return nil, errors.New("Invalid input provided for product SKU")
 	}
-	product.roundNumericFields()
 
 	return product, err
 }

@@ -105,14 +105,6 @@ func TestBuildProductOptionCreationQuery(t *testing.T) {
 	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
 }
 
-func TestBuildProductOptionValueExistenceForOptionIDQuery(t *testing.T) {
-	t.Parallel()
-	expectedQuery := `SELECT EXISTS(SELECT 1 FROM product_option_values WHERE product_option_id = $1 AND value = $2 AND archived_at IS NULL)`
-	actualQuery, actualArgs := buildProductOptionValueExistenceForOptionIDQuery(1, "value")
-	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
-	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
-}
-
 func TestBuildProductOptionValueUpdateQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `UPDATE product_option_values SET updated_at = NOW(), value = $1 WHERE id = $2 RETURNING *`

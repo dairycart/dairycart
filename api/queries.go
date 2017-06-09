@@ -1,10 +1,6 @@
 package api
 
-import (
-	"fmt"
-
-	"github.com/Masterminds/squirrel"
-)
+import "github.com/Masterminds/squirrel"
 
 func applyQueryFilterToQueryBuilder(queryBuilder squirrel.SelectBuilder, queryFilter *QueryFilter) squirrel.SelectBuilder {
 	if queryFilter.Limit > 0 {
@@ -182,20 +178,6 @@ func buildProductOptionCreationQuery(a *ProductOption) (string, []interface{}) {
 //               Product Option Values                //
 //                                                    //
 ////////////////////////////////////////////////////////
-
-func buildProductOptionValueExistenceForOptionIDQuery(optionID int64, value string) (string, []interface{}) {
-	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	subqueryBuilder := sqlBuilder.Select("1").
-		From("product_option_values").
-		Where(squirrel.Eq{"product_option_id": optionID}).
-		Where(squirrel.Eq{"value": value}).
-		Where(squirrel.Eq{"archived_at": nil})
-	subquery, args, _ := subqueryBuilder.ToSql()
-
-	queryBuilder := sqlBuilder.Select(fmt.Sprintf("EXISTS(%s)", subquery))
-	query, _, _ := queryBuilder.ToSql()
-	return query, args
-}
 
 func buildProductOptionValueUpdateQuery(v *ProductOptionValue) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)

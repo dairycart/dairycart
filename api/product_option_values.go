@@ -15,6 +15,7 @@ import (
 
 const (
 	productOptionValueExistenceQuery            = `SELECT EXISTS(SELECT 1 FROM product_option_values WHERE id = $1 AND archived_at IS NULL)`
+	productOptionValueExistenceForOptionIDQuery = `SELECT EXISTS(SELECT 1 FROM product_option_values WHERE product_option_id = $1 AND value = $2 AND archived_at IS NULL)`
 	productOptionValueRetrievalQuery            = `SELECT * FROM product_option_values WHERE id = $1 AND archived_at IS NULL`
 	productOptionValueRetrievalForOptionIDQuery = `SELECT * FROM product_option_values WHERE product_option_id = $1 AND archived_at IS NULL`
 )
@@ -175,8 +176,7 @@ func createProductOptionValueInDB(tx *sql.Tx, v *ProductOptionValue) (int64, err
 func optionValueAlreadyExistsForOption(db *sql.DB, optionID int64, value string) (bool, error) {
 	var exists string
 
-	query, args := buildProductOptionValueExistenceForOptionIDQuery(optionID, value)
-	err := db.QueryRow(query, args...).Scan(&exists)
+	err := db.QueryRow(productOptionValueExistenceForOptionIDQuery, optionID, value).Scan(&exists)
 	if err == sql.ErrNoRows {
 		return false, nil
 	}

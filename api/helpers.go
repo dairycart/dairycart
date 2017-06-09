@@ -76,21 +76,6 @@ func (ns *NullString) UnmarshalText(text []byte) (err error) {
 	return nil
 }
 
-// Round borrowed from https://gist.github.com/DavidVaini/10308388
-func Round(val float64, roundOn float64, places int) (newVal float64) {
-	var round float64
-	pow := math.Pow(10, float64(places))
-	digit := pow * val
-	_, div := math.Modf(digit)
-	if div >= roundOn {
-		round = math.Ceil(digit)
-	} else {
-		round = math.Floor(digit)
-	}
-	newVal = round / pow
-	return
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////
 //    ¸,ø¤º°º¤ø,¸¸,ø¤º°   Everything after this point is not borrowed.   °º¤ø,¸¸,ø¤º°º¤ø,¸    //
 ////////////////////////////////////////////////////////////////////////////////////////////////
