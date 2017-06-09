@@ -39,18 +39,17 @@ VALUES
 (1, 't-shirt-large-blue', 'Blue T-Shirt (Large)', null, 12.34, 5, 123),
 (2, 'skateboard', 'Skateboard', '1234567890', 99.99, 50, 123);
 
-INSERT INTO product_options
+INSERT INTO product_attributes
 (
-    "name",
-    "product_progenitor_id"
+    "name"
 )
 VALUES
-('color', 1),
-('size', 1);
+('color'),
+('size');
 
-INSERT INTO product_option_values
+INSERT INTO product_attribute_values
 (
-    "product_option_id",
+    "product_attribute_id",
     "value"
 )
 VALUES
@@ -60,29 +59,6 @@ VALUES
 (2, 'small'),
 (2, 'medium'),
 (2, 'large');
-
-INSERT INTO product_attributes
-(
-    "name"
-)
-VALUES
-('Concave Shape'),
-('Ply Count');
-
-INSERT INTO product_attribute_values
-(
-    "product_attribute_id",
-    "value"
-)
-VALUES
-(1, 'Radial'),
-(1, 'Progressive'),
-(1, 'W-Concave'),
-(1, 'Flatcave'),
-(1, 'Flat'),
-(2, '7-ply'),
-(2, '9-ply');
-
 
 INSERT INTO discounts
 (

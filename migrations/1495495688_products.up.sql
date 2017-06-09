@@ -38,30 +38,6 @@ CREATE TABLE products (
     FOREIGN KEY ("product_progenitor_id") REFERENCES "product_progenitors"("id")
 );
 
-CREATE TABLE product_options (
-    "id" bigserial,
-    "name" text NOT NULL,
-    "product_progenitor_id" bigint NOT NULL,
-    "created_at" timestamp DEFAULT NOW(),
-    "updated_at" timestamp,
-    "archived_at" timestamp,
-    UNIQUE ("product_progenitor_id", "name"),
-    PRIMARY KEY ("id"),
-FOREIGN KEY ("product_progenitor_id") REFERENCES "product_progenitors"("id")
-);
-
-CREATE TABLE product_option_values (
-    "id" bigserial,
-    "product_option_id" bigint NOT NULL,
-    "value" text NOT NULL,
-    "created_at" timestamp DEFAULT NOW(),
-    "updated_at" timestamp,
-    "archived_at" timestamp,
-    UNIQUE ("product_option_id", "value"),
-    PRIMARY KEY ("id"),
-FOREIGN KEY ("product_option_id") REFERENCES "product_options"("id")
-);
-
 CREATE TABLE product_attributes (
     "id" bigserial,
     "name" text NOT NULL,

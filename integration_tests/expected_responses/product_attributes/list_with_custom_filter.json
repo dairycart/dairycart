@@ -4,15 +4,19 @@
 	"page": 2,
 	"data": [{
 		"id": 2,
-		"name": "Ply Count",
+		"name": "size",
 		"values": [{
+			"id": 4,
+			"product_attribute_id": 2,
+			"value": "small"
+		}, {
+			"id": 5,
+			"product_attribute_id": 2,
+			"value": "medium"
+		}, {
 			"id": 6,
 			"product_attribute_id": 2,
-			"value": "7-ply"
-		}, {
-			"id": 7,
-			"product_attribute_id": 2,
-			"value": "9-ply"
+			"value": "large"
 		}]
 	}]
 }
