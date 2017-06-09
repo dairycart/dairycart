@@ -292,7 +292,7 @@ func TestRowExistsInDBWhenDBThrowsError(t *testing.T) {
 
 	setExpectationsForProductExistence(mock, exampleSKU, true, sql.ErrNoRows)
 
-	exists, err := rowExistsInDB(db, "products", "sku", exampleSKU)
+	exists, err := rowExistsInDB(db, skuExistenceQuery, exampleSKU)
 
 	assert.Nil(t, err)
 	assert.False(t, exists)
@@ -309,7 +309,7 @@ func TestRowExistsInDBForExistingRow(t *testing.T) {
 
 	setExpectationsForProductExistence(mock, exampleSKU, true, nil)
 
-	exists, err := rowExistsInDB(db, "products", "sku", exampleSKU)
+	exists, err := rowExistsInDB(db, skuExistenceQuery, exampleSKU)
 
 	assert.Nil(t, err)
 	assert.True(t, exists)
@@ -326,7 +326,7 @@ func TestRowExistsInDBForNonexistentRow(t *testing.T) {
 
 	setExpectationsForProductExistence(mock, exampleSKU, false, nil)
 
-	exists, err := rowExistsInDB(db, "products", "sku", exampleSKU)
+	exists, err := rowExistsInDB(db, skuExistenceQuery, exampleSKU)
 
 	assert.Nil(t, err)
 	assert.False(t, exists)

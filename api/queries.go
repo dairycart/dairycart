@@ -6,43 +6,6 @@ import (
 	"github.com/Masterminds/squirrel"
 )
 
-var sqlBuilder squirrel.StatementBuilderType
-
-func init() {
-	sqlBuilder = squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-}
-
-////////////////////////////////////////////////////////
-//                                                    //
-//               General Query Builders               //
-//                                                    //
-////////////////////////////////////////////////////////
-
-func buildRowExistenceQuery(table string, idColumn string, id interface{}) string {
-	subqueryBuilder := sqlBuilder.Select("1").From(table).Where(squirrel.Eq{idColumn: id}).Where(squirrel.Eq{"archived_at": nil})
-	subquery, _, _ := subqueryBuilder.ToSql()
-
-	queryBuilder := sqlBuilder.Select(fmt.Sprintf("EXISTS(%s)", subquery))
-	query, _, _ := queryBuilder.ToSql()
-	return query
-}
-
-func buildRowRetrievalQuery(table string, idColumn string, id interface{}) string {
-	queryBuilder := sqlBuilder.Select("*").From(table).Where(squirrel.Eq{idColumn: id}).Where(squirrel.Eq{"archived_at": nil})
-	query, _, _ := queryBuilder.ToSql()
-	return query
-}
-
-func buildRowDeletionQuery(table string, idColumn string, id interface{}) string {
-	queryBuilder := sqlBuilder.
-		Update(table).
-		Set("archived_at", squirrel.Expr("NOW()")).
-		Where(squirrel.Eq{idColumn: id}).
-		Where(squirrel.Eq{"archived_at": nil})
-	query, _, _ := queryBuilder.ToSql()
-	return query
-}
-
 func applyQueryFilterToQueryBuilder(queryBuilder squirrel.SelectBuilder, queryFilter *QueryFilter) squirrel.SelectBuilder {
 	if queryFilter.Limit > 0 {
 		queryBuilder = queryBuilder.Limit(uint64(queryFilter.Limit))
@@ -80,6 +43,7 @@ func applyQueryFilterToQueryBuilder(queryBuilder squirrel.SelectBuilder, queryFi
 ////////////////////////////////////////////////////////
 
 func buildProgenitorCreationQuery(g *ProductProgenitor) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Insert("product_progenitors").
 		Columns(
@@ -124,6 +88,7 @@ func buildProgenitorCreationQuery(g *ProductProgenitor) (string, []interface{}) 
 ////////////////////////////////////////////////////////
 
 func buildProductListQuery(queryFilter *QueryFilter) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Select("count(p.id) over (), *").
 		From("products p").
@@ -137,18 +102,8 @@ func buildProductListQuery(queryFilter *QueryFilter) (string, []interface{}) {
 	return query, args
 }
 
-func buildCompleteProductRetrievalQuery(sku string) string {
-	queryBuilder := sqlBuilder.
-		Select("*").
-		From("products p").
-		Join("product_progenitors g ON p.product_progenitor_id = g.id").
-		Where(squirrel.Eq{"p.sku": sku}).
-		Where(squirrel.Eq{"p.archived_at": nil})
-	query, _, _ := queryBuilder.ToSql()
-	return query
-}
-
 func buildProductUpdateQuery(p *Product) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	productUpdateSetMap := map[string]interface{}{
 		"sku":        p.SKU,
 		"name":       p.Name,
@@ -168,6 +123,7 @@ func buildProductUpdateQuery(p *Product) (string, []interface{}) {
 }
 
 func buildProductCreationQuery(p *Product) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Insert("products").
 		Columns("product_progenitor_id", "sku", "name", "upc", "quantity", "price", "cost").
@@ -183,31 +139,20 @@ func buildProductCreationQuery(p *Product) (string, []interface{}) {
 //                                                    //
 ////////////////////////////////////////////////////////
 
-func buildProductOptionExistenceQueryForProductByName(name, progenitorID string) string {
-	subqueryBuilder := sqlBuilder.Select("1").
-		From("product_options").
-		Where(squirrel.Eq{"name": name}).
-		Where(squirrel.Eq{"product_progenitor_id": progenitorID}).
-		Where(squirrel.Eq{"archived_at": nil})
-	subquery, _, _ := subqueryBuilder.ToSql()
-
-	queryBuilder := sqlBuilder.Select(fmt.Sprintf("EXISTS(%s)", subquery))
-	query, _, _ := queryBuilder.ToSql()
-	return query
-}
-
-func buildProductOptionListQuery(progenitorID string, queryFilter *QueryFilter) string {
+func buildProductOptionListQuery(progenitorID string, queryFilter *QueryFilter) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Select("count(id) over (), *").
 		From("product_options").
 		Where(squirrel.Eq{"product_progenitor_id": progenitorID}).
 		Where(squirrel.Eq{"archived_at": nil})
 	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter)
-	query, _, _ := queryBuilder.ToSql()
-	return query
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
 }
 
 func buildProductOptionUpdateQuery(a *ProductOption) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	productOptionUpdateSetMap := map[string]interface{}{
 		"name":       a.Name,
 		"updated_at": squirrel.Expr("NOW()"),
@@ -222,6 +167,7 @@ func buildProductOptionUpdateQuery(a *ProductOption) (string, []interface{}) {
 }
 
 func buildProductOptionCreationQuery(a *ProductOption) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Insert("product_options").
 		Columns("name", "product_progenitor_id").
@@ -237,16 +183,8 @@ func buildProductOptionCreationQuery(a *ProductOption) (string, []interface{}) {
 //                                                    //
 ////////////////////////////////////////////////////////
 
-func buildProductOptionValueRetrievalForOptionIDQuery(optionID int64) string {
-	queryBuilder := sqlBuilder.Select("*").
-		From("product_option_values").
-		Where(squirrel.Eq{"product_option_id": optionID}).
-		Where(squirrel.Eq{"archived_at": nil})
-	query, _, _ := queryBuilder.ToSql()
-	return query
-}
-
 func buildProductOptionValueExistenceForOptionIDQuery(optionID int64, value string) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	subqueryBuilder := sqlBuilder.Select("1").
 		From("product_option_values").
 		Where(squirrel.Eq{"product_option_id": optionID}).
@@ -260,6 +198,7 @@ func buildProductOptionValueExistenceForOptionIDQuery(optionID int64, value stri
 }
 
 func buildProductOptionValueUpdateQuery(v *ProductOptionValue) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	productOptionUpdateSetMap := map[string]interface{}{
 		"value":      v.Value,
 		"updated_at": squirrel.Expr("NOW()"),
@@ -274,6 +213,7 @@ func buildProductOptionValueUpdateQuery(v *ProductOptionValue) (string, []interf
 }
 
 func buildProductOptionValueCreationQuery(v *ProductOptionValue) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Insert("product_option_values").
 		Columns("product_option_id", "value").

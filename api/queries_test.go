@@ -17,27 +17,6 @@ const (
 // Note: comparing interface equality with assert is impossible as far as I can tell,
 // so generally these tests ensure that the correct number of args are returned.
 
-func TestBuildRowExistenceQuery(t *testing.T) {
-	t.Parallel()
-	expectedQuery := `SELECT EXISTS(SELECT 1 FROM things WHERE stuff = $1 AND archived_at IS NULL)`
-	actualQuery := buildRowExistenceQuery("things", "stuff", "abritrary")
-	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
-}
-
-func TestBuildRowRetrievalQuery(t *testing.T) {
-	t.Parallel()
-	expectedQuery := `SELECT * FROM things WHERE stuff = $1 AND archived_at IS NULL`
-	actualQuery := buildRowRetrievalQuery("things", "stuff", "abritrary")
-	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
-}
-
-func TestBuildRowDeletionQuery(t *testing.T) {
-	t.Parallel()
-	expectedQuery := `UPDATE things SET archived_at = NOW() WHERE stuff = $1 AND archived_at IS NULL`
-	actualQuery := buildRowDeletionQuery("things", "stuff", "abritrary")
-	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
-}
-
 func TestBuildProgenitorCreationQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `INSERT INTO product_progenitors (name,description,taxable,price,cost,product_weight,product_height,product_width,product_length,package_weight,package_height,package_width,package_length) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING "id"`
@@ -84,13 +63,6 @@ func TestBuildProductListQueryAndCompletelyCustomQueryFilter(t *testing.T) {
 	assert.Equal(t, 4, len(actualArgs), argsEqualityErrorMessage)
 }
 
-func TestBuildCompleteProductRetrievalQuery(t *testing.T) {
-	t.Parallel()
-	expectedQuery := `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.sku = $1 AND p.archived_at IS NULL`
-	actualQuery := buildCompleteProductRetrievalQuery(exampleSKU)
-	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
-}
-
 func TestBuildProductUpdateQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `UPDATE products SET cost = $1, name = $2, price = $3, quantity = $4, sku = $5, upc = $6, updated_at = NOW() WHERE id = $7 RETURNING *`
@@ -111,8 +83,10 @@ func TestBuildProductCreationQuery(t *testing.T) {
 func TestBuildProductOptionListQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `SELECT count(id) over (), * FROM product_options WHERE product_progenitor_id = $1 AND archived_at IS NULL LIMIT 25`
-	actualQuery := buildProductOptionListQuery(existingIDString, &QueryFilter{})
+	actualQuery, actualArgs := buildProductOptionListQuery(existingIDString, &QueryFilter{})
+
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 1, len(actualArgs), argsEqualityErrorMessage)
 }
 
 func TestBuildProductOptionUpdateQuery(t *testing.T) {

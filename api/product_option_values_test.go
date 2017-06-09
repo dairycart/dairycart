@@ -60,7 +60,7 @@ func setExpectationsForProductOptionValueExistence(mock sqlmock.Sqlmock, v *Prod
 
 func setExpectationsForProductOptionValueRetrievalByOptionID(mock sqlmock.Sqlmock, a *ProductOption, err error) {
 	exampleRows := sqlmock.NewRows(productOptionValueHeaders).AddRow(productOptionValueData...)
-	query := formatQueryForSQLMock(buildProductOptionValueRetrievalForOptionIDQuery(a.ID))
+	query := formatQueryForSQLMock(productOptionValueRetrievalForOptionIDQuery)
 	mock.ExpectQuery(query).
 		WithArgs(a.ID).
 		WillReturnRows(exampleRows).

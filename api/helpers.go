@@ -197,17 +197,15 @@ func dataValueIsValid(input string) bool {
 }
 
 // rowExistsInDB will return whether or not a product/option/etc with a given identifier exists in the database
-func rowExistsInDB(db *sql.DB, table, identifier, id string) (bool, error) {
+func rowExistsInDB(db *sql.DB, query string, identifier string) (bool, error) {
 	var exists string
 
-	query := buildRowExistenceQuery(table, identifier, id)
-	err := db.QueryRow(query, id).Scan(&exists)
+	err := db.QueryRow(query, identifier).Scan(&exists)
 	if err == sql.ErrNoRows {
 		return false, nil
+	} else if err != nil {
+		return false, err
 	}
-	// } else if err != nil {
-	// 	return false, err
-	// }
 
 	return exists == "true", err
 }

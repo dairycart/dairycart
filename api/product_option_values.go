@@ -14,8 +14,9 @@ import (
 )
 
 const (
-	productOptionValueExistenceQuery = `SELECT EXISTS(SELECT 1 FROM product_option_values WHERE id = $1 AND archived_at IS NULL)`
-	productOptionValueRetrievalQuery = `SELECT * FROM product_option_values WHERE id = $1 AND archived_at IS NULL`
+	productOptionValueExistenceQuery            = `SELECT EXISTS(SELECT 1 FROM product_option_values WHERE id = $1 AND archived_at IS NULL)`
+	productOptionValueRetrievalQuery            = `SELECT * FROM product_option_values WHERE id = $1 AND archived_at IS NULL`
+	productOptionValueRetrievalForOptionIDQuery = `SELECT * FROM product_option_values WHERE product_option_id = $1 AND archived_at IS NULL`
 )
 
 // ProductOptionValue represents a product's option values. If you have a t-shirt that comes in three colors
@@ -84,9 +85,7 @@ func retrieveProductOptionValueFromDB(db *sql.DB, id int64) (*ProductOptionValue
 func retrieveProductOptionValueForOptionFromDB(db *sql.DB, optionID int64) ([]*ProductOptionValue, error) {
 	var values []*ProductOptionValue
 
-	query := buildProductOptionValueRetrievalForOptionIDQuery(optionID)
-	rows, err := db.Query(query, optionID)
-
+	rows, err := db.Query(productOptionValueRetrievalForOptionIDQuery, optionID)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error encountered querying for products")
 	}
@@ -136,7 +135,7 @@ func buildProductOptionValueUpdateHandler(db *sql.DB) http.HandlerFunc {
 		optionValueIDInt, _ := strconv.Atoi(optionValueID)
 
 		// can't update an option value that doesn't exist!
-		optionValueExists, err := rowExistsInDB(db, "product_option_values", "id", optionValueID)
+		optionValueExists, err := rowExistsInDB(db, productOptionValueExistenceQuery, optionValueID)
 		if err != nil || !optionValueExists {
 			respondThatRowDoesNotExist(req, res, "product option value", optionValueID)
 			return
@@ -194,8 +193,8 @@ func buildProductOptionValueCreationHandler(db *sql.DB) http.HandlerFunc {
 		optionIDInt, _ := strconv.ParseInt(optionID, 10, 64)
 
 		// can't create values for a product option that doesn't exist
-		productOptionValueExistsByID, err := rowExistsInDB(db, "product_options", "id", optionID)
-		if err != nil || !productOptionValueExistsByID {
+		productOptionExistsByID, err := rowExistsInDB(db, productOptionExistenceQuery, optionID)
+		if err != nil || !productOptionExistsByID {
 			respondThatRowDoesNotExist(req, res, "product option", optionID)
 			return
 		}

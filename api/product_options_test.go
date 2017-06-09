@@ -92,8 +92,8 @@ func setExpectationsForProductOptionExistenceByID(mock sqlmock.Sqlmock, a *Produ
 
 func setExpectationsForProductOptionExistenceByName(mock sqlmock.Sqlmock, a *ProductOption, progenitorID string, exists bool, err error) {
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
-	query := buildProductOptionExistenceQueryForProductByName(a.Name, progenitorID)
-	mock.ExpectQuery(formatQueryForSQLMock(query)).
+	query := formatQueryForSQLMock(productOptionExistenceQueryForProductByName)
+	mock.ExpectQuery(query).
 		WithArgs(a.Name, progenitorID).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
@@ -114,7 +114,7 @@ func setExpectationsForProductOptionListQueryWithCount(mock sqlmock.Sqlmock, a *
 		AddRow([]driver.Value{3, a.ID, a.Name, a.ProductProgenitorID, exampleTime, nil, nil}...).
 		AddRow([]driver.Value{3, a.ID, a.Name, a.ProductProgenitorID, exampleTime, nil, nil}...).
 		AddRow([]driver.Value{3, a.ID, a.Name, a.ProductProgenitorID, exampleTime, nil, nil}...)
-	query := buildProductOptionListQuery(strconv.Itoa(int(exampleProgenitor.ID)), defaultQueryFilter)
+	query, _ := buildProductOptionListQuery(strconv.Itoa(int(exampleProgenitor.ID)), defaultQueryFilter)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)

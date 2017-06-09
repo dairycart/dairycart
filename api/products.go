@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	skuExistenceQuery    = `SELECT EXISTS(SELECT 1 FROM products WHERE sku = $1 AND archived_at IS NULL)`
-	productDeletionQuery = `UPDATE products SET archived_at = NOW() WHERE sku = $1 AND archived_at IS NULL`
+	skuExistenceQuery             = `SELECT EXISTS(SELECT 1 FROM products WHERE sku = $1 AND archived_at IS NULL)`
+	productDeletionQuery          = `UPDATE products SET archived_at = NOW() WHERE sku = $1 AND archived_at IS NULL`
+	completeProductRetrievalQuery = `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.sku = $1 AND p.archived_at IS NULL`
 )
 
 // Product describes something a user can buy
@@ -163,7 +164,7 @@ func buildProductExistenceHandler(db *sql.DB) http.HandlerFunc {
 		vars := mux.Vars(req)
 		sku := vars["sku"]
 
-		productExists, err := rowExistsInDB(db, "products", "sku", sku)
+		productExists, err := rowExistsInDB(db, skuExistenceQuery, sku)
 		if err != nil {
 			respondThatRowDoesNotExist(req, res, "product", sku)
 			return
@@ -181,8 +182,7 @@ func buildProductExistenceHandler(db *sql.DB) http.HandlerFunc {
 func retrieveProductFromDB(db *sql.DB, sku string) (*Product, error) {
 	product := &Product{}
 	scanArgs := product.generateJoinScanArgs()
-	skuJoinRetrievalQuery := buildCompleteProductRetrievalQuery(sku)
-	err := db.QueryRow(skuJoinRetrievalQuery, sku).Scan(scanArgs...)
+	err := db.QueryRow(completeProductRetrievalQuery, sku).Scan(scanArgs...)
 	if err == sql.ErrNoRows {
 		return product, errors.Wrap(err, "Error querying for product")
 	}
@@ -263,7 +263,7 @@ func buildProductDeletionHandler(db *sql.DB) http.HandlerFunc {
 		sku := mux.Vars(req)["sku"]
 
 		// can't delete a product that doesn't exist!
-		exists, err := rowExistsInDB(db, "products", "sku", sku)
+		exists, err := rowExistsInDB(db, skuExistenceQuery, sku)
 		if err != nil || !exists {
 			respondThatRowDoesNotExist(req, res, "product", sku)
 			return
@@ -287,7 +287,7 @@ func buildProductUpdateHandler(db *sql.DB) http.HandlerFunc {
 		sku := mux.Vars(req)["sku"]
 
 		// can't update a product that doesn't exist!
-		exists, err := rowExistsInDB(db, "products", "sku", sku)
+		exists, err := rowExistsInDB(db, skuExistenceQuery, sku)
 		if err != nil || !exists {
 			respondThatRowDoesNotExist(req, res, "product", sku)
 			return
@@ -361,7 +361,7 @@ func buildProductCreationHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		// can't create a product with a sku that already exists!
-		exists, err := rowExistsInDB(db, "products", "sku", productInput.SKU)
+		exists, err := rowExistsInDB(db, skuExistenceQuery, productInput.SKU)
 		if err != nil || exists {
 			notifyOfInvalidRequestBody(res, fmt.Errorf("product with sku `%s` already exists", productInput.SKU))
 			return

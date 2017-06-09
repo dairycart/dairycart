@@ -14,8 +14,9 @@ import (
 )
 
 const (
-	productOptionExistenceQuery = `SELECT EXISTS(SELECT 1 FROM product_options WHERE id = $1 AND archived_at IS NULL)`
-	productOptionRetrievalQuery = `SELECT * FROM product_options WHERE id = $1 AND archived_at IS NULL`
+	productOptionExistenceQuery                 = `SELECT EXISTS(SELECT 1 FROM product_options WHERE id = $1 AND archived_at IS NULL)`
+	productOptionRetrievalQuery                 = `SELECT * FROM product_options WHERE id = $1 AND archived_at IS NULL`
+	productOptionExistenceQueryForProductByName = `SELECT EXISTS(SELECT 1 FROM product_options WHERE name = $1 AND product_progenitor_id = $2 and archived_at IS NULL)`
 )
 
 // ProductOption represents a products variant options. If you have a t-shirt that comes in three colors
@@ -64,11 +65,11 @@ type ProductOptionCreationInput struct {
 	Values []string `json:"values"`
 }
 
+// FIXME: this function should be abstracted
 func productOptionAlreadyExistsForProgenitor(db *sql.DB, in *ProductOptionCreationInput, progenitorID string) (bool, error) {
 	var exists string
 
-	query := buildProductOptionExistenceQueryForProductByName(in.Name, progenitorID)
-	err := db.QueryRow(query, in.Name, progenitorID).Scan(&exists)
+	err := db.QueryRow(productOptionExistenceQueryForProductByName, in.Name, progenitorID).Scan(&exists)
 	if err == sql.ErrNoRows {
 		return false, nil
 	}
@@ -91,8 +92,8 @@ func getProductOptionsForProgenitor(db *sql.DB, progenitorID string, queryFilter
 	var options []ProductOption
 	var count uint64
 
-	query := buildProductOptionListQuery(progenitorID, queryFilter)
-	rows, err := db.Query(query, progenitorID)
+	query, args := buildProductOptionListQuery(progenitorID, queryFilter)
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, 0, errors.Wrap(err, "Error encountered querying for product options")
 	}
@@ -170,7 +171,7 @@ func buildProductOptionUpdateHandler(db *sql.DB) http.HandlerFunc {
 		optionIDInt, _ := strconv.Atoi(optionID)
 
 		// can't update an option that doesn't exist!
-		optionExists, err := rowExistsInDB(db, "product_options", "id", optionID)
+		optionExists, err := rowExistsInDB(db, productOptionExistenceQuery, optionID)
 		if err != nil || !optionExists {
 			respondThatRowDoesNotExist(req, res, "product option", optionID)
 			return
@@ -260,7 +261,7 @@ func buildProductOptionCreationHandler(db *sql.DB) http.HandlerFunc {
 		progenitorIDInt, _ := strconv.Atoi(progenitorID)
 
 		// can't create an option for a product progenitor that doesn't exist!
-		progenitorExists, err := rowExistsInDB(db, "product_progenitors", "id", progenitorID)
+		progenitorExists, err := rowExistsInDB(db, productProgenitorExistenceQuery, progenitorID)
 		if err != nil || !progenitorExists {
 			respondThatRowDoesNotExist(req, res, "product progenitor", progenitorID)
 			return

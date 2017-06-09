@@ -162,7 +162,7 @@ func setExpectationsForProductListQuery(mock sqlmock.Sqlmock, err error) {
 
 func setExpectationsForProductRetrieval(mock sqlmock.Sqlmock, err error) {
 	exampleRows := sqlmock.NewRows(productJoinHeaders).AddRow(exampleProductJoinData...)
-	skuRetrievalQuery := formatQueryForSQLMock(buildCompleteProductRetrievalQuery(exampleSKU))
+	skuRetrievalQuery := formatQueryForSQLMock(completeProductRetrievalQuery)
 	mock.ExpectQuery(skuRetrievalQuery).
 		WithArgs(exampleSKU).
 		WillReturnRows(exampleRows).
@@ -191,8 +191,7 @@ func setExpectationsForProductCreation(mock sqlmock.Sqlmock, p *Product, err err
 
 func setExpectationsForSingleProductRetrieval(mock sqlmock.Sqlmock, err error) {
 	exampleRows := sqlmock.NewRows(productJoinHeaders).AddRow(exampleProductJoinData...)
-	skuJoinRetrievalQuery := buildCompleteProductRetrievalQuery(exampleProduct.SKU)
-	mock.ExpectQuery(formatQueryForSQLMock(skuJoinRetrievalQuery)).
+	mock.ExpectQuery(formatQueryForSQLMock(completeProductRetrievalQuery)).
 		WithArgs(exampleProduct.SKU).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
