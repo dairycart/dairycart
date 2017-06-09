@@ -41,11 +41,13 @@ CREATE TABLE products (
 CREATE TABLE product_attributes (
     "id" bigserial,
     "name" text NOT NULL,
+    "product_progenitor_id" bigint NOT NULL,
     "created_at" timestamp DEFAULT NOW(),
     "updated_at" timestamp,
     "archived_at" timestamp,
-    UNIQUE ("name"),
-    PRIMARY KEY ("id")
+    UNIQUE ("product_progenitor_id", "name"),
+    PRIMARY KEY ("id"),
+    FOREIGN KEY ("product_progenitor_id") REFERENCES "product_progenitors"("id")
 );
 
 CREATE TABLE product_attribute_values (

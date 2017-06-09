@@ -209,10 +209,11 @@ func buildProductAttributeDeletionQuery(id int64) string {
 	return buildRowDeletionQuery("product_attributes", "id", id)
 }
 
-func buildProductAttributeExistenceQueryForProductByName(name string) string {
+func buildProductAttributeExistenceQueryForProductByName(name, progenitorID string) string {
 	subqueryBuilder := sqlBuilder.Select("1").
 		From("product_attributes").
 		Where(squirrel.Eq{"name": name}).
+		Where(squirrel.Eq{"product_progenitor_id": progenitorID}).
 		Where(squirrel.Eq{"archived_at": nil})
 	subquery, _, _ := subqueryBuilder.ToSql()
 
@@ -221,10 +222,11 @@ func buildProductAttributeExistenceQueryForProductByName(name string) string {
 	return query
 }
 
-func buildProductAttributeListQuery(queryFilter *QueryFilter) string {
+func buildProductAttributeListQuery(progenitorID string, queryFilter *QueryFilter) string {
 	queryBuilder := sqlBuilder.
 		Select("count(id) over (), *").
 		From("product_attributes").
+		Where(squirrel.Eq{"product_progenitor_id": progenitorID}).
 		Where(squirrel.Eq{"archived_at": nil})
 	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter)
 	query, _, _ := queryBuilder.ToSql()
@@ -248,8 +250,8 @@ func buildProductAttributeUpdateQuery(a *ProductAttribute) (string, []interface{
 func buildProductAttributeCreationQuery(a *ProductAttribute) (string, []interface{}) {
 	queryBuilder := sqlBuilder.
 		Insert("product_attributes").
-		Columns("name").
-		Values(a.Name).
+		Columns("name", "product_progenitor_id").
+		Values(a.Name, a.ProductProgenitorID).
 		Suffix(`RETURNING "id"`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args

@@ -10,12 +10,12 @@ import (
 	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
-var exampleProgenitor ProductProgenitor
+var exampleProgenitor *ProductProgenitor
 var productProgenitorHeaders []string
 var exampleProgenitorData []driver.Value
 
 func init() {
-	exampleProgenitor = ProductProgenitor{
+	exampleProgenitor = &ProductProgenitor{
 		ID:            2,
 		Name:          "Skateboard",
 		Description:   "This is a skateboard. Please wear a helmet.",
@@ -31,45 +31,9 @@ func init() {
 		PackageLength: 1,
 		CreatedAt:     exampleTime,
 	}
-	productProgenitorHeaders = []string{
-		"id",
-		"name",
-		"description",
-		"taxable",
-		"price",
-		"cost",
-		"product_weight",
-		"product_height",
-		"product_width",
-		"product_length",
-		"package_weight",
-		"package_height",
-		"package_width",
-		"package_length",
-		"created_at",
-		"updated_at",
-		"archived_at",
-	}
+	productProgenitorHeaders = []string{"id", "name", "description", "taxable", "price", "cost", "product_weight", "product_height", "product_width", "product_length", "package_weight", "package_height", "package_width", "package_length", "created_at", "updated_at", "archived_at"}
+	exampleProgenitorData = []driver.Value{2, "Skateboard", "This is a skateboard. Please wear a helmet.", false, 99.99, 50.00, 8, 7, 6, 5, 4, 3, 2, 1, exampleTime, nil, nil}
 
-	exampleProgenitorData = []driver.Value{
-		exampleProgenitor.ID,
-		exampleProgenitor.Name,
-		exampleProgenitor.Description,
-		exampleProgenitor.Taxable,
-		exampleProgenitor.Price,
-		exampleProgenitor.Cost,
-		exampleProgenitor.ProductWeight,
-		exampleProgenitor.ProductHeight,
-		exampleProgenitor.ProductWidth,
-		exampleProgenitor.ProductLength,
-		exampleProgenitor.PackageWeight,
-		exampleProgenitor.PackageHeight,
-		exampleProgenitor.PackageWidth,
-		exampleProgenitor.PackageLength,
-		exampleTime,
-		nil,
-		nil,
-	}
 }
 
 func setExpectationsForProductProgenitorExistence(mock sqlmock.Sqlmock, id string, exists bool) {
@@ -137,13 +101,13 @@ func TestCreateProductProgenitorInDB(t *testing.T) {
 	assert.Nil(t, err)
 	defer db.Close()
 	mock.ExpectBegin()
-	setExpectationsForProductProgenitorCreation(mock, &exampleProgenitor, nil)
+	setExpectationsForProductProgenitorCreation(mock, exampleProgenitor, nil)
 	mock.ExpectCommit()
 
 	tx, err := db.Begin()
 	assert.Nil(t, err)
 
-	newProgenitorID, err := createProductProgenitorInDB(tx, &exampleProgenitor)
+	newProgenitorID, err := createProductProgenitorInDB(tx, exampleProgenitor)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(2), newProgenitorID, "createProductProgenitorInDB should return the correct ID for a new progenitor")
 
@@ -161,5 +125,5 @@ func TestRetrieveProductProgenitorFromDB(t *testing.T) {
 
 	actual, err := retrieveProductProgenitorFromDB(db, exampleProgenitor.ID)
 	assert.Nil(t, err)
-	assert.Equal(t, &exampleProgenitor, actual, "product progenitor retrieved by query should match")
+	assert.Equal(t, exampleProgenitor, actual, "product progenitor retrieved by query should match")
 }

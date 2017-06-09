@@ -6,6 +6,7 @@
     {
       "id": 1,
       "name": "color",
+      "product_progenitor_id": 1,
       "values": [
         {
           "id": 1,
@@ -27,6 +28,7 @@
     {
       "id": 2,
       "name": "size",
+      "product_progenitor_id": 1,
       "values": [
         {
           "id": 4,

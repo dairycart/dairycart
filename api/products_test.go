@@ -90,8 +90,32 @@ var exampleProduct *Product
 var exampleUpdatedProduct *Product
 
 func init() {
+	plainProductHeaders = []string{"id", "product_progenitor_id", "sku", "name", "upc", "quantity", "price", "cost", "created_at", "updated_at", "archived_at"}
+	examplePlainProductData = []driver.Value{10, 2, "skateboard", "Skateboard", "1234567890", 123, 12.34, 5.00, exampleTime, nil, nil}
+
+	productJoinHeaders = []string{"id", "product_progenitor_id", "sku", "name", "upc", "quantity", "price", "cost", "created_at", "updated_at", "archived_at", "id", "name", "description", "taxable", "price", "cost", "product_weight", "product_height", "product_width", "product_length", "package_weight", "package_height", "package_width", "package_length", "created_at", "updated_at", "archived_at"}
+	exampleProductJoinData = []driver.Value{10, 2, "skateboard", "Skateboard", "1234567890", 123, 12.34, 5.00, exampleTime, nil, nil, 2, "Skateboard", "This is a skateboard. Please wear a helmet.", false, 99.99, 50.00, 8, 7, 6, 5, 4, 3, 2, 1, exampleTime, nil, nil}
+
+	productJoinHeadersWithCount = []string{"count", "id", "product_progenitor_id", "sku", "name", "upc", "quantity", "price", "cost", "created_at", "updated_at", "archived_at", "id", "name", "description", "taxable", "price", "cost", "product_weight", "product_height", "product_width", "product_length", "package_weight", "package_height", "package_width", "package_length", "created_at", "updated_at", "archived_at"}
+	exampleProductJoinDataWithCount = []driver.Value{3, 10, 2, "skateboard", "Skateboard", "1234567890", 123, 12.34, 5.00, exampleTime, nil, nil, 2, "Skateboard", "This is a skateboard. Please wear a helmet.", false, 99.99, 50.00, 8, 7, 6, 5, 4, 3, 2, 1, exampleTime, nil, nil}
+
 	exampleProduct = &Product{
-		ProductProgenitor:   exampleProgenitor,
+		ProductProgenitor: ProductProgenitor{
+			ID:            2,
+			Name:          "Skateboard",
+			Price:         99.99,
+			Cost:          50.00,
+			Description:   "This is a skateboard. Please wear a helmet.",
+			ProductWeight: 8,
+			ProductHeight: 7,
+			ProductWidth:  6,
+			ProductLength: 5,
+			PackageWeight: 4,
+			PackageHeight: 3,
+			PackageWidth:  2,
+			PackageLength: 1,
+			CreatedAt:     exampleTime,
+		},
 		ID:                  10,
 		ProductProgenitorID: 2,
 		SKU:                 "skateboard",
@@ -114,26 +138,6 @@ func init() {
 		CreatedAt: exampleTime,
 	}
 
-	plainProductHeaders = []string{"id", "product_progenitor_id", "sku", "name", "upc", "quantity", "price", "cost", "created_at", "updated_at", "archived_at"}
-	examplePlainProductData = []driver.Value{
-		exampleProduct.ID,
-		exampleProduct.ProductProgenitor.ID,
-		exampleProduct.SKU,
-		exampleProduct.Name,
-		exampleProduct.UPC.String,
-		exampleProduct.Quantity,
-		exampleProduct.Price,
-		exampleProduct.Cost,
-		exampleTime,
-		nil,
-		nil,
-	}
-
-	productJoinHeaders = append(plainProductHeaders, productProgenitorHeaders...)
-	exampleProductJoinData = append(examplePlainProductData, exampleProgenitorData...)
-
-	productJoinHeadersWithCount = append([]string{"count"}, productJoinHeaders...)
-	exampleProductJoinDataWithCount = append([]driver.Value{3}, exampleProductJoinData...)
 }
 
 func setExpectationsForProductExistence(mock sqlmock.Sqlmock, SKU string, exists bool, err error) {
