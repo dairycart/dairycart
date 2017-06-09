@@ -290,10 +290,7 @@ func TestRowExistsInDBWhenDBThrowsError(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	skuExistenceQuery := buildProductExistenceQuery(exampleSKU)
-	mock.ExpectQuery(formatQueryForSQLMock(skuExistenceQuery)).
-		WithArgs(exampleSKU).
-		WillReturnError(sql.ErrNoRows)
+	setExpectationsForProductExistence(mock, exampleSKU, true, sql.ErrNoRows)
 
 	exists, err := rowExistsInDB(db, "products", "sku", exampleSKU)
 
@@ -310,11 +307,7 @@ func TestRowExistsInDBForExistingRow(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	exampleRows := sqlmock.NewRows([]string{""}).AddRow("true")
-	skuExistenceQuery := buildProductExistenceQuery(exampleSKU)
-	mock.ExpectQuery(formatQueryForSQLMock(skuExistenceQuery)).
-		WithArgs(exampleSKU).
-		WillReturnRows(exampleRows)
+	setExpectationsForProductExistence(mock, exampleSKU, true, nil)
 
 	exists, err := rowExistsInDB(db, "products", "sku", exampleSKU)
 
@@ -331,11 +324,7 @@ func TestRowExistsInDBForNonexistentRow(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	exampleRows := sqlmock.NewRows([]string{""}).AddRow("false")
-	skuExistenceQuery := buildProductExistenceQuery(exampleSKU)
-	mock.ExpectQuery(formatQueryForSQLMock(skuExistenceQuery)).
-		WithArgs(exampleSKU).
-		WillReturnRows(exampleRows)
+	setExpectationsForProductExistence(mock, exampleSKU, false, nil)
 
 	exists, err := rowExistsInDB(db, "products", "sku", exampleSKU)
 

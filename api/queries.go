@@ -79,14 +79,6 @@ func applyQueryFilterToQueryBuilder(queryBuilder squirrel.SelectBuilder, queryFi
 //                                                    //
 ////////////////////////////////////////////////////////
 
-func buildProgenitorRetrievalQuery(id int64) string {
-	return buildRowRetrievalQuery("product_progenitors", "id", id)
-}
-
-func buildProgenitorExistenceQuery(id string) string {
-	return buildRowExistenceQuery("product_progenitors", "id", id)
-}
-
 func buildProgenitorCreationQuery(g *ProductProgenitor) (string, []interface{}) {
 	queryBuilder := sqlBuilder.
 		Insert("product_progenitors").
@@ -130,18 +122,6 @@ func buildProgenitorCreationQuery(g *ProductProgenitor) (string, []interface{}) 
 //                     Products                       //
 //                                                    //
 ////////////////////////////////////////////////////////
-
-func buildProductExistenceQuery(sku string) string {
-	return buildRowExistenceQuery("products", "sku", sku)
-}
-
-func buildProductRetrievalQuery(sku string) string {
-	return buildRowRetrievalQuery("products", "sku", sku)
-}
-
-func buildProductDeletionQuery(sku string) string {
-	return buildRowDeletionQuery("products", "sku", sku)
-}
 
 func buildProductListQuery(queryFilter *QueryFilter) (string, []interface{}) {
 	queryBuilder := sqlBuilder.
@@ -199,21 +179,9 @@ func buildProductCreationQuery(p *Product) (string, []interface{}) {
 
 ////////////////////////////////////////////////////////
 //                                                    //
-//                Product Options                  //
+//                 Product Options                    //
 //                                                    //
 ////////////////////////////////////////////////////////
-
-func buildProductOptionExistenceQuery(id int64) string {
-	return buildRowExistenceQuery("product_options", "id", id)
-}
-
-func buildProductOptionRetrievalQuery(id int64) string {
-	return buildRowRetrievalQuery("product_options", "id", id)
-}
-
-func buildProductOptionDeletionQuery(id int64) string {
-	return buildRowDeletionQuery("product_options", "id", id)
-}
 
 func buildProductOptionExistenceQueryForProductByName(name, progenitorID string) string {
 	subqueryBuilder := sqlBuilder.Select("1").
@@ -265,21 +233,9 @@ func buildProductOptionCreationQuery(a *ProductOption) (string, []interface{}) {
 
 ////////////////////////////////////////////////////////
 //                                                    //
-//             Product Option Values               //
+//               Product Option Values                //
 //                                                    //
 ////////////////////////////////////////////////////////
-
-func buildProductOptionValueExistenceQuery(id int64) string {
-	return buildRowExistenceQuery("product_option_values", "id", id)
-}
-
-func buildProductOptionValueRetrievalQuery(id int64) string {
-	return buildRowRetrievalQuery("product_option_values", "id", id)
-}
-
-func buildProductOptionValueDeletionQuery(id int64) string {
-	return buildRowDeletionQuery("product_option_values", "id", id)
-}
 
 func buildProductOptionValueRetrievalForOptionIDQuery(optionID int64) string {
 	queryBuilder := sqlBuilder.Select("*").
@@ -325,22 +281,4 @@ func buildProductOptionValueCreationQuery(v *ProductOptionValue) (string, []inte
 		Suffix(`RETURNING "id"`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
-}
-
-////////////////////////////////////////////////////////
-//                                                    //
-//                    Discounts                       //
-//                                                    //
-////////////////////////////////////////////////////////
-
-func buildDiscountExistenceQuery(id string) string {
-	return buildRowExistenceQuery("discounts", "id", id)
-}
-
-func buildDiscountRetrievalQuery(id string) string {
-	return buildRowRetrievalQuery("discounts", "id", id)
-}
-
-func buildDiscountDeletionQuery(id string) string {
-	return buildRowDeletionQuery("discounts", "id", id)
 }

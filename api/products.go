@@ -14,6 +14,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	skuExistenceQuery    = `SELECT EXISTS(SELECT 1 FROM products WHERE sku = $1 AND archived_at IS NULL)`
+	productDeletionQuery = `UPDATE products SET archived_at = NOW() WHERE sku = $1 AND archived_at IS NULL`
+)
+
 // Product describes something a user can buy
 type Product struct {
 	// Basic Info
@@ -248,7 +253,6 @@ func buildProductListHandler(db *sql.DB) http.HandlerFunc {
 }
 
 func deleteProductBySKU(db *sql.DB, sku string) error {
-	productDeletionQuery := buildProductDeletionQuery(sku)
 	_, err := db.Exec(productDeletionQuery, sku)
 	return err
 }

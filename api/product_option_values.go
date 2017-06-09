@@ -13,6 +13,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	productOptionValueExistenceQuery = `SELECT EXISTS(SELECT 1 FROM product_option_values WHERE id = $1 AND archived_at IS NULL)`
+	productOptionValueRetrievalQuery = `SELECT * FROM product_option_values WHERE id = $1 AND archived_at IS NULL`
+)
+
 // ProductOptionValue represents a product's option values. If you have a t-shirt that comes in three colors
 // and three sizes, then there are two ProductOptions for that base_product, color and size, and six ProductOptionValues,
 // One for each color and one for each size.
@@ -68,8 +73,7 @@ func validateProductOptionValueUpdateInput(req *http.Request) (*ProductOptionVal
 // retrieveProductOptionValue retrieves a ProductOptionValue with a given ID from the database
 func retrieveProductOptionValueFromDB(db *sql.DB, id int64) (*ProductOptionValue, error) {
 	v := &ProductOptionValue{}
-	query := buildProductOptionValueRetrievalQuery(id)
-	err := db.QueryRow(query, id).Scan(v.generateScanArgs()...)
+	err := db.QueryRow(productOptionValueRetrievalQuery, id).Scan(v.generateScanArgs()...)
 	if err == sql.ErrNoRows {
 		return v, errors.Wrap(err, "Error querying for product option values")
 	}

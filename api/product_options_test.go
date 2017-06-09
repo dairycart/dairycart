@@ -82,9 +82,9 @@ func init() {
 
 func setExpectationsForProductOptionExistenceByID(mock sqlmock.Sqlmock, a *ProductOption, exists bool, err error) {
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
-	query := buildProductOptionExistenceQuery(a.ID)
+	query := formatQueryForSQLMock(productOptionExistenceQuery)
 	stringID := strconv.Itoa(int(a.ID))
-	mock.ExpectQuery(formatQueryForSQLMock(query)).
+	mock.ExpectQuery(query).
 		WithArgs(stringID).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
@@ -102,7 +102,7 @@ func setExpectationsForProductOptionExistenceByName(mock sqlmock.Sqlmock, a *Pro
 func setExpectationsForProductOptionRetrievalQuery(mock sqlmock.Sqlmock, a *ProductOption, err error) {
 	exampleRows := sqlmock.NewRows(productOptionHeaders).
 		AddRow([]driver.Value{a.ID, a.Name, a.ProductProgenitorID, exampleTime, nil, nil}...)
-	query := formatQueryForSQLMock(buildProductOptionRetrievalQuery(a.ID))
+	query := formatQueryForSQLMock(productOptionRetrievalQuery)
 	mock.ExpectQuery(query).
 		WithArgs(a.ID).
 		WillReturnRows(exampleRows).

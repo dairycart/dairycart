@@ -49,8 +49,7 @@ func init() {
 
 func setExpectationsForDiscountRetrievalByID(mock sqlmock.Sqlmock, id string, err error) {
 	exampleRows := sqlmock.NewRows(discountHeaders).AddRow(exampleDiscountData...)
-	discountQuery := buildDiscountRetrievalQuery(exampleSKU)
-	query := formatQueryForSQLMock(discountQuery)
+	query := formatQueryForSQLMock(discountRetrievalQuery)
 	mock.ExpectQuery(query).
 		WithArgs(id).
 		WillReturnRows(exampleRows).

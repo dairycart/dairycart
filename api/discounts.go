@@ -10,6 +10,12 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	discountExistenceQuery = `SELECT EXISTS(SELECT 1 FROM discounts WHERE id = $1 AND archived_at IS NULL)`
+	discountRetrievalQuery = `SELECT * FROM discounts WHERE id = $1 AND archived_at IS NULL`
+	discountDeletionQuery  = `UPDATE discounts SET archived_at = NOW() WHERE id = $1 AND archived_at IS NULL`
+)
+
 // Discount represents pricing changes that apply temporarily to products
 type Discount struct {
 	ID        int64     `json:"id"`
@@ -64,7 +70,6 @@ func (d *Discount) discountTypeIsValid() bool {
 func retrieveDiscountFromDB(db *sql.DB, discountID string) (*Discount, error) {
 	discount := &Discount{}
 	scanArgs := discount.generateScanArgs()
-	discountRetrievalQuery := buildDiscountRetrievalQuery(discountID)
 	err := db.QueryRow(discountRetrievalQuery, discountID).Scan(scanArgs...)
 	if err == sql.ErrNoRows {
 		return nil, nil

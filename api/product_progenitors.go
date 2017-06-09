@@ -5,6 +5,11 @@ import (
 	"time"
 )
 
+const (
+	productProgenitorExistenceQuery = `SELECT EXISTS(SELECT 1 FROM product_progenitors WHERE id = $1 AND archived_at IS NULL)`
+	productProgenitorRetrievalQuery = `SELECT * FROM product_progenitors WHERE id = $1 AND archived_at IS NULL`
+)
+
 // ProductProgenitor is the parent product for every product
 type ProductProgenitor struct {
 	// Basic Info
@@ -92,8 +97,7 @@ func retrieveProductProgenitorFromDB(db *sql.DB, id int64) (*ProductProgenitor, 
 	progenitor := &ProductProgenitor{}
 	scanArgs := progenitor.generateScanArgs()
 
-	productProgenitorQuery := buildProgenitorRetrievalQuery(id)
-	err := db.QueryRow(productProgenitorQuery, id).Scan(scanArgs...)
+	err := db.QueryRow(productProgenitorRetrievalQuery, id).Scan(scanArgs...)
 
 	return progenitor, err
 }

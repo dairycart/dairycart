@@ -142,7 +142,6 @@ func init() {
 
 func setExpectationsForProductExistence(mock sqlmock.Sqlmock, SKU string, exists bool, err error) {
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
-	skuExistenceQuery := buildProductExistenceQuery(SKU)
 	mock.ExpectQuery(formatQueryForSQLMock(skuExistenceQuery)).
 		WithArgs(SKU).
 		WillReturnRows(exampleRows).
@@ -216,8 +215,7 @@ func setExpectationsForProductUpdateHandler(mock sqlmock.Sqlmock, p *Product, er
 }
 
 func setExpectationsForProductDeletion(mock sqlmock.Sqlmock, sku string) {
-	skuDeletionQuery := buildProductDeletionQuery(sku)
-	mock.ExpectExec(formatQueryForSQLMock(skuDeletionQuery)).
+	mock.ExpectExec(formatQueryForSQLMock(productDeletionQuery)).
 		WithArgs(sku).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 }

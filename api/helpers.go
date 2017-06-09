@@ -205,6 +205,9 @@ func rowExistsInDB(db *sql.DB, table, identifier, id string) (bool, error) {
 	if err == sql.ErrNoRows {
 		return false, nil
 	}
+	// } else if err != nil {
+	// 	return false, err
+	// }
 
 	return exists == "true", err
 }

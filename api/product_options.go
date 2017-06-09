@@ -13,6 +13,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	productOptionExistenceQuery = `SELECT EXISTS(SELECT 1 FROM product_options WHERE id = $1 AND archived_at IS NULL)`
+	productOptionRetrievalQuery = `SELECT * FROM product_options WHERE id = $1 AND archived_at IS NULL`
+)
+
 // ProductOption represents a products variant options. If you have a t-shirt that comes in three colors
 // and three sizes, then there are two ProductOptions for that base_product, color and size.
 type ProductOption struct {
@@ -75,8 +80,7 @@ func productOptionAlreadyExistsForProgenitor(db *sql.DB, in *ProductOptionCreati
 func retrieveProductOptionFromDB(db *sql.DB, id int64) (*ProductOption, error) {
 	option := &ProductOption{}
 	scanArgs := option.generateScanArgs()
-	query := buildProductOptionRetrievalQuery(id)
-	err := db.QueryRow(query, id).Scan(scanArgs...)
+	err := db.QueryRow(productOptionRetrievalQuery, id).Scan(scanArgs...)
 	if err == sql.ErrNoRows {
 		return option, errors.Wrap(err, "Error querying for product")
 	}
