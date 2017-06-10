@@ -14,9 +14,9 @@ import (
 )
 
 const (
-	productOptionExistenceQuery                 = `SELECT EXISTS(SELECT 1 FROM product_options WHERE id = $1 AND archived_at IS NULL)`
-	productOptionRetrievalQuery                 = `SELECT * FROM product_options WHERE id = $1 AND archived_at IS NULL`
-	productOptionExistenceQueryForProductByName = `SELECT EXISTS(SELECT 1 FROM product_options WHERE name = $1 AND product_progenitor_id = $2 and archived_at IS NULL)`
+	productOptionExistenceQuery                 = `SELECT EXISTS(SELECT 1 FROM product_options WHERE id = $1 AND archived_on IS NULL)`
+	productOptionRetrievalQuery                 = `SELECT * FROM product_options WHERE id = $1`
+	productOptionExistenceQueryForProductByName = `SELECT EXISTS(SELECT 1 FROM product_options WHERE name = $1 AND product_progenitor_id = $2 and archived_on IS NULL)`
 )
 
 // ProductOption represents a products variant options. If you have a t-shirt that comes in three colors
@@ -26,9 +26,9 @@ type ProductOption struct {
 	Name                string                `json:"name"`
 	ProductProgenitorID int64                 `json:"product_progenitor_id"`
 	Values              []*ProductOptionValue `json:"values"`
-	CreatedAt           time.Time             `json:"created_at"`
-	UpdatedAt           NullTime              `json:"updated_at,omitempty"`
-	ArchivedAt          NullTime              `json:"archived_at,omitempty"`
+	CreatedOn           time.Time             `json:"created_on"`
+	UpdatedOn           NullTime              `json:"updated_on,omitempty"`
+	ArchivedOn          NullTime              `json:"archived_on,omitempty"`
 }
 
 func (a *ProductOption) generateScanArgs() []interface{} {
@@ -36,9 +36,9 @@ func (a *ProductOption) generateScanArgs() []interface{} {
 		&a.ID,
 		&a.Name,
 		&a.ProductProgenitorID,
-		&a.CreatedAt,
-		&a.UpdatedAt,
-		&a.ArchivedAt,
+		&a.CreatedOn,
+		&a.UpdatedOn,
+		&a.ArchivedOn,
 	}
 }
 

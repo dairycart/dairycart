@@ -29,15 +29,15 @@ func init() {
 		ID:              256,
 		ProductOptionID: 123, // == exampleProductOption.ID
 		Value:           "something",
-		CreatedAt:       exampleTime,
+		CreatedOn:       exampleTime,
 	}
 	exampleUpdatedProductOptionValue = &ProductOptionValue{
 		ID:              256,
 		ProductOptionID: 123, // == exampleProductOption.ID
 		Value:           "something else",
-		CreatedAt:       exampleTime,
+		CreatedOn:       exampleTime,
 	}
-	productOptionValueHeaders = []string{"id", "product_option_id", "value", "created_at", "updated_at", "archived_at"}
+	productOptionValueHeaders = []string{"id", "product_option_id", "value", "created_on", "updated_on", "archived_on"}
 	productOptionValueData = []driver.Value{
 		exampleProductOptionValue.ID,
 		exampleProductOptionValue.ProductOptionID,

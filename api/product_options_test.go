@@ -44,14 +44,14 @@ func init() {
 		ID:                  123,
 		Name:                "something",
 		ProductProgenitorID: 2, // == exampleProgenitor.ID
-		CreatedAt:           exampleTime,
+		CreatedOn:           exampleTime,
 	}
 	exampleUpdatedProductOption = &ProductOption{
 		ID:                  exampleProductOption.ID,
 		Name:                "something else",
 		ProductProgenitorID: exampleProductOption.ProductProgenitorID,
 	}
-	productOptionHeaders = []string{"id", "name", "product_progenitor_id", "created_at", "updated_at", "archived_at"}
+	productOptionHeaders = []string{"id", "name", "product_progenitor_id", "created_on", "updated_on", "archived_on"}
 
 	expectedCreatedProductOption = &ProductOption{
 		ID:                  exampleProductOption.ID,
@@ -110,7 +110,7 @@ func setExpectationsForProductOptionRetrievalQuery(mock sqlmock.Sqlmock, a *Prod
 }
 
 func setExpectationsForProductOptionListQueryWithCount(mock sqlmock.Sqlmock, a *ProductOption, err error) {
-	exampleRows := sqlmock.NewRows([]string{"count", "id", "name", "product_progenitor_id", "created_at", "updated_at", "archived_at"}).
+	exampleRows := sqlmock.NewRows([]string{"count", "id", "name", "product_progenitor_id", "created_on", "updated_on", "archived_on"}).
 		AddRow([]driver.Value{3, a.ID, a.Name, a.ProductProgenitorID, exampleTime, nil, nil}...).
 		AddRow([]driver.Value{3, a.ID, a.Name, a.ProductProgenitorID, exampleTime, nil, nil}...).
 		AddRow([]driver.Value{3, a.ID, a.Name, a.ProductProgenitorID, exampleTime, nil, nil}...)

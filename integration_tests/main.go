@@ -138,3 +138,10 @@ func getDiscountByID(discountID string) (*http.Response, error) {
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
 	return client.Do(req)
 }
+
+func getListOfDiscounts(queryFilter map[string]string) (*http.Response, error) {
+	path := buildPath("discounts")
+	url := buildURL(path, queryFilter)
+	req, _ := http.NewRequest(http.MethodGet, url, nil)
+	return client.Do(req)
+}

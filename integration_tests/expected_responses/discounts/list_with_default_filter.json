@@ -1,0 +1,30 @@
+{
+	"count": 3,
+	"limit": 25,
+	"page": 1,
+	"data": [{
+		"id": 1,
+		"name": "10% off",
+		"type": "percentage",
+		"amount": 10,
+		"requires_code": false,
+		"limited_use": false,
+		"login_required": false
+	}, {
+		"id": 2,
+		"name": "50% off",
+		"type": "percentage",
+		"amount": 50,
+		"requires_code": false,
+		"limited_use": false,
+		"login_required": false
+	}, {
+		"id": 3,
+		"name": "New customer special",
+		"type": "flat_amount",
+		"amount": 10,
+		"requires_code": false,
+		"limited_use": false,
+		"login_required": false
+	}]
+}

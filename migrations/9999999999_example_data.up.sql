@@ -76,4 +76,18 @@ VALUES
     10.00,
     NOW(),
     NOW() + (1 * interval '1 month')
+),
+(
+    '50% off',
+    'percentage',
+    50.00,
+    NOW(),
+    null
+),
+(
+    'New customer special',
+    'flat_amount',
+    10.00,
+    NOW(),
+    null
 );

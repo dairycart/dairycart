@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	productProgenitorExistenceQuery = `SELECT EXISTS(SELECT 1 FROM product_progenitors WHERE id = $1 AND archived_at IS NULL)`
-	productProgenitorRetrievalQuery = `SELECT * FROM product_progenitors WHERE id = $1 AND archived_at IS NULL`
+	productProgenitorExistenceQuery = `SELECT EXISTS(SELECT 1 FROM product_progenitors WHERE id = $1 AND archived_on IS NULL)`
+	productProgenitorRetrievalQuery = `SELECT * FROM product_progenitors WHERE id = $1`
 )
 
 // ProductProgenitor is the parent product for every product
@@ -35,9 +35,9 @@ type ProductProgenitor struct {
 	PackageLength float32 `json:"package_length"`
 
 	// // Housekeeping
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  NullTime  `json:"updated_at,omitempty"`
-	ArchivedAt NullTime  `json:"archived_at,omitempty"`
+	CreatedOn  time.Time `json:"created_on"`
+	UpdatedOn  NullTime  `json:"updated_on,omitempty"`
+	ArchivedOn NullTime  `json:"archived_on,omitempty"`
 }
 
 // generateScanArgs generates an array of pointers to struct fields for sql.Scan to populate
@@ -57,9 +57,9 @@ func (g *ProductProgenitor) generateScanArgs() []interface{} {
 		&g.PackageHeight,
 		&g.PackageWidth,
 		&g.PackageLength,
-		&g.CreatedAt,
-		&g.UpdatedAt,
-		&g.ArchivedAt,
+		&g.CreatedOn,
+		&g.UpdatedOn,
+		&g.ArchivedOn,
 	}
 }
 

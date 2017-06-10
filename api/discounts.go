@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	discountRetrievalQuery = `SELECT * FROM discounts WHERE id = $1 AND archived_at IS NULL`
-	discountDeletionQuery  = `UPDATE discounts SET archived_at = NOW() WHERE id = $1 AND archived_at IS NULL`
+	discountRetrievalQuery = `SELECT * FROM discounts WHERE id = $1`
+	discountDeletionQuery  = `UPDATE discounts SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
 )
 
 // Discount represents pricing changes that apply temporarily to products
@@ -33,9 +33,9 @@ type Discount struct {
 	LoginRequired bool `json:"login_required"`
 
 	// Housekeeping
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  NullTime  `json:"updated_at,omitempty"`
-	ArchivedAt NullTime  `json:"archived_at,omitempty"`
+	CreatedOn  time.Time `json:"created_on"`
+	UpdatedOn  NullTime  `json:"updated_on,omitempty"`
+	ArchivedOn NullTime  `json:"archived_on,omitempty"`
 }
 
 // generateScanArgs generates an array of pointers to struct fields for sql.Scan to populate
@@ -52,9 +52,9 @@ func (d *Discount) generateScanArgs() []interface{} {
 		&d.LimitedUse,
 		&d.NumberOfUses,
 		&d.LoginRequired,
-		&d.CreatedAt,
-		&d.UpdatedAt,
-		&d.ArchivedAt,
+		&d.CreatedOn,
+		&d.UpdatedOn,
+		&d.ArchivedOn,
 	}
 }
 
@@ -117,7 +117,7 @@ func retrieveListOfDiscountsFromDB(db *sql.DB, queryFilter *QueryFilter) ([]Disc
 	var discounts []Discount
 	var count uint64
 
-	query, args := buildProductListQuery(queryFilter)
+	query, args := buildDiscountListQuery(queryFilter)
 	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, 0, errors.Wrap(err, "Error encountered querying for discounts")

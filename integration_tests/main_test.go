@@ -17,13 +17,13 @@ import (
 var jsonMinifier *minify.M
 
 const (
-	// we can't reliably predict what the `updated_at` or `archived_at` columns could possibly equal,
+	// we can't reliably predict what the `updated_on` or `archived_on` columns could possibly equal,
 	// so we strip them out of the body becuase we're bad at programming. The (sort of) plus side to
 	// this is that we ensure our timestamps have a particular format (because if they didn't, this
 	// function, and as a consequence, the tests, would fail spectacularly).
 	// Note that this pattern needs to be run as ungreedy because of the possiblity of prefix and or
 	// suffixed commas
-	timeFieldReplacementPattern = `(?U)(,?)"(created_at|updated_at|archived_at)":"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z)?"(,?)`
+	timeFieldReplacementPattern = `(?U)(,?)"(created_on|updated_on|archived_on)":"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z)?"(,?)`
 
 	existentID     = "1"
 	nonexistentID  = "999999999"
@@ -412,7 +412,7 @@ func TestProductOptionValueUpdateForAlreadyExistentValue(t *testing.T) {
 ////////////////////////////////////////////////////////
 
 func replaceTimeStringsForDiscountTests(body string) string {
-	re := regexp.MustCompile(`(?U)(,?)"(starts_on|expires_on)":"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z"(,?)`)
+	re := regexp.MustCompile(`(?U)(,?)"(starts_on|expires_on)":"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z)?"(,?)`)
 	return strings.TrimSpace(re.ReplaceAllString(body, ""))
 }
 
@@ -438,6 +438,34 @@ func TestDiscountRetrievalForNonexistentDiscount(t *testing.T) {
 	expected := minifyJSON(t, loadExpectedResponse(t, "discounts", "error_discount_does_not_exist"))
 	assert.Equal(t, expected, actual, "product option update route should respond with 404 message when you try to delete a product that doesn't exist")
 
+}
+
+func TestDiscountListRetrievalWithDefaultFilter(t *testing.T) {
+	resp, err := getListOfDiscounts(nil)
+	assert.Nil(t, err)
+	assert.Equal(t, 200, resp.StatusCode, "requesting a list of products should respond 200")
+
+	respBody := turnResponseBodyIntoString(t, resp)
+	removedTimeFields := replaceTimeStringsForTests(respBody)
+	actual := replaceTimeStringsForDiscountTests(removedTimeFields)
+	expected := minifyJSON(t, loadExpectedResponse(t, "discounts", "list_with_default_filter"))
+	assert.Equal(t, expected, actual, "product list route should respond with a list of products")
+}
+
+func TestDiscountListRouteWithCustomFilter(t *testing.T) {
+	customFilter := map[string]string{
+		"page":  "2",
+		"limit": "2",
+	}
+	resp, err := getListOfDiscounts(customFilter)
+	assert.Nil(t, err)
+	assert.Equal(t, 200, resp.StatusCode, "requesting a list of products should respond 200")
+
+	respBody := turnResponseBodyIntoString(t, resp)
+	removedTimeFields := replaceTimeStringsForTests(respBody)
+	actual := replaceTimeStringsForDiscountTests(removedTimeFields)
+	expected := minifyJSON(t, loadExpectedResponse(t, "discounts", "list_with_custom_filter"))
+	assert.Equal(t, expected, actual, "product list route should respond with a customized list of products")
 }
 
 // I'd like to keep these functions last if at all possible.

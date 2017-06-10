@@ -15,19 +15,19 @@ func applyQueryFilterToQueryBuilder(queryBuilder squirrel.SelectBuilder, queryFi
 	}
 
 	if !queryFilter.CreatedAfter.IsZero() {
-		queryBuilder = queryBuilder.Where(squirrel.Gt{"p.created_at": queryFilter.CreatedAfter})
+		queryBuilder = queryBuilder.Where(squirrel.Gt{"p.created_on": queryFilter.CreatedAfter})
 	}
 
 	if !queryFilter.CreatedBefore.IsZero() {
-		queryBuilder = queryBuilder.Where(squirrel.Lt{"p.created_at": queryFilter.CreatedBefore})
+		queryBuilder = queryBuilder.Where(squirrel.Lt{"p.created_on": queryFilter.CreatedBefore})
 	}
 
 	if !queryFilter.UpdatedAfter.IsZero() {
-		queryBuilder = queryBuilder.Where(squirrel.Gt{"p.updated_at": queryFilter.UpdatedAfter})
+		queryBuilder = queryBuilder.Where(squirrel.Gt{"p.updated_on": queryFilter.UpdatedAfter})
 	}
 
 	if !queryFilter.UpdatedBefore.IsZero() {
-		queryBuilder = queryBuilder.Where(squirrel.Lt{"p.updated_at": queryFilter.UpdatedBefore})
+		queryBuilder = queryBuilder.Where(squirrel.Lt{"p.updated_on": queryFilter.UpdatedBefore})
 	}
 	return queryBuilder
 }
@@ -89,7 +89,7 @@ func buildProductListQuery(queryFilter *QueryFilter) (string, []interface{}) {
 		Select("count(p.id) over (), *").
 		From("products p").
 		Join("product_progenitors g ON p.product_progenitor_id = g.id").
-		Where(squirrel.Eq{"p.archived_at": nil}).
+		Where(squirrel.Eq{"p.archived_on": nil}).
 		Limit(uint64(queryFilter.Limit))
 
 	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter)
@@ -107,7 +107,7 @@ func buildProductUpdateQuery(p *Product) (string, []interface{}) {
 		"quantity":   p.Quantity,
 		"price":      p.Price,
 		"cost":       p.Cost,
-		"updated_at": squirrel.Expr("NOW()"),
+		"updated_on": squirrel.Expr("NOW()"),
 	}
 	queryBuilder := sqlBuilder.
 		Update("products").
@@ -141,7 +141,7 @@ func buildProductOptionListQuery(progenitorID string, queryFilter *QueryFilter) 
 		Select("count(id) over (), *").
 		From("product_options").
 		Where(squirrel.Eq{"product_progenitor_id": progenitorID}).
-		Where(squirrel.Eq{"archived_at": nil})
+		Where(squirrel.Eq{"archived_on": nil})
 	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
@@ -151,7 +151,7 @@ func buildProductOptionUpdateQuery(a *ProductOption) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	productOptionUpdateSetMap := map[string]interface{}{
 		"name":       a.Name,
-		"updated_at": squirrel.Expr("NOW()"),
+		"updated_on": squirrel.Expr("NOW()"),
 	}
 	queryBuilder := sqlBuilder.
 		Update("product_options").
@@ -183,7 +183,7 @@ func buildProductOptionValueUpdateQuery(v *ProductOptionValue) (string, []interf
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	productOptionUpdateSetMap := map[string]interface{}{
 		"value":      v.Value,
-		"updated_at": squirrel.Expr("NOW()"),
+		"updated_on": squirrel.Expr("NOW()"),
 	}
 	queryBuilder := sqlBuilder.
 		Update("product_option_values").
@@ -216,8 +216,8 @@ func buildDiscountListQuery(queryFilter *QueryFilter) (string, []interface{}) {
 	queryBuilder := sqlBuilder.
 		Select("count(id) over (), *").
 		From("discounts").
-		Where(squirrel.Or{squirrel.Eq{"expires_on": nil}, squirrel.Lt{"expires_on": "NOW()"}}).
-		Where(squirrel.Eq{"archived_at": nil}).
+		Where(squirrel.Or{squirrel.Eq{"expires_on": nil}, squirrel.Gt{"expires_on": "NOW()"}}).
+		Where(squirrel.Eq{"archived_on": nil}).
 		Limit(uint64(queryFilter.Limit))
 
 	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter)

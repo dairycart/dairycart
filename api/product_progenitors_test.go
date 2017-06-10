@@ -29,9 +29,9 @@ func init() {
 		PackageHeight: 3,
 		PackageWidth:  2,
 		PackageLength: 1,
-		CreatedAt:     exampleTime,
+		CreatedOn:     exampleTime,
 	}
-	productProgenitorHeaders = []string{"id", "name", "description", "taxable", "price", "cost", "product_weight", "product_height", "product_width", "product_length", "package_weight", "package_height", "package_width", "package_length", "created_at", "updated_at", "archived_at"}
+	productProgenitorHeaders = []string{"id", "name", "description", "taxable", "price", "cost", "product_weight", "product_height", "product_width", "product_length", "package_weight", "package_height", "package_width", "package_length", "created_on", "updated_on", "archived_on"}
 	exampleProgenitorData = []driver.Value{2, "Skateboard", "This is a skateboard. Please wear a helmet.", false, 99.99, 50.00, 8, 7, 6, 5, 4, 3, 2, 1, exampleTime, nil, nil}
 
 }

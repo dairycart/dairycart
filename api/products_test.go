@@ -90,13 +90,13 @@ var exampleProduct *Product
 var exampleUpdatedProduct *Product
 
 func init() {
-	plainProductHeaders = []string{"id", "product_progenitor_id", "sku", "name", "upc", "quantity", "price", "cost", "created_at", "updated_at", "archived_at"}
+	plainProductHeaders = []string{"id", "product_progenitor_id", "sku", "name", "upc", "quantity", "price", "cost", "created_on", "updated_on", "archived_on"}
 	examplePlainProductData = []driver.Value{10, 2, "skateboard", "Skateboard", "1234567890", 123, 12.34, 5.00, exampleTime, nil, nil}
 
-	productJoinHeaders = []string{"id", "product_progenitor_id", "sku", "name", "upc", "quantity", "price", "cost", "created_at", "updated_at", "archived_at", "id", "name", "description", "taxable", "price", "cost", "product_weight", "product_height", "product_width", "product_length", "package_weight", "package_height", "package_width", "package_length", "created_at", "updated_at", "archived_at"}
+	productJoinHeaders = []string{"id", "product_progenitor_id", "sku", "name", "upc", "quantity", "price", "cost", "created_on", "updated_on", "archived_on", "id", "name", "description", "taxable", "price", "cost", "product_weight", "product_height", "product_width", "product_length", "package_weight", "package_height", "package_width", "package_length", "created_on", "updated_on", "archived_on"}
 	exampleProductJoinData = []driver.Value{10, 2, "skateboard", "Skateboard", "1234567890", 123, 12.34, 5.00, exampleTime, nil, nil, 2, "Skateboard", "This is a skateboard. Please wear a helmet.", false, 99.99, 50.00, 8, 7, 6, 5, 4, 3, 2, 1, exampleTime, nil, nil}
 
-	productJoinHeadersWithCount = []string{"count", "id", "product_progenitor_id", "sku", "name", "upc", "quantity", "price", "cost", "created_at", "updated_at", "archived_at", "id", "name", "description", "taxable", "price", "cost", "product_weight", "product_height", "product_width", "product_length", "package_weight", "package_height", "package_width", "package_length", "created_at", "updated_at", "archived_at"}
+	productJoinHeadersWithCount = []string{"count", "id", "product_progenitor_id", "sku", "name", "upc", "quantity", "price", "cost", "created_on", "updated_on", "archived_on", "id", "name", "description", "taxable", "price", "cost", "product_weight", "product_height", "product_width", "product_length", "package_weight", "package_height", "package_width", "package_length", "created_on", "updated_on", "archived_on"}
 	exampleProductJoinDataWithCount = []driver.Value{3, 10, 2, "skateboard", "Skateboard", "1234567890", 123, 12.34, 5.00, exampleTime, nil, nil, 2, "Skateboard", "This is a skateboard. Please wear a helmet.", false, 99.99, 50.00, 8, 7, 6, 5, 4, 3, 2, 1, exampleTime, nil, nil}
 
 	exampleProduct = &Product{
@@ -114,7 +114,7 @@ func init() {
 			PackageHeight: 3,
 			PackageWidth:  2,
 			PackageLength: 1,
-			CreatedAt:     exampleTime,
+			CreatedOn:     exampleTime,
 		},
 		ID:                  10,
 		ProductProgenitorID: 2,
@@ -124,7 +124,7 @@ func init() {
 		Quantity:            123,
 		Price:               12.34,
 		Cost:                5.00,
-		CreatedAt:           exampleTime,
+		CreatedOn:           exampleTime,
 	}
 
 	exampleUpdatedProduct = &Product{
@@ -135,7 +135,7 @@ func init() {
 		Quantity:  666,
 		Cost:      5.00,
 		Price:     lolFloats,
-		CreatedAt: exampleTime,
+		CreatedOn: exampleTime,
 	}
 
 }
@@ -686,7 +686,7 @@ func TestProductCreationHandler(t *testing.T) {
 		PackageHeight: 3,
 		PackageWidth:  2,
 		PackageLength: 1,
-		CreatedAt:     exampleTime,
+		CreatedOn:     exampleTime,
 	}
 
 	expectedProduct := &Product{
@@ -704,7 +704,7 @@ func TestProductCreationHandler(t *testing.T) {
 			PackageHeight: 3,
 			PackageWidth:  2,
 			PackageLength: 1,
-			CreatedAt:     exampleTime,
+			CreatedOn:     exampleTime,
 		},
 		ID:                  10,
 		ProductProgenitorID: 2,
@@ -714,7 +714,7 @@ func TestProductCreationHandler(t *testing.T) {
 		Quantity:            123,
 		Price:               lolFloats,
 		Cost:                5.0,
-		CreatedAt:           exampleTime,
+		CreatedOn:           exampleTime,
 	}
 
 	db, mock, err := sqlmock.New()
@@ -757,7 +757,7 @@ func TestProductCreationHandlerWhereCommitReturnsAnError(t *testing.T) {
 		PackageHeight: 3,
 		PackageWidth:  2,
 		PackageLength: 1,
-		CreatedAt:     exampleTime,
+		CreatedOn:     exampleTime,
 	}
 
 	expectedProduct := &Product{
@@ -775,7 +775,7 @@ func TestProductCreationHandlerWhereCommitReturnsAnError(t *testing.T) {
 			PackageHeight: 3,
 			PackageWidth:  2,
 			PackageLength: 1,
-			CreatedAt:     exampleTime,
+			CreatedOn:     exampleTime,
 		},
 		ID:                  10,
 		ProductProgenitorID: 2,
@@ -785,7 +785,7 @@ func TestProductCreationHandlerWhereCommitReturnsAnError(t *testing.T) {
 		Quantity:            123,
 		Price:               lolFloats,
 		Cost:                5.0,
-		CreatedAt:           exampleTime,
+		CreatedOn:           exampleTime,
 	}
 
 	db, mock, err := sqlmock.New()
@@ -846,7 +846,7 @@ func TestProductCreationHandlerWithoutOptions(t *testing.T) {
 		PackageHeight: 3,
 		PackageWidth:  2,
 		PackageLength: 1,
-		CreatedAt:     exampleTime,
+		CreatedOn:     exampleTime,
 	}
 
 	expectedProduct := &Product{
@@ -864,7 +864,7 @@ func TestProductCreationHandlerWithoutOptions(t *testing.T) {
 			PackageHeight: 3,
 			PackageWidth:  2,
 			PackageLength: 1,
-			CreatedAt:     exampleTime,
+			CreatedOn:     exampleTime,
 		},
 		ID:                  10,
 		ProductProgenitorID: 2,
@@ -874,7 +874,7 @@ func TestProductCreationHandlerWithoutOptions(t *testing.T) {
 		Quantity:            123,
 		Price:               lolFloats,
 		Cost:                5.0,
-		CreatedAt:           exampleTime,
+		CreatedOn:           exampleTime,
 	}
 
 	db, mock, err := sqlmock.New()
@@ -944,7 +944,7 @@ func TestProductCreationHandlerWhereProgenitorCreationFails(t *testing.T) {
 		PackageHeight: 3,
 		PackageWidth:  2,
 		PackageLength: 1,
-		CreatedAt:     exampleTime,
+		CreatedOn:     exampleTime,
 	}
 
 	db, mock, err := sqlmock.New()
@@ -981,7 +981,7 @@ func TestProductCreationHandlerWithErrorCreatingOptions(t *testing.T) {
 		PackageHeight: 3,
 		PackageWidth:  2,
 		PackageLength: 1,
-		CreatedAt:     exampleTime,
+		CreatedOn:     exampleTime,
 	}
 
 	db, mock, err := sqlmock.New()
@@ -1019,7 +1019,7 @@ func TestProductCreationHandlerWhereProductCreationFails(t *testing.T) {
 		PackageHeight: 3,
 		PackageWidth:  2,
 		PackageLength: 1,
-		CreatedAt:     exampleTime,
+		CreatedOn:     exampleTime,
 	}
 
 	expectedProduct := &Product{
@@ -1037,7 +1037,7 @@ func TestProductCreationHandlerWhereProductCreationFails(t *testing.T) {
 			PackageHeight: 3,
 			PackageWidth:  2,
 			PackageLength: 1,
-			CreatedAt:     exampleTime,
+			CreatedOn:     exampleTime,
 		},
 		ID:                  10,
 		ProductProgenitorID: 2,
@@ -1047,7 +1047,7 @@ func TestProductCreationHandlerWhereProductCreationFails(t *testing.T) {
 		Quantity:            123,
 		Price:               lolFloats,
 		Cost:                5.0,
-		CreatedAt:           exampleTime,
+		CreatedOn:           exampleTime,
 	}
 
 	db, mock, err := sqlmock.New()

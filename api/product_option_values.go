@@ -14,10 +14,10 @@ import (
 )
 
 const (
-	productOptionValueExistenceQuery            = `SELECT EXISTS(SELECT 1 FROM product_option_values WHERE id = $1 AND archived_at IS NULL)`
-	productOptionValueExistenceForOptionIDQuery = `SELECT EXISTS(SELECT 1 FROM product_option_values WHERE product_option_id = $1 AND value = $2 AND archived_at IS NULL)`
-	productOptionValueRetrievalQuery            = `SELECT * FROM product_option_values WHERE id = $1 AND archived_at IS NULL`
-	productOptionValueRetrievalForOptionIDQuery = `SELECT * FROM product_option_values WHERE product_option_id = $1 AND archived_at IS NULL`
+	productOptionValueExistenceQuery            = `SELECT EXISTS(SELECT 1 FROM product_option_values WHERE id = $1 AND archived_on IS NULL)`
+	productOptionValueExistenceForOptionIDQuery = `SELECT EXISTS(SELECT 1 FROM product_option_values WHERE product_option_id = $1 AND value = $2 AND archived_on IS NULL)`
+	productOptionValueRetrievalQuery            = `SELECT * FROM product_option_values WHERE id = $1`
+	productOptionValueRetrievalForOptionIDQuery = `SELECT * FROM product_option_values WHERE product_option_id = $1 AND archived_on IS NULL`
 )
 
 // ProductOptionValue represents a product's option values. If you have a t-shirt that comes in three colors
@@ -27,9 +27,9 @@ type ProductOptionValue struct {
 	ID              int64     `json:"id"`
 	ProductOptionID int64     `json:"product_option_id"`
 	Value           string    `json:"value"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       NullTime  `json:"updated_at,omitempty"`
-	ArchivedAt      NullTime  `json:"archived_at,omitempty"`
+	CreatedOn       time.Time `json:"created_on"`
+	UpdatedOn       NullTime  `json:"updated_on,omitempty"`
+	ArchivedOn      NullTime  `json:"archived_on,omitempty"`
 }
 
 func (pav *ProductOptionValue) generateScanArgs() []interface{} {
@@ -37,9 +37,9 @@ func (pav *ProductOptionValue) generateScanArgs() []interface{} {
 		&pav.ID,
 		&pav.ProductOptionID,
 		&pav.Value,
-		&pav.CreatedAt,
-		&pav.UpdatedAt,
-		&pav.ArchivedAt,
+		&pav.CreatedOn,
+		&pav.UpdatedOn,
+		&pav.ArchivedOn,
 	}
 }
 

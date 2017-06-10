@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	skuExistenceQuery             = `SELECT EXISTS(SELECT 1 FROM products WHERE sku = $1 AND archived_at IS NULL)`
-	productDeletionQuery          = `UPDATE products SET archived_at = NOW() WHERE sku = $1 AND archived_at IS NULL`
-	completeProductRetrievalQuery = `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.sku = $1 AND p.archived_at IS NULL`
+	skuExistenceQuery             = `SELECT EXISTS(SELECT 1 FROM products WHERE sku = $1 AND archived_on IS NULL)`
+	productDeletionQuery          = `UPDATE products SET archived_on = NOW() WHERE sku = $1 AND archived_on IS NULL`
+	completeProductRetrievalQuery = `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.sku = $1`
 )
 
 // Product describes something a user can buy
@@ -39,9 +39,9 @@ type Product struct {
 	ProductProgenitor
 
 	// Housekeeping
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  NullTime  `json:"updated_at,omitempty"`
-	ArchivedAt NullTime  `json:"archived_at,omitempty"`
+	CreatedOn  time.Time `json:"created_on"`
+	UpdatedOn  NullTime  `json:"updated_on,omitempty"`
+	ArchivedOn NullTime  `json:"archived_on,omitempty"`
 }
 
 // generateScanArgs generates an array of pointers to struct fields for sql.Scan to populate
@@ -55,9 +55,9 @@ func (p *Product) generateScanArgs() []interface{} {
 		&p.Quantity,
 		&p.Price,
 		&p.Cost,
-		&p.CreatedAt,
-		&p.UpdatedAt,
-		&p.ArchivedAt,
+		&p.CreatedOn,
+		&p.UpdatedOn,
+		&p.ArchivedOn,
 	}
 }
 

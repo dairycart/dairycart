@@ -19,9 +19,9 @@ CREATE TABLE discounts (
         (number_of_uses = 0 AND limited_use IS FALSE)
     ),
     "login_required" boolean DEFAULT FALSE,
-    "created_at" timestamp DEFAULT NOW(),
-    "updated_at" timestamp,
-    "archived_at" timestamp,
+    "created_on" timestamp DEFAULT NOW(),
+    "updated_on" timestamp,
+    "archived_on" timestamp,
 
     PRIMARY KEY ("id")
 );

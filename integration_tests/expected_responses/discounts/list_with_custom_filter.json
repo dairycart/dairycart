@@ -1,0 +1,14 @@
+{
+	"count": 3,
+	"limit": 2,
+	"page": 2,
+	"data": [{
+		"id": 3,
+		"name": "New customer special",
+		"type": "flat_amount",
+		"amount": 10,
+		"requires_code": false,
+		"limited_use": false,
+		"login_required": false
+	}]
+}
