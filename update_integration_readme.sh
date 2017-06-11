@@ -1,1 +1,0 @@
-go run tools/integration_tests_checklist/main.go
