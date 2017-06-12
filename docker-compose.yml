@@ -1,0 +1,23 @@
+version: '3.2'
+
+services:
+  dairycart:
+    build:
+      context: .
+      dockerfile: dockerfiles/dairycart.Dockerfile
+    ports:
+      - '80:80'
+    depends_on:
+      - database
+    links:
+      - database
+    environment:
+      DAIRYCART_MIGRATIONS_DIR: "file:///migrations"
+      DAIRYCART_DB_URL: postgres://dairycart:hunter2@database:5432/dairycart?sslmode=disable
+  database:
+    image: postgres:alpine
+    ports:
+    - '2345:5432'
+    environment:
+      POSTGRES_USER: dairycart
+      POSTGRES_PASSWORD: hunter2
