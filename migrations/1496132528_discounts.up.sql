@@ -3,7 +3,7 @@ CREATE TABLE discounts (
     "id" bigserial,
     "name" text NOT NULL,
     "type" discount_type NOT NULL DEFAULT 'percentage',
-    "amount" numeric(15, 2),
+    "amount" numeric(17, 2),
     "starts_on" timestamp NOT NULL,
     "expires_on" timestamp,
     "requires_code" boolean DEFAULT FALSE,
