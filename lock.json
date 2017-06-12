@@ -68,7 +68,7 @@
         {
             "name": "github.com/lib/pq",
             "branch": "master",
-            "revision": "2704adc878c21e1329f46f6e56a1c387d788ff94",
+            "revision": "8837942c3e09574accbc5f150e2c5e057189cace",
             "packages": [
                 ".",
                 "oid"
@@ -97,15 +97,15 @@
         {
             "name": "github.com/pmezard/go-difflib",
             "version": "v1.0.0",
-            "revision": "792786c7400a136282c1664665ae0a8db921c6c2",
+            "revision": "c0b812dadcf4498dede02bb7f0c5c478be997e34",
             "packages": [
                 "difflib"
             ]
         },
         {
             "name": "github.com/sirupsen/logrus",
-            "version": "v0.11.5",
-            "revision": "ba1b36c82c5e05c4f912a88eab0dcd91a171688f",
+            "version": "v1.0.0",
+            "revision": "202f25545ea4cf9b191ff7f846df5d87c9382c2b",
             "packages": [
                 "."
             ]
@@ -155,7 +155,7 @@
         {
             "name": "golang.org/x/sys",
             "branch": "master",
-            "revision": "dbc2be9168a660ef302e04b6ff6406de6f967473",
+            "revision": "0b25a408a50076fbbcae6b7ac0ea5fbb0b085e79",
             "packages": [
                 "unix"
             ]
