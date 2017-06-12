@@ -1,0 +1,18 @@
+{
+	"sku": "new-product",
+    "name": "New Product",
+    "upc": "0123456789",
+	"quantity": 123,
+	"price": 12.34,
+	"cost": 5.0,
+	"description": "This is a new product.",
+	"taxable": true,
+	"product_weight": 9,
+	"product_height": 9,
+	"product_width": 9,
+	"product_length": 9,
+	"package_weight": 9,
+	"package_height": 9,
+	"package_width": 9,
+	"package_length": 9
+}

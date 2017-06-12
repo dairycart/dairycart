@@ -1,0 +1,20 @@
+{
+	"id": 10,
+	"product_progenitor_id": 2,
+	"sku": "skateboard",
+	"name": "Skateboard",
+	"upc": "1234567890",
+	"quantity": 123,
+	"taxable": false,
+	"price": 99.99,
+	"cost": 50,
+	"description": "This is a skateboard. Please wear a helmet.",
+	"product_weight": 8,
+	"product_height": 7,
+	"product_width": 6,
+	"product_length": 5,
+	"package_weight": 4,
+	"package_height": 3,
+	"package_width": 2,
+	"package_length": 1
+}

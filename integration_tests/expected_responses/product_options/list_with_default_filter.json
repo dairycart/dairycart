@@ -1,0 +1,51 @@
+{
+  "count": 2,
+  "limit": 25,
+  "page": 1,
+  "data": [
+    {
+      "id": 1,
+      "name": "color",
+      "product_progenitor_id": 1,
+      "values": [
+        {
+          "id": 1,
+          "product_option_id": 1,
+          "value": "red"
+        },
+        {
+          "id": 2,
+          "product_option_id": 1,
+          "value": "green"
+        },
+        {
+          "id": 3,
+          "product_option_id": 1,
+          "value": "blue"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "size",
+      "product_progenitor_id": 1,
+      "values": [
+        {
+          "id": 4,
+          "product_option_id": 2,
+          "value": "small"
+        },
+        {
+          "id": 5,
+          "product_option_id": 2,
+          "value": "medium"
+        },
+        {
+          "id": 6,
+          "product_option_id": 2,
+          "value": "large"
+        }
+      ]
+    }
+  ]
+}
