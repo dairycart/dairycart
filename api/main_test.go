@@ -54,8 +54,6 @@ func setupMockRequestsAndMux(db *sql.DB) (*httptest.ResponseRecorder, *mux.Route
 	return httptest.NewRecorder(), m
 }
 
-// sqlmock stuff TODO: give this an ASCII animal
-
 func formatQueryForSQLMock(query string) string {
 	for _, x := range []string{"$", "(", ")", "=", "*", ".", "+", "?", ",", "-"} {
 		query = strings.Replace(query, x, fmt.Sprintf(`\%s`, x), -1)
