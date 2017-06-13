@@ -145,3 +145,10 @@ func getListOfDiscounts(queryFilter map[string]string) (*http.Response, error) {
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
 	return client.Do(req)
 }
+
+func createDiscount(JSONBody string) (*http.Response, error) {
+	url := buildPath("discount")
+	body := strings.NewReader(JSONBody)
+	req, _ := http.NewRequest(http.MethodPost, url, body)
+	return client.Do(req)
+}

@@ -468,6 +468,29 @@ func TestDiscountListRouteWithCustomFilter(t *testing.T) {
 	assert.Equal(t, expected, actual, "product list route should respond with a customized list of products")
 }
 
+func TestDiscountCreation(t *testing.T) {
+	newDiscountJSON := loadExampleInput(t, "discounts", "new")
+	resp, err := createDiscount(newDiscountJSON)
+	assert.Nil(t, err)
+	assert.Equal(t, 201, resp.StatusCode, "creating a discount that doesn't exist should respond 201")
+
+	respBody := turnResponseBodyIntoString(t, resp)
+	actual := replaceTimeStringsForTests(respBody)
+	expected := minifyJSON(t, loadExpectedResponse(t, "discounts", "created"))
+	assert.Equal(t, expected, actual, "discount creation route should respond with created product body")
+}
+
+func TestDiscountCreationWithInvalidInput(t *testing.T) {
+	resp, err := createDiscount(exampleGarbageInput)
+	assert.Nil(t, err)
+	assert.Equal(t, 400, resp.StatusCode, "creating a discount that doesn't exist should respond 400")
+
+	respBody := turnResponseBodyIntoString(t, resp)
+	actual := replaceTimeStringsForTests(respBody)
+	expected := minifyJSON(t, loadExpectedResponse(t, "discounts", "error_invalid_input"))
+	assert.Equal(t, expected, actual, "discount creation route should respond with created product body")
+}
+
 // I'd like to keep these functions last if at all possible.
 
 func TestProductDeletionRouteForNonexistentProduct(t *testing.T) {

@@ -78,8 +78,8 @@ func (p *Product) generateJoinScanArgsWithCount(count *uint64) []interface{} {
 	return append(scanArgs, progenitorScanArgs...)
 }
 
-// NewProductFromCreationInputAndProgenitor creates a new product from a ProductProgenitor and a ProductCreationInput
-func NewProductFromCreationInputAndProgenitor(g *ProductProgenitor, in *ProductCreationInput) *Product {
+// newProductFromCreationInputAndProgenitor creates a new product from a ProductProgenitor and a ProductCreationInput
+func newProductFromCreationInputAndProgenitor(g *ProductProgenitor, in *ProductCreationInput) *Product {
 	np := &Product{
 		ProductProgenitor:   *g,
 		ProductProgenitorID: g.ID,
@@ -377,7 +377,7 @@ func buildProductCreationHandler(db *sql.DB) http.HandlerFunc {
 			}
 		}
 
-		newProduct := NewProductFromCreationInputAndProgenitor(progenitor, productInput)
+		newProduct := newProductFromCreationInputAndProgenitor(progenitor, productInput)
 		newProductID, err := createProductInDB(tx, newProduct)
 		if err != nil {
 			tx.Rollback()

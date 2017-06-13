@@ -1,6 +1,10 @@
 package api
 
-import "github.com/Masterminds/squirrel"
+import (
+	"fmt"
+
+	"github.com/Masterminds/squirrel"
+)
 
 func applyQueryFilterToQueryBuilder(queryBuilder squirrel.SelectBuilder, queryFilter *QueryFilter) squirrel.SelectBuilder {
 	if queryFilter.Limit > 0 {
@@ -214,7 +218,7 @@ func buildProductOptionValueCreationQuery(v *ProductOptionValue) (string, []inte
 func buildDiscountListQuery(queryFilter *QueryFilter) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
-		Select("count(id) over (), *").
+		Select(fmt.Sprintf("count(id) over (), %s", discountDBColumns)).
 		From("discounts").
 		Where(squirrel.Or{squirrel.Eq{"expires_on": nil}, squirrel.Gt{"expires_on": "NOW()"}}).
 		Where(squirrel.Eq{"archived_on": nil}).
@@ -226,25 +230,13 @@ func buildDiscountListQuery(queryFilter *QueryFilter) (string, []interface{}) {
 	return query, args
 }
 
-func buildDiscountCreationQuery(d *DiscountCreationInput) (string, []interface{}) {
+func buildDiscountCreationQuery(d *Discount) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	discountCreationSetMap := map[string]interface{}{
-		"name":           d.Name,
-		"type":           d.Type,
-		"amount":         d.Amount,
-		"starts_on":      d.StartsOn,
-		"expires_on":     d.ExpiresOn,
-		"requires_code":  d.RequiresCode,
-		"code":           d.Code,
-		"limited_use":    d.LimitedUse,
-		"number_of_uses": d.NumberOfUses,
-		"login_required": d.LoginRequired,
-	}
-
 	queryBuilder := sqlBuilder.
 		Insert("discounts").
-		SetMap(discountCreationSetMap).
-		Suffix(`RETURNING "id"`)
+		Columns("name", "type", "amount", "starts_on", "expires_on", "requires_code", "code", "limited_use", "number_of_uses", "login_required").
+		Values(d.Name, d.Type, d.Amount, d.StartsOn, d.ExpiresOn, d.RequiresCode, d.Code, d.LimitedUse, d.NumberOfUses, d.LoginRequired).
+		Suffix(fmt.Sprintf("RETURNING %s", discountDBColumns))
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }

@@ -12,8 +12,10 @@ import (
 )
 
 const (
+	discountDBColumns = `id, name, type, amount, starts_on, expires_on, requires_code, code, limited_use, number_of_uses, login_required, created_on, updated_on, archived_on`
+
 	discountRetrievalQuery = `SELECT * FROM discounts WHERE id = $1`
-	discountDeletionQuery  = `UPDATE discounts SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
+	//discountDeletionQuery  = `UPDATE discounts SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
 )
 
 // Discount represents pricing changes that apply temporarily to products
@@ -172,47 +174,45 @@ func buildDiscountListRetrievalHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func validateDiscountCreationInput(req *http.Request) (*DiscountCreationInput, error) {
-	i := &DiscountCreationInput{}
-	err := json.NewDecoder(req.Body).Decode(i)
-	defer req.Body.Close()
+func validateDiscountCreationInput(req *http.Request) (*Discount, error) {
+	d := &Discount{}
+	err := json.NewDecoder(req.Body).Decode(d)
 	if err != nil {
 		return nil, err
 	}
+	defer req.Body.Close()
 
-	s := structs.New(i)
-	// go will happily decode an invalid input into a completely zeroed struct,
-	// so we gotta do checks like this because we're bad at programming.
+	s := structs.New(d)
 	if s.IsZero() {
 		return nil, errors.New("Invalid input provided for discount body")
 	}
 
-	return i, err
+	return d, err
 }
 
-func createDiscountInDB(db *sql.DB, in *DiscountCreationInput) (int64, error) {
-	var newDiscountID int64
-	discounttCreationQuery, queryArgs := buildDiscountCreationQuery(in)
-	err := db.QueryRow(discounttCreationQuery, queryArgs...).Scan(&newDiscountID)
-	return newDiscountID, err
+func createDiscountInDB(db *sql.DB, in *Discount) (*Discount, error) {
+	discountCreationQuery, queryArgs := buildDiscountCreationQuery(in)
+	scanArgs := in.generateScanArgs()
+	err := db.QueryRow(discountCreationQuery, queryArgs...).Scan(scanArgs...)
+	return in, err
 }
 
 func buildDiscountCreationHandler(db *sql.DB) http.HandlerFunc {
 	// DiscountCreationHandler is a request handler that creates a Discount from user input
 	return func(res http.ResponseWriter, req *http.Request) {
-		discountInput, err := validateDiscountCreationInput(req)
+		newDiscount, err := validateDiscountCreationInput(req)
 		if err != nil {
 			notifyOfInvalidRequestBody(res, err)
 			return
 		}
 
-		_, err = createDiscountInDB(db, discountInput)
+		newDiscount, err = createDiscountInDB(db, newDiscount)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "insert discount into database")
 			return
 		}
 
 		res.WriteHeader(http.StatusCreated)
-		json.NewEncoder(res).Encode(discountInput)
+		json.NewEncoder(res).Encode(newDiscount)
 	}
 }

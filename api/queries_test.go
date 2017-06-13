@@ -123,8 +123,16 @@ func TestBuildProductOptionValueCreationQuery(t *testing.T) {
 
 func TestBuildDiscountListQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `SELECT count(id) over (), * FROM discounts WHERE (expires_on IS NULL OR expires_on > $1) AND archived_on IS NULL LIMIT 25`
+	expectedQuery := `SELECT count(id) over (), id, name, type, amount, starts_on, expires_on, requires_code, code, limited_use, number_of_uses, login_required, created_on, updated_on, archived_on FROM discounts WHERE (expires_on IS NULL OR expires_on > $1) AND archived_on IS NULL LIMIT 25`
 	actualQuery, actualArgs := buildDiscountListQuery(defaultQueryFilter)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 1, len(actualArgs), argsEqualityErrorMessage)
+}
+
+func TestBuildDiscountCreationQuery(t *testing.T) {
+	t.Parallel()
+	expectedQuery := `INSERT INTO discounts (name,type,amount,starts_on,expires_on,requires_code,code,limited_use,number_of_uses,login_required) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id, name, type, amount, starts_on, expires_on, requires_code, code, limited_use, number_of_uses, login_required, created_on, updated_on, archived_on`
+	actualQuery, actualArgs := buildDiscountCreationQuery(exampleDiscount)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 10, len(actualArgs), argsEqualityErrorMessage)
 }

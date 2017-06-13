@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
@@ -14,6 +15,20 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
+)
+
+const (
+	exampleDiscountStartTime     = "2016-12-01T12:00:00+05:00"
+	exampleDiscountCreationInput = `
+	{
+		"name": "Test",
+		"type": "flat_amount",
+		"amount": 12.34,
+		"starts_on": "2016-12-01T12:00:00+05:00",
+		"requires_code": true,
+		"code": "TEST"
+	}
+	`
 )
 
 var discountHeaders []string
@@ -72,6 +87,16 @@ func setExpectationsForDiscountListQuery(mock sqlmock.Sqlmock, err error) {
 	discountListRetrievalQuery, _ := buildDiscountListQuery(defaultQueryFilter)
 	query := formatQueryForSQLMock(discountListRetrievalQuery)
 	mock.ExpectQuery(query).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
+func setExpectationsForDiscountCreation(mock sqlmock.Sqlmock, d *Discount, err error) {
+	exampleRows := sqlmock.NewRows(discountHeaders).AddRow(exampleDiscountData...)
+	discountCreationQuery, args := buildDiscountCreationQuery(d)
+	queryArgs := argsToDriverValues(args)
+	mock.ExpectQuery(formatQueryForSQLMock(discountCreationQuery)).
+		WithArgs(queryArgs...).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
 }
@@ -152,6 +177,57 @@ func TestRetrieveDiscountsFromDBWhenDBReturnsError(t *testing.T) {
 	_, count, err := retrieveListOfDiscountsFromDB(db, defaultQueryFilter)
 	assert.NotNil(t, err)
 	assert.Equal(t, uint64(0), count, "count returned should be zero when error is encountered")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestValidateDiscountCreationInput(t *testing.T) {
+	t.Parallel()
+	dummyTime, _ := time.Parse("2006-01-02T15:04:05-07:00", exampleDiscountStartTime)
+	expected := &Discount{
+		Name:         "Test",
+		Type:         "flat_amount",
+		Amount:       12.34,
+		StartsOn:     dummyTime,
+		RequiresCode: true,
+		Code:         "TEST",
+	}
+
+	req := httptest.NewRequest("GET", "http://example.com", strings.NewReader(exampleDiscountCreationInput))
+	actual, err := validateDiscountCreationInput(req)
+
+	assert.Nil(t, err)
+	assert.Equal(t, expected, actual, "valid discount creation input should parse into a proper discount creation struct")
+}
+
+func TestValidateDiscountCreationInputWithNoInput(t *testing.T) {
+	t.Parallel()
+
+	req := httptest.NewRequest("GET", "http://example.com", nil)
+	_, err := validateDiscountCreationInput(req)
+
+	assert.NotNil(t, err)
+}
+
+func TestValidateDiscountCreationInputWithInvalidInput(t *testing.T) {
+	t.Parallel()
+
+	req := httptest.NewRequest("GET", "http://example.com", strings.NewReader(exampleGarbageInput))
+	_, err := validateDiscountCreationInput(req)
+
+	assert.NotNil(t, err)
+}
+
+func TestCreateDiscountInDB(t *testing.T) {
+	t.Parallel()
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	setExpectationsForDiscountCreation(mock, exampleDiscount, nil)
+
+	actualDiscount, err := createDiscountInDB(db, exampleDiscount)
+	assert.Nil(t, err)
+	assert.Equal(t, exampleDiscount, actualDiscount, "createProductInDB should return the created Discount")
+
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -259,4 +335,71 @@ func TestDiscountListHandlerWithDBError(t *testing.T) {
 	router.ServeHTTP(res, req)
 	assert.Equal(t, 500, res.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, mock)
+}
+
+func TestDiscountCreationHandler(t *testing.T) {
+	t.Parallel()
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+
+	dummyTime, _ := time.Parse("2006-01-02T15:04:05-07:00", exampleDiscountStartTime)
+	exampleCreatedDiscount := &Discount{
+		ID:           1,
+		Name:         "Test",
+		Type:         "flat_amount",
+		Amount:       12.34,
+		StartsOn:     dummyTime,
+		RequiresCode: true,
+		Code:         "TEST",
+		CreatedOn:    exampleTime,
+	}
+
+	setExpectationsForDiscountCreation(mock, exampleCreatedDiscount, nil)
+	req, err := http.NewRequest("POST", "/v1/discount", strings.NewReader(exampleDiscountCreationInput))
+	assert.Nil(t, err)
+
+	router.ServeHTTP(res, req)
+	assert.Equal(t, 201, res.Code, "status code should be 201")
+
+	actual := &Discount{}
+	err = json.NewDecoder(strings.NewReader(res.Body.String())).Decode(actual)
+	assert.Nil(t, err)
+
+	expected := exampleDiscount
+	expected.UpdatedOn.Valid = true
+	expected.ArchivedOn.Valid = true
+	assert.Equal(t, expected, actual, "discount creation endpoint should return created discount")
+
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestDiscountCreationHandlerWithInvalidInput(t *testing.T) {
+	t.Parallel()
+	db, _, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+
+	req, err := http.NewRequest("POST", "/v1/discount", strings.NewReader(exampleGarbageInput))
+	assert.Nil(t, err)
+
+	router.ServeHTTP(res, req)
+	assert.Equal(t, 400, res.Code, "status code should be 400")
+}
+
+func TestDiscountCreationHandlerWithDatabaseErrorUponCreation(t *testing.T) {
+	t.Parallel()
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+
+	setExpectationsForDiscountCreation(mock, exampleDiscount, arbitraryError)
+	req, err := http.NewRequest("POST", "/v1/discount", strings.NewReader(exampleDiscountCreationInput))
+	assert.Nil(t, err)
+
+	router.ServeHTTP(res, req)
+	assert.Equal(t, 500, res.Code, "status code should be 500")
 }
