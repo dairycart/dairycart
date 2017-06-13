@@ -242,7 +242,7 @@ func buildDiscountCreationQuery(d *DiscountCreationInput) (string, []interface{}
 	}
 
 	queryBuilder := sqlBuilder.
-		Insert("products").
+		Insert("discounts").
 		SetMap(discountCreationSetMap).
 		Suffix(`RETURNING "id"`)
 	query, args, _ := queryBuilder.ToSql()
