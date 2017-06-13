@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/fatih/structs"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 )
@@ -17,20 +18,17 @@ const (
 
 // Discount represents pricing changes that apply temporarily to products
 type Discount struct {
-	ID        int64     `json:"id"`
-	Name      string    `json:"name"`
-	Type      string    `json:"type"`
-	Amount    float32   `json:"amount"`
-	StartsOn  time.Time `json:"starts_on"`
-	ExpiresOn NullTime  `json:"expires_on"`
-
-	RequiresCode bool   `json:"requires_code"`
-	Code         string `json:"code,omitempty"`
-
-	LimitedUse   bool  `json:"limited_use"`
-	NumberOfUses int64 `json:"number_of_uses,omitempty"`
-
-	LoginRequired bool `json:"login_required"`
+	ID            int64     `json:"id"`
+	Name          string    `json:"name"`
+	Type          string    `json:"type"`
+	Amount        float32   `json:"amount"`
+	StartsOn      time.Time `json:"starts_on"`
+	ExpiresOn     NullTime  `json:"expires_on"`
+	RequiresCode  bool      `json:"requires_code"`
+	Code          string    `json:"code,omitempty"`
+	LimitedUse    bool      `json:"limited_use"`
+	NumberOfUses  int64     `json:"number_of_uses,omitempty"`
+	LoginRequired bool      `json:"login_required"`
 
 	// Housekeeping
 	CreatedOn  time.Time `json:"created_on"`
@@ -64,6 +62,20 @@ func (d *Discount) generateJoinScanArgsWithCount(count *uint64) []interface{} {
 	scanArgs := []interface{}{count}
 	discountScanArgs := d.generateScanArgs()
 	return append(scanArgs, discountScanArgs...)
+}
+
+// DiscountCreationInput represents user input for creating new discounts
+type DiscountCreationInput struct {
+	Name          string    `json:"name"`
+	Type          string    `json:"type"`
+	Amount        float32   `json:"amount"`
+	StartsOn      time.Time `json:"starts_on"`
+	ExpiresOn     NullTime  `json:"expires_on"`
+	RequiresCode  bool      `json:"requires_code"`
+	Code          string    `json:"code"`
+	LimitedUse    bool      `json:"limited_use"`
+	NumberOfUses  int64     `json:"number_of_uses"`
+	LoginRequired bool      `json:"login_required"`
 }
 
 // DiscountsResponse is a discount response struct
@@ -157,5 +169,50 @@ func buildDiscountListRetrievalHandler(db *sql.DB) http.HandlerFunc {
 			Data: discounts,
 		}
 		json.NewEncoder(res).Encode(discountsResponse)
+	}
+}
+
+func validateDiscountCreationInput(req *http.Request) (*DiscountCreationInput, error) {
+	i := &DiscountCreationInput{}
+	err := json.NewDecoder(req.Body).Decode(i)
+	defer req.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	s := structs.New(i)
+	// go will happily decode an invalid input into a completely zeroed struct,
+	// so we gotta do checks like this because we're bad at programming.
+	if s.IsZero() {
+		return nil, errors.New("Invalid input provided for discount body")
+	}
+
+	return i, err
+}
+
+func createDiscountInDB(db *sql.DB, in *DiscountCreationInput) (int64, error) {
+	var newDiscountID int64
+	discounttCreationQuery, queryArgs := buildDiscountCreationQuery(in)
+	err := db.QueryRow(discounttCreationQuery, queryArgs...).Scan(&newDiscountID)
+	return newDiscountID, err
+}
+
+func buildDiscountCreationHandler(db *sql.DB) http.HandlerFunc {
+	// DiscountCreationHandler is a request handler that creates a Discount from user input
+	return func(res http.ResponseWriter, req *http.Request) {
+		discountInput, err := validateDiscountCreationInput(req)
+		if err != nil {
+			notifyOfInvalidRequestBody(res, err)
+			return
+		}
+
+		_, err = createDiscountInDB(db, discountInput)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "insert discount into database")
+			return
+		}
+
+		res.WriteHeader(http.StatusCreated)
+		json.NewEncoder(res).Encode(discountInput)
 	}
 }
