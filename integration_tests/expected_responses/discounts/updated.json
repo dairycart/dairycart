@@ -1,0 +1,12 @@
+{
+	"id": 1,
+	"name": "New Name",
+	"type": "percentage",
+	"amount": 10,
+	"starts_on": "0001-01-01T00:00:00Z",
+	"expires_on": "0001-01-01T00:00:00.000000Z",
+	"requires_code": true,
+	"code": "TEST",
+	"limited_use": false,
+	"login_required": false
+}

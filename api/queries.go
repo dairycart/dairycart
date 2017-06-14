@@ -240,3 +240,27 @@ func buildDiscountCreationQuery(d *Discount) (string, []interface{}) {
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
+
+func buildDiscountUpdateQuery(d *Discount) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	updateSetMap := map[string]interface{}{
+		"name":           d.Name,
+		"type":           d.Type,
+		"amount":         d.Amount,
+		"starts_on":      d.StartsOn,
+		"expires_on":     d.ExpiresOn.Time,
+		"requires_code":  d.RequiresCode,
+		"code":           d.Code,
+		"limited_use":    d.LimitedUse,
+		"number_of_uses": d.NumberOfUses,
+		"login_required": d.LoginRequired,
+		"updated_on":     squirrel.Expr("NOW()"),
+	}
+	queryBuilder := sqlBuilder.
+		Update("discounts").
+		SetMap(updateSetMap).
+		Where(squirrel.Eq{"id": d.ID}).
+		Suffix(fmt.Sprintf("RETURNING %s", discountDBColumns))
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}

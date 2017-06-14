@@ -46,6 +46,7 @@ func SetupAPIRoutes(router *mux.Router, db *sql.DB) {
 	// Discounts
 	specificDiscountEndpoint := buildRoute("discount", "{discount_id:[0-9]+}")
 	router.HandleFunc(specificDiscountEndpoint, buildDiscountRetrievalHandler(db)).Methods("GET")
+	router.HandleFunc(specificDiscountEndpoint, buildDiscountUpdateHandler(db)).Methods("PUT")
 	router.HandleFunc(specificDiscountEndpoint, buildDiscountDeletionHandler(db)).Methods("DELETE")
 	router.HandleFunc(buildRoute("discounts"), buildDiscountListRetrievalHandler(db)).Methods("GET")
 	router.HandleFunc(buildRoute("discount"), buildDiscountCreationHandler(db)).Methods("POST")

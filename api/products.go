@@ -291,7 +291,6 @@ func buildProductUpdateHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// eating the error here because we're already certain the sku exists
 		existingProduct, err := retrieveProductFromDB(db, sku)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "merge updated product with existing product")

@@ -27,8 +27,14 @@ const (
 		"starts_on": "2016-12-01T12:00:00+05:00",
 		"requires_code": true,
 		"code": "TEST"
-	}
-	`
+	}`
+
+	exampleDiscountUpdateInput = `
+	{
+		"name": "New Name",
+		"requires_code": true,
+		"code": "TEST"
+	}`
 )
 
 var discountHeaders []string
@@ -111,6 +117,16 @@ func setExpectationsForDiscountExistence(mock sqlmock.Sqlmock, discountID string
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
 	mock.ExpectQuery(formatQueryForSQLMock(discountExistenceQuery)).
 		WithArgs(discountID).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
+func setExpectationsForDiscountUpdate(mock sqlmock.Sqlmock, d *Discount, err error) {
+	exampleRows := sqlmock.NewRows(discountHeaders).AddRow(exampleDiscountData...)
+	query, rawArgs := buildDiscountUpdateQuery(d)
+	args := argsToDriverValues(rawArgs)
+	mock.ExpectQuery(formatQueryForSQLMock(query)).
+		WithArgs(args...).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
 }
@@ -254,6 +270,52 @@ func TestArchiveDiscount(t *testing.T) {
 	setExpectationsForDiscountDeletion(mock, exampleDiscountID)
 
 	err = archiveDiscount(db, exampleDiscountID)
+	assert.Nil(t, err)
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestValidateDiscountUpdateInput(t *testing.T) {
+	t.Parallel()
+
+	expected := &Discount{
+		Name:         "New Name",
+		RequiresCode: true,
+		Code:         "TEST",
+	}
+
+	req := httptest.NewRequest("GET", "http://example.com", strings.NewReader(exampleDiscountUpdateInput))
+	actual, err := validateDiscountUpdateInput(req)
+
+	assert.Nil(t, err)
+	assert.Equal(t, expected, actual, "valid discount creation input should parse into a proper discount creation struct")
+}
+
+func TestValidateDiscountUpdateInputWithNoInput(t *testing.T) {
+	t.Parallel()
+
+	req := httptest.NewRequest("GET", "http://example.com", nil)
+	_, err := validateDiscountUpdateInput(req)
+
+	assert.NotNil(t, err)
+}
+
+func TestValidateDiscountUpdateInputWithInvalidInput(t *testing.T) {
+	t.Parallel()
+
+	req := httptest.NewRequest("GET", "http://example.com", strings.NewReader(exampleGarbageInput))
+	_, err := validateDiscountUpdateInput(req)
+
+	assert.NotNil(t, err)
+}
+
+func TestUpdateDiscountInDB(t *testing.T) {
+	t.Parallel()
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	setExpectationsForDiscountUpdate(mock, exampleDiscount, nil)
+
+	err = updateDiscountInDatabase(db, exampleDiscount)
 	assert.Nil(t, err)
 	ensureExpectationsWereMet(t, mock)
 }
@@ -463,5 +525,139 @@ func TestDiscountDeletionHandlerForNonexistentDiscount(t *testing.T) {
 
 	router.ServeHTTP(res, req)
 	assert.Equal(t, 404, res.Code, "status code should be 404")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestDiscountUpdateHandler(t *testing.T) {
+	t.Parallel()
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+
+	updateInput := &Discount{
+		ID:           1,
+		Name:         "New Name",
+		Type:         "flat_discount",
+		Amount:       12.34,
+		RequiresCode: true,
+		Code:         "TEST",
+		CreatedOn:    exampleTime,
+	}
+
+	exampleDiscountID := strconv.Itoa(int(updateInput.ID))
+	setExpectationsForDiscountExistence(mock, exampleDiscountID, true, nil)
+	setExpectationsForDiscountRetrievalByID(mock, exampleDiscountID, nil)
+	setExpectationsForDiscountUpdate(mock, updateInput, nil)
+
+	req, err := http.NewRequest("PUT", "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
+	assert.Nil(t, err)
+
+	router.ServeHTTP(res, req)
+	assert.Equal(t, 200, res.Code, "status code should be 200")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestDiscountUpdateHandlerForNonexistentDiscount(t *testing.T) {
+	t.Parallel()
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+
+	setExpectationsForDiscountExistence(mock, "1", false, nil)
+
+	req, err := http.NewRequest("PUT", "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
+	assert.Nil(t, err)
+
+	router.ServeHTTP(res, req)
+	assert.Equal(t, 404, res.Code, "status code should be 404")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestDiscountUpdateHandlerWithErrorValidatingInput(t *testing.T) {
+	t.Parallel()
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+
+	updateInput := &Discount{
+		ID:           1,
+		Name:         "New Name",
+		Type:         "flat_discount",
+		Amount:       12.34,
+		RequiresCode: true,
+		Code:         "TEST",
+		CreatedOn:    exampleTime,
+	}
+
+	exampleDiscountID := strconv.Itoa(int(updateInput.ID))
+	setExpectationsForDiscountExistence(mock, exampleDiscountID, true, nil)
+
+	req, err := http.NewRequest("PUT", "/v1/discount/1", strings.NewReader(exampleGarbageInput))
+	assert.Nil(t, err)
+
+	router.ServeHTTP(res, req)
+	assert.Equal(t, 400, res.Code, "status code should be 400")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestDiscountUpdateHandlerWithErrorRetrievingDiscount(t *testing.T) {
+	t.Parallel()
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+
+	updateInput := &Discount{
+		ID:           1,
+		Name:         "New Name",
+		Type:         "flat_discount",
+		Amount:       12.34,
+		RequiresCode: true,
+		Code:         "TEST",
+		CreatedOn:    exampleTime,
+	}
+
+	exampleDiscountID := strconv.Itoa(int(updateInput.ID))
+	setExpectationsForDiscountExistence(mock, exampleDiscountID, true, nil)
+	setExpectationsForDiscountRetrievalByID(mock, exampleDiscountID, arbitraryError)
+
+	req, err := http.NewRequest("PUT", "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
+	assert.Nil(t, err)
+
+	router.ServeHTTP(res, req)
+	assert.Equal(t, 500, res.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestDiscountUpdateHandlerWithErrorUpdatingDiscount(t *testing.T) {
+	t.Parallel()
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+
+	updateInput := &Discount{
+		ID:           1,
+		Name:         "New Name",
+		Type:         "flat_discount",
+		Amount:       12.34,
+		RequiresCode: true,
+		Code:         "TEST",
+		CreatedOn:    exampleTime,
+	}
+
+	exampleDiscountID := strconv.Itoa(int(updateInput.ID))
+	setExpectationsForDiscountExistence(mock, exampleDiscountID, true, nil)
+	setExpectationsForDiscountRetrievalByID(mock, exampleDiscountID, nil)
+	setExpectationsForDiscountUpdate(mock, updateInput, arbitraryError)
+
+	req, err := http.NewRequest("PUT", "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
+	assert.Nil(t, err)
+
+	router.ServeHTTP(res, req)
+	assert.Equal(t, 500, res.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, mock)
 }

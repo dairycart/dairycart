@@ -152,3 +152,10 @@ func createDiscount(JSONBody string) (*http.Response, error) {
 	req, _ := http.NewRequest(http.MethodPost, url, body)
 	return client.Do(req)
 }
+
+func updateDiscount(discountID string, JSONBody string) (*http.Response, error) {
+	url := buildPath("discount", discountID)
+	body := strings.NewReader(JSONBody)
+	req, _ := http.NewRequest(http.MethodPut, url, body)
+	return client.Do(req)
+}

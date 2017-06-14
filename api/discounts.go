@@ -10,6 +10,7 @@ import (
 
 	"github.com/fatih/structs"
 	"github.com/gorilla/mux"
+	"github.com/imdario/mergo"
 	"github.com/pkg/errors"
 )
 
@@ -231,7 +232,7 @@ func buildDiscountDeletionHandler(db *sql.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		discountID := mux.Vars(req)["discount_id"]
 
-		// can't delete a product that doesn't exist!
+		// can't delete a discount that doesn't exist!
 		exists, err := rowExistsInDB(db, discountExistenceQuery, discountID)
 		if err != nil || !exists {
 			respondThatRowDoesNotExist(req, res, "discount", discountID)
@@ -240,5 +241,71 @@ func buildDiscountDeletionHandler(db *sql.DB) http.HandlerFunc {
 
 		err = archiveDiscount(db, discountID)
 		io.WriteString(res, fmt.Sprintf("Successfully archived discount `%s`", discountID))
+	}
+}
+
+func validateDiscountUpdateInput(req *http.Request) (*Discount, error) {
+	d := &Discount{}
+
+	err := json.NewDecoder(req.Body).Decode(d)
+	if err != nil {
+		return nil, err
+	}
+
+	p := structs.New(d)
+	if p.IsZero() {
+		return nil, errors.New("Invalid input provided for product body")
+	}
+
+	return d, nil
+}
+
+func updateDiscountInDatabase(db *sql.DB, up *Discount) error {
+	discountUpdateQuery, queryArgs := buildDiscountUpdateQuery(up)
+	scanArgs := up.generateScanArgs()
+	err := db.QueryRow(discountUpdateQuery, queryArgs...).Scan(scanArgs...)
+	return err
+}
+
+func buildDiscountUpdateHandler(db *sql.DB) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		// DiscountUpdateHandler is a request handler that can update discounts
+		discountID := mux.Vars(req)["discount_id"]
+
+		noop := func(i interface{}) {
+			return
+		}
+
+		// can't delete a discount that doesn't exist!
+		exists, err := rowExistsInDB(db, discountExistenceQuery, discountID)
+		if err != nil || !exists {
+			respondThatRowDoesNotExist(req, res, "discount", discountID)
+			return
+		}
+
+		updatedDiscount, err := validateDiscountUpdateInput(req)
+		if err != nil {
+			notifyOfInvalidRequestBody(res, err)
+			return
+		}
+
+		existingDiscount, err := retrieveDiscountFromDB(db, discountID)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "merge updated product with existing product")
+			return
+		}
+
+		// eating the error here because we've already validated input
+		mergo.Merge(updatedDiscount, existingDiscount)
+
+		err = updateDiscountInDatabase(db, updatedDiscount)
+		if err != nil {
+			errStr := err.Error()
+			noop(errStr)
+			notifyOfInternalIssue(res, err, "update product in database")
+			return
+		}
+
+		json.NewEncoder(res).Encode(updatedDiscount)
 	}
 }
