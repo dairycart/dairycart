@@ -3,6 +3,8 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -15,7 +17,8 @@ const (
 	discountDBColumns = `id, name, type, amount, starts_on, expires_on, requires_code, code, limited_use, number_of_uses, login_required, created_on, updated_on, archived_on`
 
 	discountRetrievalQuery = `SELECT * FROM discounts WHERE id = $1`
-	//discountDeletionQuery  = `UPDATE discounts SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
+	discountExistenceQuery = `SELECT EXISTS(SELECT 1 FROM discounts WHERE id = $1 AND archived_on IS NULL)`
+	discountDeletionQuery  = `UPDATE discounts SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
 )
 
 // Discount represents pricing changes that apply temporarily to products
@@ -117,6 +120,7 @@ func buildDiscountRetrievalHandler(db *sql.DB) http.HandlerFunc {
 			notifyOfInternalIssue(res, err, "retrieving discount from database")
 			return
 		}
+
 		if discount == nil {
 			respondThatRowDoesNotExist(req, res, "discount", discountID)
 			return
@@ -214,5 +218,27 @@ func buildDiscountCreationHandler(db *sql.DB) http.HandlerFunc {
 
 		res.WriteHeader(http.StatusCreated)
 		json.NewEncoder(res).Encode(newDiscount)
+	}
+}
+
+func archiveDiscount(db *sql.DB, discountID string) error {
+	_, err := db.Exec(discountDeletionQuery, discountID)
+	return err
+}
+
+func buildDiscountDeletionHandler(db *sql.DB) http.HandlerFunc {
+	// ProductDeletionHandler is a request handler that deletes a single product
+	return func(res http.ResponseWriter, req *http.Request) {
+		discountID := mux.Vars(req)["discount_id"]
+
+		// can't delete a product that doesn't exist!
+		exists, err := rowExistsInDB(db, discountExistenceQuery, discountID)
+		if err != nil || !exists {
+			respondThatRowDoesNotExist(req, res, "discount", discountID)
+			return
+		}
+
+		err = archiveDiscount(db, discountID)
+		io.WriteString(res, fmt.Sprintf("Successfully archived discount `%s`", discountID))
 	}
 }

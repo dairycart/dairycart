@@ -181,6 +181,12 @@ func buildSingleProductHandler(db *sql.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := mux.Vars(req)["sku"]
 
+		productExists, err := rowExistsInDB(db, skuExistenceQuery, sku)
+		if err != nil || !productExists {
+			respondThatRowDoesNotExist(req, res, "product", sku)
+			return
+		}
+
 		product, err := retrieveProductFromDB(db, sku)
 		if err != nil {
 			respondThatRowDoesNotExist(req, res, "product", sku)

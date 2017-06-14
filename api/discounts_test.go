@@ -101,6 +101,20 @@ func setExpectationsForDiscountCreation(mock sqlmock.Sqlmock, d *Discount, err e
 		WillReturnError(err)
 }
 
+func setExpectationsForDiscountDeletion(mock sqlmock.Sqlmock, discountID string) {
+	mock.ExpectExec(formatQueryForSQLMock(discountDeletionQuery)).
+		WithArgs(discountID).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+}
+
+func setExpectationsForDiscountExistence(mock sqlmock.Sqlmock, discountID string, exists bool, err error) {
+	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
+	mock.ExpectQuery(formatQueryForSQLMock(discountExistenceQuery)).
+		WithArgs(discountID).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
 func TestDiscountTypeIsValidWithValidInput(t *testing.T) {
 	t.Parallel()
 	d := &Discount{Type: "flat_discount"}
@@ -228,6 +242,19 @@ func TestCreateDiscountInDB(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, exampleDiscount, actualDiscount, "createProductInDB should return the created Discount")
 
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestArchiveDiscount(t *testing.T) {
+	t.Parallel()
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	exampleDiscountID := strconv.Itoa(int(exampleDiscount.ID))
+	setExpectationsForDiscountDeletion(mock, exampleDiscountID)
+
+	err = archiveDiscount(db, exampleDiscountID)
+	assert.Nil(t, err)
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -402,4 +429,39 @@ func TestDiscountCreationHandlerWithDatabaseErrorUponCreation(t *testing.T) {
 
 	router.ServeHTTP(res, req)
 	assert.Equal(t, 500, res.Code, "status code should be 500")
+}
+
+func TestDiscountDeletionHandler(t *testing.T) {
+	t.Parallel()
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+	exampleDiscountID := strconv.Itoa(int(exampleDiscount.ID))
+	setExpectationsForDiscountExistence(mock, exampleDiscountID, true, nil)
+	setExpectationsForDiscountDeletion(mock, exampleDiscountID)
+
+	req, err := http.NewRequest("DELETE", "/v1/discount/1", nil)
+	assert.Nil(t, err)
+
+	router.ServeHTTP(res, req)
+	assert.Equal(t, 200, res.Code, "status code should be 200")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestDiscountDeletionHandlerForNonexistentDiscount(t *testing.T) {
+	t.Parallel()
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+	exampleDiscountID := strconv.Itoa(int(exampleDiscount.ID))
+	setExpectationsForDiscountExistence(mock, exampleDiscountID, false, nil)
+
+	req, err := http.NewRequest("DELETE", "/v1/discount/1", nil)
+	assert.Nil(t, err)
+
+	router.ServeHTTP(res, req)
+	assert.Equal(t, 404, res.Code, "status code should be 404")
+	ensureExpectationsWereMet(t, mock)
 }

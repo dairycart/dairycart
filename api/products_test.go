@@ -476,6 +476,7 @@ func TestProductRetrievalHandlerWithExistingProduct(t *testing.T) {
 	assert.Nil(t, err)
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
+	setExpectationsForProductExistence(mock, exampleProduct.SKU, true, nil)
 	setExpectationsForSingleProductRetrieval(mock, nil)
 
 	req, err := http.NewRequest("GET", "/v1/product/skateboard", nil)
@@ -492,7 +493,24 @@ func TestProductRetrievalHandlerWithDBError(t *testing.T) {
 	assert.Nil(t, err)
 	defer db.Close()
 	res, router := setupMockRequestsAndMux(db)
-	setExpectationsForSingleProductRetrieval(mock, sql.ErrNoRows)
+	setExpectationsForProductExistence(mock, exampleProduct.SKU, true, nil)
+	setExpectationsForSingleProductRetrieval(mock, arbitraryError)
+
+	req, err := http.NewRequest("GET", "/v1/product/skateboard", nil)
+	assert.Nil(t, err)
+
+	router.ServeHTTP(res, req)
+	assert.Equal(t, 404, res.Code, "status code should be 404")
+	ensureExpectationsWereMet(t, mock)
+}
+
+func TestProductRetrievalHandlerWithNonexistentProduct(t *testing.T) {
+	t.Parallel()
+	db, mock, err := sqlmock.New()
+	assert.Nil(t, err)
+	defer db.Close()
+	res, router := setupMockRequestsAndMux(db)
+	setExpectationsForProductExistence(mock, exampleProduct.SKU, false, nil)
 
 	req, err := http.NewRequest("GET", "/v1/product/skateboard", nil)
 	assert.Nil(t, err)
