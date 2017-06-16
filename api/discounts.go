@@ -63,14 +63,6 @@ func (d *Discount) generateScanArgs() []interface{} {
 	}
 }
 
-// generateJoinScanArgsWithCount does everything generateJoinScanArgs does,
-// only with an added count parameter
-func (d *Discount) generateJoinScanArgsWithCount(count *uint64) []interface{} {
-	scanArgs := []interface{}{count}
-	discountScanArgs := d.generateScanArgs()
-	return append(scanArgs, discountScanArgs...)
-}
-
 // DiscountCreationInput represents user input for creating new discounts
 type DiscountCreationInput struct {
 	Name          string    `json:"name"`
@@ -122,31 +114,6 @@ func buildDiscountRetrievalHandler(db *sqlx.DB) http.HandlerFunc {
 	}
 }
 
-// retrieveListOfDiscountsFromDB retrieves a list of discounts from the database
-func retrieveListOfDiscountsFromDB(db *sql.DB, queryFilter *QueryFilter) ([]Discount, uint64, error) {
-	var discounts []Discount
-	var count uint64
-
-	query, args := buildDiscountListQuery(queryFilter)
-	rows, err := db.Query(query, args...)
-	if err != nil {
-		return nil, 0, errors.Wrap(err, "Error encountered querying for discounts")
-	}
-
-	defer rows.Close()
-	for rows.Next() {
-		var discount Discount
-		var queryCount uint64
-
-		scanArgs := discount.generateJoinScanArgsWithCount(&queryCount)
-		_ = rows.Scan(scanArgs...)
-
-		count = queryCount
-		discounts = append(discounts, discount)
-	}
-	return discounts, count, nil
-}
-
 func buildDiscountListRetrievalHandler(db *sqlx.DB) http.HandlerFunc {
 	// DiscountListRetrievalHandler is a request handler that returns a list of Discounts
 	return func(res http.ResponseWriter, req *http.Request) {
@@ -194,14 +161,14 @@ func validateDiscountCreationInput(req *http.Request) (*Discount, error) {
 	return d, err
 }
 
-func createDiscountInDB(db *sql.DB, in *Discount) (*Discount, error) {
+func createDiscountInDB(db *sqlx.DB, in *Discount) (*Discount, error) {
 	discountCreationQuery, queryArgs := buildDiscountCreationQuery(in)
 	scanArgs := in.generateScanArgs()
 	err := db.QueryRow(discountCreationQuery, queryArgs...).Scan(scanArgs...)
 	return in, err
 }
 
-func buildDiscountCreationHandler(db *sql.DB) http.HandlerFunc {
+func buildDiscountCreationHandler(db *sqlx.DB) http.HandlerFunc {
 	// DiscountCreationHandler is a request handler that creates a Discount from user input
 	return func(res http.ResponseWriter, req *http.Request) {
 		newDiscount, err := validateDiscountCreationInput(req)
@@ -221,18 +188,18 @@ func buildDiscountCreationHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func archiveDiscount(db *sql.DB, discountID string) error {
+func archiveDiscount(db *sqlx.DB, discountID string) error {
 	_, err := db.Exec(discountDeletionQuery, discountID)
 	return err
 }
 
-func buildDiscountDeletionHandler(db *sql.DB) http.HandlerFunc {
+func buildDiscountDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 	// ProductDeletionHandler is a request handler that deletes a single product
 	return func(res http.ResponseWriter, req *http.Request) {
 		discountID := mux.Vars(req)["discount_id"]
 
 		// can't delete a discount that doesn't exist!
-		exists, err := rowExistsInDB(db, discountExistenceQuery, discountID)
+		exists, err := rowExistsInDBX(db, discountExistenceQuery, discountID)
 		if err != nil || !exists {
 			respondThatRowDoesNotExist(req, res, "discount", discountID)
 			return
@@ -259,14 +226,14 @@ func validateDiscountUpdateInput(req *http.Request) (*Discount, error) {
 	return d, nil
 }
 
-func updateDiscountInDatabase(db *sql.DB, up *Discount) error {
+func updateDiscountInDatabase(db *sqlx.DB, up *Discount) error {
 	discountUpdateQuery, queryArgs := buildDiscountUpdateQuery(up)
 	scanArgs := up.generateScanArgs()
 	err := db.QueryRow(discountUpdateQuery, queryArgs...).Scan(scanArgs...)
 	return err
 }
 
-func buildDiscountUpdateHandler(db *sql.DB, xdb *sqlx.DB) http.HandlerFunc {
+func buildDiscountUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		// DiscountUpdateHandler is a request handler that can update discounts
 		discountID := mux.Vars(req)["discount_id"]
@@ -277,7 +244,7 @@ func buildDiscountUpdateHandler(db *sql.DB, xdb *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		existingDiscount, err := retrieveDiscountFromDB(xdb, discountID)
+		existingDiscount, err := retrieveDiscountFromDB(db, discountID)
 		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "discount", discountID)
 			return

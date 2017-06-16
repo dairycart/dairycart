@@ -207,6 +207,20 @@ func rowExistsInDB(db *sql.DB, query string, identifier string) (bool, error) {
 	return exists == "true", err
 }
 
+// rowExistsInDB will return whether or not a product/option/etc with a given identifier exists in the database
+func rowExistsInDBX(db *sqlx.DB, query string, identifier string) (bool, error) {
+	var exists string
+
+	err := db.QueryRow(query, identifier).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return exists == "true", err
+}
+
 func respondThatRowDoesNotExist(req *http.Request, res http.ResponseWriter, itemType, id string) {
 	itemTypeToIdentifierMap := map[string]string{
 		"product option":       "id",

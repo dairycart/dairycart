@@ -13,7 +13,6 @@ import (
 
 	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 )
@@ -193,42 +192,12 @@ func TestRetrieveDiscountFromDBWhenDBReturnsNoRows(t *testing.T) {
 
 func TestRetrieveDiscountFromDBWhenDBReturnsError(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	xdb := sqlx.NewDb(db, "postgres")
-	assert.Nil(t, err)
-	defer db.Close()
+	_, xdb, mock := setupDBForTest(t)
 	discountIDString := strconv.Itoa(int(exampleDiscount.ID))
 	setExpectationsForDiscountRetrievalByID(mock, discountIDString, arbitraryError)
 
-	_, err = retrieveDiscountFromDB(xdb, discountIDString)
+	_, err := retrieveDiscountFromDB(xdb, discountIDString)
 	assert.NotNil(t, err)
-	ensureExpectationsWereMet(t, mock)
-}
-
-func TestRetrieveDiscountsFromDB(t *testing.T) {
-	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
-	setExpectationsForDiscountListQueryWithCount(mock, nil)
-
-	discounts, count, err := retrieveListOfDiscountsFromDB(db, defaultQueryFilter)
-	assert.Nil(t, err)
-	assert.Equal(t, 3, len(discounts), "there should be 3 discounts")
-	assert.Equal(t, uint64(3), count, "there should be 3 discounts")
-	ensureExpectationsWereMet(t, mock)
-}
-
-func TestRetrieveDiscountsFromDBWhenDBReturnsError(t *testing.T) {
-	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
-	setExpectationsForDiscountListQuery(mock, sql.ErrNoRows)
-
-	_, count, err := retrieveListOfDiscountsFromDB(db, defaultQueryFilter)
-	assert.NotNil(t, err)
-	assert.Equal(t, uint64(0), count, "count returned should be zero when error is encountered")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -271,12 +240,10 @@ func TestValidateDiscountCreationInputWithInvalidInput(t *testing.T) {
 
 func TestCreateDiscountInDB(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	_, xdb, mock := setupDBForTest(t)
 	setExpectationsForDiscountCreation(mock, exampleDiscount, nil)
 
-	actualDiscount, err := createDiscountInDB(db, exampleDiscount)
+	actualDiscount, err := createDiscountInDB(xdb, exampleDiscount)
 	assert.Nil(t, err)
 	assert.Equal(t, exampleDiscount, actualDiscount, "createProductInDB should return the created Discount")
 
@@ -285,13 +252,11 @@ func TestCreateDiscountInDB(t *testing.T) {
 
 func TestArchiveDiscount(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	_, xdb, mock := setupDBForTest(t)
 	exampleDiscountID := strconv.Itoa(int(exampleDiscount.ID))
 	setExpectationsForDiscountDeletion(mock, exampleDiscountID)
 
-	err = archiveDiscount(db, exampleDiscountID)
+	err := archiveDiscount(xdb, exampleDiscountID)
 	assert.Nil(t, err)
 	ensureExpectationsWereMet(t, mock)
 }
@@ -332,12 +297,10 @@ func TestValidateDiscountUpdateInputWithInvalidInput(t *testing.T) {
 
 func TestUpdateDiscountInDB(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	_, xdb, mock := setupDBForTest(t)
 	setExpectationsForDiscountUpdate(mock, exampleDiscount, nil)
 
-	err = updateDiscountInDatabase(db, exampleDiscount)
+	err := updateDiscountInDatabase(xdb, exampleDiscount)
 	assert.Nil(t, err)
 	ensureExpectationsWereMet(t, mock)
 }
@@ -350,9 +313,7 @@ func TestUpdateDiscountInDB(t *testing.T) {
 
 func TestDiscountRetrievalHandlerWithExistingDiscount(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, _, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	discountIDString := strconv.Itoa(int(exampleDiscount.ID))
 	setExpectationsForDiscountRetrievalByID(mock, discountIDString, nil)
@@ -367,9 +328,7 @@ func TestDiscountRetrievalHandlerWithExistingDiscount(t *testing.T) {
 
 func TestDiscountRetrievalHandlerWithNoRowsFromDB(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, _, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	discountIDString := strconv.Itoa(int(exampleDiscount.ID))
 	setExpectationsForDiscountRetrievalByID(mock, discountIDString, sql.ErrNoRows)
@@ -384,9 +343,7 @@ func TestDiscountRetrievalHandlerWithNoRowsFromDB(t *testing.T) {
 
 func TestDiscountRetrievalHandlerWithDBError(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, _, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	discountIDString := strconv.Itoa(int(exampleDiscount.ID))
 	setExpectationsForDiscountRetrievalByID(mock, discountIDString, arbitraryError)
@@ -401,9 +358,7 @@ func TestDiscountRetrievalHandlerWithDBError(t *testing.T) {
 
 func TestDiscountListHandler(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, _, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForDiscountCountQuery(mock, defaultQueryFilter, nil)
 	setExpectationsForDiscountListQuery(mock, nil)
@@ -435,9 +390,7 @@ func TestDiscountListHandler(t *testing.T) {
 
 func TestDiscountListHandlerWithDBErrorWithErrorReturnedFromCountQuery(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, _, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForDiscountCountQuery(mock, defaultQueryFilter, arbitraryError)
 
@@ -451,9 +404,7 @@ func TestDiscountListHandlerWithDBErrorWithErrorReturnedFromCountQuery(t *testin
 
 func TestDiscountListHandlerWithDBErrorWithErrorReturnedFromListQuery(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, _, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForDiscountCountQuery(mock, defaultQueryFilter, nil)
 	setExpectationsForDiscountListQuery(mock, arbitraryError)
@@ -468,9 +419,7 @@ func TestDiscountListHandlerWithDBErrorWithErrorReturnedFromListQuery(t *testing
 
 func TestDiscountCreationHandler(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, _, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 
 	dummyTime, _ := time.Parse("2006-01-02T15:04:05-07:00", exampleDiscountStartTime)
@@ -506,9 +455,7 @@ func TestDiscountCreationHandler(t *testing.T) {
 
 func TestDiscountCreationHandlerWithInvalidInput(t *testing.T) {
 	t.Parallel()
-	db, _, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, _, _ := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 
 	req, err := http.NewRequest("POST", "/v1/discount", strings.NewReader(exampleGarbageInput))
@@ -520,9 +467,7 @@ func TestDiscountCreationHandlerWithInvalidInput(t *testing.T) {
 
 func TestDiscountCreationHandlerWithDatabaseErrorUponCreation(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, _, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 
 	setExpectationsForDiscountCreation(mock, exampleDiscount, arbitraryError)
@@ -535,9 +480,7 @@ func TestDiscountCreationHandlerWithDatabaseErrorUponCreation(t *testing.T) {
 
 func TestDiscountDeletionHandler(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, _, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	exampleDiscountID := strconv.Itoa(int(exampleDiscount.ID))
 	setExpectationsForDiscountExistence(mock, exampleDiscountID, true, nil)
@@ -553,9 +496,7 @@ func TestDiscountDeletionHandler(t *testing.T) {
 
 func TestDiscountDeletionHandlerForNonexistentDiscount(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, _, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	exampleDiscountID := strconv.Itoa(int(exampleDiscount.ID))
 	setExpectationsForDiscountExistence(mock, exampleDiscountID, false, nil)
@@ -570,9 +511,7 @@ func TestDiscountDeletionHandlerForNonexistentDiscount(t *testing.T) {
 
 func TestDiscountUpdateHandler(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, _, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 
 	updateInput := &Discount{
@@ -599,9 +538,7 @@ func TestDiscountUpdateHandler(t *testing.T) {
 
 func TestDiscountUpdateHandlerForNonexistentDiscount(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, _, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	exampleDiscountID := strconv.Itoa(int(exampleDiscount.ID))
 	setExpectationsForDiscountRetrievalByID(mock, exampleDiscountID, sql.ErrNoRows)
@@ -616,9 +553,7 @@ func TestDiscountUpdateHandlerForNonexistentDiscount(t *testing.T) {
 
 func TestDiscountUpdateHandlerWithErrorValidatingInput(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, _, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 
 	req, err := http.NewRequest("PUT", "/v1/discount/1", strings.NewReader(exampleGarbageInput))
@@ -631,9 +566,7 @@ func TestDiscountUpdateHandlerWithErrorValidatingInput(t *testing.T) {
 
 func TestDiscountUpdateHandlerWithErrorRetrievingDiscount(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, _, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 
 	updateInput := &Discount{
@@ -659,9 +592,7 @@ func TestDiscountUpdateHandlerWithErrorRetrievingDiscount(t *testing.T) {
 
 func TestDiscountUpdateHandlerWithErrorUpdatingDiscount(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, _, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 
 	updateInput := &Discount{

@@ -338,3 +338,61 @@ func TestRowExistsInDBForNonexistentRow(t *testing.T) {
 		t.Errorf("there were unfulfilled expections: %s", err)
 	}
 }
+
+func TestRowExistsInDBXWhenDBReturnsNoRows(t *testing.T) {
+	t.Parallel()
+	_, xdb, mock := setupDBForTest(t)
+	setExpectationsForProductExistence(mock, exampleSKU, true, sql.ErrNoRows)
+
+	exists, err := rowExistsInDBX(xdb, skuExistenceQuery, exampleSKU)
+
+	assert.Nil(t, err)
+	assert.False(t, exists)
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expections: %s", err)
+	}
+}
+
+func TestRowExistsInDBXWhenDBThrowsError(t *testing.T) {
+	t.Parallel()
+	_, xdb, mock := setupDBForTest(t)
+	setExpectationsForProductExistence(mock, exampleSKU, true, arbitraryError)
+
+	exists, err := rowExistsInDBX(xdb, skuExistenceQuery, exampleSKU)
+
+	assert.NotNil(t, err)
+	assert.False(t, exists)
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expections: %s", err)
+	}
+}
+
+func TestRowExistsInDBXForExistingRow(t *testing.T) {
+	t.Parallel()
+	_, xdb, mock := setupDBForTest(t)
+
+	setExpectationsForProductExistence(mock, exampleSKU, true, nil)
+
+	exists, err := rowExistsInDBX(xdb, skuExistenceQuery, exampleSKU)
+
+	assert.Nil(t, err)
+	assert.True(t, exists)
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expections: %s", err)
+	}
+}
+
+func TestRowExistsInDBXForNonexistentRow(t *testing.T) {
+	t.Parallel()
+	_, xdb, mock := setupDBForTest(t)
+
+	setExpectationsForProductExistence(mock, exampleSKU, false, nil)
+
+	exists, err := rowExistsInDBX(xdb, skuExistenceQuery, exampleSKU)
+
+	assert.Nil(t, err)
+	assert.False(t, exists)
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expections: %s", err)
+	}
+}
