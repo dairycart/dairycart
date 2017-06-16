@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/jmoiron/sqlx"
 )
 
 const (
@@ -19,7 +20,7 @@ func buildRoute(routeParts ...string) string {
 }
 
 // SetupAPIRoutes takes a mux router and a database connection and creates all the API routes for the API
-func SetupAPIRoutes(router *mux.Router, db *sql.DB) {
+func SetupAPIRoutes(router *mux.Router, db *sql.DB, xdb *sqlx.DB) {
 	// TODO: Replace all these with http.MethodXxxs
 	// Products
 	productEndpoint := buildRoute("product", fmt.Sprintf("{sku:%s}", SKUPattern))
@@ -45,10 +46,10 @@ func SetupAPIRoutes(router *mux.Router, db *sql.DB) {
 
 	// Discounts
 	specificDiscountEndpoint := buildRoute("discount", "{discount_id:[0-9]+}")
-	router.HandleFunc(specificDiscountEndpoint, buildDiscountRetrievalHandler(db)).Methods("GET")
-	router.HandleFunc(specificDiscountEndpoint, buildDiscountUpdateHandler(db)).Methods("PUT")
+	router.HandleFunc(specificDiscountEndpoint, buildDiscountRetrievalHandler(xdb)).Methods("GET")
+	router.HandleFunc(specificDiscountEndpoint, buildDiscountUpdateHandler(db, xdb)).Methods("PUT")
 	router.HandleFunc(specificDiscountEndpoint, buildDiscountDeletionHandler(db)).Methods("DELETE")
-	router.HandleFunc(buildRoute("discounts"), buildDiscountListRetrievalHandler(db)).Methods("GET")
+	router.HandleFunc(buildRoute("discounts"), buildDiscountListRetrievalHandler(xdb)).Methods("GET")
 	router.HandleFunc(buildRoute("discount"), buildDiscountCreationHandler(db)).Methods("POST")
 	// specificDiscountCodeEndpoint := buildRoute("discount", fmt.Sprintf("{code:%s}", SKUPattern))
 	// router.HandleFunc(specificDiscountCodeEndpoint, buildDiscountRetrievalHandler(db)).Methods("HEAD")

@@ -6,14 +6,28 @@ import (
 	"github.com/Masterminds/squirrel"
 )
 
-func applyQueryFilterToQueryBuilder(queryBuilder squirrel.SelectBuilder, queryFilter *QueryFilter) squirrel.SelectBuilder {
+func buildCountQuery(table string, queryFilter *QueryFilter) string {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		Select("count(id)").
+		From(table).
+		Where(squirrel.Eq{"archived_on": nil})
+
+	// setting this to false so we always get a count
+	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter, false)
+
+	query, _, _ := queryBuilder.ToSql()
+	return query
+}
+
+func applyQueryFilterToQueryBuilder(queryBuilder squirrel.SelectBuilder, queryFilter *QueryFilter, includeOffset bool) squirrel.SelectBuilder {
 	if queryFilter.Limit > 0 {
 		queryBuilder = queryBuilder.Limit(uint64(queryFilter.Limit))
 	} else {
 		queryBuilder = queryBuilder.Limit(25)
 	}
 
-	if queryFilter.Page > 1 {
+	if queryFilter.Page > 1 && includeOffset {
 		offset := (queryFilter.Page - 1) * uint64(queryFilter.Limit)
 		queryBuilder = queryBuilder.Offset(offset)
 	}
@@ -96,7 +110,7 @@ func buildProductListQuery(queryFilter *QueryFilter) (string, []interface{}) {
 		Where(squirrel.Eq{"p.archived_on": nil}).
 		Limit(uint64(queryFilter.Limit))
 
-	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter)
+	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter, true)
 
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
@@ -146,7 +160,7 @@ func buildProductOptionListQuery(progenitorID string, queryFilter *QueryFilter) 
 		From("product_options").
 		Where(squirrel.Eq{"product_progenitor_id": progenitorID}).
 		Where(squirrel.Eq{"archived_on": nil})
-	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter)
+	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter, true)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
@@ -218,13 +232,12 @@ func buildProductOptionValueCreationQuery(v *ProductOptionValue) (string, []inte
 func buildDiscountListQuery(queryFilter *QueryFilter) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
-		Select(fmt.Sprintf("count(id) over (), %s", discountDBColumns)).
+		Select(discountDBColumns).
 		From("discounts").
 		Where(squirrel.Or{squirrel.Eq{"expires_on": nil}, squirrel.Gt{"expires_on": "NOW()"}}).
-		Where(squirrel.Eq{"archived_on": nil}).
-		Limit(uint64(queryFilter.Limit))
+		Where(squirrel.Eq{"archived_on": nil})
 
-	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter)
+	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter, true)
 
 	query, args, _ := queryBuilder.ToSql()
 	return query, args

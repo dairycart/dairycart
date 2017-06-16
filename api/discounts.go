@@ -11,6 +11,7 @@ import (
 	"github.com/fatih/structs"
 	"github.com/gorilla/mux"
 	"github.com/imdario/mergo"
+	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
 
@@ -97,33 +98,23 @@ func (d *Discount) discountTypeIsValid() bool {
 	return d.Type == "percentage" || d.Type == "flat_amount"
 }
 
-// retrieveDiscountFromDB retrieves a discount with a given ID from the database
-func retrieveDiscountFromDB(db *sql.DB, discountID string) (*Discount, error) {
-	discount := &Discount{}
-	scanArgs := discount.generateScanArgs()
-	err := db.QueryRow(discountRetrievalQuery, discountID).Scan(scanArgs...)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	} else if err != nil {
-		return nil, errors.Wrap(err, "Error querying for discount")
-	}
-
-	return discount, err
+func retrieveDiscountFromDB(db *sqlx.DB, discountID string) (Discount, error) {
+	var d Discount
+	err := db.Get(&d, discountRetrievalQuery, discountID)
+	return d, err
 }
 
-func buildDiscountRetrievalHandler(db *sql.DB) http.HandlerFunc {
+func buildDiscountRetrievalHandler(db *sqlx.DB) http.HandlerFunc {
 	// DiscountRetrievalHandler is a request handler that returns a single Discount
 	return func(res http.ResponseWriter, req *http.Request) {
 		discountID := mux.Vars(req)["discount_id"]
 
 		discount, err := retrieveDiscountFromDB(db, discountID)
-		if err != nil {
-			notifyOfInternalIssue(res, err, "retrieving discount from database")
-			return
-		}
-
-		if discount == nil {
+		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "discount", discountID)
+			return
+		} else if err != nil {
+			notifyOfInternalIssue(res, err, "retrieving discount from database")
 			return
 		}
 
@@ -156,12 +147,20 @@ func retrieveListOfDiscountsFromDB(db *sql.DB, queryFilter *QueryFilter) ([]Disc
 	return discounts, count, nil
 }
 
-func buildDiscountListRetrievalHandler(db *sql.DB) http.HandlerFunc {
+func buildDiscountListRetrievalHandler(db *sqlx.DB) http.HandlerFunc {
 	// DiscountListRetrievalHandler is a request handler that returns a list of Discounts
 	return func(res http.ResponseWriter, req *http.Request) {
 		rawFilterParams := req.URL.Query()
 		queryFilter := parseRawFilterParams(rawFilterParams)
-		discounts, count, err := retrieveListOfDiscountsFromDB(db, queryFilter)
+		count, err := getRowCount(db, "discounts", queryFilter)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "retrieve count of discounts from the database")
+			return
+		}
+
+		var discounts []Discount
+		query, args := buildDiscountListQuery(queryFilter)
+		err = retrieveListOfRowsFromDB(db, query, args, &discounts)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve discounts from the database")
 			return
@@ -267,21 +266,10 @@ func updateDiscountInDatabase(db *sql.DB, up *Discount) error {
 	return err
 }
 
-func buildDiscountUpdateHandler(db *sql.DB) http.HandlerFunc {
+func buildDiscountUpdateHandler(db *sql.DB, xdb *sqlx.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		// DiscountUpdateHandler is a request handler that can update discounts
 		discountID := mux.Vars(req)["discount_id"]
-
-		noop := func(i interface{}) {
-			return
-		}
-
-		// can't delete a discount that doesn't exist!
-		exists, err := rowExistsInDB(db, discountExistenceQuery, discountID)
-		if err != nil || !exists {
-			respondThatRowDoesNotExist(req, res, "discount", discountID)
-			return
-		}
 
 		updatedDiscount, err := validateDiscountUpdateInput(req)
 		if err != nil {
@@ -289,9 +277,12 @@ func buildDiscountUpdateHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		existingDiscount, err := retrieveDiscountFromDB(db, discountID)
-		if err != nil {
-			notifyOfInternalIssue(res, err, "merge updated product with existing product")
+		existingDiscount, err := retrieveDiscountFromDB(xdb, discountID)
+		if err == sql.ErrNoRows {
+			respondThatRowDoesNotExist(req, res, "discount", discountID)
+			return
+		} else if err != nil {
+			notifyOfInternalIssue(res, err, "retrieving discount from database")
 			return
 		}
 
@@ -300,8 +291,6 @@ func buildDiscountUpdateHandler(db *sql.DB) http.HandlerFunc {
 
 		err = updateDiscountInDatabase(db, updatedDiscount)
 		if err != nil {
-			errStr := err.Error()
-			noop(errStr)
 			notifyOfInternalIssue(res, err, "update product in database")
 			return
 		}

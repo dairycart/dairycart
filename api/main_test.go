@@ -11,6 +11,9 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/jmoiron/sqlx"
+	"github.com/jmoiron/sqlx/reflectx"
+	"github.com/stretchr/testify/assert"
 
 	log "github.com/sirupsen/logrus"
 	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
@@ -50,8 +53,19 @@ func init() {
 
 func setupMockRequestsAndMux(db *sql.DB) (*httptest.ResponseRecorder, *mux.Router) {
 	m := mux.NewRouter()
-	SetupAPIRoutes(m, db)
+	xdb := sqlx.NewDb(db, "postgres")
+	xdb.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
+	SetupAPIRoutes(m, db, xdb)
 	return httptest.NewRecorder(), m
+}
+
+func setupDBForTest(t *testing.T) (*sql.DB, *sqlx.DB, sqlmock.Sqlmock) {
+	db, mock, err := sqlmock.New()
+	xdb := sqlx.NewDb(db, "postgres")
+	xdb.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
+	assert.Nil(t, err)
+
+	return db, xdb, mock
 }
 
 func formatQueryForSQLMock(query string) string {

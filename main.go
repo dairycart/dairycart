@@ -12,6 +12,8 @@ import (
 
 	// dependencies
 	"github.com/gorilla/mux"
+	"github.com/jmoiron/sqlx"
+	"github.com/jmoiron/sqlx/reflectx"
 	"github.com/mattes/migrate"
 	"github.com/mattes/migrate/database/postgres"
 	log "github.com/sirupsen/logrus"
@@ -80,6 +82,9 @@ func main() {
 		log.Fatalf("error encountered connecting to database: %v", err)
 	}
 
+	xdb := sqlx.NewDb(db, "postgres")
+	xdb.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
+
 	// migrate the database
 	migrationCount := determineMigrationCount()
 	migrateDatabase(db, migrationCount)
@@ -87,7 +92,7 @@ func main() {
 	// setup all our API routes
 	APIRouter := mux.NewRouter()
 	// APIRouter.Host("api.dairycart.com")
-	api.SetupAPIRoutes(APIRouter, db)
+	api.SetupAPIRoutes(APIRouter, db, xdb)
 
 	// serve 'em up a lil' sauce
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "I live!") })

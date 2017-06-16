@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 )
@@ -179,6 +180,17 @@ func dataValueIsValid(input string) bool {
 	// aren't allowed to have crazy values in the database
 	dataValidator := regexp.MustCompile(dataValidationPattern)
 	return dataValidator.MatchString(input)
+}
+
+func getRowCount(db *sqlx.DB, table string, queryFilter *QueryFilter) (uint64, error) {
+	var count uint64
+	query := buildCountQuery(table, queryFilter)
+	err := db.Get(&count, query)
+	return count, err
+}
+
+func retrieveListOfRowsFromDB(db *sqlx.DB, query string, args []interface{}, rows interface{}) error {
+	return db.Select(rows, query, args...)
 }
 
 // rowExistsInDB will return whether or not a product/option/etc with a given identifier exists in the database
