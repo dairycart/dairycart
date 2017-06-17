@@ -61,23 +61,6 @@ type Product struct {
 	ArchivedOn NullTime  `json:"archived_on,omitempty" dbcol:"product_archived_on"`
 }
 
-// generateScanArgs generates an array of pointers to struct fields for sql.Scan to populate
-func (p *Product) generateScanArgs() []interface{} {
-	return []interface{}{
-		&p.ID,
-		&p.ProductProgenitorID,
-		&p.SKU,
-		&p.Name,
-		&p.UPC,
-		&p.Quantity,
-		&p.Price,
-		&p.Cost,
-		&p.CreatedOn,
-		&p.UpdatedOn,
-		&p.ArchivedOn,
-	}
-}
-
 // newProductFromCreationInputAndProgenitor creates a new product from a ProductProgenitor and a ProductCreationInput
 func newProductFromCreationInputAndProgenitor(g *ProductProgenitor, in *ProductCreationInput) *Product {
 	np := &Product{
@@ -244,8 +227,7 @@ func buildProductDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 
 func updateProductInDatabase(db *sqlx.DB, up *Product) error {
 	productUpdateQuery, queryArgs := buildProductUpdateQuery(up)
-	scanArgs := up.generateScanArgs()
-	err := db.QueryRow(productUpdateQuery, queryArgs...).Scan(scanArgs...)
+	err := db.QueryRowx(productUpdateQuery, queryArgs...).StructScan(up)
 	return err
 }
 
