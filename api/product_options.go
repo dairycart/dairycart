@@ -24,7 +24,7 @@ const (
 type ProductOption struct {
 	ID                  int64                 `json:"id"`
 	Name                string                `json:"name"`
-	ProductProgenitorID int64                 `json:"product_progenitor_id"`
+	ProductProgenitorID uint64                `json:"product_progenitor_id"`
 	Values              []*ProductOptionValue `json:"values"`
 	CreatedOn           time.Time             `json:"created_on"`
 	UpdatedOn           NullTime              `json:"updated_on,omitempty"`
@@ -226,7 +226,7 @@ func createProductOptionInDB(tx *sql.Tx, a *ProductOption) (*ProductOption, erro
 	return a, err
 }
 
-func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in *ProductOptionCreationInput, progenitorID int64) (*ProductOption, error) {
+func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in *ProductOptionCreationInput, progenitorID uint64) (*ProductOption, error) {
 	newProductOption := &ProductOption{
 		Name:                in.Name,
 		ProductProgenitorID: progenitorID,
@@ -286,7 +286,7 @@ func buildProductOptionCreationHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		newProductOption, err := createProductOptionAndValuesInDBFromInput(tx, newOptionData, int64(progenitorIDInt))
+		newProductOption, err := createProductOptionAndValuesInDBFromInput(tx, newOptionData, uint64(progenitorIDInt))
 		if err != nil {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "create product option in the database")

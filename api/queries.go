@@ -104,7 +104,18 @@ func buildProgenitorCreationQuery(g *ProductProgenitor) (string, []interface{}) 
 func buildProductListQuery(queryFilter *QueryFilter) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
-		Select("count(p.id) over (), *").
+		Select(`p.id as product_id,
+				p.product_progenitor_id,
+				p.sku,
+				p.name as product_name,
+				p.upc,
+				p.quantity,
+				p.price as product_price,
+				p.cost as product_cost,
+				p.created_on as product_created_on,
+				p.updated_on as product_updated_on,
+				p.archived_on as product_archived_on,
+				g.*`).
 		From("products p").
 		Join("product_progenitors g ON p.product_progenitor_id = g.id").
 		Where(squirrel.Eq{"p.archived_on": nil}).

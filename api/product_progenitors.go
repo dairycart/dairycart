@@ -13,31 +13,31 @@ const (
 // ProductProgenitor is the parent product for every product
 type ProductProgenitor struct {
 	// Basic Info
-	ID          int64  `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	ID          uint64 `json:"id"          dbcol:"id"`
+	Name        string `json:"name"        dbcol:"name"`
+	Description string `json:"description" dbcol:"description"`
 
 	// Pricing Fields
-	Taxable bool    `json:"taxable"`
-	Price   float32 `json:"price"`
-	Cost    float32 `json:"cost"`
+	Taxable bool    `json:"taxable" dbcol:"taxable"`
+	Price   float32 `json:"price"   dbcol:"price"`
+	Cost    float32 `json:"cost"    dbcol:"cost"`
 
 	// Product Dimensions
-	ProductWeight float32 `json:"product_weight"`
-	ProductHeight float32 `json:"product_height"`
-	ProductWidth  float32 `json:"product_width"`
-	ProductLength float32 `json:"product_length"`
+	ProductWeight float32 `json:"product_weight" dbcol:"product_weight"`
+	ProductHeight float32 `json:"product_height" dbcol:"product_height"`
+	ProductWidth  float32 `json:"product_width"  dbcol:"product_width"`
+	ProductLength float32 `json:"product_length" dbcol:"product_length"`
 
 	// Package dimensions
-	PackageWeight float32 `json:"package_weight"`
-	PackageHeight float32 `json:"package_height"`
-	PackageWidth  float32 `json:"package_width"`
-	PackageLength float32 `json:"package_length"`
+	PackageWeight float32 `json:"package_weight" dbcol:"package_weight"`
+	PackageHeight float32 `json:"package_height" dbcol:"package_height"`
+	PackageWidth  float32 `json:"package_width"  dbcol:"package_width"`
+	PackageLength float32 `json:"package_length" dbcol:"package_length"`
 
-	// // Housekeeping
-	CreatedOn  time.Time `json:"created_on"`
-	UpdatedOn  NullTime  `json:"updated_on,omitempty"`
-	ArchivedOn NullTime  `json:"archived_on,omitempty"`
+	// Housekeeping
+	CreatedOn  time.Time `json:"created_on"            dbcol:"created_on"`
+	UpdatedOn  NullTime  `json:"updated_on,omitempty"  dbcol:"updated_on"`
+	ArchivedOn NullTime  `json:"archived_on,omitempty" dbcol:"archived_on"`
 }
 
 // generateScanArgs generates an array of pointers to struct fields for sql.Scan to populate
@@ -81,8 +81,8 @@ func newProductProgenitorFromProductCreationInput(in *ProductCreationInput) *Pro
 	}
 }
 
-func createProductProgenitorInDB(tx *sql.Tx, g *ProductProgenitor) (int64, error) {
-	var newProgenitorID int64
+func createProductProgenitorInDB(tx *sql.Tx, g *ProductProgenitor) (uint64, error) {
+	var newProgenitorID uint64
 	// using QueryRow instead of Exec because we want it to return the newly created row's ID
 	// Exec normally returns a sql.Result, which has a LastInsertedID() method, but when I tested
 	// this locally, it never worked. ¯\_(ツ)_/¯
@@ -93,7 +93,7 @@ func createProductProgenitorInDB(tx *sql.Tx, g *ProductProgenitor) (int64, error
 }
 
 // retrieveProductProgenitorFromDB retrieves a product progenitor with a given ID from the database
-func retrieveProductProgenitorFromDB(db *sql.DB, id int64) (*ProductProgenitor, error) {
+func retrieveProductProgenitorFromDB(db *sql.DB, id uint64) (*ProductProgenitor, error) {
 	progenitor := &ProductProgenitor{}
 	scanArgs := progenitor.generateScanArgs()
 

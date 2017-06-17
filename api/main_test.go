@@ -51,10 +51,17 @@ func init() {
 	exampleNewerTime = exampleTime.Add(30 * (24 * time.Hour))
 }
 
+func setExpectationsForRowCount(mock sqlmock.Sqlmock, table string, queryFilter *QueryFilter, count uint64, err error) {
+	exampleRows := sqlmock.NewRows([]string{"count"}).AddRow(count)
+	mock.ExpectQuery(formatQueryForSQLMock(buildCountQuery(table, queryFilter))).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
 func setupMockRequestsAndMux(db *sql.DB) (*httptest.ResponseRecorder, *mux.Router) {
 	m := mux.NewRouter()
 	xdb := sqlx.NewDb(db, "postgres")
-	xdb.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
+	xdb.Mapper = reflectx.NewMapperFunc("dbcol", strings.ToLower)
 	SetupAPIRoutes(m, db, xdb)
 	return httptest.NewRecorder(), m
 }
@@ -62,7 +69,7 @@ func setupMockRequestsAndMux(db *sql.DB) (*httptest.ResponseRecorder, *mux.Route
 func setupDBForTest(t *testing.T) (*sql.DB, *sqlx.DB, sqlmock.Sqlmock) {
 	db, mock, err := sqlmock.New()
 	xdb := sqlx.NewDb(db, "postgres")
-	xdb.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
+	xdb.Mapper = reflectx.NewMapperFunc("dbcol", strings.ToLower)
 	assert.Nil(t, err)
 
 	return db, xdb, mock

@@ -24,12 +24,12 @@ func buildRoute(routeParts ...string) string {
 func SetupAPIRoutes(router *mux.Router, oldDB *sql.DB, db *sqlx.DB) {
 	// Products
 	productEndpoint := buildRoute("product", fmt.Sprintf("{sku:%s}", SKUPattern))
-	router.HandleFunc("/v1/product", buildProductCreationHandler(oldDB)).Methods(http.MethodPost)
-	router.HandleFunc("/v1/products", buildProductListHandler(oldDB)).Methods(http.MethodGet)
-	router.HandleFunc(productEndpoint, buildSingleProductHandler(oldDB)).Methods(http.MethodGet)
-	router.HandleFunc(productEndpoint, buildProductUpdateHandler(oldDB)).Methods(http.MethodPut)
-	router.HandleFunc(productEndpoint, buildProductExistenceHandler(oldDB)).Methods(http.MethodHead)
-	router.HandleFunc(productEndpoint, buildProductDeletionHandler(oldDB)).Methods(http.MethodDelete)
+	router.HandleFunc("/v1/product", buildProductCreationHandler(db)).Methods(http.MethodPost)
+	router.HandleFunc("/v1/products", buildProductListHandler(db)).Methods(http.MethodGet)
+	router.HandleFunc(productEndpoint, buildSingleProductHandler(db)).Methods(http.MethodGet)
+	router.HandleFunc(productEndpoint, buildProductUpdateHandler(db)).Methods(http.MethodPut)
+	router.HandleFunc(productEndpoint, buildProductExistenceHandler(db)).Methods(http.MethodHead)
+	router.HandleFunc(productEndpoint, buildProductDeletionHandler(db)).Methods(http.MethodDelete)
 
 	// Product Options
 	productOptionEndpoint := buildRoute("product_options", "{progenitor_id:[0-9]+}")

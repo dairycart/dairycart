@@ -11,37 +11,54 @@ import (
 	"github.com/fatih/structs"
 	"github.com/gorilla/mux"
 	"github.com/imdario/mergo"
+	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
 
 const (
 	skuExistenceQuery             = `SELECT EXISTS(SELECT 1 FROM products WHERE sku = $1 AND archived_on IS NULL)`
 	productDeletionQuery          = `UPDATE products SET archived_on = NOW() WHERE sku = $1 AND archived_on IS NULL`
-	completeProductRetrievalQuery = `SELECT * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.sku = $1`
+	completeProductRetrievalQuery = `
+		SELECT
+			p.id as product_id,
+			p.product_progenitor_id,
+			p.sku,
+			p.name as product_name,
+			p.upc,
+			p.quantity,
+			p.price as product_price,
+			p.cost as product_cost,
+			p.created_on as product_created_on,
+			p.updated_on as product_updated_on,
+			p.archived_on as product_archived_on,
+			g.*
+		FROM products p
+		JOIN product_progenitors g ON p.product_progenitor_id = g.id
+		WHERE p.sku = $1
+	`
 )
 
 // Product describes something a user can buy
 type Product struct {
 	// Basic Info
-	ID                  int64      `json:"id"`
-	ProductProgenitorID int64      `json:"product_progenitor_id"`
-	SKU                 string     `json:"sku"`
-	Name                string     `json:"name"`
-	UPC                 NullString `json:"upc"`
-	Quantity            int        `json:"quantity"`
+	ID                  uint64     `json:"id"                    dbcol:"product_id"`
+	ProductProgenitorID uint64     `json:"product_progenitor_id" dbcol:"product_progenitor_id"`
+	SKU                 string     `json:"sku"                   dbcol:"sku"`
+	Name                string     `json:"name"                  dbcol:"product_name"`
+	UPC                 NullString `json:"upc"                   dbcol:"upc"`
+	Quantity            int        `json:"quantity"              dbcol:"quantity"`
 
 	// Pricing Fields
-	Taxable bool    `json:"taxable"`
-	Price   float32 `json:"price"`
-	Cost    float32 `json:"cost"`
+	Taxable bool    `json:"taxable" dbcol:"taxable"`
+	Price   float32 `json:"price"   dbcol:"product_price"`
+	Cost    float32 `json:"cost"    dbcol:"product_cost"`
 
-	// Inheritor
 	ProductProgenitor
 
 	// Housekeeping
-	CreatedOn  time.Time `json:"created_on"`
-	UpdatedOn  NullTime  `json:"updated_on,omitempty"`
-	ArchivedOn NullTime  `json:"archived_on,omitempty"`
+	CreatedOn  time.Time `json:"created_on"            dbcol:"product_created_on"`
+	UpdatedOn  NullTime  `json:"updated_on,omitempty"  dbcol:"product_updated_on"`
+	ArchivedOn NullTime  `json:"archived_on,omitempty" dbcol:"product_archived_on"`
 }
 
 // generateScanArgs generates an array of pointers to struct fields for sql.Scan to populate
@@ -59,23 +76,6 @@ func (p *Product) generateScanArgs() []interface{} {
 		&p.UpdatedOn,
 		&p.ArchivedOn,
 	}
-}
-
-// generateJoinScanArgs does some stuff TODO: write better docs
-func (p *Product) generateJoinScanArgs() []interface{} {
-	productScanArgs := p.generateScanArgs()
-	progenitorScanArgs := p.ProductProgenitor.generateScanArgs()
-	return append(productScanArgs, progenitorScanArgs...)
-}
-
-// generateJoinScanArgsWithCount does everything generateJoinScanArgs does,
-// only with an added count parameter
-func (p *Product) generateJoinScanArgsWithCount(count *uint64) []interface{} {
-	scanArgs := []interface{}{count}
-	productScanArgs := p.generateScanArgs()
-	progenitorScanArgs := p.ProductProgenitor.generateScanArgs()
-	scanArgs = append(scanArgs, productScanArgs...)
-	return append(scanArgs, progenitorScanArgs...)
 }
 
 // newProductFromCreationInputAndProgenitor creates a new product from a ProductProgenitor and a ProductCreationInput
@@ -144,13 +144,13 @@ func validateProductUpdateInput(req *http.Request) (*Product, error) {
 	return product, err
 }
 
-func buildProductExistenceHandler(db *sql.DB) http.HandlerFunc {
+func buildProductExistenceHandler(db *sqlx.DB) http.HandlerFunc {
 	// ProductExistenceHandler handles requests to check if a sku exists
 	return func(res http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)
 		sku := vars["sku"]
 
-		productExists, err := rowExistsInDB(db, skuExistenceQuery, sku)
+		productExists, err := rowExistsInDBX(db, skuExistenceQuery, sku)
 		if err != nil {
 			respondThatRowDoesNotExist(req, res, "product", sku)
 			return
@@ -165,31 +165,23 @@ func buildProductExistenceHandler(db *sql.DB) http.HandlerFunc {
 }
 
 // retrieveProductFromDB retrieves a product with a given SKU from the database
-func retrieveProductFromDB(db *sql.DB, sku string) (*Product, error) {
-	product := &Product{}
-	scanArgs := product.generateJoinScanArgs()
-	err := db.QueryRow(completeProductRetrievalQuery, sku).Scan(scanArgs...)
-	if err == sql.ErrNoRows {
-		return product, errors.Wrap(err, "Error querying for product")
-	}
-
-	return product, err
+func retrieveProductFromDB(db *sqlx.DB, sku string) (Product, error) {
+	var p Product
+	err := db.Get(&p, completeProductRetrievalQuery, sku)
+	return p, err
 }
 
-func buildSingleProductHandler(db *sql.DB) http.HandlerFunc {
+func buildSingleProductHandler(db *sqlx.DB) http.HandlerFunc {
 	// SingleProductHandler is a request handler that returns a single Product
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := mux.Vars(req)["sku"]
 
-		productExists, err := rowExistsInDB(db, skuExistenceQuery, sku)
-		if err != nil || !productExists {
+		product, err := retrieveProductFromDB(db, sku)
+		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "product", sku)
 			return
-		}
-
-		product, err := retrieveProductFromDB(db, sku)
-		if err != nil {
-			respondThatRowDoesNotExist(req, res, "product", sku)
+		} else if err != nil {
+			notifyOfInternalIssue(res, err, "retrieving product from database")
 			return
 		}
 
@@ -197,36 +189,20 @@ func buildSingleProductHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func retrieveProductsFromDB(db *sql.DB, queryFilter *QueryFilter) ([]Product, uint64, error) {
-	var products []Product
-	var count uint64
-
-	query, args := buildProductListQuery(queryFilter)
-	rows, err := db.Query(query, args...)
-	if err != nil {
-		return nil, 0, errors.Wrap(err, "Error encountered querying for products")
-	}
-
-	defer rows.Close()
-	for rows.Next() {
-		var product Product
-		var queryCount uint64
-
-		scanArgs := product.generateJoinScanArgsWithCount(&queryCount)
-		_ = rows.Scan(scanArgs...)
-
-		count = queryCount
-		products = append(products, product)
-	}
-	return products, count, nil
-}
-
-func buildProductListHandler(db *sql.DB) http.HandlerFunc {
+func buildProductListHandler(db *sqlx.DB) http.HandlerFunc {
 	// productListHandler is a request handler that returns a list of products
 	return func(res http.ResponseWriter, req *http.Request) {
 		rawFilterParams := req.URL.Query()
 		queryFilter := parseRawFilterParams(rawFilterParams)
-		products, count, err := retrieveProductsFromDB(db, queryFilter)
+		count, err := getRowCount(db, "products", queryFilter)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "retrieve count of products from the database")
+			return
+		}
+
+		var products []Product
+		query, args := buildProductListQuery(queryFilter)
+		err = retrieveListOfRowsFromDB(db, query, args, &products)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve products from the database")
 			return
@@ -244,18 +220,18 @@ func buildProductListHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func deleteProductBySKU(db *sql.DB, sku string) error {
+func deleteProductBySKU(db *sqlx.DB, sku string) error {
 	_, err := db.Exec(productDeletionQuery, sku)
 	return err
 }
 
-func buildProductDeletionHandler(db *sql.DB) http.HandlerFunc {
+func buildProductDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 	// ProductDeletionHandler is a request handler that deletes a single product
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := mux.Vars(req)["sku"]
 
 		// can't delete a product that doesn't exist!
-		exists, err := rowExistsInDB(db, skuExistenceQuery, sku)
+		exists, err := rowExistsInDBX(db, skuExistenceQuery, sku)
 		if err != nil || !exists {
 			respondThatRowDoesNotExist(req, res, "product", sku)
 			return
@@ -266,24 +242,17 @@ func buildProductDeletionHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func updateProductInDatabase(db *sql.DB, up *Product) error {
+func updateProductInDatabase(db *sqlx.DB, up *Product) error {
 	productUpdateQuery, queryArgs := buildProductUpdateQuery(up)
 	scanArgs := up.generateScanArgs()
 	err := db.QueryRow(productUpdateQuery, queryArgs...).Scan(scanArgs...)
 	return err
 }
 
-func buildProductUpdateHandler(db *sql.DB) http.HandlerFunc {
+func buildProductUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		// ProductUpdateHandler is a request handler that can update products
 		sku := mux.Vars(req)["sku"]
-
-		// can't update a product that doesn't exist!
-		exists, err := rowExistsInDB(db, skuExistenceQuery, sku)
-		if err != nil || !exists {
-			respondThatRowDoesNotExist(req, res, "product", sku)
-			return
-		}
 
 		newerProduct, err := validateProductUpdateInput(req)
 		if err != nil {
@@ -292,8 +261,11 @@ func buildProductUpdateHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		existingProduct, err := retrieveProductFromDB(db, sku)
-		if err != nil {
-			notifyOfInternalIssue(res, err, "merge updated product with existing product")
+		if err == sql.ErrNoRows {
+			respondThatRowDoesNotExist(req, res, "product", sku)
+			return
+		} else if err != nil {
+			notifyOfInternalIssue(res, err, "retrieving discount from database")
 			return
 		}
 
@@ -336,14 +308,14 @@ func validateProductCreationInput(req *http.Request) (*ProductCreationInput, err
 }
 
 // createProductInDB takes a marshaled Product object and creates an entry for it and a base_product in the database
-func createProductInDB(tx *sql.Tx, np *Product) (int64, error) {
-	var newProductID int64
+func createProductInDB(tx *sql.Tx, np *Product) (uint64, error) {
+	var newProductID uint64
 	productCreationQuery, queryArgs := buildProductCreationQuery(np)
 	err := tx.QueryRow(productCreationQuery, queryArgs...).Scan(&newProductID)
 	return newProductID, err
 }
 
-func buildProductCreationHandler(db *sql.DB) http.HandlerFunc {
+func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		productInput, err := validateProductCreationInput(req)
 		if err != nil {
@@ -352,7 +324,7 @@ func buildProductCreationHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		// can't create a product with a sku that already exists!
-		exists, err := rowExistsInDB(db, skuExistenceQuery, productInput.SKU)
+		exists, err := rowExistsInDBX(db, skuExistenceQuery, productInput.SKU)
 		if err != nil || exists {
 			notifyOfInvalidRequestBody(res, fmt.Errorf("product with sku `%s` already exists", productInput.SKU))
 			return

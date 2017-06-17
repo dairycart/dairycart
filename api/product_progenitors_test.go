@@ -108,7 +108,7 @@ func TestCreateProductProgenitorInDB(t *testing.T) {
 
 	newProgenitorID, err := createProductProgenitorInDB(tx, exampleProgenitor)
 	assert.Nil(t, err)
-	assert.Equal(t, int64(2), newProgenitorID, "createProductProgenitorInDB should return the correct ID for a new progenitor")
+	assert.Equal(t, uint64(2), newProgenitorID, "createProductProgenitorInDB should return the correct ID for a new progenitor")
 
 	err = tx.Commit()
 	assert.Nil(t, err)

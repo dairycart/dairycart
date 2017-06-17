@@ -25,22 +25,22 @@ const (
 
 // Discount represents pricing changes that apply temporarily to products
 type Discount struct {
-	ID            int64     `json:"id"`
-	Name          string    `json:"name"`
-	Type          string    `json:"type"`
-	Amount        float32   `json:"amount"`
-	StartsOn      time.Time `json:"starts_on"`
-	ExpiresOn     NullTime  `json:"expires_on"`
-	RequiresCode  bool      `json:"requires_code"`
-	Code          string    `json:"code,omitempty"`
-	LimitedUse    bool      `json:"limited_use"`
-	NumberOfUses  int64     `json:"number_of_uses,omitempty"`
-	LoginRequired bool      `json:"login_required"`
+	ID            int64     `json:"id"                       dbcol:"id"`
+	Name          string    `json:"name"                     dbcol:"name"`
+	Type          string    `json:"type"                     dbcol:"type"`
+	Amount        float32   `json:"amount"                   dbcol:"amount"`
+	StartsOn      time.Time `json:"starts_on"                dbcol:"starts_on"`
+	ExpiresOn     NullTime  `json:"expires_on"               dbcol:"expires_on"`
+	RequiresCode  bool      `json:"requires_code"            dbcol:"requires_code"`
+	Code          string    `json:"code,omitempty"           dbcol:"code"`
+	LimitedUse    bool      `json:"limited_use"              dbcol:"limited_use"`
+	NumberOfUses  int64     `json:"number_of_uses,omitempty" dbcol:"number_of_uses"`
+	LoginRequired bool      `json:"login_required"           dbcol:"login_required"`
 
 	// Housekeeping
-	CreatedOn  time.Time `json:"created_on"`
-	UpdatedOn  NullTime  `json:"updated_on,omitempty"`
-	ArchivedOn NullTime  `json:"archived_on,omitempty"`
+	CreatedOn  time.Time `json:"created_on"                  dbcol:"created_on"`
+	UpdatedOn  NullTime  `json:"updated_on,omitempty"        dbcol:"updated_on"`
+	ArchivedOn NullTime  `json:"archived_on,omitempty"       dbcol:"archived_on"`
 }
 
 // generateScanArgs generates an array of pointers to struct fields for sql.Scan to populate

@@ -8,6 +8,8 @@ import (
 )
 
 const (
+	aTimestamp                = 232747200
+	anOlderTimestamp          = aTimestamp + 10000
 	existingID                = 1
 	existingIDString          = "1"
 	queryEqualityErrorMessage = "Generated SQL query should match expected SQL query"
@@ -27,7 +29,18 @@ func TestBuildProgenitorCreationQuery(t *testing.T) {
 
 func TestBuildProductListQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `SELECT count(p.id) over (), * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.archived_on IS NULL LIMIT 25`
+	expectedQuery := `SELECT p.id as product_id,
+				p.product_progenitor_id,
+				p.sku,
+				p.name as product_name,
+				p.upc,
+				p.quantity,
+				p.price as product_price,
+				p.cost as product_cost,
+				p.created_on as product_created_on,
+				p.updated_on as product_updated_on,
+				p.archived_on as product_archived_on,
+				g.* FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.archived_on IS NULL LIMIT 25`
 	actualQuery, actualArgs := buildProductListQuery(defaultQueryFilter)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 0, len(actualArgs), argsEqualityErrorMessage)
@@ -38,10 +51,23 @@ func TestBuildProductListQueryAndPartiallyCustomQueryFilter(t *testing.T) {
 	queryFilter := &QueryFilter{
 		Page:          3,
 		Limit:         25,
-		UpdatedBefore: time.Unix(int64(232747200), 0),
-		UpdatedAfter:  time.Unix(int64(232747200+10000), 0),
+		UpdatedBefore: time.Unix(int64(aTimestamp), 0),
+		UpdatedAfter:  time.Unix(int64(anOlderTimestamp), 0),
 	}
-	expectedQuery := `SELECT count(p.id) over (), * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.archived_on IS NULL AND p.updated_on > $1 AND p.updated_on < $2 LIMIT 25 OFFSET 50`
+
+	expectedQuery := `SELECT p.id as product_id,
+				p.product_progenitor_id,
+				p.sku,
+				p.name as product_name,
+				p.upc,
+				p.quantity,
+				p.price as product_price,
+				p.cost as product_cost,
+				p.created_on as product_created_on,
+				p.updated_on as product_updated_on,
+				p.archived_on as product_archived_on,
+				g.* FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.archived_on IS NULL AND p.updated_on > $1 AND p.updated_on < $2 LIMIT 25 OFFSET 50`
+
 	actualQuery, actualArgs := buildProductListQuery(queryFilter)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
@@ -52,12 +78,25 @@ func TestBuildProductListQueryAndCompletelyCustomQueryFilter(t *testing.T) {
 	queryFilter := &QueryFilter{
 		Page:          3,
 		Limit:         46,
-		UpdatedBefore: time.Unix(int64(232747200), 0),
-		UpdatedAfter:  time.Unix(int64(232747200+10000), 0),
-		CreatedBefore: time.Unix(int64(232747200), 0),
-		CreatedAfter:  time.Unix(int64(232747200+10000), 0),
+		UpdatedBefore: time.Unix(int64(aTimestamp), 0),
+		UpdatedAfter:  time.Unix(int64(anOlderTimestamp), 0),
+		CreatedBefore: time.Unix(int64(aTimestamp), 0),
+		CreatedAfter:  time.Unix(int64(anOlderTimestamp), 0),
 	}
-	expectedQuery := `SELECT count(p.id) over (), * FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.archived_on IS NULL AND p.created_on > $1 AND p.created_on < $2 AND p.updated_on > $3 AND p.updated_on < $4 LIMIT 46 OFFSET 92`
+
+	expectedQuery := `SELECT p.id as product_id,
+				p.product_progenitor_id,
+				p.sku,
+				p.name as product_name,
+				p.upc,
+				p.quantity,
+				p.price as product_price,
+				p.cost as product_cost,
+				p.created_on as product_created_on,
+				p.updated_on as product_updated_on,
+				p.archived_on as product_archived_on,
+				g.* FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.archived_on IS NULL AND p.created_on > $1 AND p.created_on < $2 AND p.updated_on > $3 AND p.updated_on < $4 LIMIT 46 OFFSET 92`
+
 	actualQuery, actualArgs := buildProductListQuery(queryFilter)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 4, len(actualArgs), argsEqualityErrorMessage)

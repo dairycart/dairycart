@@ -83,7 +83,7 @@ func main() {
 	}
 
 	xdb := sqlx.NewDb(db, "postgres")
-	xdb.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
+	xdb.Mapper = reflectx.NewMapperFunc("dbcol", strings.ToLower)
 
 	// migrate the database
 	migrationCount := determineMigrationCount()
