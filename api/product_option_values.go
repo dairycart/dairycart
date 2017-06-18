@@ -10,6 +10,7 @@ import (
 
 	"github.com/fatih/structs"
 	"github.com/gorilla/mux"
+	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
 
@@ -73,7 +74,7 @@ func validateProductOptionValueUpdateInput(req *http.Request) (*ProductOptionVal
 }
 
 // retrieveProductOptionValue retrieves a ProductOptionValue with a given ID from the database
-func retrieveProductOptionValueFromDB(db *sql.DB, id int64) (*ProductOptionValue, error) {
+func retrieveProductOptionValueFromDB(db *sqlx.DB, id int64) (*ProductOptionValue, error) {
 	v := &ProductOptionValue{}
 	err := db.QueryRow(productOptionValueRetrievalQuery, id).Scan(v.generateScanArgs()...)
 	if err == sql.ErrNoRows {
@@ -83,7 +84,7 @@ func retrieveProductOptionValueFromDB(db *sql.DB, id int64) (*ProductOptionValue
 }
 
 // retrieveProductOptionValue retrieves a ProductOptionValue with a given product option ID from the database
-func retrieveProductOptionValueForOptionFromDB(db *sql.DB, optionID int64) ([]*ProductOptionValue, error) {
+func retrieveProductOptionValueForOptionFromDB(db *sqlx.DB, optionID int64) ([]*ProductOptionValue, error) {
 	var values []*ProductOptionValue
 
 	rows, err := db.Query(productOptionValueRetrievalForOptionIDQuery, optionID)
@@ -121,13 +122,13 @@ func validateProductOptionValueCreationInput(req *http.Request) (*ProductOptionV
 	return v, err
 }
 
-func updateProductOptionValueInDB(db *sql.DB, v *ProductOptionValue) error {
+func updateProductOptionValueInDB(db *sqlx.DB, v *ProductOptionValue) error {
 	valueUpdateQuery, queryArgs := buildProductOptionValueUpdateQuery(v)
 	err := db.QueryRow(valueUpdateQuery, queryArgs...).Scan(v.generateScanArgs()...)
 	return err
 }
 
-func buildProductOptionValueUpdateHandler(db *sql.DB) http.HandlerFunc {
+func buildProductOptionValueUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		// ProductOptionValueUpdateHandler is a request handler that can update product option values
 		reqVars := mux.Vars(req)
@@ -173,7 +174,7 @@ func createProductOptionValueInDB(tx *sql.Tx, v *ProductOptionValue) (int64, err
 	return newOptionValueID, err
 }
 
-func optionValueAlreadyExistsForOption(db *sql.DB, optionID int64, value string) (bool, error) {
+func optionValueAlreadyExistsForOption(db *sqlx.DB, optionID int64, value string) (bool, error) {
 	var exists string
 
 	err := db.QueryRow(productOptionValueExistenceForOptionIDQuery, optionID, value).Scan(&exists)
@@ -184,7 +185,7 @@ func optionValueAlreadyExistsForOption(db *sql.DB, optionID int64, value string)
 	return exists == "true", err
 }
 
-func buildProductOptionValueCreationHandler(db *sql.DB) http.HandlerFunc {
+func buildProductOptionValueCreationHandler(db *sqlx.DB) http.HandlerFunc {
 	// productOptionValueCreationHandler is a product creation handler
 	return func(res http.ResponseWriter, req *http.Request) {
 		optionID := mux.Vars(req)["option_id"]

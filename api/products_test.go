@@ -263,7 +263,7 @@ func TestValidateProductUpdateInputWithInvalidSKU(t *testing.T) {
 
 func TestRetrieveProductFromDB(t *testing.T) {
 	t.Parallel()
-	_, db, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	setExpectationsForProductRetrieval(mock, nil)
 
 	actual, err := retrieveProductFromDB(db, exampleSKU)
@@ -274,7 +274,7 @@ func TestRetrieveProductFromDB(t *testing.T) {
 
 func TestRetrieveProductFromDBWhenDBReturnsError(t *testing.T) {
 	t.Parallel()
-	_, db, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	setExpectationsForProductRetrieval(mock, sql.ErrNoRows)
 
 	_, err := retrieveProductFromDB(db, exampleSKU)
@@ -284,7 +284,7 @@ func TestRetrieveProductFromDBWhenDBReturnsError(t *testing.T) {
 
 func TestDeleteProductBySKU(t *testing.T) {
 	t.Parallel()
-	_, db, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	setExpectationsForProductDeletion(mock, exampleSKU)
 
 	err := deleteProductBySKU(db, exampleSKU)
@@ -294,7 +294,7 @@ func TestDeleteProductBySKU(t *testing.T) {
 
 func TestUpdateProductInDatabase(t *testing.T) {
 	t.Parallel()
-	_, db, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	setExpectationsForProductUpdate(mock, exampleProduct, nil)
 
 	err := updateProductInDatabase(db, exampleProduct)
@@ -304,7 +304,7 @@ func TestUpdateProductInDatabase(t *testing.T) {
 
 func TestCreateProductInDB(t *testing.T) {
 	t.Parallel()
-	_, db, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	mock.ExpectBegin()
 	setExpectationsForProductCreation(mock, exampleProduct, nil)
 	mock.ExpectCommit()
@@ -381,7 +381,7 @@ func TestValidateProductCreationInputWithInvalidSKU(t *testing.T) {
 
 func TestProductExistenceHandlerWithExistingProduct(t *testing.T) {
 	t.Parallel()
-	db, _, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, exampleSKU, true, nil)
 
@@ -395,7 +395,7 @@ func TestProductExistenceHandlerWithExistingProduct(t *testing.T) {
 
 func TestProductExistenceHandlerWithNonexistentProduct(t *testing.T) {
 	t.Parallel()
-	db, _, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, "unreal", false, nil)
 
@@ -409,7 +409,7 @@ func TestProductExistenceHandlerWithNonexistentProduct(t *testing.T) {
 
 func TestProductExistenceHandlerWithExistenceCheckerError(t *testing.T) {
 	t.Parallel()
-	db, _, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, "unreal", false, arbitraryError)
 
@@ -423,7 +423,7 @@ func TestProductExistenceHandlerWithExistenceCheckerError(t *testing.T) {
 
 func TestProductRetrievalHandlerWithExistingProduct(t *testing.T) {
 	t.Parallel()
-	db, _, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForSingleProductRetrieval(mock, nil)
 
@@ -437,7 +437,7 @@ func TestProductRetrievalHandlerWithExistingProduct(t *testing.T) {
 
 func TestProductRetrievalHandlerWithDBError(t *testing.T) {
 	t.Parallel()
-	db, _, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForSingleProductRetrieval(mock, arbitraryError)
 
@@ -451,7 +451,7 @@ func TestProductRetrievalHandlerWithDBError(t *testing.T) {
 
 func TestProductRetrievalHandlerWithNonexistentProduct(t *testing.T) {
 	t.Parallel()
-	db, _, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForSingleProductRetrieval(mock, sql.ErrNoRows)
 
@@ -465,7 +465,7 @@ func TestProductRetrievalHandlerWithNonexistentProduct(t *testing.T) {
 
 func TestProductListHandler(t *testing.T) {
 	t.Parallel()
-	db, _, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForRowCount(mock, "products", defaultQueryFilter, 3, nil)
 	setExpectationsForProductListQuery(mock, nil)
@@ -497,7 +497,7 @@ func TestProductListHandler(t *testing.T) {
 
 func TestProductListHandlerWithErrorRetrievingCount(t *testing.T) {
 	t.Parallel()
-	db, _, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForRowCount(mock, "products", defaultQueryFilter, 3, arbitraryError)
 
@@ -512,7 +512,7 @@ func TestProductListHandlerWithErrorRetrievingCount(t *testing.T) {
 
 func TestProductListHandlerWithDBError(t *testing.T) {
 	t.Parallel()
-	db, _, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForRowCount(mock, "products", defaultQueryFilter, 3, nil)
 	setExpectationsForProductListQuery(mock, arbitraryError)
@@ -527,7 +527,7 @@ func TestProductListHandlerWithDBError(t *testing.T) {
 
 func TestProductUpdateHandler(t *testing.T) {
 	t.Parallel()
-	db, _, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductRetrieval(mock, nil)
 	setExpectationsForProductUpdateHandler(mock, exampleUpdatedProduct, nil)
@@ -542,7 +542,7 @@ func TestProductUpdateHandler(t *testing.T) {
 
 func TestProductUpdateHandlerWithNonexistentProduct(t *testing.T) {
 	t.Parallel()
-	db, _, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductRetrieval(mock, sql.ErrNoRows)
 
@@ -556,7 +556,7 @@ func TestProductUpdateHandlerWithNonexistentProduct(t *testing.T) {
 
 func TestProductUpdateHandlerWithInputValidationError(t *testing.T) {
 	t.Parallel()
-	db, _, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 
 	req, err := http.NewRequest("PUT", "/v1/product/example", strings.NewReader(badSKUUpdateJSON))
@@ -569,7 +569,7 @@ func TestProductUpdateHandlerWithInputValidationError(t *testing.T) {
 
 func TestProductUpdateHandlerWithDBErrorRetrievingProduct(t *testing.T) {
 	t.Parallel()
-	db, _, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductRetrieval(mock, arbitraryError)
 
@@ -583,7 +583,7 @@ func TestProductUpdateHandlerWithDBErrorRetrievingProduct(t *testing.T) {
 
 func TestProductUpdateHandlerWithDBErrorUpdatingProduct(t *testing.T) {
 	t.Parallel()
-	db, _, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductRetrieval(mock, nil)
 	setExpectationsForProductUpdateHandler(mock, exampleUpdatedProduct, arbitraryError)
@@ -598,7 +598,7 @@ func TestProductUpdateHandlerWithDBErrorUpdatingProduct(t *testing.T) {
 
 func TestProductDeletionHandlerWithExistentProduct(t *testing.T) {
 	t.Parallel()
-	db, _, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, exampleSKU, true, nil)
 	setExpectationsForProductDeletion(mock, exampleSKU)
@@ -613,7 +613,7 @@ func TestProductDeletionHandlerWithExistentProduct(t *testing.T) {
 
 func TestProductDeletionHandlerWithNonexistentProduct(t *testing.T) {
 	t.Parallel()
-	db, _, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, exampleSKU, false, nil)
 
@@ -673,7 +673,7 @@ func TestProductCreationHandler(t *testing.T) {
 		CreatedOn:           exampleTime,
 	}
 
-	db, _, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, "skateboard", false, nil)
 
@@ -742,7 +742,7 @@ func TestProductCreationHandlerWhereCommitReturnsAnError(t *testing.T) {
 		CreatedOn:           exampleTime,
 	}
 
-	db, _, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, "skateboard", false, nil)
 
@@ -765,7 +765,7 @@ func TestProductCreationHandlerWhereCommitReturnsAnError(t *testing.T) {
 
 func TestProductCreationHandlerWhereTransactionFailsToBegin(t *testing.T) {
 	t.Parallel()
-	db, _, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, "skateboard", false, nil)
 
@@ -827,7 +827,7 @@ func TestProductCreationHandlerWithoutOptions(t *testing.T) {
 		CreatedOn:           exampleTime,
 	}
 
-	db, _, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, "skateboard", false, nil)
 
@@ -846,7 +846,7 @@ func TestProductCreationHandlerWithoutOptions(t *testing.T) {
 
 func TestProductCreationHandlerWithInvalidProductInput(t *testing.T) {
 	t.Parallel()
-	db, _, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 
 	req, err := http.NewRequest("POST", "/v1/product", strings.NewReader(badSKUUpdateJSON))
@@ -859,7 +859,7 @@ func TestProductCreationHandlerWithInvalidProductInput(t *testing.T) {
 
 func TestProductCreationHandlerForAlreadyExistentProduct(t *testing.T) {
 	t.Parallel()
-	db, _, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, "skateboard", true, nil)
 
@@ -891,7 +891,7 @@ func TestProductCreationHandlerWhereProgenitorCreationFails(t *testing.T) {
 		CreatedOn:     exampleTime,
 	}
 
-	db, _, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, "skateboard", false, nil)
 	mock.ExpectBegin()
@@ -926,7 +926,7 @@ func TestProductCreationHandlerWithErrorCreatingOptions(t *testing.T) {
 		CreatedOn:     exampleTime,
 	}
 
-	db, _, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, "skateboard", false, nil)
 	mock.ExpectBegin()
@@ -990,7 +990,7 @@ func TestProductCreationHandlerWhereProductCreationFails(t *testing.T) {
 		CreatedOn:           exampleTime,
 	}
 
-	db, _, mock := setupDBForTest(t)
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, "skateboard", false, nil)
 	mock.ExpectBegin()

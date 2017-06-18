@@ -1,7 +1,6 @@
 package api
 
 import (
-	"database/sql"
 	"fmt"
 	"net/http"
 	"strings"
@@ -21,7 +20,7 @@ func buildRoute(routeParts ...string) string {
 }
 
 // SetupAPIRoutes takes a mux router and a database connection and creates all the API routes for the API
-func SetupAPIRoutes(router *mux.Router, oldDB *sql.DB, db *sqlx.DB) {
+func SetupAPIRoutes(router *mux.Router, db *sqlx.DB) {
 	// Products
 	productEndpoint := buildRoute("product", fmt.Sprintf("{sku:%s}", SKUPattern))
 	router.HandleFunc("/v1/product", buildProductCreationHandler(db)).Methods(http.MethodPost)
@@ -34,15 +33,15 @@ func SetupAPIRoutes(router *mux.Router, oldDB *sql.DB, db *sqlx.DB) {
 	// Product Options
 	productOptionEndpoint := buildRoute("product_options", "{progenitor_id:[0-9]+}")
 	specificOptionEndpoint := buildRoute("product_options", "{option_id:[0-9]+}")
-	router.HandleFunc(productOptionEndpoint, buildProductOptionListHandler(oldDB)).Methods(http.MethodGet)
-	router.HandleFunc(productOptionEndpoint, buildProductOptionCreationHandler(oldDB)).Methods(http.MethodPost)
-	router.HandleFunc(specificOptionEndpoint, buildProductOptionUpdateHandler(oldDB)).Methods(http.MethodPut)
+	router.HandleFunc(productOptionEndpoint, buildProductOptionListHandler(db)).Methods(http.MethodGet)
+	router.HandleFunc(productOptionEndpoint, buildProductOptionCreationHandler(db)).Methods(http.MethodPost)
+	router.HandleFunc(specificOptionEndpoint, buildProductOptionUpdateHandler(db)).Methods(http.MethodPut)
 
 	// Product Option Values
 	optionValueEndpoint := buildRoute("product_options", "{option_id:[0-9]+}", "value")
 	specificOptionValueEndpoint := buildRoute("product_option_values", "{option_value_id:[0-9]+}")
-	router.HandleFunc(optionValueEndpoint, buildProductOptionValueCreationHandler(oldDB)).Methods(http.MethodPost)
-	router.HandleFunc(specificOptionValueEndpoint, buildProductOptionValueUpdateHandler(oldDB)).Methods(http.MethodPut)
+	router.HandleFunc(optionValueEndpoint, buildProductOptionValueCreationHandler(db)).Methods(http.MethodPost)
+	router.HandleFunc(specificOptionValueEndpoint, buildProductOptionValueUpdateHandler(db)).Methods(http.MethodPut)
 
 	// Discounts
 	specificDiscountEndpoint := buildRoute("discount", "{discount_id:[0-9]+}")

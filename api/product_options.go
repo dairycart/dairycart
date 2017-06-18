@@ -10,6 +10,7 @@ import (
 
 	"github.com/fatih/structs"
 	"github.com/gorilla/mux"
+	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
 
@@ -66,7 +67,7 @@ type ProductOptionCreationInput struct {
 }
 
 // FIXME: this function should be abstracted
-func productOptionAlreadyExistsForProgenitor(db *sql.DB, in *ProductOptionCreationInput, progenitorID string) (bool, error) {
+func productOptionAlreadyExistsForProgenitor(db *sqlx.DB, in *ProductOptionCreationInput, progenitorID string) (bool, error) {
 	var exists string
 
 	err := db.QueryRow(productOptionExistenceQueryForProductByName, in.Name, progenitorID).Scan(&exists)
@@ -78,7 +79,7 @@ func productOptionAlreadyExistsForProgenitor(db *sql.DB, in *ProductOptionCreati
 }
 
 // retrieveProductOptionFromDB retrieves a ProductOption with a given ID from the database
-func retrieveProductOptionFromDB(db *sql.DB, id int64) (*ProductOption, error) {
+func retrieveProductOptionFromDB(db *sqlx.DB, id int64) (*ProductOption, error) {
 	option := &ProductOption{}
 	scanArgs := option.generateScanArgs()
 	err := db.QueryRow(productOptionRetrievalQuery, id).Scan(scanArgs...)
@@ -88,7 +89,7 @@ func retrieveProductOptionFromDB(db *sql.DB, id int64) (*ProductOption, error) {
 	return option, err
 }
 
-func getProductOptionsForProgenitor(db *sql.DB, progenitorID string, queryFilter *QueryFilter) ([]ProductOption, uint64, error) {
+func getProductOptionsForProgenitor(db *sqlx.DB, progenitorID string, queryFilter *QueryFilter) ([]ProductOption, uint64, error) {
 	var options []ProductOption
 	var count uint64
 
@@ -118,7 +119,7 @@ func getProductOptionsForProgenitor(db *sql.DB, progenitorID string, queryFilter
 	return options, count, nil
 }
 
-func buildProductOptionListHandler(db *sql.DB) http.HandlerFunc {
+func buildProductOptionListHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		progenitorID := mux.Vars(req)["progenitor_id"]
 		rawFilterParams := req.URL.Query()
@@ -156,13 +157,13 @@ func validateProductOptionUpdateInput(req *http.Request) (*ProductOptionUpdateIn
 	return i, nil
 }
 
-func updateProductOptionInDB(db *sql.DB, a *ProductOption) error {
+func updateProductOptionInDB(db *sqlx.DB, a *ProductOption) error {
 	optionUpdateQuery, queryArgs := buildProductOptionUpdateQuery(a)
 	err := db.QueryRow(optionUpdateQuery, queryArgs...).Scan(a.generateScanArgs()...)
 	return err
 }
 
-func buildProductOptionUpdateHandler(db *sql.DB) http.HandlerFunc {
+func buildProductOptionUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		// ProductOptionUpdateHandler is a request handler that can update product options
 		reqVars := mux.Vars(req)
@@ -253,7 +254,7 @@ func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in *ProductOptionCrea
 	return newProductOption, nil
 }
 
-func buildProductOptionCreationHandler(db *sql.DB) http.HandlerFunc {
+func buildProductOptionCreationHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		// ProductOptionCreationHandler is a request handler that can create product options
 		progenitorID := mux.Vars(req)["progenitor_id"]

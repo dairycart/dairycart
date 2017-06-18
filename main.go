@@ -77,22 +77,23 @@ func main() {
 	// Connect to the database
 	dbURL := os.Getenv("DAIRYCART_DB_URL")
 	var err error
-	db, err := sql.Open("postgres", dbURL)
+	pg, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatalf("error encountered connecting to database: %v", err)
 	}
 
-	xdb := sqlx.NewDb(db, "postgres")
-	xdb.Mapper = reflectx.NewMapperFunc("dbcol", strings.ToLower)
-
 	// migrate the database
 	migrationCount := determineMigrationCount()
-	migrateDatabase(db, migrationCount)
+	migrateDatabase(pg, migrationCount)
+
+	// setup sqlx
+	db := sqlx.NewDb(pg, "postgres")
+	db.Mapper = reflectx.NewMapperFunc("dbcol", strings.ToLower)
 
 	// setup all our API routes
 	APIRouter := mux.NewRouter()
 	// APIRouter.Host("api.dairycart.com")
-	api.SetupAPIRoutes(APIRouter, db, xdb)
+	api.SetupAPIRoutes(APIRouter, db)
 
 	// serve 'em up a lil' sauce
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "I live!") })

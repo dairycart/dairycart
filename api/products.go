@@ -133,7 +133,7 @@ func buildProductExistenceHandler(db *sqlx.DB) http.HandlerFunc {
 		vars := mux.Vars(req)
 		sku := vars["sku"]
 
-		productExists, err := rowExistsInDBX(db, skuExistenceQuery, sku)
+		productExists, err := rowExistsInDB(db, skuExistenceQuery, sku)
 		if err != nil {
 			respondThatRowDoesNotExist(req, res, "product", sku)
 			return
@@ -214,7 +214,7 @@ func buildProductDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 		sku := mux.Vars(req)["sku"]
 
 		// can't delete a product that doesn't exist!
-		exists, err := rowExistsInDBX(db, skuExistenceQuery, sku)
+		exists, err := rowExistsInDB(db, skuExistenceQuery, sku)
 		if err != nil || !exists {
 			respondThatRowDoesNotExist(req, res, "product", sku)
 			return
@@ -306,7 +306,7 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 
 		// can't create a product with a sku that already exists!
-		exists, err := rowExistsInDBX(db, skuExistenceQuery, productInput.SKU)
+		exists, err := rowExistsInDB(db, skuExistenceQuery, productInput.SKU)
 		if err != nil || exists {
 			notifyOfInvalidRequestBody(res, fmt.Errorf("product with sku `%s` already exists", productInput.SKU))
 			return

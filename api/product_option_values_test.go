@@ -131,9 +131,7 @@ func TestValidateProductOptionValueCreationInputWithGarbageInput(t *testing.T) {
 
 func TestRetrieveProductOptionValueFromDB(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, mock := setupDBForTest(t)
 	setExpectationsForProductOptionValueRetrieval(mock, exampleProductOptionValue, nil)
 
 	actual, err := retrieveProductOptionValueFromDB(db, exampleProductOptionValue.ID)
@@ -144,21 +142,17 @@ func TestRetrieveProductOptionValueFromDB(t *testing.T) {
 
 func TestRetrieveProductOptionValueFromDBThatDoesNotExist(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, mock := setupDBForTest(t)
 	setExpectationsForProductOptionValueRetrieval(mock, exampleProductOptionValue, sql.ErrNoRows)
 
-	_, err = retrieveProductOptionValueFromDB(db, exampleProductOptionValue.ID)
+	_, err := retrieveProductOptionValueFromDB(db, exampleProductOptionValue.ID)
 	assert.NotNil(t, err)
 	ensureExpectationsWereMet(t, mock)
 }
 
 func TestCreateProductOptionValue(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, mock := setupDBForTest(t)
 
 	mock.ExpectBegin()
 	setExpectationsForProductOptionValueCreation(mock, exampleProductOptionValue, nil)
@@ -178,12 +172,10 @@ func TestCreateProductOptionValue(t *testing.T) {
 
 func TestUpdateProductOptionValueInDB(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, mock := setupDBForTest(t)
 	setExpectationsForProductOptionValueUpdate(mock, exampleProductOptionValue, nil)
 
-	err = updateProductOptionValueInDB(db, exampleProductOptionValue)
+	err := updateProductOptionValueInDB(db, exampleProductOptionValue)
 	assert.Nil(t, err)
 	ensureExpectationsWereMet(t, mock)
 }
@@ -196,9 +188,7 @@ func TestUpdateProductOptionValueInDB(t *testing.T) {
 
 func TestProductOptionValueCreationHandler(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductOptionExistenceByID(mock, exampleProductOption, true, nil)
 	setExpectationsForProductOptionValueForOptionExistence(mock, exampleProductOption, exampleProductOptionValue, false, nil)
@@ -217,9 +207,7 @@ func TestProductOptionValueCreationHandler(t *testing.T) {
 
 func TestProductOptionValueCreationHandlerWhenTransactionFailsToBegin(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductOptionExistenceByID(mock, exampleProductOption, true, nil)
 	setExpectationsForProductOptionValueForOptionExistence(mock, exampleProductOption, exampleProductOptionValue, false, nil)
@@ -236,9 +224,7 @@ func TestProductOptionValueCreationHandlerWhenTransactionFailsToBegin(t *testing
 
 func TestProductOptionValueCreationHandlerWhenTransactionFailsToCommit(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductOptionExistenceByID(mock, exampleProductOption, true, nil)
 	setExpectationsForProductOptionValueForOptionExistence(mock, exampleProductOption, exampleProductOptionValue, false, nil)
@@ -257,9 +243,7 @@ func TestProductOptionValueCreationHandlerWhenTransactionFailsToCommit(t *testin
 
 func TestProductOptionValueCreationHandlerWithNonexistentProductOption(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductOptionExistenceByID(mock, exampleProductOption, true, arbitraryError)
 
@@ -274,9 +258,7 @@ func TestProductOptionValueCreationHandlerWithNonexistentProductOption(t *testin
 
 func TestProductOptionValueCreationHandlerWhenValueAlreadyExistsForOption(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductOptionExistenceByID(mock, exampleProductOption, true, nil)
 	setExpectationsForProductOptionValueForOptionExistence(mock, exampleProductOption, exampleProductOptionValue, true, nil)
@@ -292,9 +274,7 @@ func TestProductOptionValueCreationHandlerWhenValueAlreadyExistsForOption(t *tes
 
 func TestProductOptionValueCreationHandlerWhenValueExistenceCheckReturnsNoRows(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductOptionExistenceByID(mock, exampleProductOption, true, nil)
 	setExpectationsForProductOptionValueForOptionExistence(mock, exampleProductOption, exampleProductOptionValue, false, sql.ErrNoRows)
@@ -313,9 +293,7 @@ func TestProductOptionValueCreationHandlerWhenValueExistenceCheckReturnsNoRows(t
 
 func TestProductOptionValueCreationHandlerWhenValueExistenceCheckReturnsError(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductOptionExistenceByID(mock, exampleProductOption, true, nil)
 	setExpectationsForProductOptionValueForOptionExistence(mock, exampleProductOption, exampleProductOptionValue, false, arbitraryError)
@@ -331,9 +309,7 @@ func TestProductOptionValueCreationHandlerWhenValueExistenceCheckReturnsError(t 
 
 func TestProductOptionValueCreationHandlerWithInvalidValueBody(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductOptionExistenceByID(mock, exampleProductOption, true, nil)
 
@@ -348,9 +324,7 @@ func TestProductOptionValueCreationHandlerWithInvalidValueBody(t *testing.T) {
 
 func TestProductOptionValueCreationHandlerWithRowCreationError(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductOptionExistenceByID(mock, exampleProductOption, true, nil)
 	setExpectationsForProductOptionValueForOptionExistence(mock, exampleProductOption, exampleProductOptionValue, false, nil)
@@ -369,9 +343,7 @@ func TestProductOptionValueCreationHandlerWithRowCreationError(t *testing.T) {
 
 func TestProductOptionValueUpdateHandler(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	optionValueIDString := strconv.Itoa(int(exampleProductOptionValue.ID))
 
@@ -390,9 +362,7 @@ func TestProductOptionValueUpdateHandler(t *testing.T) {
 
 func TestProductOptionValueUpdateHandlerWhereOptionValueDoesNotExist(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	optionValueIDString := strconv.Itoa(int(exampleProductOptionValue.ID))
 
@@ -409,9 +379,7 @@ func TestProductOptionValueUpdateHandlerWhereOptionValueDoesNotExist(t *testing.
 
 func TestProductOptionValueUpdateHandlerWhereInputIsInvalid(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	optionValueIDString := strconv.Itoa(int(exampleProductOptionValue.ID))
 
@@ -428,9 +396,7 @@ func TestProductOptionValueUpdateHandlerWhereInputIsInvalid(t *testing.T) {
 
 func TestProductOptionValueUpdateHandlerWhereErrorEncounteredRetrievingOption(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	optionValueIDString := strconv.Itoa(int(exampleProductOptionValue.ID))
 
@@ -448,9 +414,7 @@ func TestProductOptionValueUpdateHandlerWhereErrorEncounteredRetrievingOption(t 
 
 func TestProductOptionValueUpdateHandlerWhereErrorEncounteredUpdatingOption(t *testing.T) {
 	t.Parallel()
-	db, mock, err := sqlmock.New()
-	assert.Nil(t, err)
-	defer db.Close()
+	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	optionValueIDString := strconv.Itoa(int(exampleProductOptionValue.ID))
 

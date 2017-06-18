@@ -1,7 +1,6 @@
 package api
 
 import (
-	"database/sql"
 	"database/sql/driver"
 	"fmt"
 	"io/ioutil"
@@ -58,21 +57,19 @@ func setExpectationsForRowCount(mock sqlmock.Sqlmock, table string, queryFilter 
 		WillReturnError(err)
 }
 
-func setupMockRequestsAndMux(db *sql.DB) (*httptest.ResponseRecorder, *mux.Router) {
+func setupMockRequestsAndMux(db *sqlx.DB) (*httptest.ResponseRecorder, *mux.Router) {
 	m := mux.NewRouter()
-	xdb := sqlx.NewDb(db, "postgres")
-	xdb.Mapper = reflectx.NewMapperFunc("dbcol", strings.ToLower)
-	SetupAPIRoutes(m, db, xdb)
+	SetupAPIRoutes(m, db)
 	return httptest.NewRecorder(), m
 }
 
-func setupDBForTest(t *testing.T) (*sql.DB, *sqlx.DB, sqlmock.Sqlmock) {
-	db, mock, err := sqlmock.New()
-	xdb := sqlx.NewDb(db, "postgres")
-	xdb.Mapper = reflectx.NewMapperFunc("dbcol", strings.ToLower)
+func setupDBForTest(t *testing.T) (*sqlx.DB, sqlmock.Sqlmock) {
+	mockDB, mock, err := sqlmock.New()
+	db := sqlx.NewDb(mockDB, "postgres")
+	db.Mapper = reflectx.NewMapperFunc("dbcol", strings.ToLower)
 	assert.Nil(t, err)
 
-	return db, xdb, mock
+	return db, mock
 }
 
 func formatQueryForSQLMock(query string) string {

@@ -199,7 +199,7 @@ func buildDiscountDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 		discountID := mux.Vars(req)["discount_id"]
 
 		// can't delete a discount that doesn't exist!
-		exists, err := rowExistsInDBX(db, discountExistenceQuery, discountID)
+		exists, err := rowExistsInDB(db, discountExistenceQuery, discountID)
 		if err != nil || !exists {
 			respondThatRowDoesNotExist(req, res, "discount", discountID)
 			return
