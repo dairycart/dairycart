@@ -29,7 +29,6 @@ const (
 )
 
 // Modified from code borrowed from http://stackoverflow.com/questions/32825640/custom-marshaltext-for-golang-sql-null-types
-
 // NullTime is a json.Marshal-able pq.NullTime.
 type NullTime struct {
 	pq.NullTime
@@ -80,6 +79,14 @@ func (ns *NullString) UnmarshalText(text []byte) (err error) {
 ////////////////////////////////////////////////////////////////////////////////////////////////
 //    ¸,ø¤º°º¤ø,¸¸,ø¤º°   Everything after this point is not borrowed.   °º¤ø,¸¸,ø¤º°º¤ø,¸    //
 ////////////////////////////////////////////////////////////////////////////////////////////////
+
+// DBRow is meant to represent the base columns that every database table should have
+type DBRow struct {
+	ID         uint64    `json:"id"`
+	CreatedOn  time.Time `json:"created_on"`
+	UpdatedOn  NullTime  `json:"updated_on,omitempty"`
+	ArchivedOn NullTime  `json:"archived_on,omitempty"`
+}
 
 // ListResponse is a generic list response struct containing values that represent
 // pagination, meant to be embedded into other object response structs

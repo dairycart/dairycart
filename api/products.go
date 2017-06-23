@@ -41,24 +41,24 @@ const (
 // Product describes something a user can buy
 type Product struct {
 	// Basic Info
-	ID                  uint64     `json:"id"                    dbcol:"product_id"`
-	ProductProgenitorID uint64     `json:"product_progenitor_id" dbcol:"product_progenitor_id"`
-	SKU                 string     `json:"sku"                   dbcol:"sku"`
-	Name                string     `json:"name"                  dbcol:"product_name"`
-	UPC                 NullString `json:"upc"                   dbcol:"upc"`
-	Quantity            int        `json:"quantity"              dbcol:"quantity"`
+	ID                  uint64     `json:"id"`
+	ProductProgenitorID uint64     `json:"product_progenitor_id"`
+	SKU                 string     `json:"sku"`
+	Name                string     `json:"name"`
+	UPC                 NullString `json:"upc"`
+	Quantity            int        `json:"quantity"`
 
 	// Pricing Fields
-	Taxable bool    `json:"taxable" dbcol:"taxable"`
-	Price   float32 `json:"price"   dbcol:"product_price"`
-	Cost    float32 `json:"cost"    dbcol:"product_cost"`
+	Taxable bool    `json:"taxable"`
+	Price   float32 `json:"price"`
+	Cost    float32 `json:"cost"`
 
 	ProductProgenitor
 
 	// Housekeeping
-	CreatedOn  time.Time `json:"created_on"            dbcol:"product_created_on"`
-	UpdatedOn  NullTime  `json:"updated_on,omitempty"  dbcol:"product_updated_on"`
-	ArchivedOn NullTime  `json:"archived_on,omitempty" dbcol:"product_archived_on"`
+	CreatedOn  time.Time `json:"created_on"`
+	UpdatedOn  NullTime  `json:"updated_on,omitempty"`
+	ArchivedOn NullTime  `json:"archived_on,omitempty"`
 }
 
 // newProductFromCreationInputAndProgenitor creates a new product from a ProductProgenitor and a ProductCreationInput

@@ -88,7 +88,7 @@ func main() {
 
 	// setup sqlx
 	db := sqlx.NewDb(pg, "postgres")
-	db.Mapper = reflectx.NewMapperFunc("dbcol", strings.ToLower)
+	db.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
 
 	// setup all our API routes
 	APIRouter := mux.NewRouter()

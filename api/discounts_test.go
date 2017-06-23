@@ -45,13 +45,15 @@ var exampleDiscount *Discount
 
 func init() {
 	exampleDiscount = &Discount{
-		ID:        1,
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: exampleTime,
+		},
 		Name:      "Example Discount",
 		Type:      "flat_discount",
 		Amount:    12.34,
 		StartsOn:  exampleTime,
 		ExpiresOn: NullTime{pq.NullTime{Time: exampleTime.Add(30 * (24 * time.Hour)), Valid: true}},
-		CreatedOn: exampleTime,
 	}
 
 	discountHeaders = []string{"id", "name", "type", "amount", "starts_on", "expires_on", "requires_code", "code", "limited_use", "number_of_uses", "login_required", "created_on", "updated_on", "archived_on"}
@@ -424,14 +426,16 @@ func TestDiscountCreationHandler(t *testing.T) {
 
 	dummyTime, _ := time.Parse("2006-01-02T15:04:05-07:00", exampleDiscountStartTime)
 	exampleCreatedDiscount := &Discount{
-		ID:           1,
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: exampleTime,
+		},
 		Name:         "Test",
 		Type:         "flat_amount",
 		Amount:       12.34,
 		StartsOn:     dummyTime,
 		RequiresCode: true,
 		Code:         "TEST",
-		CreatedOn:    exampleTime,
 	}
 
 	setExpectationsForDiscountCreation(mock, exampleCreatedDiscount, nil)
@@ -515,13 +519,15 @@ func TestDiscountUpdateHandler(t *testing.T) {
 	res, router := setupMockRequestsAndMux(db)
 
 	updateInput := &Discount{
-		ID:           1,
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: exampleTime,
+		},
 		Name:         "New Name",
 		Type:         "flat_discount",
 		Amount:       12.34,
 		RequiresCode: true,
 		Code:         "TEST",
-		CreatedOn:    exampleTime,
 	}
 
 	exampleDiscountID := strconv.Itoa(int(updateInput.ID))
@@ -570,13 +576,15 @@ func TestDiscountUpdateHandlerWithErrorRetrievingDiscount(t *testing.T) {
 	res, router := setupMockRequestsAndMux(db)
 
 	updateInput := &Discount{
-		ID:           1,
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: exampleTime,
+		},
 		Name:         "New Name",
 		Type:         "flat_discount",
 		Amount:       12.34,
 		RequiresCode: true,
 		Code:         "TEST",
-		CreatedOn:    exampleTime,
 	}
 
 	exampleDiscountID := strconv.Itoa(int(updateInput.ID))
@@ -596,13 +604,15 @@ func TestDiscountUpdateHandlerWithErrorUpdatingDiscount(t *testing.T) {
 	res, router := setupMockRequestsAndMux(db)
 
 	updateInput := &Discount{
-		ID:           1,
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: exampleTime,
+		},
 		Name:         "New Name",
 		Type:         "flat_discount",
 		Amount:       12.34,
 		RequiresCode: true,
 		Code:         "TEST",
-		CreatedOn:    exampleTime,
 	}
 
 	exampleDiscountID := strconv.Itoa(int(updateInput.ID))
