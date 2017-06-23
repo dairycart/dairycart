@@ -16,7 +16,22 @@ import (
 )
 
 const (
-	discountDBColumns = `id, name, type, amount, starts_on, expires_on, requires_code, code, limited_use, number_of_uses, login_required, created_on, updated_on, archived_on`
+	discountDBColumns = `
+		id,
+		name,
+		type,
+		amount,
+		starts_on,
+		expires_on,
+		requires_code,
+		code,
+		limited_use,
+		number_of_uses,
+		login_required,
+		created_on,
+		updated_on,
+		archived_on
+	`
 
 	discountRetrievalQuery = `SELECT * FROM discounts WHERE id = $1`
 	discountExistenceQuery = `SELECT EXISTS(SELECT 1 FROM discounts WHERE id = $1 AND archived_on IS NULL)`
