@@ -3,8 +3,8 @@ version: '3.2'
 services:
   dairycart:
     build:
-      context: .
-      dockerfile: dockerfiles/dairycart.Dockerfile
+      context: api
+      dockerfile: Dockerfile
     ports:
       - '8080:80'
     depends_on:
@@ -18,8 +18,8 @@ services:
       driver: "none"
   test:
     build:
-      context: .
-      dockerfile: dockerfiles/integration_tests.Dockerfile
+      context: integration_tests
+      dockerfile: Dockerfile
     links:
       - dairycart
   database:

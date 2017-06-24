@@ -1,0 +1,147 @@
+{
+    "memo": "dfac940d3ff428a82a9b686e8d62bb7f5f635239c5735d82ba234ef1397cdc24",
+    "projects": [
+        {
+            "name": "github.com/Masterminds/squirrel",
+            "branch": "v1",
+            "revision": "20f192218cf52a73397fa2df45bdda720f3e47c8",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/davecgh/go-spew",
+            "version": "v1.1.0",
+            "revision": "a7a0063072ed89d04285d3d3362aa590ed9f7878",
+            "packages": [
+                "spew"
+            ]
+        },
+        {
+            "name": "github.com/fatih/structs",
+            "version": "v1.0",
+            "revision": "a720dfa8df582c51dee1b36feabb906bde1588bd",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/gorilla/context",
+            "version": "v1.1",
+            "revision": "a85d2e53ba63bdea074dbbbb5983f0516974e87b",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/gorilla/mux",
+            "version": "v1.4.0",
+            "revision": "bcd8bc72b08df0f70df986b97f95590779502d31",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/imdario/mergo",
+            "version": "0.2.2",
+            "revision": "3e95a51e0639b4cf372f2ccf74c86749d747fbdc",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/jmoiron/sqlx",
+            "branch": "master",
+            "revision": "d9bd385d68c068f1fabb5057e3dedcbcbb039d0f",
+            "packages": [
+                ".",
+                "reflectx"
+            ]
+        },
+        {
+            "name": "github.com/lann/builder",
+            "branch": "master",
+            "revision": "f22ce00fd9394014049dad11c244859432bd6820",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/lann/ps",
+            "branch": "master",
+            "revision": "62de8c46ede02a7675c4c79c84883eb164cb71e3",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/lib/pq",
+            "branch": "master",
+            "revision": "8837942c3e09574accbc5f150e2c5e057189cace",
+            "packages": [
+                ".",
+                "oid"
+            ]
+        },
+        {
+            "name": "github.com/mattes/migrate",
+            "version": "v3.0.1",
+            "revision": "035c07716cd373d88456ec4d701402df52584cb4",
+            "packages": [
+                ".",
+                "database",
+                "database/postgres",
+                "source",
+                "source/file"
+            ]
+        },
+        {
+            "name": "github.com/pkg/errors",
+            "version": "v0.8.0",
+            "revision": "645ef00459ed84a119197bfb8d8205042c6df63d",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/pmezard/go-difflib",
+            "version": "v1.0.0",
+            "revision": "c0b812dadcf4498dede02bb7f0c5c478be997e34",
+            "packages": [
+                "difflib"
+            ]
+        },
+        {
+            "name": "github.com/sirupsen/logrus",
+            "version": "v1.0.0",
+            "revision": "202f25545ea4cf9b191ff7f846df5d87c9382c2b",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/stretchr/testify",
+            "version": "v1.1.4",
+            "revision": "69483b4bd14f5845b5a1e55bca19e954e827f1d0",
+            "packages": [
+                "assert"
+            ]
+        },
+        {
+            "name": "golang.org/x/sys",
+            "branch": "master",
+            "revision": "c23410a886927bab8ca5e80b08af6a56faeb330d",
+            "packages": [
+                "unix"
+            ]
+        },
+        {
+            "name": "gopkg.in/DATA-DOG/go-sqlmock.v1",
+            "version": "v1.2.0",
+            "revision": "b983233bc0bbea4dc6e8ec8c8c923d935765ffec",
+            "packages": [
+                "."
+            ]
+        }
+    ]
+}
