@@ -1,12 +1,21 @@
 CREATE TABLE products (
     "id" bigserial,
     "name" text NOT NULL,
+    "subtitle" text,
+    "description" text NOT NULL,
     "sku" text NOT NULL,
     "upc" text,
+    "manufacturer" text,
+    "brand" text,
     "quantity" integer NOT NULL DEFAULT 0,
-    "description" text NOT NULL,
     "taxable" boolean DEFAULT 'false',
     "price" numeric(15, 2) NOT NULL,
+    "on_sale" boolean DEFAULT 'false',
+    "sale_price" numeric(15, 2) CONSTRAINT sale_price_must_not_be_zero CHECK(
+        (sale_price != 0 AND on_sale IS TRUE)
+                         OR
+        (sale_price  = 0 AND on_sale IS FALSE)
+    ),
     "cost" numeric(15, 2) NOT NULL,
     "product_weight" numeric(15, 2),
     "product_height" numeric(15, 2),
@@ -16,6 +25,8 @@ CREATE TABLE products (
     "package_height" numeric(15, 2),
     "package_width" numeric(15, 2),
     "package_length" numeric(15, 2),
+    "quantity_per_package" integer DEFAULT 1,
+    "available_on" timestamp DEFAULT NOW(),
     "created_on" timestamp DEFAULT NOW(),
     "updated_on" timestamp,
     "archived_on" timestamp,

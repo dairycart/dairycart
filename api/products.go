@@ -16,12 +16,42 @@ import (
 )
 
 const (
+	productTableHeaders = `
+		id,
+		name,
+		subtitle,
+		description,
+		sku,
+		upc,
+		manufacturer,
+		brand,
+		quantity,
+		taxable,
+		price,
+		on_sale,
+		sale_price,
+		cost,
+		product_weight,
+		product_height,
+		product_width,
+		product_length,
+		package_weight,
+		package_height,
+		package_width,
+		package_length,
+		quantity_per_package,
+		available_on,
+		created_on,
+		updated_on,
+		archived_on
+	`
+
 	skuExistenceQuery             = `SELECT EXISTS(SELECT 1 FROM products WHERE sku = $1 AND archived_on IS NULL)`
+	productExistenceQuery         = `SELECT EXISTS(SELECT 1 FROM products WHERE id = $1 AND archived_on IS NULL)`
 	productDeletionQuery          = `UPDATE products SET archived_on = NOW() WHERE sku = $1 AND archived_on IS NULL`
 	completeProductRetrievalQuery = `
 		SELECT
 			p.id as product_id,
-			p.product_progenitor_id,
 			p.sku,
 			p.name as product_name,
 			p.upc,
@@ -32,46 +62,56 @@ const (
 			p.updated_on as product_updated_on,
 			p.archived_on as product_archived_on,
 			g.*
-		FROM products p
-		JOIN product_progenitors g ON p.product_progenitor_id = g.id
-		WHERE p.sku = $1
+		FROM products
+		WHERE sku = $1
 	`
 )
 
 // Product describes something a user can buy
 type Product struct {
+	DBRow
 	// Basic Info
-	ID                  uint64     `json:"id"`
-	ProductProgenitorID uint64     `json:"product_progenitor_id"`
-	SKU                 string     `json:"sku"`
-	Name                string     `json:"name"`
-	UPC                 NullString `json:"upc"`
-	Quantity            int        `json:"quantity"`
+	Name         string     `json:"name"`
+	Subtitle     NullString `json:"subtitle"`
+	Description  string     `json:"description"`
+	SKU          string     `json:"sku"`
+	UPC          NullString `json:"upc"`
+	Manufacturer NullString `json:"manufacturer"`
+	Brand        NullString `json:"brand"`
+	Quantity     int        `json:"quantity"`
 
 	// Pricing Fields
-	Taxable bool    `json:"taxable"`
-	Price   float32 `json:"price"`
-	Cost    float32 `json:"cost"`
+	Taxable   bool    `json:"taxable"`
+	Price     float32 `json:"price"`
+	OnSale    bool    `json:"on_sale"`
+	SalePrice float32 `json:"sale_price"`
+	Cost      float32 `json:"cost"`
 
-	ProductProgenitor
+	// Product Dimensions
+	ProductWeight float32 `json:"product_weight"`
+	ProductHeight float32 `json:"product_height"`
+	ProductWidth  float32 `json:"product_width"`
+	ProductLength float32 `json:"product_length"`
 
-	// Housekeeping
-	CreatedOn  time.Time `json:"created_on"`
-	UpdatedOn  NullTime  `json:"updated_on,omitempty"`
-	ArchivedOn NullTime  `json:"archived_on,omitempty"`
+	// Package dimensions
+	PackageWeight      float32 `json:"package_weight"`
+	PackageHeight      float32 `json:"package_height"`
+	PackageWidth       float32 `json:"package_width"`
+	PackageLength      float32 `json:"package_length"`
+	QuantityPerPackage int32   `json:"quantity_per_package"`
+
+	AvailableOn time.Time `json:"available_on"`
 }
 
-// newProductFromCreationInputAndProgenitor creates a new product from a ProductProgenitor and a ProductCreationInput
-func newProductFromCreationInputAndProgenitor(g *ProductProgenitor, in *ProductCreationInput) *Product {
+// newProductFromCreationInput creates a new product from a ProductCreationInput
+func newProductFromCreationInput(in *ProductCreationInput) *Product {
 	np := &Product{
-		ProductProgenitor:   *g,
-		ProductProgenitorID: g.ID,
-		SKU:                 in.SKU,
-		Name:                in.Name,
-		UPC:                 NullString{sql.NullString{String: in.UPC, Valid: in.UPC != ""}},
-		Quantity:            in.Quantity,
-		Price:               in.Price,
-		Cost:                in.Cost,
+		SKU:      in.SKU,
+		Name:     in.Name,
+		UPC:      NullString{sql.NullString{String: in.UPC, Valid: true}},
+		Quantity: in.Quantity,
+		Price:    in.Price,
+		Cost:     in.Cost,
 	}
 	return np
 }
@@ -84,23 +124,40 @@ type ProductsResponse struct {
 
 // ProductCreationInput is a struct that represents a product creation body
 type ProductCreationInput struct {
-	Description   string                        `json:"description"`
-	Taxable       bool                          `json:"taxable"`
-	ProductWeight float32                       `json:"product_weight"`
-	ProductHeight float32                       `json:"product_height"`
-	ProductWidth  float32                       `json:"product_width"`
-	ProductLength float32                       `json:"product_length"`
-	PackageWeight float32                       `json:"package_weight"`
-	PackageHeight float32                       `json:"package_height"`
-	PackageWidth  float32                       `json:"package_width"`
-	PackageLength float32                       `json:"package_length"`
-	SKU           string                        `json:"sku"`
-	Name          string                        `json:"name"`
-	UPC           string                        `json:"upc"`
-	Quantity      int                           `json:"quantity"`
-	Price         float32                       `json:"price"`
-	Cost          float32                       `json:"cost"`
-	Options       []*ProductOptionCreationInput `json:"options"`
+	// Core Product stuff
+	Name         string `json:"name"`
+	Subtitle     string `json:"subtitle"`
+	Description  string `json:"description"`
+	SKU          string `json:"sku"`
+	UPC          string `json:"upc"`
+	Manufacturer string `json:"manufacturer"`
+	Brand        string `json:"brand"`
+	Quantity     int    `json:"quantity"`
+
+	// Pricing Fields
+	Taxable   bool    `json:"taxable"`
+	Price     float32 `json:"price"`
+	OnSale    bool    `json:"on_sale"`
+	SalePrice float32 `json:"sale_price"`
+	Cost      float32 `json:"cost"`
+
+	// Product Dimensions
+	ProductWeight float32 `json:"product_weight"`
+	ProductHeight float32 `json:"product_height"`
+	ProductWidth  float32 `json:"product_width"`
+	ProductLength float32 `json:"product_length"`
+
+	// Package dimensions
+	PackageWeight      float32 `json:"package_weight"`
+	PackageHeight      float32 `json:"package_height"`
+	PackageWidth       float32 `json:"package_width"`
+	PackageLength      float32 `json:"package_length"`
+	QuantityPerPackage int32   `json:"quantity_per_package"`
+
+	AvailableOn time.Time `json:"available_on"`
+
+	// Other things
+	Options []*ProductOptionCreationInput `json:"options"`
 }
 
 func validateProductUpdateInput(req *http.Request) (*Product, error) {
@@ -318,25 +375,7 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		progenitor := newProductProgenitorFromProductCreationInput(productInput)
-		newProgenitorID, err := createProductProgenitorInDB(tx, progenitor)
-		if err != nil {
-			tx.Rollback()
-			notifyOfInternalIssue(res, err, "insert product progenitor in database")
-			return
-		}
-		progenitor.ID = newProgenitorID
-
-		for _, optionAndValues := range productInput.Options {
-			_, err = createProductOptionAndValuesInDBFromInput(tx, optionAndValues, progenitor.ID)
-			if err != nil {
-				tx.Rollback()
-				notifyOfInternalIssue(res, err, "insert product options and values in database")
-				return
-			}
-		}
-
-		newProduct := newProductFromCreationInputAndProgenitor(progenitor, productInput)
+		newProduct := newProductFromCreationInput(productInput)
 		newProductID, err := createProductInDB(tx, newProduct)
 		if err != nil {
 			tx.Rollback()
@@ -344,6 +383,15 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 		newProduct.ID = newProductID
+
+		for _, optionAndValues := range productInput.Options {
+			_, err = createProductOptionAndValuesInDBFromInput(tx, optionAndValues, newProduct.ID)
+			if err != nil {
+				tx.Rollback()
+				notifyOfInternalIssue(res, err, "insert product options and values in database")
+				return
+			}
+		}
 
 		err = tx.Commit()
 		if err != nil {

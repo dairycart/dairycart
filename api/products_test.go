@@ -95,41 +95,38 @@ func init() {
 	exampleProductJoinData = []driver.Value{10, 2, "skateboard", "Skateboard", "1234567890", 123, 12.34, 5.00, exampleTime, nil, nil, 2, "Skateboard", "This is a skateboard. Please wear a helmet.", false, 99.99, 50.00, 8, 7, 6, 5, 4, 3, 2, 1}
 
 	exampleProduct = &Product{
-		ProductProgenitor: ProductProgenitor{
-			ID:            2,
-			Name:          "Skateboard",
-			Price:         99.99,
-			Cost:          50.00,
-			Description:   "This is a skateboard. Please wear a helmet.",
-			ProductWeight: 8,
-			ProductHeight: 7,
-			ProductWidth:  6,
-			ProductLength: 5,
-			PackageWeight: 4,
-			PackageHeight: 3,
-			PackageWidth:  2,
-			PackageLength: 1,
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: exampleTime,
 		},
-		ID:                  10,
-		ProductProgenitorID: 2,
-		SKU:                 "skateboard",
-		Name:                "Skateboard",
-		UPC:                 NullString{sql.NullString{String: "1234567890", Valid: true}},
-		Quantity:            123,
-		Price:               12.34,
-		Cost:                5.00,
-		CreatedOn:           exampleTime,
+		SKU:           "skateboard",
+		Name:          "Skateboard",
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
+		Price:         99.99,
+		Cost:          50.00,
+		Description:   "This is a skateboard. Please wear a helmet.",
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
 	}
 
 	exampleUpdatedProduct = &Product{
-		ID:        exampleProduct.ID,
-		SKU:       "example",
-		Name:      "Test",
-		UPC:       NullString{sql.NullString{String: "1234567890", Valid: true}},
-		Quantity:  666,
-		Cost:      5.00,
-		Price:     lolFloats,
-		CreatedOn: exampleTime,
+		DBRow: DBRow{
+			ID:        exampleProduct.ID,
+			CreatedOn: exampleTime,
+		},
+		SKU:      "example",
+		Name:     "Test",
+		UPC:      NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity: 666,
+		Cost:     5.00,
+		Price:    lolFloats,
 	}
 
 }
@@ -627,13 +624,16 @@ func TestProductDeletionHandlerWithNonexistentProduct(t *testing.T) {
 
 func TestProductCreationHandler(t *testing.T) {
 	t.Parallel()
-	expectedProgenitor := &ProductProgenitor{
-		ID:            2,
+	expectedProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: exampleTime,
+		},
 		Name:          "Skateboard",
-		Description:   "This is a skateboard. Please wear a helmet.",
-		Taxable:       true,
+		SKU:           "skateboard",
 		Price:         lolFloats,
 		Cost:          5,
+		Description:   "This is a skateboard. Please wear a helmet.",
 		ProductWeight: 8,
 		ProductHeight: 7,
 		ProductWidth:  6,
@@ -642,35 +642,8 @@ func TestProductCreationHandler(t *testing.T) {
 		PackageHeight: 3,
 		PackageWidth:  2,
 		PackageLength: 1,
-		CreatedOn:     exampleTime,
-	}
-
-	expectedProduct := &Product{
-		ProductProgenitor: ProductProgenitor{
-			ID:            2,
-			Name:          "Skateboard",
-			Price:         lolFloats,
-			Cost:          5,
-			Description:   "This is a skateboard. Please wear a helmet.",
-			ProductWeight: 8,
-			ProductHeight: 7,
-			ProductWidth:  6,
-			ProductLength: 5,
-			PackageWeight: 4,
-			PackageHeight: 3,
-			PackageWidth:  2,
-			PackageLength: 1,
-			CreatedOn:     exampleTime,
-		},
-		ID:                  10,
-		ProductProgenitorID: 2,
-		SKU:                 "skateboard",
-		Name:                "Skateboard",
-		UPC:                 NullString{sql.NullString{String: "1234567890", Valid: true}},
-		Quantity:            123,
-		Price:               lolFloats,
-		Cost:                5.0,
-		CreatedOn:           exampleTime,
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
 	}
 
 	db, mock := setupDBForTest(t)
@@ -678,7 +651,6 @@ func TestProductCreationHandler(t *testing.T) {
 	setExpectationsForProductExistence(mock, "skateboard", false, nil)
 
 	mock.ExpectBegin()
-	setExpectationsForProductProgenitorCreation(mock, expectedProgenitor, nil)
 	setExpectationsForProductOptionCreation(mock, expectedCreatedProductOption, nil)
 	setExpectationsForProductOptionValueCreation(mock, expectedCreatedProductOption.Values[0], nil)
 	setExpectationsForProductOptionValueCreation(mock, expectedCreatedProductOption.Values[1], nil)
@@ -696,13 +668,16 @@ func TestProductCreationHandler(t *testing.T) {
 
 func TestProductCreationHandlerWhereCommitReturnsAnError(t *testing.T) {
 	t.Parallel()
-	expectedProgenitor := &ProductProgenitor{
-		ID:            2,
+	expectedProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: exampleTime,
+		},
 		Name:          "Skateboard",
-		Description:   "This is a skateboard. Please wear a helmet.",
-		Taxable:       true,
+		SKU:           "skateboard",
 		Price:         lolFloats,
 		Cost:          5,
+		Description:   "This is a skateboard. Please wear a helmet.",
 		ProductWeight: 8,
 		ProductHeight: 7,
 		ProductWidth:  6,
@@ -711,35 +686,8 @@ func TestProductCreationHandlerWhereCommitReturnsAnError(t *testing.T) {
 		PackageHeight: 3,
 		PackageWidth:  2,
 		PackageLength: 1,
-		CreatedOn:     exampleTime,
-	}
-
-	expectedProduct := &Product{
-		ProductProgenitor: ProductProgenitor{
-			ID:            2,
-			Name:          "Skateboard",
-			Price:         lolFloats,
-			Cost:          5,
-			Description:   "This is a skateboard. Please wear a helmet.",
-			ProductWeight: 8,
-			ProductHeight: 7,
-			ProductWidth:  6,
-			ProductLength: 5,
-			PackageWeight: 4,
-			PackageHeight: 3,
-			PackageWidth:  2,
-			PackageLength: 1,
-			CreatedOn:     exampleTime,
-		},
-		ID:                  10,
-		ProductProgenitorID: 2,
-		SKU:                 "skateboard",
-		Name:                "Skateboard",
-		UPC:                 NullString{sql.NullString{String: "1234567890", Valid: true}},
-		Quantity:            123,
-		Price:               lolFloats,
-		Cost:                5.0,
-		CreatedOn:           exampleTime,
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
 	}
 
 	db, mock := setupDBForTest(t)
@@ -747,7 +695,6 @@ func TestProductCreationHandlerWhereCommitReturnsAnError(t *testing.T) {
 	setExpectationsForProductExistence(mock, "skateboard", false, nil)
 
 	mock.ExpectBegin()
-	setExpectationsForProductProgenitorCreation(mock, expectedProgenitor, nil)
 	setExpectationsForProductOptionCreation(mock, expectedCreatedProductOption, nil)
 	setExpectationsForProductOptionValueCreation(mock, expectedCreatedProductOption.Values[0], nil)
 	setExpectationsForProductOptionValueCreation(mock, expectedCreatedProductOption.Values[1], nil)
@@ -781,13 +728,16 @@ func TestProductCreationHandlerWhereTransactionFailsToBegin(t *testing.T) {
 
 func TestProductCreationHandlerWithoutOptions(t *testing.T) {
 	t.Parallel()
-	expectedProgenitor := &ProductProgenitor{
-		ID:            2,
+	expectedProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: exampleTime,
+		},
 		Name:          "Skateboard",
-		Description:   "This is a skateboard. Please wear a helmet.",
-		Taxable:       true,
+		SKU:           "skateboard",
 		Price:         lolFloats,
 		Cost:          5,
+		Description:   "This is a skateboard. Please wear a helmet.",
 		ProductWeight: 8,
 		ProductHeight: 7,
 		ProductWidth:  6,
@@ -796,35 +746,8 @@ func TestProductCreationHandlerWithoutOptions(t *testing.T) {
 		PackageHeight: 3,
 		PackageWidth:  2,
 		PackageLength: 1,
-		CreatedOn:     exampleTime,
-	}
-
-	expectedProduct := &Product{
-		ProductProgenitor: ProductProgenitor{
-			ID:            2,
-			Name:          "Skateboard",
-			Price:         lolFloats,
-			Cost:          5,
-			Description:   "This is a skateboard. Please wear a helmet.",
-			ProductWeight: 8,
-			ProductHeight: 7,
-			ProductWidth:  6,
-			ProductLength: 5,
-			PackageWeight: 4,
-			PackageHeight: 3,
-			PackageWidth:  2,
-			PackageLength: 1,
-			CreatedOn:     exampleTime,
-		},
-		ID:                  10,
-		ProductProgenitorID: 2,
-		SKU:                 "skateboard",
-		Name:                "Skateboard",
-		UPC:                 NullString{sql.NullString{String: "1234567890", Valid: true}},
-		Quantity:            123,
-		Price:               lolFloats,
-		Cost:                5.0,
-		CreatedOn:           exampleTime,
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
 	}
 
 	db, mock := setupDBForTest(t)
@@ -832,7 +755,6 @@ func TestProductCreationHandlerWithoutOptions(t *testing.T) {
 	setExpectationsForProductExistence(mock, "skateboard", false, nil)
 
 	mock.ExpectBegin()
-	setExpectationsForProductProgenitorCreation(mock, expectedProgenitor, nil)
 	setExpectationsForProductCreation(mock, expectedProduct, nil)
 	mock.ExpectCommit()
 
@@ -871,66 +793,13 @@ func TestProductCreationHandlerForAlreadyExistentProduct(t *testing.T) {
 	ensureExpectationsWereMet(t, mock)
 }
 
-func TestProductCreationHandlerWhereProgenitorCreationFails(t *testing.T) {
-	t.Parallel()
-	expectedProgenitor := &ProductProgenitor{
-		ID:            2,
-		Name:          "Skateboard",
-		Description:   "This is a skateboard. Please wear a helmet.",
-		Taxable:       true,
-		Price:         lolFloats,
-		Cost:          5,
-		ProductWeight: 8,
-		ProductHeight: 7,
-		ProductWidth:  6,
-		ProductLength: 5,
-		PackageWeight: 4,
-		PackageHeight: 3,
-		PackageWidth:  2,
-		PackageLength: 1,
-		CreatedOn:     exampleTime,
-	}
-
-	db, mock := setupDBForTest(t)
-	res, router := setupMockRequestsAndMux(db)
-	setExpectationsForProductExistence(mock, "skateboard", false, nil)
-	mock.ExpectBegin()
-	setExpectationsForProductProgenitorCreation(mock, expectedProgenitor, arbitraryError)
-	mock.ExpectRollback()
-
-	req, err := http.NewRequest("POST", "/v1/product", strings.NewReader(exampleProductCreationInput))
-	assert.Nil(t, err)
-	router.ServeHTTP(res, req)
-
-	assert.Equal(t, 500, res.Code, "status code should be 500")
-	ensureExpectationsWereMet(t, mock)
-}
-
 func TestProductCreationHandlerWithErrorCreatingOptions(t *testing.T) {
 	t.Parallel()
-	expectedProgenitor := &ProductProgenitor{
-		ID:            2,
-		Name:          "Skateboard",
-		Description:   "This is a skateboard. Please wear a helmet.",
-		Taxable:       true,
-		Price:         lolFloats,
-		Cost:          5,
-		ProductWeight: 8,
-		ProductHeight: 7,
-		ProductWidth:  6,
-		ProductLength: 5,
-		PackageWeight: 4,
-		PackageHeight: 3,
-		PackageWidth:  2,
-		PackageLength: 1,
-		CreatedOn:     exampleTime,
-	}
 
 	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, "skateboard", false, nil)
 	mock.ExpectBegin()
-	setExpectationsForProductProgenitorCreation(mock, expectedProgenitor, nil)
 	setExpectationsForProductOptionCreation(mock, expectedCreatedProductOption, arbitraryError)
 	mock.ExpectRollback()
 
@@ -944,13 +813,16 @@ func TestProductCreationHandlerWithErrorCreatingOptions(t *testing.T) {
 
 func TestProductCreationHandlerWhereProductCreationFails(t *testing.T) {
 	t.Parallel()
-	expectedProgenitor := &ProductProgenitor{
-		ID:            2,
+	expectedProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: exampleTime,
+		},
 		Name:          "Skateboard",
-		Description:   "This is a skateboard. Please wear a helmet.",
-		Taxable:       true,
+		SKU:           "skateboard",
 		Price:         lolFloats,
 		Cost:          5,
+		Description:   "This is a skateboard. Please wear a helmet.",
 		ProductWeight: 8,
 		ProductHeight: 7,
 		ProductWidth:  6,
@@ -959,42 +831,14 @@ func TestProductCreationHandlerWhereProductCreationFails(t *testing.T) {
 		PackageHeight: 3,
 		PackageWidth:  2,
 		PackageLength: 1,
-		CreatedOn:     exampleTime,
-	}
-
-	expectedProduct := &Product{
-		ProductProgenitor: ProductProgenitor{
-			ID:            2,
-			Name:          "Skateboard",
-			Price:         lolFloats,
-			Cost:          5,
-			Description:   "This is a skateboard. Please wear a helmet.",
-			ProductWeight: 8,
-			ProductHeight: 7,
-			ProductWidth:  6,
-			ProductLength: 5,
-			PackageWeight: 4,
-			PackageHeight: 3,
-			PackageWidth:  2,
-			PackageLength: 1,
-			CreatedOn:     exampleTime,
-		},
-		ID:                  10,
-		ProductProgenitorID: 2,
-		SKU:                 "skateboard",
-		Name:                "Skateboard",
-		UPC:                 NullString{sql.NullString{String: "1234567890", Valid: true}},
-		Quantity:            123,
-		Price:               lolFloats,
-		Cost:                5.0,
-		CreatedOn:           exampleTime,
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
 	}
 
 	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
 	setExpectationsForProductExistence(mock, "skateboard", false, nil)
 	mock.ExpectBegin()
-	setExpectationsForProductProgenitorCreation(mock, expectedProgenitor, nil)
 	setExpectationsForProductCreation(mock, expectedProduct, arbitraryError)
 	mock.ExpectRollback()
 

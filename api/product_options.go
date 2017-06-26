@@ -17,26 +17,26 @@ import (
 const (
 	productOptionExistenceQuery                 = `SELECT EXISTS(SELECT 1 FROM product_options WHERE id = $1 AND archived_on IS NULL)`
 	productOptionRetrievalQuery                 = `SELECT * FROM product_options WHERE id = $1`
-	productOptionExistenceQueryForProductByName = `SELECT EXISTS(SELECT 1 FROM product_options WHERE name = $1 AND product_progenitor_id = $2 and archived_on IS NULL)`
+	productOptionExistenceQueryForProductByName = `SELECT EXISTS(SELECT 1 FROM product_options WHERE name = $1 AND product_id = $2 and archived_on IS NULL)`
 )
 
 // ProductOption represents a products variant options. If you have a t-shirt that comes in three colors
 // and three sizes, then there are two ProductOptions for that base_product, color and size.
 type ProductOption struct {
-	ID                  int64                 `json:"id"`
-	Name                string                `json:"name"`
-	ProductProgenitorID uint64                `json:"product_progenitor_id"`
-	Values              []*ProductOptionValue `json:"values"`
-	CreatedOn           time.Time             `json:"created_on"`
-	UpdatedOn           NullTime              `json:"updated_on,omitempty"`
-	ArchivedOn          NullTime              `json:"archived_on,omitempty"`
+	ID         int64                 `json:"id"`
+	Name       string                `json:"name"`
+	ProductID  uint64                `json:"product_id"`
+	Values     []*ProductOptionValue `json:"values"`
+	CreatedOn  time.Time             `json:"created_on"`
+	UpdatedOn  NullTime              `json:"updated_on,omitempty"`
+	ArchivedOn NullTime              `json:"archived_on,omitempty"`
 }
 
 func (a *ProductOption) generateScanArgs() []interface{} {
 	return []interface{}{
 		&a.ID,
 		&a.Name,
-		&a.ProductProgenitorID,
+		&a.ProductID,
 		&a.CreatedOn,
 		&a.UpdatedOn,
 		&a.ArchivedOn,
@@ -67,10 +67,10 @@ type ProductOptionCreationInput struct {
 }
 
 // FIXME: this function should be abstracted
-func productOptionAlreadyExistsForProgenitor(db *sqlx.DB, in *ProductOptionCreationInput, progenitorID string) (bool, error) {
+func productOptionAlreadyExistsForProduct(db *sqlx.DB, in *ProductOptionCreationInput, productID string) (bool, error) {
 	var exists string
 
-	err := db.QueryRow(productOptionExistenceQueryForProductByName, in.Name, progenitorID).Scan(&exists)
+	err := db.QueryRow(productOptionExistenceQueryForProductByName, in.Name, productID).Scan(&exists)
 	if err == sql.ErrNoRows {
 		return false, nil
 	}
@@ -227,12 +227,8 @@ func createProductOptionInDB(tx *sql.Tx, a *ProductOption) (*ProductOption, erro
 	return a, err
 }
 
-func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in *ProductOptionCreationInput, progenitorID uint64) (*ProductOption, error) {
-	newProductOption := &ProductOption{
-		Name:                in.Name,
-		ProductProgenitorID: progenitorID,
-	}
-
+func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in *ProductOptionCreationInput, productID uint64) (*ProductOption, error) {
+	newProductOption := &ProductOption{Name: in.Name}
 	newProductOption, err := createProductOptionInDB(tx, newProductOption)
 	if err != nil {
 		return nil, err
@@ -257,14 +253,15 @@ func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in *ProductOptionCrea
 func buildProductOptionCreationHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		// ProductOptionCreationHandler is a request handler that can create product options
-		progenitorID := mux.Vars(req)["progenitor_id"]
+		productID := mux.Vars(req)["product_id"]
 		// eating this error because Mux should validate this for us.
-		progenitorIDInt, _ := strconv.Atoi(progenitorID)
+		i, _ := strconv.Atoi(productID)
+		productIDInt := uint64(i)
 
 		// can't create an option for a product progenitor that doesn't exist!
-		progenitorExists, err := rowExistsInDB(db, productProgenitorExistenceQuery, progenitorID)
-		if err != nil || !progenitorExists {
-			respondThatRowDoesNotExist(req, res, "product progenitor", progenitorID)
+		productExists, err := rowExistsInDB(db, productExistenceQuery, productID)
+		if err != nil || !productExists {
+			respondThatRowDoesNotExist(req, res, "product", productID)
 			return
 		}
 
@@ -275,7 +272,7 @@ func buildProductOptionCreationHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 
 		// can't create an option that already exist!
-		optionExists, err := productOptionAlreadyExistsForProgenitor(db, newOptionData, progenitorID)
+		optionExists, err := productOptionAlreadyExistsForProduct(db, newOptionData, productID)
 		if err != nil || optionExists {
 			notifyOfInvalidRequestBody(res, fmt.Errorf("product option with the name `%s` already exists", newOptionData.Name))
 			return
@@ -287,7 +284,7 @@ func buildProductOptionCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		newProductOption, err := createProductOptionAndValuesInDBFromInput(tx, newOptionData, uint64(progenitorIDInt))
+		newProductOption, err := createProductOptionAndValuesInDBFromInput(tx, newOptionData, productIDInt)
 		if err != nil {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "create product option in the database")

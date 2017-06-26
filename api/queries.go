@@ -52,51 +52,6 @@ func applyQueryFilterToQueryBuilder(queryBuilder squirrel.SelectBuilder, queryFi
 
 ////////////////////////////////////////////////////////
 //                                                    //
-//                Product Progenitors                 //
-//                                                    //
-////////////////////////////////////////////////////////
-
-func buildProgenitorCreationQuery(g *ProductProgenitor) (string, []interface{}) {
-	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	queryBuilder := sqlBuilder.
-		Insert("product_progenitors").
-		Columns(
-			"name",
-			"description",
-			"taxable",
-			"price",
-			"cost",
-			"product_weight",
-			"product_height",
-			"product_width",
-			"product_length",
-			"package_weight",
-			"package_height",
-			"package_width",
-			"package_length",
-		).
-		Values(
-			g.Name,
-			g.Description,
-			g.Taxable,
-			g.Price,
-			g.Cost,
-			g.ProductWeight,
-			g.ProductHeight,
-			g.ProductWidth,
-			g.ProductLength,
-			g.PackageWeight,
-			g.PackageHeight,
-			g.PackageWidth,
-			g.PackageLength,
-		).
-		Suffix(`RETURNING "id"`)
-	query, args, _ := queryBuilder.ToSql()
-	return query, args
-}
-
-////////////////////////////////////////////////////////
-//                                                    //
 //                     Products                       //
 //                                                    //
 ////////////////////////////////////////////////////////
@@ -151,8 +106,8 @@ func buildProductCreationQuery(p *Product) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Insert("products").
-		Columns("product_progenitor_id", "sku", "name", "upc", "quantity", "price", "cost").
-		Values(p.ProductProgenitorID, p.SKU, p.Name, p.UPC, p.Quantity, p.Price, p.Cost).
+		Columns("sku", "name", "upc", "quantity", "price", "cost").
+		Values(p.SKU, p.Name, p.UPC, p.Quantity, p.Price, p.Cost).
 		Suffix(`RETURNING "id"`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
@@ -195,8 +150,8 @@ func buildProductOptionCreationQuery(a *ProductOption) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Insert("product_options").
-		Columns("name", "product_progenitor_id").
-		Values(a.Name, a.ProductProgenitorID).
+		Columns("name", "product_id").
+		Values(a.Name, a.ProductID).
 		Suffix(`RETURNING "id"`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args

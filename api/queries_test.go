@@ -19,14 +19,6 @@ const (
 // Note: comparing interface equality with assert is impossible as far as I can tell,
 // so generally these tests ensure that the correct number of args are returned.
 
-func TestBuildProgenitorCreationQuery(t *testing.T) {
-	t.Parallel()
-	expectedQuery := `INSERT INTO product_progenitors (name,description,taxable,price,cost,product_weight,product_height,product_width,product_length,package_weight,package_height,package_width,package_length) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING "id"`
-	actualQuery, actualArgs := buildProgenitorCreationQuery(exampleProgenitor)
-	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
-	assert.Equal(t, 13, len(actualArgs), argsEqualityErrorMessage)
-}
-
 func TestBuildProductListQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `SELECT p.id as product_id,
