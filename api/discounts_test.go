@@ -56,7 +56,7 @@ func init() {
 		ExpiresOn: NullTime{pq.NullTime{Time: exampleTime.Add(30 * (24 * time.Hour)), Valid: true}},
 	}
 
-	discountHeaders = []string{"id", "name", "type", "amount", "starts_on", "expires_on", "requires_code", "code", "limited_use", "number_of_uses", "login_required", "created_on", "updated_on", "archived_on"}
+	discountHeaders = strings.Split(strings.TrimSpace(discountDBColumns), ",\n\t\t")
 	exampleDiscountData = []driver.Value{
 		exampleDiscount.ID,
 		exampleDiscount.Name,

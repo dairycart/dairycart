@@ -66,7 +66,7 @@ func setupMockRequestsAndMux(db *sqlx.DB) (*httptest.ResponseRecorder, *mux.Rout
 func setupDBForTest(t *testing.T) (*sqlx.DB, sqlmock.Sqlmock) {
 	mockDB, mock, err := sqlmock.New()
 	db := sqlx.NewDb(mockDB, "postgres")
-	db.Mapper = reflectx.NewMapperFunc("dbcol", strings.ToLower)
+	db.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
 	assert.Nil(t, err)
 
 	return db, mock

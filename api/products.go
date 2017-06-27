@@ -49,22 +49,7 @@ const (
 	skuExistenceQuery             = `SELECT EXISTS(SELECT 1 FROM products WHERE sku = $1 AND archived_on IS NULL)`
 	productExistenceQuery         = `SELECT EXISTS(SELECT 1 FROM products WHERE id = $1 AND archived_on IS NULL)`
 	productDeletionQuery          = `UPDATE products SET archived_on = NOW() WHERE sku = $1 AND archived_on IS NULL`
-	completeProductRetrievalQuery = `
-		SELECT
-			p.id as product_id,
-			p.sku,
-			p.name as product_name,
-			p.upc,
-			p.quantity,
-			p.price as product_price,
-			p.cost as product_cost,
-			p.created_on as product_created_on,
-			p.updated_on as product_updated_on,
-			p.archived_on as product_archived_on,
-			g.*
-		FROM products
-		WHERE sku = $1
-	`
+	completeProductRetrievalQuery = `SELECT * FROM products WHERE sku = $1`
 )
 
 // Product describes something a user can buy
@@ -354,6 +339,10 @@ func createProductInDB(tx *sql.Tx, np *Product) (uint64, error) {
 	return newProductID, err
 }
 
+func noop(things ...interface{}) {
+	return
+}
+
 func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		productInput, err := validateProductCreationInput(req)
@@ -378,6 +367,9 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 		newProduct := newProductFromCreationInput(productInput)
 		newProductID, err := createProductInDB(tx, newProduct)
 		if err != nil {
+			errStr := err.Error()
+			noop(errStr)
+
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "insert product in database")
 			return

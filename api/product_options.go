@@ -26,7 +26,7 @@ type ProductOption struct {
 	ID         int64                 `json:"id"`
 	Name       string                `json:"name"`
 	ProductID  uint64                `json:"product_id"`
-	Values     []*ProductOptionValue `json:"values"`
+	Values     []ProductOptionValue `json:"values"`
 	CreatedOn  time.Time             `json:"created_on"`
 	UpdatedOn  NullTime              `json:"updated_on,omitempty"`
 	ArchivedOn NullTime              `json:"archived_on,omitempty"`
@@ -215,31 +215,32 @@ func validateProductOptionCreationInput(req *http.Request) (*ProductOptionCreati
 	return i, nil
 }
 
-func createProductOptionInDB(tx *sql.Tx, a *ProductOption) (*ProductOption, error) {
+func createProductOptionInDB(tx *sql.Tx, a *ProductOption, productID uint64) (*ProductOption, error) {
 	var newOptionID int64
 	// using QueryRow instead of Exec because we want it to return the newly created row's ID
 	// Exec normally returns a sql.Result, which has a LastInsertedID() method, but when I tested
 	// this locally, it never worked. ¯\_(ツ)_/¯
-	query, queryArgs := buildProductOptionCreationQuery(a)
+	query, queryArgs := buildProductOptionCreationQuery(a, productID)
 	err := tx.QueryRow(query, queryArgs...).Scan(&newOptionID)
 
 	a.ID = newOptionID
+	a.ProductID = productID
 	return a, err
 }
 
 func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in *ProductOptionCreationInput, productID uint64) (*ProductOption, error) {
 	newProductOption := &ProductOption{Name: in.Name}
-	newProductOption, err := createProductOptionInDB(tx, newProductOption)
+	newProductOption, err := createProductOptionInDB(tx, newProductOption, productID)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, value := range in.Values {
-		newOptionValue := &ProductOptionValue{
+		newOptionValue := ProductOptionValue{
 			ProductOptionID: newProductOption.ID,
 			Value:           value,
 		}
-		newOptionValueID, err := createProductOptionValueInDB(tx, newOptionValue)
+		newOptionValueID, err := createProductOptionValueInDB(tx, &newOptionValue)
 		if err != nil {
 			return nil, err
 		}

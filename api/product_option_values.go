@@ -84,8 +84,8 @@ func retrieveProductOptionValueFromDB(db *sqlx.DB, id int64) (*ProductOptionValu
 }
 
 // retrieveProductOptionValue retrieves a ProductOptionValue with a given product option ID from the database
-func retrieveProductOptionValueForOptionFromDB(db *sqlx.DB, optionID int64) ([]*ProductOptionValue, error) {
-	var values []*ProductOptionValue
+func retrieveProductOptionValueForOptionFromDB(db *sqlx.DB, optionID int64) ([]ProductOptionValue, error) {
+	var values []ProductOptionValue
 
 	rows, err := db.Query(productOptionValueRetrievalForOptionIDQuery, optionID)
 	if err != nil {
@@ -93,7 +93,7 @@ func retrieveProductOptionValueForOptionFromDB(db *sqlx.DB, optionID int64) ([]*
 	}
 	defer rows.Close()
 	for rows.Next() {
-		value := &ProductOptionValue{}
+		value := ProductOptionValue{}
 		_ = rows.Scan(value.generateScanArgs()...)
 		values = append(values, value)
 	}

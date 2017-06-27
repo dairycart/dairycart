@@ -119,12 +119,12 @@ func buildProductCreationQuery(p *Product) (string, []interface{}) {
 //                                                    //
 ////////////////////////////////////////////////////////
 
-func buildProductOptionListQuery(progenitorID string, queryFilter *QueryFilter) (string, []interface{}) {
+func buildProductOptionListQuery(productID string, queryFilter *QueryFilter) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Select("count(id) over (), *").
 		From("product_options").
-		Where(squirrel.Eq{"product_progenitor_id": progenitorID}).
+		Where(squirrel.Eq{"product_id": productID}).
 		Where(squirrel.Eq{"archived_on": nil})
 	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter, true)
 	query, args, _ := queryBuilder.ToSql()
@@ -146,12 +146,12 @@ func buildProductOptionUpdateQuery(a *ProductOption) (string, []interface{}) {
 	return query, args
 }
 
-func buildProductOptionCreationQuery(a *ProductOption) (string, []interface{}) {
+func buildProductOptionCreationQuery(a *ProductOption, productID uint64) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Insert("product_options").
 		Columns("name", "product_id").
-		Values(a.Name, a.ProductID).
+		Values(a.Name, productID).
 		Suffix(`RETURNING "id"`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
@@ -215,7 +215,7 @@ func buildDiscountCreationQuery(d *Discount) (string, []interface{}) {
 		Insert("discounts").
 		Columns("name", "type", "amount", "starts_on", "expires_on", "requires_code", "code", "limited_use", "number_of_uses", "login_required").
 		Values(d.Name, d.Type, d.Amount, d.StartsOn, d.ExpiresOn, d.RequiresCode, d.Code, d.LimitedUse, d.NumberOfUses, d.LoginRequired).
-		Suffix(fmt.Sprintf("RETURNING %s", discountDBColumns))
+		Suffix(fmt.Sprintf("RETURNING%s", discountDBColumns))
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
@@ -239,7 +239,7 @@ func buildDiscountUpdateQuery(d *Discount) (string, []interface{}) {
 		Update("discounts").
 		SetMap(updateSetMap).
 		Where(squirrel.Eq{"id": d.ID}).
-		Suffix(fmt.Sprintf("RETURNING %s", discountDBColumns))
+		Suffix(fmt.Sprintf("RETURNING%s", discountDBColumns))
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }

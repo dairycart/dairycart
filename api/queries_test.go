@@ -105,15 +105,15 @@ func TestBuildProductUpdateQuery(t *testing.T) {
 
 func TestBuildProductCreationQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `INSERT INTO products (product_progenitor_id,sku,name,upc,quantity,price,cost) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "id"`
+	expectedQuery := `INSERT INTO products (sku,name,upc,quantity,price,cost) VALUES ($1,$2,$3,$4,$5,$6) RETURNING "id"`
 	actualQuery, actualArgs := buildProductCreationQuery(exampleProduct)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
-	assert.Equal(t, 7, len(actualArgs), argsEqualityErrorMessage)
+	assert.Equal(t, 6, len(actualArgs), argsEqualityErrorMessage)
 }
 
 func TestBuildProductOptionListQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `SELECT count(id) over (), * FROM product_options WHERE product_progenitor_id = $1 AND archived_on IS NULL LIMIT 25`
+	expectedQuery := `SELECT count(id) over (), * FROM product_options WHERE product_id = $1 AND archived_on IS NULL LIMIT 25`
 	actualQuery, actualArgs := buildProductOptionListQuery(existingIDString, &QueryFilter{})
 
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
@@ -130,8 +130,8 @@ func TestBuildProductOptionUpdateQuery(t *testing.T) {
 
 func TestBuildProductOptionCreationQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `INSERT INTO product_options (name,product_progenitor_id) VALUES ($1,$2) RETURNING "id"`
-	actualQuery, actualArgs := buildProductOptionCreationQuery(&ProductOption{})
+	expectedQuery := `INSERT INTO product_options (name,product_id) VALUES ($1,$2) RETURNING "id"`
+	actualQuery, actualArgs := buildProductOptionCreationQuery(&ProductOption{}, exampleProduct.ID)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
 }
@@ -154,7 +154,7 @@ func TestBuildProductOptionValueCreationQuery(t *testing.T) {
 
 func TestBuildDiscountListQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `SELECT id, name, type, amount, starts_on, expires_on, requires_code, code, limited_use, number_of_uses, login_required, created_on, updated_on, archived_on FROM discounts WHERE (expires_on IS NULL OR expires_on > $1) AND archived_on IS NULL LIMIT 25`
+	expectedQuery := "SELECT \n\t\tid,\n\t\tname,\n\t\ttype,\n\t\tamount,\n\t\tstarts_on,\n\t\texpires_on,\n\t\trequires_code,\n\t\tcode,\n\t\tlimited_use,\n\t\tnumber_of_uses,\n\t\tlogin_required,\n\t\tcreated_on,\n\t\tupdated_on,\n\t\tarchived_on\n\t FROM discounts WHERE (expires_on IS NULL OR expires_on > $1) AND archived_on IS NULL LIMIT 25"
 	actualQuery, actualArgs := buildDiscountListQuery(defaultQueryFilter)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 1, len(actualArgs), argsEqualityErrorMessage)
@@ -162,7 +162,22 @@ func TestBuildDiscountListQuery(t *testing.T) {
 
 func TestBuildDiscountCreationQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `INSERT INTO discounts (name,type,amount,starts_on,expires_on,requires_code,code,limited_use,number_of_uses,login_required) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id, name, type, amount, starts_on, expires_on, requires_code, code, limited_use, number_of_uses, login_required, created_on, updated_on, archived_on`
+	expectedQuery := `INSERT INTO discounts (name,type,amount,starts_on,expires_on,requires_code,code,limited_use,number_of_uses,login_required) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING
+		id,
+		name,
+		type,
+		amount,
+		starts_on,
+		expires_on,
+		requires_code,
+		code,
+		limited_use,
+		number_of_uses,
+		login_required,
+		created_on,
+		updated_on,
+		archived_on
+	`
 	actualQuery, actualArgs := buildDiscountCreationQuery(exampleDiscount)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 10, len(actualArgs), argsEqualityErrorMessage)
@@ -170,7 +185,22 @@ func TestBuildDiscountCreationQuery(t *testing.T) {
 
 func TestBuildDiscountUpdateQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `UPDATE discounts SET amount = $1, code = $2, expires_on = $3, limited_use = $4, login_required = $5, name = $6, number_of_uses = $7, requires_code = $8, starts_on = $9, type = $10, updated_on = NOW() WHERE id = $11 RETURNING id, name, type, amount, starts_on, expires_on, requires_code, code, limited_use, number_of_uses, login_required, created_on, updated_on, archived_on`
+	expectedQuery := `UPDATE discounts SET amount = $1, code = $2, expires_on = $3, limited_use = $4, login_required = $5, name = $6, number_of_uses = $7, requires_code = $8, starts_on = $9, type = $10, updated_on = NOW() WHERE id = $11 RETURNING
+		id,
+		name,
+		type,
+		amount,
+		starts_on,
+		expires_on,
+		requires_code,
+		code,
+		limited_use,
+		number_of_uses,
+		login_required,
+		created_on,
+		updated_on,
+		archived_on
+	`
 	actualQuery, actualArgs := buildDiscountUpdateQuery(exampleDiscount)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 11, len(actualArgs), argsEqualityErrorMessage)
