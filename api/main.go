@@ -5,7 +5,6 @@ package main
 import (
 	// stdlib
 	"database/sql"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -25,7 +24,6 @@ import (
 	_ "github.com/lib/pq"
 	_ "github.com/mattes/migrate/source/file"
 )
-
 
 func determineMigrationCount() int {
 	files, err := ioutil.ReadDir("migrations")
@@ -51,7 +49,7 @@ func migrateDatabase(db *sql.DB, migrationCount int) {
 			log.Printf("waiting half a second for the database")
 			time.Sleep(500 * time.Millisecond)
 		} else {
-			migrationsDir := "file://migrations" // os.Getenv("DAIRYCART_MIGRATIONS_DIR")
+			migrationsDir := os.Getenv("DAIRYCART_MIGRATIONS_DIR")
 			m, err := migrate.NewWithDatabaseInstance(migrationsDir, "postgres", driver)
 			if err != nil {
 				log.Fatalf("error encountered setting up new migration client: %v", err)

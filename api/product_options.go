@@ -15,6 +15,13 @@ import (
 )
 
 const (
+	productOptionsHeaders = `id,
+		name,
+		product_id,
+		created_on,
+		updated_on,
+		archived_on
+	`
 	productOptionExistenceQuery                 = `SELECT EXISTS(SELECT 1 FROM product_options WHERE id = $1 AND archived_on IS NULL)`
 	productOptionRetrievalQuery                 = `SELECT * FROM product_options WHERE id = $1`
 	productOptionExistenceQueryForProductByName = `SELECT EXISTS(SELECT 1 FROM product_options WHERE name = $1 AND product_id = $2 and archived_on IS NULL)`
@@ -23,13 +30,13 @@ const (
 // ProductOption represents a products variant options. If you have a t-shirt that comes in three colors
 // and three sizes, then there are two ProductOptions for that base_product, color and size.
 type ProductOption struct {
-	ID         int64                 `json:"id"`
-	Name       string                `json:"name"`
-	ProductID  uint64                `json:"product_id"`
+	ID         int64                `json:"id"`
+	Name       string               `json:"name"`
+	ProductID  uint64               `json:"product_id"`
 	Values     []ProductOptionValue `json:"values"`
-	CreatedOn  time.Time             `json:"created_on"`
-	UpdatedOn  NullTime              `json:"updated_on,omitempty"`
-	ArchivedOn NullTime              `json:"archived_on,omitempty"`
+	CreatedOn  time.Time            `json:"created_on"`
+	UpdatedOn  NullTime             `json:"updated_on,omitempty"`
+	ArchivedOn NullTime             `json:"archived_on,omitempty"`
 }
 
 func (a *ProductOption) generateScanArgs() []interface{} {
@@ -89,11 +96,11 @@ func retrieveProductOptionFromDB(db *sqlx.DB, id int64) (*ProductOption, error) 
 	return option, err
 }
 
-func getProductOptionsForProgenitor(db *sqlx.DB, progenitorID string, queryFilter *QueryFilter) ([]ProductOption, uint64, error) {
+func getProductOptionsForProduct(db *sqlx.DB, productID uint64, queryFilter *QueryFilter) ([]ProductOption, uint64, error) {
 	var options []ProductOption
 	var count uint64
 
-	query, args := buildProductOptionListQuery(progenitorID, queryFilter)
+	query, args := buildProductOptionListQuery(productID, queryFilter)
 	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, 0, errors.Wrap(err, "Error encountered querying for product options")
@@ -121,11 +128,12 @@ func getProductOptionsForProgenitor(db *sqlx.DB, progenitorID string, queryFilte
 
 func buildProductOptionListHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		progenitorID := mux.Vars(req)["progenitor_id"]
+		productID := mux.Vars(req)["product_id"]
 		rawFilterParams := req.URL.Query()
 		queryFilter := parseRawFilterParams(rawFilterParams)
+		productIDInt, _ := strconv.Atoi(productID)
 
-		options, count, err := getProductOptionsForProgenitor(db, progenitorID, queryFilter)
+		options, count, err := getProductOptionsForProduct(db, uint64(productIDInt), queryFilter)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve products from the database")
 			return

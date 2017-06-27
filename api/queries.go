@@ -33,19 +33,19 @@ func applyQueryFilterToQueryBuilder(queryBuilder squirrel.SelectBuilder, queryFi
 	}
 
 	if !queryFilter.CreatedAfter.IsZero() {
-		queryBuilder = queryBuilder.Where(squirrel.Gt{"p.created_on": queryFilter.CreatedAfter})
+		queryBuilder = queryBuilder.Where(squirrel.Gt{"created_on": queryFilter.CreatedAfter})
 	}
 
 	if !queryFilter.CreatedBefore.IsZero() {
-		queryBuilder = queryBuilder.Where(squirrel.Lt{"p.created_on": queryFilter.CreatedBefore})
+		queryBuilder = queryBuilder.Where(squirrel.Lt{"created_on": queryFilter.CreatedBefore})
 	}
 
 	if !queryFilter.UpdatedAfter.IsZero() {
-		queryBuilder = queryBuilder.Where(squirrel.Gt{"p.updated_on": queryFilter.UpdatedAfter})
+		queryBuilder = queryBuilder.Where(squirrel.Gt{"updated_on": queryFilter.UpdatedAfter})
 	}
 
 	if !queryFilter.UpdatedBefore.IsZero() {
-		queryBuilder = queryBuilder.Where(squirrel.Lt{"p.updated_on": queryFilter.UpdatedBefore})
+		queryBuilder = queryBuilder.Where(squirrel.Lt{"updated_on": queryFilter.UpdatedBefore})
 	}
 	return queryBuilder
 }
@@ -59,21 +59,9 @@ func applyQueryFilterToQueryBuilder(queryBuilder squirrel.SelectBuilder, queryFi
 func buildProductListQuery(queryFilter *QueryFilter) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
-		Select(`p.id as product_id,
-				p.product_progenitor_id,
-				p.sku,
-				p.name as product_name,
-				p.upc,
-				p.quantity,
-				p.price as product_price,
-				p.cost as product_cost,
-				p.created_on as product_created_on,
-				p.updated_on as product_updated_on,
-				p.archived_on as product_archived_on,
-				g.*`).
-		From("products p").
-		Join("product_progenitors g ON p.product_progenitor_id = g.id").
-		Where(squirrel.Eq{"p.archived_on": nil}).
+		Select(productTableHeaders).
+		From("products").
+		Where(squirrel.Eq{"archived_on": nil}).
 		Limit(uint64(queryFilter.Limit))
 
 	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter, true)
@@ -119,10 +107,10 @@ func buildProductCreationQuery(p *Product) (string, []interface{}) {
 //                                                    //
 ////////////////////////////////////////////////////////
 
-func buildProductOptionListQuery(productID string, queryFilter *QueryFilter) (string, []interface{}) {
+func buildProductOptionListQuery(productID uint64, queryFilter *QueryFilter) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
-		Select("count(id) over (), *").
+		Select(productOptionsHeaders).
 		From("product_options").
 		Where(squirrel.Eq{"product_id": productID}).
 		Where(squirrel.Eq{"archived_on": nil})

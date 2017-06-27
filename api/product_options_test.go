@@ -114,7 +114,7 @@ func setExpectationsForProductOptionListQueryWithCount(mock sqlmock.Sqlmock, a *
 		AddRow([]driver.Value{3, a.ID, a.Name, a.ProductID, exampleTime, nil, nil}...).
 		AddRow([]driver.Value{3, a.ID, a.Name, a.ProductID, exampleTime, nil, nil}...).
 		AddRow([]driver.Value{3, a.ID, a.Name, a.ProductID, exampleTime, nil, nil}...)
-	query, _ := buildProductOptionListQuery(strconv.Itoa(int(exampleProduct.ID)), defaultQueryFilter)
+	query, _ := buildProductOptionListQuery(exampleProduct.ID, defaultQueryFilter)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)

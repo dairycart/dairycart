@@ -11,7 +11,7 @@ CREATE TABLE products (
     "taxable" boolean DEFAULT 'false',
     "price" numeric(15, 2) NOT NULL,
     "on_sale" boolean DEFAULT 'false',
-    "sale_price" numeric(15, 2) CONSTRAINT sale_price_must_not_be_zero CHECK(
+    "sale_price" numeric(15, 2) NOT NULL DEFAULT 0 CONSTRAINT sale_price_must_not_be_zero CHECK(
         (sale_price != 0 AND on_sale IS TRUE)
                          OR
         (sale_price  = 0 AND on_sale IS FALSE)

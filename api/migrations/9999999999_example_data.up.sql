@@ -18,8 +18,9 @@ INSERT INTO products
 )
 VALUES
 ('t-shirt', 'T-Shirt', 'This is a t-shirt. wear it, or don''t. I''m not your dad.', null, 12.34, 5, 123, 1, 2, 3, 4, 5, 6, 7, 8),
-('skateboard', 'Skateboard', 'This is a skateboard. Please wear a helmet.', '1234567890', 99.99, 50, 666, 8, 7, 6, 5, 4, 3, 2, 1);
-
+('skateboard', 'Skateboard', 'This is a skateboard. Please wear a helmet.', '1234567890', 99.99, 50, 666, 8, 7, 6, 5, 4, 3, 2, 1),
+('guitar', 'Guitar', 'It is a guitar', null, 6.66, 1.23, 321, 1, 2, 3, 4, 5, 6, 7, 8),
+('fuzz-pedal', 'Fuzz Pedal', 'Make the guitar sound fuzzy', null, 256, 128, 100, 1, 2, 3, 4, 5, 6, 7, 8);
 
 INSERT INTO product_options
 (

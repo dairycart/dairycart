@@ -21,18 +21,34 @@ const (
 
 func TestBuildProductListQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `SELECT p.id as product_id,
-				p.product_progenitor_id,
-				p.sku,
-				p.name as product_name,
-				p.upc,
-				p.quantity,
-				p.price as product_price,
-				p.cost as product_cost,
-				p.created_on as product_created_on,
-				p.updated_on as product_updated_on,
-				p.archived_on as product_archived_on,
-				g.* FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.archived_on IS NULL LIMIT 25`
+	expectedQuery := `SELECT id,
+		name,
+		subtitle,
+		description,
+		sku,
+		upc,
+		manufacturer,
+		brand,
+		quantity,
+		taxable,
+		price,
+		on_sale,
+		sale_price,
+		cost,
+		product_weight,
+		product_height,
+		product_width,
+		product_length,
+		package_weight,
+		package_height,
+		package_width,
+		package_length,
+		quantity_per_package,
+		available_on,
+		created_on,
+		updated_on,
+		archived_on
+	 FROM products WHERE archived_on IS NULL LIMIT 25`
 	actualQuery, actualArgs := buildProductListQuery(defaultQueryFilter)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 0, len(actualArgs), argsEqualityErrorMessage)
@@ -47,18 +63,34 @@ func TestBuildProductListQueryAndPartiallyCustomQueryFilter(t *testing.T) {
 		UpdatedAfter:  time.Unix(int64(anOlderTimestamp), 0),
 	}
 
-	expectedQuery := `SELECT p.id as product_id,
-				p.product_progenitor_id,
-				p.sku,
-				p.name as product_name,
-				p.upc,
-				p.quantity,
-				p.price as product_price,
-				p.cost as product_cost,
-				p.created_on as product_created_on,
-				p.updated_on as product_updated_on,
-				p.archived_on as product_archived_on,
-				g.* FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.archived_on IS NULL AND p.updated_on > $1 AND p.updated_on < $2 LIMIT 25 OFFSET 50`
+	expectedQuery := `SELECT id,
+		name,
+		subtitle,
+		description,
+		sku,
+		upc,
+		manufacturer,
+		brand,
+		quantity,
+		taxable,
+		price,
+		on_sale,
+		sale_price,
+		cost,
+		product_weight,
+		product_height,
+		product_width,
+		product_length,
+		package_weight,
+		package_height,
+		package_width,
+		package_length,
+		quantity_per_package,
+		available_on,
+		created_on,
+		updated_on,
+		archived_on
+	 FROM products WHERE archived_on IS NULL AND updated_on > $1 AND updated_on < $2 LIMIT 25 OFFSET 50`
 
 	actualQuery, actualArgs := buildProductListQuery(queryFilter)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
@@ -76,18 +108,34 @@ func TestBuildProductListQueryAndCompletelyCustomQueryFilter(t *testing.T) {
 		CreatedAfter:  time.Unix(int64(anOlderTimestamp), 0),
 	}
 
-	expectedQuery := `SELECT p.id as product_id,
-				p.product_progenitor_id,
-				p.sku,
-				p.name as product_name,
-				p.upc,
-				p.quantity,
-				p.price as product_price,
-				p.cost as product_cost,
-				p.created_on as product_created_on,
-				p.updated_on as product_updated_on,
-				p.archived_on as product_archived_on,
-				g.* FROM products p JOIN product_progenitors g ON p.product_progenitor_id = g.id WHERE p.archived_on IS NULL AND p.created_on > $1 AND p.created_on < $2 AND p.updated_on > $3 AND p.updated_on < $4 LIMIT 46 OFFSET 92`
+	expectedQuery := `SELECT id,
+		name,
+		subtitle,
+		description,
+		sku,
+		upc,
+		manufacturer,
+		brand,
+		quantity,
+		taxable,
+		price,
+		on_sale,
+		sale_price,
+		cost,
+		product_weight,
+		product_height,
+		product_width,
+		product_length,
+		package_weight,
+		package_height,
+		package_width,
+		package_length,
+		quantity_per_package,
+		available_on,
+		created_on,
+		updated_on,
+		archived_on
+	 FROM products WHERE archived_on IS NULL AND created_on > $1 AND created_on < $2 AND updated_on > $3 AND updated_on < $4 LIMIT 46 OFFSET 92`
 
 	actualQuery, actualArgs := buildProductListQuery(queryFilter)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
@@ -113,8 +161,14 @@ func TestBuildProductCreationQuery(t *testing.T) {
 
 func TestBuildProductOptionListQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `SELECT count(id) over (), * FROM product_options WHERE product_id = $1 AND archived_on IS NULL LIMIT 25`
-	actualQuery, actualArgs := buildProductOptionListQuery(existingIDString, &QueryFilter{})
+	expectedQuery := `SELECT id,
+		name,
+		product_id,
+		created_on,
+		updated_on,
+		archived_on
+	 FROM product_options WHERE product_id = $1 AND archived_on IS NULL LIMIT 25`
+	actualQuery, actualArgs := buildProductOptionListQuery(existingID, &QueryFilter{})
 
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 1, len(actualArgs), argsEqualityErrorMessage)

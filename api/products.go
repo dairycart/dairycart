@@ -16,8 +16,7 @@ import (
 )
 
 const (
-	productTableHeaders = `
-		id,
+	productTableHeaders = `id,
 		name,
 		subtitle,
 		description,

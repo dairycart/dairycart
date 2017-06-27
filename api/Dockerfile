@@ -13,4 +13,6 @@ RUN apk --no-cache add ca-certificates
 COPY --from=build-stage /dairycart /dairycart
 COPY --from=build-stage /migrations /migrations
 
+ENV DAIRYCART_MIGRATIONS_DIR 'file://migrations'
+
 ENTRYPOINT ["/dairycart"]
