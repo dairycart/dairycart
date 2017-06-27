@@ -1,7 +1,7 @@
 {
 	"id": 3,
 	"name": "example_value",
-	"product_progenitor_id": 1,
+	"product_id": 1,
 	"values": [{
 		"id": 7,
 		"product_option_id": 3,

@@ -98,16 +98,16 @@ func deleteProduct(sku string) (*http.Response, error) {
 	return client.Do(req)
 }
 
-func retrieveProductOptions(progenitorID string, queryFilter map[string]string) (*http.Response, error) {
-	path := buildPath("product_options", progenitorID)
+func retrieveProductOptions(productID string, queryFilter map[string]string) (*http.Response, error) {
+	path := buildPath("product", productID, "options")
 	url := buildURL(path, queryFilter)
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
 	return client.Do(req)
 }
 
-func createProductOptionForProgenitor(progenitorID string, JSONBody string) (*http.Response, error) {
+func createProductOptionForProduct(productID string, JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
-	url := buildPath("product_options", progenitorID)
+	url := buildPath("product", productID, "options")
 	req, _ := http.NewRequest(http.MethodPost, url, body)
 	return client.Do(req)
 }

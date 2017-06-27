@@ -90,12 +90,29 @@ type Product struct {
 // newProductFromCreationInput creates a new product from a ProductCreationInput
 func newProductFromCreationInput(in *ProductCreationInput) *Product {
 	np := &Product{
-		SKU:      in.SKU,
-		Name:     in.Name,
-		UPC:      NullString{sql.NullString{String: in.UPC, Valid: true}},
-		Quantity: in.Quantity,
-		Price:    in.Price,
-		Cost:     in.Cost,
+		Name:               in.Name,
+		Subtitle:           NullString{sql.NullString{String: in.Subtitle, Valid: true}},
+		Description:        in.Description,
+		SKU:                in.SKU,
+		UPC:                NullString{sql.NullString{String: in.UPC, Valid: true}},
+		Manufacturer:       NullString{sql.NullString{String: in.Manufacturer, Valid: true}},
+		Brand:              NullString{sql.NullString{String: in.Brand, Valid: true}},
+		Quantity:           in.Quantity,
+		Taxable:            in.Taxable,
+		Price:              in.Price,
+		OnSale:             in.OnSale,
+		SalePrice:          in.SalePrice,
+		Cost:               in.Cost,
+		ProductWeight:      in.ProductWeight,
+		ProductHeight:      in.ProductHeight,
+		ProductWidth:       in.ProductWidth,
+		ProductLength:      in.ProductLength,
+		PackageWeight:      in.PackageWeight,
+		PackageHeight:      in.PackageHeight,
+		PackageWidth:       in.PackageWidth,
+		PackageLength:      in.PackageLength,
+		QuantityPerPackage: in.QuantityPerPackage,
+		AvailableOn:        in.AvailableOn,
 	}
 	return np
 }

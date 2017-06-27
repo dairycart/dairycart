@@ -153,15 +153,15 @@ func TestBuildProductUpdateQuery(t *testing.T) {
 
 func TestBuildProductCreationQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `INSERT INTO products (sku,name,upc,quantity,price,cost) VALUES ($1,$2,$3,$4,$5,$6) RETURNING "id"`
+	expectedQuery := `INSERT INTO products (name,subtitle,description,sku,upc,manufacturer,brand,quantity,taxable,price,on_sale,sale_price,cost,product_weight,product_height,product_width,product_length,package_weight,package_height,package_width,package_length,quantity_per_package,available_on,updated_on) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,NOW()) RETURNING "id"`
 	actualQuery, actualArgs := buildProductCreationQuery(exampleProduct)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
-	assert.Equal(t, 6, len(actualArgs), argsEqualityErrorMessage)
+	assert.Equal(t, 23, len(actualArgs), argsEqualityErrorMessage)
 }
 
 func TestBuildProductOptionListQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `SELECT id,
+	expectedQuery := `SELECT count(id) over (), id,
 		name,
 		product_id,
 		created_on,

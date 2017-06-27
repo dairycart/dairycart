@@ -94,8 +94,58 @@ func buildProductCreationQuery(p *Product) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Insert("products").
-		Columns("sku", "name", "upc", "quantity", "price", "cost").
-		Values(p.SKU, p.Name, p.UPC, p.Quantity, p.Price, p.Cost).
+		Columns(
+			"name",
+			"subtitle",
+			"description",
+			"sku",
+			"upc",
+			"manufacturer",
+			"brand",
+			"quantity",
+			"taxable",
+			"price",
+			"on_sale",
+			"sale_price",
+			"cost",
+			"product_weight",
+			"product_height",
+			"product_width",
+			"product_length",
+			"package_weight",
+			"package_height",
+			"package_width",
+			"package_length",
+			"quantity_per_package",
+			"available_on",
+			"updated_on",
+		).
+		Values(
+			p.Name,
+			p.Subtitle.String,
+			p.Description,
+			p.SKU,
+			p.UPC.String,
+			p.Manufacturer.String,
+			p.Brand.String,
+			p.Quantity,
+			p.Taxable,
+			p.Price,
+			p.OnSale,
+			p.SalePrice,
+			p.Cost,
+			p.ProductWeight,
+			p.ProductHeight,
+			p.ProductWidth,
+			p.ProductLength,
+			p.PackageWeight,
+			p.PackageHeight,
+			p.PackageWidth,
+			p.PackageLength,
+			p.QuantityPerPackage,
+			p.AvailableOn,
+			squirrel.Expr("NOW()"),
+		).
 		Suffix(`RETURNING "id"`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
@@ -110,7 +160,7 @@ func buildProductCreationQuery(p *Product) (string, []interface{}) {
 func buildProductOptionListQuery(productID uint64, queryFilter *QueryFilter) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
-		Select(productOptionsHeaders).
+		Select(fmt.Sprintf("count(id) over (), %s", productOptionsHeaders)).
 		From("product_options").
 		Where(squirrel.Eq{"product_id": productID}).
 		Where(squirrel.Eq{"archived_on": nil})

@@ -31,7 +31,7 @@ func SetupAPIRoutes(router *mux.Router, db *sqlx.DB) {
 	router.HandleFunc(productEndpoint, buildProductDeletionHandler(db)).Methods(http.MethodDelete)
 
 	// Product Options
-	productOptionEndpoint := buildRoute("product_options", "{product_id:[0-9]+}")
+	productOptionEndpoint := buildRoute("product", "{product_id:[0-9]+}", "options")
 	specificOptionEndpoint := buildRoute("product_options", "{option_id:[0-9]+}")
 	router.HandleFunc(productOptionEndpoint, buildProductOptionListHandler(db)).Methods(http.MethodGet)
 	router.HandleFunc(productOptionEndpoint, buildProductOptionCreationHandler(db)).Methods(http.MethodPost)
