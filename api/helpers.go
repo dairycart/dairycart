@@ -29,6 +29,7 @@ const (
 )
 
 // Modified from code borrowed from http://stackoverflow.com/questions/32825640/custom-marshaltext-for-golang-sql-null-types
+
 // NullTime is a json.Marshal-able pq.NullTime.
 type NullTime struct {
 	pq.NullTime

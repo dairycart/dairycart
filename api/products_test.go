@@ -59,6 +59,9 @@ func init() {
 		PackageLength: 1,
 		AvailableOn:   exampleTime,
 	}
+	exampleProduct.Subtitle.Valid = true
+	exampleProduct.Manufacturer.Valid = true
+	exampleProduct.Brand.Valid = true
 
 	productHeaders = strings.Split(strings.TrimSpace(productTableHeaders), ",\n\t\t")
 	exampleProductData = []driver.Value{
