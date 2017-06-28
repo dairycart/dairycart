@@ -209,8 +209,6 @@ func rowExistsInDB(db *sqlx.DB, query string, identifier string) (bool, error) {
 	if err == sql.ErrNoRows {
 		return false, nil
 	} else if err != nil {
-		errStr := err.Error()
-		noop(errStr)
 		return false, err
 	}
 
@@ -221,7 +219,6 @@ func respondThatRowDoesNotExist(req *http.Request, res http.ResponseWriter, item
 	itemTypeToIdentifierMap := map[string]string{
 		"product option":       "id",
 		"product option value": "id",
-		"product progenitor":   "id",
 		"product":              "sku",
 		"discount":             "id",
 	}

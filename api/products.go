@@ -355,10 +355,6 @@ func createProductInDB(tx *sql.Tx, np *Product) (uint64, error) {
 	return newProductID, err
 }
 
-func noop(things ...interface{}) {
-	return
-}
-
 func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		productInput, err := validateProductCreationInput(req)
@@ -383,9 +379,6 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 		newProduct := newProductFromCreationInput(productInput)
 		newProductID, err := createProductInDB(tx, newProduct)
 		if err != nil {
-			errStr := err.Error()
-			noop(errStr)
-
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "insert product in database")
 			return

@@ -24,13 +24,13 @@ const (
 	exampleGarbageInput = `{"things": "stuff"}`
 )
 
-////////////////////////////////////////////////////////
-//                                                    //
-//    This file doesn't actually test main.go, but    //
-//     rather contains some small helper functions    //
-//     that might be used by all the tests            //
-//                                                    //
-////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////
+//                                                   //
+//   These functions don't actually test main.go,    //
+//   but rather contains some small helper           //
+//   functions that might be used by all the tests   //
+//                                                   //
+///////////////////////////////////////////////////////
 
 var arbitraryError error
 var exampleTime time.Time

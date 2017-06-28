@@ -267,7 +267,7 @@ func buildProductOptionCreationHandler(db *sqlx.DB) http.HandlerFunc {
 		i, _ := strconv.Atoi(productID)
 		productIDInt := uint64(i)
 
-		// can't create an option for a product progenitor that doesn't exist!
+		// can't create an option for a product that doesn't exist!
 		productExists, err := rowExistsInDB(db, productExistenceQuery, productID)
 		if err != nil || !productExists {
 			respondThatRowDoesNotExist(req, res, "product", productID)

@@ -29,6 +29,7 @@ const (
 			"price": 12.34
 		}
 	`
+	exampleTimeAvailableString = "2016-12-31T12:00:00Z"
 )
 
 var productHeaders []string
@@ -42,9 +43,12 @@ func init() {
 			ID:        2,
 			CreatedOn: exampleTime,
 		},
-		SKU:           "skateboard",
-		Name:          "Skateboard",
-		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		SKU:  "skateboard",
+		Name: "Skateboard",
+		// Subtitle:      NullString{sql.NullString{String: "", Valid: true}},
+		UPC: NullString{sql.NullString{String: "1234567890", Valid: true}},
+		// Manufacturer:  NullString{sql.NullString{String: "", Valid: true}},
+		// Brand:         NullString{sql.NullString{String: "", Valid: true}},
 		Quantity:      123,
 		Price:         99.99,
 		Cost:          50.00,
@@ -659,6 +663,7 @@ func TestProductCreationHandler(t *testing.T) {
 		SKU:           "skateboard",
 		Price:         lolFloats,
 		Cost:          5,
+		Taxable:       true,
 		Description:   "This is a skateboard. Please wear a helmet.",
 		ProductWeight: 8,
 		ProductHeight: 7,
@@ -731,6 +736,7 @@ func TestProductCreationHandlerWhereCommitReturnsAnError(t *testing.T) {
 		SKU:           "skateboard",
 		Price:         lolFloats,
 		Cost:          5,
+		Taxable:       true,
 		Description:   "This is a skateboard. Please wear a helmet.",
 		ProductWeight: 8,
 		ProductHeight: 7,
@@ -839,6 +845,7 @@ func TestProductCreationHandlerWithoutOptions(t *testing.T) {
 		SKU:           "skateboard",
 		Price:         lolFloats,
 		Cost:          5,
+		Taxable:       true,
 		Description:   "This is a skateboard. Please wear a helmet.",
 		ProductWeight: 8,
 		ProductHeight: 7,
@@ -917,7 +924,7 @@ func TestProductCreationHandlerForAlreadyExistentProduct(t *testing.T) {
 
 func TestProductCreationHandlerWithErrorCreatingOptions(t *testing.T) {
 	t.Parallel()
-	exampleProductCreationInputWithOptions := `
+	exampleProductCreationInputWithOptions := fmt.Sprintf(`
 		{
 			"sku": "skateboard",
 			"name": "Skateboard",
@@ -926,7 +933,6 @@ func TestProductCreationHandlerWithErrorCreatingOptions(t *testing.T) {
 			"price": 99.99,
 			"cost": 50,
 			"description": "This is a skateboard. Please wear a helmet.",
-			"taxable": true,
 			"product_weight": 8,
 			"product_height": 7,
 			"product_width": 6,
@@ -935,6 +941,7 @@ func TestProductCreationHandlerWithErrorCreatingOptions(t *testing.T) {
 			"package_height": 3,
 			"package_width": 2,
 			"package_length": 1,
+			"available_on": "%s",
 			"options": [{
 				"name": "something",
 				"values": [
@@ -944,7 +951,7 @@ func TestProductCreationHandlerWithErrorCreatingOptions(t *testing.T) {
 				]
 			}]
 		}
-	`
+	`, exampleTimeAvailableString)
 
 	db, mock := setupDBForTest(t)
 	res, router := setupMockRequestsAndMux(db)
@@ -994,6 +1001,7 @@ func TestProductCreationHandlerWhereProductCreationFails(t *testing.T) {
 		Price:         lolFloats,
 		Cost:          5,
 		Description:   "This is a skateboard. Please wear a helmet.",
+		Taxable:       true,
 		ProductWeight: 8,
 		ProductHeight: 7,
 		ProductWidth:  6,

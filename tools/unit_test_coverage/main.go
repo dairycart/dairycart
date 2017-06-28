@@ -72,7 +72,6 @@ func main() {
 		"api/helpers.go":               "api/helpers_test.go",
 		"api/product_option_values.go": "api/product_option_values_test.go",
 		"api/product_options.go":       "api/product_options_test.go",
-		"api/product_progenitors.go":   "api/product_progenitors_test.go",
 		"api/products.go":              "api/products_test.go",
 		"api/queries.go":               "api/queries_test.go",
 		"api/discounts.go":             "api/discounts_test.go",
