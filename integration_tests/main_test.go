@@ -25,7 +25,7 @@ const (
 
 	existentID     = "1"
 	nonexistentID  = "999999999"
-	existentSKU    = "skateboard"
+	existentSKU    = "t-shirt"
 	nonexistentSKU = "nonexistent"
 
 	exampleGarbageInput           = `{"testing_garbage_input": true}`

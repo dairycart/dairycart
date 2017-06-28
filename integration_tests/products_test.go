@@ -50,9 +50,9 @@ func TestProductRetrievalRoute(t *testing.T) {
 	assert.Equal(t, 200, resp.StatusCode, "requesting a product should respond 200")
 
 	body := turnResponseBodyIntoString(t, resp)
-	skateboardProductJSON := loadExpectedResponse(t, "products", "skateboard")
+	alreadyExistentProductJSON := loadExpectedResponse(t, "products", "already_existent_sku")
 	actual := replaceTimeStringsForProductTests(replaceTimeStringsForTests(body))
-	expected := minifyJSON(t, skateboardProductJSON)
+	expected := minifyJSON(t, alreadyExistentProductJSON)
 	assert.Equal(t, expected, actual, "product retrieval response should contain a complete product")
 }
 
@@ -70,7 +70,7 @@ func TestProductListRouteWithDefaultFilter(t *testing.T) {
 func TestProductListRouteWithCustomFilter(t *testing.T) {
 	customFilter := map[string]string{
 		"page":  "2",
-		"limit": "2",
+		"limit": "5",
 	}
 	resp, err := retrieveListOfProducts(customFilter)
 	assert.Nil(t, err)
@@ -90,7 +90,7 @@ func TestProductUpdateRoute(t *testing.T) {
 
 	body := turnResponseBodyIntoString(t, resp)
 	actual := replaceTimeStringsForProductTests(replaceTimeStringsForTests(body))
-	minified := minifyJSON(t, loadExpectedResponse(t, "products", "skateboard"))
+	minified := minifyJSON(t, loadExpectedResponse(t, "products", "already_existent_sku"))
 	expected := strings.Replace(minified, `"quantity":123`, `"quantity":666`, 1)
 	assert.Equal(t, expected, actual, "product response upon update should reflect the updated fields")
 }
@@ -140,7 +140,7 @@ func TestProductCreation(t *testing.T) {
 
 func TestProductCreationWithAlreadyExistentSKU(t *testing.T) {
 	t.Parallel()
-	existentProductJSON := loadExpectedResponse(t, "products", "skateboard")
+	existentProductJSON := loadExpectedResponse(t, "products", "already_existent_sku")
 	resp, err := createProduct(existentProductJSON)
 	assert.Nil(t, err)
 	assert.Equal(t, 400, resp.StatusCode, "creating a product that already exists should respond 400")

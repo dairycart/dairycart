@@ -1,4 +1,4 @@
 {
 	"status": 400,
-	"message": "product with sku `skateboard` already exists"
+	"message": "product with sku `t-shirt` already exists"
 }
