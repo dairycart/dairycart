@@ -1,5 +1,5 @@
 {
-    "memo": "dfac940d3ff428a82a9b686e8d62bb7f5f635239c5735d82ba234ef1397cdc24",
+    "memo": "1bd042fb0f4da950d2b763408ddc0f3c09baddcf7956255bd7be9138bfd24477",
     "projects": [
         {
             "name": "github.com/Masterminds/squirrel",
@@ -21,6 +21,23 @@
             "name": "github.com/fatih/structs",
             "version": "v1.0",
             "revision": "a720dfa8df582c51dee1b36feabb906bde1588bd",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/go-playground/locales",
+            "version": "v0.11.1",
+            "revision": "b860c92274dfb72f517b8b4c11c6d9f2f8cc9d91",
+            "packages": [
+                ".",
+                "currency"
+            ]
+        },
+        {
+            "name": "github.com/go-playground/universal-translator",
+            "version": "v0.16.0",
+            "revision": "b32fa301c9fe55953584134cb6853a13c87ec0a1",
             "packages": [
                 "."
             ]
@@ -128,6 +145,15 @@
             ]
         },
         {
+            "name": "golang.org/x/crypto",
+            "branch": "master",
+            "revision": "adbae1b6b6fb4b02448a0fc0dbbc9ba2b95b294d",
+            "packages": [
+                "bcrypt",
+                "blowfish"
+            ]
+        },
+        {
             "name": "golang.org/x/sys",
             "branch": "master",
             "revision": "c23410a886927bab8ca5e80b08af6a56faeb330d",
@@ -139,6 +165,14 @@
             "name": "gopkg.in/DATA-DOG/go-sqlmock.v1",
             "version": "v1.2.0",
             "revision": "b983233bc0bbea4dc6e8ec8c8c923d935765ffec",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "gopkg.in/go-playground/validator.v9",
+            "version": "v9.4.0",
+            "revision": "fb68f39656d7ebf8aa339ad4917aa0c260ecc237",
             "packages": [
                 "."
             ]
