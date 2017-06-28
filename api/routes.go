@@ -21,6 +21,9 @@ func buildRoute(routeParts ...string) string {
 
 // SetupAPIRoutes takes a mux router and a database connection and creates all the API routes for the API
 func SetupAPIRoutes(router *mux.Router, db *sqlx.DB) {
+	// Auth
+	router.HandleFunc("/v1/user", buildUserCreationHandler(db)).Methods(http.MethodPost)
+
 	// Products
 	productEndpoint := buildRoute("product", fmt.Sprintf("{sku:%s}", SKUPattern))
 	router.HandleFunc("/v1/product", buildProductCreationHandler(db)).Methods(http.MethodPost)

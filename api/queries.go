@@ -281,3 +281,34 @@ func buildDiscountUpdateQuery(d *Discount) (string, []interface{}) {
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
+
+////////////////////////////////////////////////////////
+//                                                    //
+//                       Users                        //
+//                                                    //
+////////////////////////////////////////////////////////
+
+func buildUserCreationQuery(u *User) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		Insert("users").
+		Columns(
+			"first_name",
+			"last_name",
+			"email",
+			"password",
+			"salt",
+			"is_admin",
+		).
+		Values(
+			u.FirstName,
+			u.LastName,
+			u.Email,
+			u.Password,
+			u.Salt,
+			u.IsAdmin,
+		).
+		Suffix(`RETURNING "id"`)
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}

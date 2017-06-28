@@ -259,3 +259,20 @@ func TestBuildDiscountUpdateQuery(t *testing.T) {
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 11, len(actualArgs), argsEqualityErrorMessage)
 }
+
+func TestBuildUserCreationQuery(t *testing.T) {
+	t.Parallel()
+	user := &User{
+		FirstName: "FirstName",
+		LastName:  "LastName",
+		Email:     "Email",
+		Password:  []byte("Password"),
+		Salt:      []byte("Salt"),
+		IsAdmin:   true,
+	}
+
+	expectedQuery := `INSERT INTO users (first_name,last_name,email,password,salt,is_admin) VALUES ($1,$2,$3,$4,$5,$6) RETURNING "id"`
+	actualQuery, actualArgs := buildUserCreationQuery(user)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 6, len(actualArgs), argsEqualityErrorMessage)
+}

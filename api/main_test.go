@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql/driver"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http/httptest"
@@ -39,7 +40,7 @@ var exampleNewerTime time.Time
 
 func init() {
 	log.SetOutput(ioutil.Discard)
-	arbitraryError = fmt.Errorf("arbitrary error")
+	arbitraryError = errors.New("pineapple on pizza")
 
 	var timeParseErr error
 	exampleOlderTime, timeParseErr = time.Parse("2006-01-02 03:04:00.000000", exampleTimeString)
