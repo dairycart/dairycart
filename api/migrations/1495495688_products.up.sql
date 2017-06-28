@@ -1,4 +1,4 @@
-CREATE TABLE products (
+CREATE TABLE IF NOT EXISTS products (
     "id" bigserial,
     "name" text NOT NULL,
     "subtitle" text,
@@ -35,7 +35,7 @@ CREATE TABLE products (
     PRIMARY KEY ("id")
 );
 
-CREATE TABLE product_options (
+CREATE TABLE IF NOT EXISTS product_options (
     "id" bigserial,
     "name" text NOT NULL,
     "product_id" bigint NOT NULL,
@@ -47,7 +47,7 @@ CREATE TABLE product_options (
     FOREIGN KEY ("product_id") REFERENCES "products"("id")
 );
 
-CREATE TABLE product_option_values (
+CREATE TABLE IF NOT EXISTS product_option_values (
     "id" bigserial,
     "product_option_id" bigint NOT NULL,
     "value" text NOT NULL,
