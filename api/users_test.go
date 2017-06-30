@@ -18,42 +18,6 @@ const (
 	examplePassword = "Pa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rd"
 )
 
-// Here's where we test the awful parts of the code (which ones, lol)
-
-type arbitraryPanicker struct {
-	FatalWasCalled bool
-}
-
-func (a *arbitraryPanicker) Fatal(...interface{}) {
-	a.FatalWasCalled = true
-}
-
-func TestPanicUponSaltGenerationError(t *testing.T) {
-	t.Parallel()
-	a := &arbitraryPanicker{}
-	panicUponSaltGenerationError(arbitraryError, a)
-	assert.True(t, a.FatalWasCalled)
-}
-
-type arbitraryChecker struct {
-	Returning bool
-}
-
-func (a *arbitraryChecker) IsErroneous(err error) bool {
-	return a.Returning
-}
-
-func TestCheckIfBcryptErrorIsValid(t *testing.T) {
-	t.Parallel()
-	ch := &arbitraryChecker{
-		Returning: true,
-	}
-	actual := checkIfBcryptErrorIsValid(arbitraryError, ch)
-	assert.True(t, actual)
-}
-
-// Begin normal testing things
-
 func setExpectationsForUserExistence(mock sqlmock.Sqlmock, email string, exists bool, err error) {
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
 	mock.ExpectQuery(formatQueryForSQLMock(userExistenceQuery)).
@@ -77,7 +41,7 @@ func TestCreateUserFromInput(t *testing.T) {
 		FirstName: "FirstName",
 		LastName:  "LastName",
 		Email:     "Email",
-		Password:  "password",
+		Password:  "Password",
 		IsAdmin:   true,
 	}
 	expected := &User{
@@ -87,7 +51,7 @@ func TestCreateUserFromInput(t *testing.T) {
 		IsAdmin:   true,
 	}
 
-	actual, err := createUserFromInput(exampleUserInput, defaultChecker{})
+	actual, err := createUserFromInput(exampleUserInput)
 	assert.Nil(t, err)
 
 	assert.Equal(t, expected.FirstName, actual.FirstName, "FirstName fields should match")
@@ -96,22 +60,6 @@ func TestCreateUserFromInput(t *testing.T) {
 	assert.Equal(t, expected.IsAdmin, actual.IsAdmin, "IsAdmin fields should match")
 	assert.NotEqual(t, expected.Password, actual.Password, "Generated User password should not have the same password as the user input")
 	assert.Equal(t, saltSize, len(actual.Salt), fmt.Sprintf("Generated salt should be %d bytes large", saltSize))
-}
-
-func TestCreateUserFromInputWithError(t *testing.T) {
-	t.Parallel()
-	exampleUserInput := &UserCreationInput{
-		FirstName: "FirstName",
-		LastName:  "LastName",
-		Email:     "Email",
-		IsAdmin:   true,
-	}
-
-	ch := &arbitraryChecker{
-		Returning: true,
-	}
-	actual, _ := createUserFromInput(exampleUserInput, ch)
-	assert.Nil(t, actual)
 }
 
 func TestGenerateSalt(t *testing.T) {

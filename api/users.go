@@ -5,9 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
-	"os"
 
 	"github.com/fatih/structs"
 	"github.com/jmoiron/sqlx"
@@ -43,49 +41,14 @@ type UserCreationInput struct {
 	IsAdmin   bool   `json:"is_admin"`
 }
 
-// So here begins the awful section of code where I have a bunch of types/funcs/interfaces
-// that are goofy as heck. If anybody knows how to force rand.Read() or
-// bcrypt.GenerateFromPassword() to return errors, I will gladly erase all of this awful code.
-
-// Panicker panics except when it doesn't (read: in tests)
-type Panicker interface {
-	Fatal(...interface{})
-}
-
-// I don't know how to otherwise force Go to encounter a salt generation error
-// so I can test this, and I don't want to ignore the error. We're `Fatal`ing
-// here because I assume that if an error is encountered here something involving
-// /dev/urandom has gone awry, and I don't even want to bother if that's the case.
-func panicUponSaltGenerationError(err error, p Panicker) {
-	if err != nil {
-		p.Fatal(err)
-	}
-}
-
-type defaultChecker struct{}
-
-func (d defaultChecker) IsErroneous(err error) bool {
-	return err != nil
-}
-
-// ArbitraryBcryptErrorChecker is a lazy interface for checking bcrypt errors
-type ArbitraryBcryptErrorChecker interface {
-	IsErroneous(error) bool
-}
-
-func checkIfBcryptErrorIsValid(err error, ch ArbitraryBcryptErrorChecker) bool {
-	return ch.IsErroneous(err)
-}
-
-// end awful section (j/k it never ends in this codebase)
-
-func createUserFromInput(in *UserCreationInput, ch ArbitraryBcryptErrorChecker) (*User, error) {
+func createUserFromInput(in *UserCreationInput) (*User, error) {
 	salt, err := generateSalt()
-	fatalLogger := log.New(os.Stderr, "", log.LstdFlags)
-	panicUponSaltGenerationError(err, fatalLogger)
+	if err != nil {
+		return nil, err
+	}
 
 	saltedAndHashedPassword, err := saltAndHashPassword(in.Password, salt)
-	if ch.IsErroneous(err) {
+	if err != nil {
 		return nil, err
 	}
 
@@ -157,7 +120,7 @@ func buildUserCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		newUser, err := createUserFromInput(userInput, defaultChecker{})
+		newUser, err := createUserFromInput(userInput)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "creating user")
 			return
