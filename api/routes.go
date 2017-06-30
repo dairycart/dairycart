@@ -10,13 +10,12 @@ import (
 )
 
 const (
-	// SKUPattern represents the valid characters a sku can contain
-	SKUPattern = `[a-zA-Z\-_]+`
+	// ValidURLCharactersPattern represents the valid characters a sku can contain
+	ValidURLCharactersPattern = `[a-zA-Z\-_]+`
 )
 
 func buildRoute(routeParts ...string) string {
-	allRouteParts := append([]string{"v1"}, routeParts...)
-	return fmt.Sprintf("/%s", strings.Join(allRouteParts, "/"))
+	return fmt.Sprintf("/v1/%s", strings.Join(routeParts, "/"))
 }
 
 // SetupAPIRoutes takes a mux router and a database connection and creates all the API routes for the API
@@ -25,7 +24,7 @@ func SetupAPIRoutes(router *mux.Router, db *sqlx.DB) {
 	router.HandleFunc("/v1/user", buildUserCreationHandler(db)).Methods(http.MethodPost)
 
 	// Products
-	productEndpoint := buildRoute("product", fmt.Sprintf("{sku:%s}", SKUPattern))
+	productEndpoint := buildRoute("product", fmt.Sprintf("{sku:%s}", ValidURLCharactersPattern))
 	router.HandleFunc("/v1/product", buildProductCreationHandler(db)).Methods(http.MethodPost)
 	router.HandleFunc("/v1/products", buildProductListHandler(db)).Methods(http.MethodGet)
 	router.HandleFunc(productEndpoint, buildSingleProductHandler(db)).Methods(http.MethodGet)
@@ -53,6 +52,6 @@ func SetupAPIRoutes(router *mux.Router, db *sqlx.DB) {
 	router.HandleFunc(specificDiscountEndpoint, buildDiscountDeletionHandler(db)).Methods(http.MethodDelete)
 	router.HandleFunc(buildRoute("discounts"), buildDiscountListRetrievalHandler(db)).Methods(http.MethodGet)
 	router.HandleFunc(buildRoute("discount"), buildDiscountCreationHandler(db)).Methods(http.MethodPost)
-	// specificDiscountCodeEndpoint := buildRoute("discount", fmt.Sprintf("{code:%s}", SKUPattern))
+	// specificDiscountCodeEndpoint := buildRoute("discount", fmt.Sprintf("{code:%s}", ValidURLCharactersPattern))
 	// router.HandleFunc(specificDiscountCodeEndpoint, buildDiscountRetrievalHandler(db)).Methods(http.MethodHead)
 }
