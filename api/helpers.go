@@ -229,7 +229,7 @@ func respondThatRowDoesNotExist(req *http.Request, res http.ResponseWriter, item
 		identifier = "identified by"
 	}
 
-	log.Printf("informing user that the %s they were looking for (%s %s) does not exist", itemType, identifier, id)
+	log.Printf("informing user that the %s they were looking for (%s %s) does not exist\n", itemType, identifier, id)
 	res.WriteHeader(http.StatusNotFound)
 	errRes := &ErrorResponse{
 		Status:  http.StatusNotFound,
@@ -239,7 +239,7 @@ func respondThatRowDoesNotExist(req *http.Request, res http.ResponseWriter, item
 }
 
 func notifyOfInvalidRequestBody(res http.ResponseWriter, err error) {
-	log.Printf("Encountered this error decoding a request body: %v", err)
+	log.Printf("Encountered this error decoding a request body: %v\n", err)
 	res.WriteHeader(http.StatusBadRequest)
 	errRes := &ErrorResponse{
 		Status:  http.StatusBadRequest,
@@ -249,11 +249,21 @@ func notifyOfInvalidRequestBody(res http.ResponseWriter, err error) {
 }
 
 func notifyOfInternalIssue(res http.ResponseWriter, err error, attemptedTask string) {
-	log.Println(fmt.Sprintf("Encountered this error trying to %s: %v", attemptedTask, err))
+	log.Printf("Encountered this error trying to %s: %v\n", attemptedTask, err)
 	res.WriteHeader(http.StatusInternalServerError)
 	errRes := &ErrorResponse{
 		Status:  http.StatusInternalServerError,
 		Message: "Unexpected internal error occurred",
+	}
+	json.NewEncoder(res).Encode(errRes)
+}
+
+func notifyOfInvalidAuthenticationAttempt(res http.ResponseWriter, email string) {
+	log.Printf("Invalid login for %s\n", email)
+	res.WriteHeader(http.StatusUnauthorized)
+	errRes := &ErrorResponse{
+		Status:  http.StatusUnauthorized,
+		Message: "Invalid email and/or password",
 	}
 	json.NewEncoder(res).Encode(errRes)
 }

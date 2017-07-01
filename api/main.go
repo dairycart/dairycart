@@ -4,7 +4,6 @@ package main
 
 import (
 	// stdlib
-	"database/sql"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -41,10 +40,10 @@ func determineMigrationCount() int {
 }
 
 // this function not only waits for the database to accept its incoming connection, but also performs any necessary migrations
-func migrateDatabase(db *sql.DB, migrationCount int) {
+func migrateDatabase(db *sqlx.DB, migrationCount int) {
 	databaseIsNotMigrated := true
 	for databaseIsNotMigrated {
-		driver, err := postgres.WithInstance(db, &postgres.Config{})
+		driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
 		if err != nil {
 			log.Printf("waiting half a second for the database")
 			time.Sleep(500 * time.Millisecond)
@@ -68,34 +67,26 @@ func migrateDatabase(db *sql.DB, migrationCount int) {
 }
 
 func main() {
-	// Output to stdout instead of the default stderr
 	log.SetOutput(os.Stdout)
-	// Only log the warning severity or above.
 	log.SetLevel(log.InfoLevel)
 
 	// Connect to the database
 	dbURL := os.Getenv("DAIRYCART_DB_URL")
-	var err error
-	pg, err := sql.Open("postgres", dbURL)
+	db, err := sqlx.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatalf("error encountered connecting to database: %v", err)
 	}
+	db.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
 
 	// migrate the database
 	migrationCount := determineMigrationCount()
-	migrateDatabase(pg, migrationCount)
+	migrateDatabase(db, migrationCount)
 
-	// setup sqlx
-	db := sqlx.NewDb(pg, "postgres")
-	db.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
-
-	// setup all our API routes
 	APIRouter := mux.NewRouter()
-	// APIRouter.Host("api.dairycart.com")
 	SetupAPIRoutes(APIRouter, db)
 
 	// serve 'em up a lil' sauce
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "I live!") })
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "👍") })
 	http.Handle("/", APIRouter)
 	log.Println("Dairycart now listening for requests")
 	http.ListenAndServe(":80", nil)

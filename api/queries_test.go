@@ -266,7 +266,7 @@ func TestBuildUserCreationQuery(t *testing.T) {
 		FirstName: "FirstName",
 		LastName:  "LastName",
 		Email:     "Email",
-		Password:  []byte("Password"),
+		Password:  "Password",
 		Salt:      []byte("Salt"),
 		IsAdmin:   true,
 	}
