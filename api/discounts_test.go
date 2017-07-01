@@ -37,23 +37,25 @@ const (
 	}`
 )
 
-var discountHeaders []string
-var exampleDiscountData []driver.Value
-var discountHeadersWithCount []string
-var exampleDiscountDataWithCount []driver.Value
-var exampleDiscount *Discount
+var (
+	discountHeaders              []string
+	exampleDiscountData          []driver.Value
+	discountHeadersWithCount     []string
+	exampleDiscountDataWithCount []driver.Value
+	exampleDiscount              *Discount
+)
 
 func init() {
 	exampleDiscount = &Discount{
 		DBRow: DBRow{
 			ID:        1,
-			CreatedOn: exampleTime,
+			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:      "Example Discount",
 		Type:      "flat_discount",
 		Amount:    12.34,
-		StartsOn:  exampleTime,
-		ExpiresOn: NullTime{pq.NullTime{Time: exampleTime.Add(30 * (24 * time.Hour)), Valid: true}},
+		StartsOn:  generateExampleTimeForTests(),
+		ExpiresOn: NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
 	}
 
 	discountHeaders = strings.Split(strings.TrimSpace(discountDBColumns), ",\n\t\t")
@@ -174,9 +176,21 @@ func TestRetrieveDiscountFromDB(t *testing.T) {
 	discountIDString := strconv.Itoa(int(exampleDiscount.ID))
 	setExpectationsForDiscountRetrievalByID(mock, discountIDString, nil)
 
+	expectedDiscount := &Discount{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:      "Example Discount",
+		Type:      "flat_discount",
+		Amount:    12.34,
+		StartsOn:  generateExampleTimeForTests(),
+		ExpiresOn: NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
+	}
+
 	actual, err := retrieveDiscountFromDB(db, discountIDString)
 	assert.Nil(t, err)
-	assert.Equal(t, *exampleDiscount, actual, "expected and actual discounts should match")
+	assert.Equal(t, *expectedDiscount, actual, "expected and actual discounts should match")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -428,7 +442,7 @@ func TestDiscountCreationHandler(t *testing.T) {
 	exampleCreatedDiscount := &Discount{
 		DBRow: DBRow{
 			ID:        1,
-			CreatedOn: exampleTime,
+			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "Test",
 		Type:         "flat_amount",
@@ -521,7 +535,7 @@ func TestDiscountUpdateHandler(t *testing.T) {
 	updateInput := &Discount{
 		DBRow: DBRow{
 			ID:        1,
-			CreatedOn: exampleTime,
+			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "New Name",
 		Type:         "flat_discount",
@@ -578,7 +592,7 @@ func TestDiscountUpdateHandlerWithErrorRetrievingDiscount(t *testing.T) {
 	updateInput := &Discount{
 		DBRow: DBRow{
 			ID:        1,
-			CreatedOn: exampleTime,
+			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "New Name",
 		Type:         "flat_discount",
@@ -606,7 +620,7 @@ func TestDiscountUpdateHandlerWithErrorUpdatingDiscount(t *testing.T) {
 	updateInput := &Discount{
 		DBRow: DBRow{
 			ID:        1,
-			CreatedOn: exampleTime,
+			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "New Name",
 		Type:         "flat_discount",

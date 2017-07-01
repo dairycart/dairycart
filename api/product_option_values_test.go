@@ -19,30 +19,32 @@ const (
 	exampleProductOptionValueUpdateBody   = `{"value": "something else"}`
 )
 
-var exampleProductOptionValue *ProductOptionValue
-var exampleUpdatedProductOptionValue *ProductOptionValue
-var productOptionValueHeaders []string
-var productOptionValueData []driver.Value
+var (
+	exampleProductOptionValue        *ProductOptionValue
+	exampleUpdatedProductOptionValue *ProductOptionValue
+	productOptionValueHeaders        []string
+	productOptionValueData           []driver.Value
+)
 
 func init() {
 	exampleProductOptionValue = &ProductOptionValue{
 		ID:              256,
 		ProductOptionID: 123, // == exampleProductOption.ID
 		Value:           "something",
-		CreatedOn:       exampleTime,
+		CreatedOn:       generateExampleTimeForTests(),
 	}
 	exampleUpdatedProductOptionValue = &ProductOptionValue{
 		ID:              256,
 		ProductOptionID: 123, // == exampleProductOption.ID
 		Value:           "something else",
-		CreatedOn:       exampleTime,
+		CreatedOn:       generateExampleTimeForTests(),
 	}
 	productOptionValueHeaders = []string{"id", "product_option_id", "value", "created_on", "updated_on", "archived_on"}
 	productOptionValueData = []driver.Value{
 		exampleProductOptionValue.ID,
 		exampleProductOptionValue.ProductOptionID,
 		exampleProductOptionValue.Value,
-		exampleTime,
+		generateExampleTimeForTests(),
 		nil,
 		nil,
 	}
@@ -87,7 +89,7 @@ func setExpectationsForProductOptionValueCreation(mock sqlmock.Sqlmock, v *Produ
 
 func setExpectationsForProductOptionValueUpdate(mock sqlmock.Sqlmock, v *ProductOptionValue, err error) {
 	exampleRows := sqlmock.NewRows(productOptionHeaders).
-		AddRow([]driver.Value{v.ID, v.ProductOptionID, v.Value, exampleTime, nil, nil}...)
+		AddRow([]driver.Value{v.ID, v.ProductOptionID, v.Value, generateExampleTimeForTests(), nil, nil}...)
 	query, args := buildProductOptionValueUpdateQuery(v)
 	queryArgs := argsToDriverValues(args)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).

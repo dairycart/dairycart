@@ -20,10 +20,12 @@ const (
 	exampleMarshalTimeString = "2016-12-31T12:00:00.000000Z"
 )
 
-var exampleFilterStartTime time.Time
-var exampleFilterEndTime time.Time
-var defaultQueryFilter *QueryFilter
-var customQueryFilter *QueryFilter
+var (
+	exampleFilterStartTime time.Time
+	exampleFilterEndTime   time.Time
+	defaultQueryFilter     *QueryFilter
+	customQueryFilter      *QueryFilter
+)
 
 func init() {
 	defaultQueryFilter = &QueryFilter{
@@ -34,7 +36,7 @@ func init() {
 	customQueryFilter = &QueryFilter{
 		Page:         2,
 		Limit:        35,
-		CreatedAfter: exampleTime,
+		CreatedAfter: generateExampleTimeForTests(),
 	}
 }
 
@@ -49,7 +51,7 @@ func TestNullStringMarshalTextReturnsNilIfStringIsInvalid(t *testing.T) {
 func TestNullTimeMarshalText(t *testing.T) {
 	t.Parallel()
 	expected := []byte(exampleMarshalTimeString)
-	example := NullTime{pq.NullTime{Time: exampleTime, Valid: true}}
+	example := NullTime{pq.NullTime{Time: generateExampleTimeForTests(), Valid: true}}
 	actual, err := example.MarshalText()
 
 	assert.Nil(t, err)

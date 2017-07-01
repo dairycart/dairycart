@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
 	"database/sql/driver"
 	"fmt"
 	"net/http"
@@ -8,11 +10,13 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-
-	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/dgrijalva/jwt-go"
+	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
 var dummySalt []byte
@@ -28,8 +32,22 @@ func init() {
 	dummySalt = []byte("farts")
 	userTableHeaders = []string{"id", "first_name", "last_name", "email", "password", "salt", "is_admin", "created_on", "updated_on", "archived_on"}
 	exampleUserData = []driver.Value{
-		1, "Frank", "Zappa", "frank@zappa.com", hashedExamplePassword, dummySalt, true, exampleTime, nil, nil,
+		1, "Frank", "Zappa", "frank@zappa.com", hashedExamplePassword, dummySalt, true, generateExampleTimeForTests(), nil, nil,
 	}
+}
+
+type arbitraryFataler struct {
+	FatalCalled bool
+}
+
+func (f *arbitraryFataler) Fatal(...interface{}) {
+	f.FatalCalled = true
+}
+
+func TestMustLoadKey(t *testing.T) {
+	af := &arbitraryFataler{}
+	mustLoadKey(arbitraryError, af)
+	assert.True(t, af.FatalCalled)
 }
 
 func setExpectationsForUserExistence(mock sqlmock.Sqlmock, email string, exists bool, err error) {
@@ -63,6 +81,50 @@ func setExpectationsForUserDeletion(mock sqlmock.Sqlmock, email string, err erro
 		WithArgs(email).
 		WillReturnResult(sqlmock.NewResult(1, 1)).
 		WillReturnError(err)
+}
+
+func TestValidateTokenMiddleware(t *testing.T) {
+	handlerWasCalled := false
+	exampleHandler := func(w http.ResponseWriter, r *http.Request) {
+		handlerWasCalled = true
+	}
+
+	db, _ := setupDBForTest(t)
+	res, _ := setupMockRequestsAndMux(db)
+
+	req, err := http.NewRequest("GET", "", nil)
+	assert.Nil(t, err)
+
+	token, err := buildToken()
+	assert.Nil(t, err)
+	req.Header.Set("Authorization", token.Token)
+
+	validateTokenMiddleware(res, req, exampleHandler)
+	assert.True(t, handlerWasCalled)
+}
+
+func TestValidateTokenMiddlewareWithInvalidToken(t *testing.T) {
+	handlerWasCalled := false
+	exampleHandler := func(w http.ResponseWriter, r *http.Request) {
+		handlerWasCalled = true
+	}
+
+	db, _ := setupDBForTest(t)
+	res, _ := setupMockRequestsAndMux(db)
+
+	req, err := http.NewRequest("GET", "", nil)
+	assert.Nil(t, err)
+
+	k := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"iat": time.Now().Unix(),
+		"exp": time.Now().Add(7 * (24 * time.Hour)).Unix(),
+	})
+	token, err := k.SignedString(signKey)
+
+	req.Header.Set("Authorization", token)
+	validateTokenMiddleware(res, req, exampleHandler)
+	assert.False(t, handlerWasCalled)
+	assert.Equal(t, http.StatusUnauthorized, res.Result().StatusCode, "middleware should respond that the token is not valid")
 }
 
 func TestCreateUserFromInput(t *testing.T) {
@@ -168,7 +230,7 @@ func TestCreateUserInDB(t *testing.T) {
 	exampleUser := &User{
 		DBRow: DBRow{
 			ID:        1,
-			CreatedOn: exampleTime,
+			CreatedOn: generateExampleTimeForTests(),
 		},
 		FirstName: "FirstName",
 		LastName:  "LastName",
@@ -190,7 +252,7 @@ func TestCreateUserInDBWhenErrorOccurs(t *testing.T) {
 	exampleUser := &User{
 		DBRow: DBRow{
 			ID:        1,
-			CreatedOn: exampleTime,
+			CreatedOn: generateExampleTimeForTests(),
 		},
 		FirstName: "FirstName",
 		LastName:  "LastName",
@@ -213,20 +275,22 @@ func TestRetrieveUserFromDB(t *testing.T) {
 	expected := User{
 		DBRow: DBRow{
 			ID:        1,
-			CreatedOn: exampleTime,
+			CreatedOn: generateExampleTimeForTests(),
 		},
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
 		Password:  hashedExamplePassword,
-		Salt:      dummySalt,
 		IsAdmin:   true,
+		// for some reason I'm too stupid to understand, go wants to copy this value with a cap of 8
+		Salt: dummySalt, //[0:len(dummySalt):len(dummySalt)],
 	}
 
 	setExpectationsForUserRetrieval(mock, expected.Email, nil)
 	actual, err := retrieveUserFromDB(db, expected.Email)
 	assert.Nil(t, err)
-	assert.Equal(t, expected, actual, "expected and actual discounts should match")
+
+	assert.Equal(t, expected, actual, "expected and actual users should match")
 	ensureExpectationsWereMet(t, mock)
 }
 
@@ -308,6 +372,12 @@ func TestValidateLoginInputWithCompletelyGarbageInput(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
+func TestBuildToken(t *testing.T) {
+	// this test isn't very good, but otherwise I'm not sure I know how to test this.
+	_, err := buildToken()
+	assert.Nil(t, err)
+}
+
 func TestArchiveUser(t *testing.T) {
 	t.Parallel()
 	exampleEmail := "frank@zappa.com"
@@ -339,7 +409,7 @@ func TestUserCreationHandler(t *testing.T) {
 	exampleUser := &User{
 		DBRow: DBRow{
 			ID:        1,
-			CreatedOn: exampleTime,
+			CreatedOn: generateExampleTimeForTests(),
 		},
 		FirstName: "Frank",
 		LastName:  "Zappa",
@@ -411,7 +481,7 @@ func TestUserCreationHandlerWhenErrorEncounteredInsertingIntoDB(t *testing.T) {
 	exampleUser := &User{
 		DBRow: DBRow{
 			ID:        1,
-			CreatedOn: exampleTime,
+			CreatedOn: generateExampleTimeForTests(),
 		},
 		FirstName: "Frank",
 		LastName:  "Zappa",
@@ -445,7 +515,7 @@ func TestUserLoginHandler(t *testing.T) {
 	exampleUser := &User{
 		DBRow: DBRow{
 			ID:        1,
-			CreatedOn: exampleTime,
+			CreatedOn: generateExampleTimeForTests(),
 		},
 		FirstName: "Frank",
 		LastName:  "Zappa",
@@ -464,6 +534,44 @@ func TestUserLoginHandler(t *testing.T) {
 
 	assert.Equal(t, 200, res.Code, "status code should be 200")
 	ensureExpectationsWereMet(t, mock)
+}
+
+func TestUserLoginHandlerWithIssueSigningJWT(t *testing.T) {
+	oldSignKey := signKey
+	var keyErr error
+	signKey, keyErr = rsa.GenerateKey(rand.Reader, 256)
+	assert.Nil(t, keyErr)
+
+	exampleInput := fmt.Sprintf(`
+		{
+			"email": "frank@zappa.com",
+			"password": "%s"
+		}
+	`, examplePassword)
+
+	exampleUser := &User{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		FirstName: "Frank",
+		LastName:  "Zappa",
+		Email:     "frank@zappa.com",
+		Password:  examplePassword,
+	}
+
+	db, mock := setupDBForTest(t)
+	res, router := setupMockRequestsAndMux(db)
+
+	setExpectationsForUserRetrieval(mock, exampleUser.Email, nil)
+
+	req, err := http.NewRequest("POST", "/login", strings.NewReader(exampleInput))
+	assert.Nil(t, err)
+	router.ServeHTTP(res, req)
+
+	assert.Equal(t, 500, res.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, mock)
+	signKey = oldSignKey
 }
 
 func TestUserLoginHandlerWithInvalidLoginInput(t *testing.T) {
@@ -492,7 +600,7 @@ func TestUserLoginHandlerWithErrorRetrievingUserFromDatabase(t *testing.T) {
 	exampleUser := &User{
 		DBRow: DBRow{
 			ID:        1,
-			CreatedOn: exampleTime,
+			CreatedOn: generateExampleTimeForTests(),
 		},
 		FirstName: "Frank",
 		LastName:  "Zappa",
@@ -525,7 +633,7 @@ func TestUserLoginHandlerWithInvalidPassword(t *testing.T) {
 	exampleUser := &User{
 		DBRow: DBRow{
 			ID:        1,
-			CreatedOn: exampleTime,
+			CreatedOn: generateExampleTimeForTests(),
 		},
 		FirstName: "Frank",
 		LastName:  "Zappa",

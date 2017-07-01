@@ -81,6 +81,11 @@ func (ns *NullString) UnmarshalText(text []byte) (err error) {
 //    ¸,ø¤º°º¤ø,¸¸,ø¤º°   Everything after this point is not borrowed.   °º¤ø,¸¸,ø¤º°º¤ø,¸    //
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
+// Fataler represents a struct that implements the Fatal() method. Used for testing.
+type Fataler interface {
+	Fatal(...interface{})
+}
+
 // DBRow is meant to represent the base columns that every database table should have
 type DBRow struct {
 	ID         uint64    `json:"id"`

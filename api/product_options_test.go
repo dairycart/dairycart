@@ -33,18 +33,20 @@ const (
 	`
 )
 
-var exampleProductOption *ProductOption
-var exampleUpdatedProductOption *ProductOption
-var expectedCreatedProductOption *ProductOption
-var exampleProductOptionInput *ProductOptionCreationInput
-var productOptionHeaders []string
+var (
+	exampleProductOption         *ProductOption
+	exampleUpdatedProductOption  *ProductOption
+	expectedCreatedProductOption *ProductOption
+	exampleProductOptionInput    *ProductOptionCreationInput
+	productOptionHeaders         []string
+)
 
 func init() {
 	exampleProductOption = &ProductOption{
 		ID:        123,
 		Name:      "something",
 		ProductID: 2, // == exampleProduct.ID
-		CreatedOn: exampleTime,
+		CreatedOn: generateExampleTimeForTests(),
 	}
 	exampleUpdatedProductOption = &ProductOption{
 		ID:        exampleProductOption.ID,
@@ -101,7 +103,7 @@ func setExpectationsForProductOptionExistenceByName(mock sqlmock.Sqlmock, a *Pro
 
 func setExpectationsForProductOptionRetrievalQuery(mock sqlmock.Sqlmock, a *ProductOption, err error) {
 	exampleRows := sqlmock.NewRows(productOptionHeaders).
-		AddRow([]driver.Value{a.ID, a.Name, a.ProductID, exampleTime, nil, nil}...)
+		AddRow([]driver.Value{a.ID, a.Name, a.ProductID, generateExampleTimeForTests(), nil, nil}...)
 	query := formatQueryForSQLMock(productOptionRetrievalQuery)
 	mock.ExpectQuery(query).
 		WithArgs(a.ID).
@@ -111,9 +113,9 @@ func setExpectationsForProductOptionRetrievalQuery(mock sqlmock.Sqlmock, a *Prod
 
 func setExpectationsForProductOptionListQueryWithCount(mock sqlmock.Sqlmock, a *ProductOption, err error) {
 	exampleRows := sqlmock.NewRows([]string{"count", "id", "name", "product_id", "created_on", "updated_on", "archived_on"}).
-		AddRow([]driver.Value{3, a.ID, a.Name, a.ProductID, exampleTime, nil, nil}...).
-		AddRow([]driver.Value{3, a.ID, a.Name, a.ProductID, exampleTime, nil, nil}...).
-		AddRow([]driver.Value{3, a.ID, a.Name, a.ProductID, exampleTime, nil, nil}...)
+		AddRow([]driver.Value{3, a.ID, a.Name, a.ProductID, generateExampleTimeForTests(), nil, nil}...).
+		AddRow([]driver.Value{3, a.ID, a.Name, a.ProductID, generateExampleTimeForTests(), nil, nil}...).
+		AddRow([]driver.Value{3, a.ID, a.Name, a.ProductID, generateExampleTimeForTests(), nil, nil}...)
 	query, _ := buildProductOptionListQuery(exampleProduct.ID, defaultQueryFilter)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
 		WillReturnRows(exampleRows).
@@ -132,7 +134,7 @@ func setExpectationsForProductOptionCreation(mock sqlmock.Sqlmock, a *ProductOpt
 
 func setExpectationsForProductOptionUpdate(mock sqlmock.Sqlmock, a *ProductOption, err error) {
 	exampleRows := sqlmock.NewRows(productOptionHeaders).
-		AddRow([]driver.Value{a.ID, a.Name, a.ProductID, exampleTime, nil, nil}...)
+		AddRow([]driver.Value{a.ID, a.Name, a.ProductID, generateExampleTimeForTests(), nil, nil}...)
 	query, args := buildProductOptionUpdateQuery(a)
 	queryArgs := argsToDriverValues(args)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).

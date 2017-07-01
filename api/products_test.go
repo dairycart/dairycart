@@ -32,16 +32,18 @@ const (
 	exampleTimeAvailableString = "2016-12-31T12:00:00Z"
 )
 
-var productHeaders []string
-var exampleProductData []driver.Value
-var exampleProduct *Product
-var exampleUpdatedProduct *Product
+var (
+	productHeaders        []string
+	exampleProductData    []driver.Value
+	exampleProduct        *Product
+	exampleUpdatedProduct *Product
+)
 
 func init() {
 	exampleProduct = &Product{
 		DBRow: DBRow{
 			ID:        2,
-			CreatedOn: exampleTime,
+			CreatedOn: generateExampleTimeForTests(),
 		},
 		SKU:  "skateboard",
 		Name: "Skateboard",
@@ -61,7 +63,7 @@ func init() {
 		PackageHeight: 3,
 		PackageWidth:  2,
 		PackageLength: 1,
-		AvailableOn:   exampleTime,
+		AvailableOn:   generateExampleTimeForTests(),
 	}
 	exampleProduct.Subtitle.Valid = true
 	exampleProduct.Manufacturer.Valid = true
@@ -101,7 +103,7 @@ func init() {
 	exampleUpdatedProduct = &Product{
 		DBRow: DBRow{
 			ID:        exampleProduct.ID,
-			CreatedOn: exampleTime,
+			CreatedOn: generateExampleTimeForTests(),
 		},
 		SKU:      "example",
 		Name:     "Test",
@@ -657,7 +659,7 @@ func TestProductCreationHandler(t *testing.T) {
 	expectedProduct := &Product{
 		DBRow: DBRow{
 			ID:        2,
-			CreatedOn: exampleTime,
+			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:          "Skateboard",
 		SKU:           "skateboard",
@@ -730,7 +732,7 @@ func TestProductCreationHandlerWhereCommitReturnsAnError(t *testing.T) {
 	expectedProduct := &Product{
 		DBRow: DBRow{
 			ID:        2,
-			CreatedOn: exampleTime,
+			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:          "Skateboard",
 		SKU:           "skateboard",
@@ -839,7 +841,7 @@ func TestProductCreationHandlerWithoutOptions(t *testing.T) {
 	expectedProduct := &Product{
 		DBRow: DBRow{
 			ID:        2,
-			CreatedOn: exampleTime,
+			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:          "Skateboard",
 		SKU:           "skateboard",
@@ -994,7 +996,7 @@ func TestProductCreationHandlerWhereProductCreationFails(t *testing.T) {
 	expectedProduct := &Product{
 		DBRow: DBRow{
 			ID:        2,
-			CreatedOn: exampleTime,
+			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:          "Skateboard",
 		SKU:           "skateboard",

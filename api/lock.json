@@ -1,5 +1,5 @@
 {
-    "memo": "1bd042fb0f4da950d2b763408ddc0f3c09baddcf7956255bd7be9138bfd24477",
+    "memo": "1e66191e8ce856f67f6c8f30ea8db43ec25eb70d324de90071fb1ecb842f11f1",
     "projects": [
         {
             "name": "github.com/Masterminds/squirrel",
@@ -15,6 +15,15 @@
             "revision": "a7a0063072ed89d04285d3d3362aa590ed9f7878",
             "packages": [
                 "spew"
+            ]
+        },
+        {
+            "name": "github.com/dgrijalva/jwt-go",
+            "version": "v3.0.0",
+            "revision": "d2709f9f1f31ebcda9651b03077758c1f3a0018c",
+            "packages": [
+                ".",
+                "request"
             ]
         },
         {

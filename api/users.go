@@ -2,16 +2,22 @@ package main
 
 import (
 	"crypto/rand"
+	"crypto/rsa"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
 	"time"
 
+	"golang.org/x/crypto/bcrypt"
+
+	jwt "github.com/dgrijalva/jwt-go"
+	jwtRequest "github.com/dgrijalva/jwt-go/request"
 	"github.com/fatih/structs"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
-
-	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/go-playground/validator.v9"
 )
 
@@ -19,10 +25,39 @@ const (
 	saltSize = 1 << 5
 	hashCost = bcrypt.DefaultCost + 3
 
+	privKeyPath = "app.rsa"
+	pubKeyPath  = "app.rsa.pub"
+
 	userRetrievalQuery = `SELECT * FROM users WHERE email = $1`
 	userExistenceQuery = `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND archived_on IS NULL)`
 	userDeletionQuery  = `UPDATE users SET archived_on = NOW() WHERE email = $1 AND archived_on IS NULL`
 )
+
+var (
+	verifyKey *rsa.PublicKey
+	signKey   *rsa.PrivateKey
+)
+
+// This is a lame hack function that exists solely for tests because im bad at programming
+func mustLoadKey(err error, l Fataler) {
+	if err != nil {
+		l.Fatal(err)
+	}
+}
+
+func init() {
+	fatalLogger := log.New(os.Stderr, "", log.LstdFlags)
+
+	signBytes, err := ioutil.ReadFile(privKeyPath)
+	mustLoadKey(err, fatalLogger)
+	signKey, err = jwt.ParseRSAPrivateKeyFromPEM(signBytes)
+	mustLoadKey(err, fatalLogger)
+
+	verifyBytes, err := ioutil.ReadFile(pubKeyPath)
+	mustLoadKey(err, fatalLogger)
+	verifyKey, err = jwt.ParseRSAPublicKeyFromPEM(verifyBytes)
+	mustLoadKey(err, fatalLogger)
+}
 
 // User represents a Dairycart user
 type User struct {
@@ -58,6 +93,27 @@ type UserLoginInput struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
+
+// TokenResponse represents what we return to the user
+type TokenResponse struct {
+	Token string `json:"token"`
+}
+
+func validateTokenMiddleware(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	token, err := jwtRequest.ParseFromRequest(r, jwtRequest.AuthorizationHeaderExtractor,
+		func(token *jwt.Token) (interface{}, error) {
+			return verifyKey, nil
+		})
+
+	if err == nil && token.Valid {
+		next(w, r)
+	} else {
+		w.WriteHeader(http.StatusUnauthorized)
+		fmt.Fprint(w, "Unauthorized access to this resource")
+	}
+}
+
+// non-borrowed stuff
 
 func createUserFromInput(in *UserCreationInput) (*User, error) {
 	salt, err := generateSalt()
@@ -194,6 +250,18 @@ func validateLoginInput(req *http.Request) (*UserLoginInput, error) {
 	return loginInfo, nil
 }
 
+func buildToken() (TokenResponse, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodRS512, jwt.MapClaims{
+		"iat": time.Now().Unix(),
+		"exp": time.Now().Add(7 * (24 * time.Hour)).Unix(),
+	})
+	tokenString, err := token.SignedString(signKey)
+	tr := TokenResponse{
+		Token: tokenString,
+	}
+	return tr, err
+}
+
 func buildUserLoginHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		loginInput, err := validateLoginInput(req)
@@ -214,12 +282,19 @@ func buildUserLoginHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
+		jsonWebToken, err := buildToken()
+		if err != nil {
+			notifyOfInternalIssue(res, err, "generate token")
+			return
+		}
+
 		statusToWrite := http.StatusUnauthorized
 		if loginValid {
 			statusToWrite = http.StatusOK
 		}
 
 		res.WriteHeader(statusToWrite)
+		json.NewEncoder(res).Encode(jsonWebToken)
 	}
 }
 

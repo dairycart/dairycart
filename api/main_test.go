@@ -51,6 +51,14 @@ func init() {
 	exampleNewerTime = exampleTime.Add(30 * (24 * time.Hour))
 }
 
+func generateExampleTimeForTests() time.Time {
+	t, err := time.Parse("2006-01-02 03:04:00.000000", "2016-12-31 12:00:00.000000")
+	if err != nil {
+		log.Fatalf("error parsing time")
+	}
+	return t
+}
+
 func setExpectationsForRowCount(mock sqlmock.Sqlmock, table string, queryFilter *QueryFilter, count uint64, err error) {
 	exampleRows := sqlmock.NewRows([]string{"count"}).AddRow(count)
 	mock.ExpectQuery(formatQueryForSQLMock(buildCountQuery(table, queryFilter))).
