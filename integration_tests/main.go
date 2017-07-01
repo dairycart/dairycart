@@ -25,7 +25,7 @@ type Requester struct {
 }
 
 func (r *Requester) execRequest(req *http.Request) (*http.Response, error) {
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", r.AuthToken))
+	req.Header.Set("Authorization", r.AuthToken)
 	return r.Do(req)
 }
 
@@ -51,6 +51,7 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	tokenContainer := struct {
 		Token string
 	}{}
@@ -61,7 +62,7 @@ func init() {
 	}
 
 	requester.AuthToken = tokenContainer.Token
-	log.Printf("setting requester's AuthToken to %s\n", requester.AuthToken)
+	log.Printf("setting requester's AuthToken to `%s`\n", requester.AuthToken)
 }
 
 func buildPath(parts ...string) string {
@@ -114,8 +115,8 @@ func authenticateUser(email string, password string) (*http.Response, error) {
 	url := `http://dairycart/login`
 	body := strings.NewReader(fmt.Sprintf(`
 		{
-			"email": %s,
-			"password": %s,
+			"email": "%s",
+			"password": "%s"
 		}
 	`, email, password))
 	req, _ := http.NewRequest(http.MethodPost, url, body)

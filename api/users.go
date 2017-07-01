@@ -6,19 +6,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
 
-	jwt "github.com/dgrijalva/jwt-go"
-	jwtRequest "github.com/dgrijalva/jwt-go/request"
 	"github.com/fatih/structs"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"gopkg.in/go-playground/validator.v9"
+
+	jwt "github.com/dgrijalva/jwt-go"
+	jwtRequest "github.com/dgrijalva/jwt-go/request"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -46,7 +46,7 @@ func mustLoadKey(err error, l Fataler) {
 }
 
 func init() {
-	fatalLogger := log.New(os.Stderr, "", log.LstdFlags)
+	fatalLogger := log.New()
 
 	signBytes, err := ioutil.ReadFile(privKeyPath)
 	mustLoadKey(err, fatalLogger)
@@ -108,6 +108,7 @@ func validateTokenMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		if err == nil && token.Valid {
 			next(res, req)
 		} else {
+			log.Printf("received the following error with a token: %s", err.Error())
 			res.WriteHeader(http.StatusUnauthorized)
 			errRes := &ErrorResponse{
 				Status:  http.StatusUnauthorized,
