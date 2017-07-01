@@ -16,7 +16,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
 	"github.com/mattes/migrate"
-	"github.com/mattes/migrate/database/postgres"
+	migratePG "github.com/mattes/migrate/database/postgres"
 	log "github.com/sirupsen/logrus"
 
 	// unnamed dependencies
@@ -31,11 +31,16 @@ func determineMigrationCount() int {
 	}
 
 	migrationCount := 0
+	migrateExampleData := os.Getenv("MIGRATE_EXAMPLE_DATA")
 	for _, f := range files {
 		if strings.HasSuffix(f.Name(), ".up.sql") {
 			migrationCount++
 		}
 	}
+	if migrateExampleData != "YES" {
+		migrationCount--
+	}
+
 	return migrationCount
 }
 
@@ -43,7 +48,7 @@ func determineMigrationCount() int {
 func migrateDatabase(db *sqlx.DB, migrationCount int) {
 	databaseIsNotMigrated := true
 	for databaseIsNotMigrated {
-		driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
+		driver, err := migratePG.WithInstance(db.DB, &migratePG.Config{})
 		if err != nil {
 			log.Printf("waiting half a second for the database")
 			time.Sleep(500 * time.Millisecond)

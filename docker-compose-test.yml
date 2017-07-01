@@ -12,6 +12,7 @@ services:
     links:
       - database
     environment:
+      MIGRATE_EXAMPLE_DATA: "YES"
       DAIRYCART_MIGRATIONS_DIR: "file:///migrations"
       DAIRYCART_DB_URL: postgres://dairytest:hunter2@database:5432/dairytest?sslmode=disable
     logging:
