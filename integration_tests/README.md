@@ -89,3 +89,17 @@ Update discount route:
 - [x] Valid input ([TestDiscountUpdate](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/pricing_test.go.go#L91))
 - [x] Invalid input ([TestDiscountUpdateInvalidDiscount](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/pricing_test.go.go#L103))
 - [x] Nonexistent Body ([TestDiscountUpdateWithInvalidBody](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/pricing_test.go.go#L110))
+
+User creation routes:
+
+- [] Valid input ()
+- [] Already existent user ()
+- [] Invalid input ()
+- [] Bad password ()
+
+User login routes:
+
+- [] Valid password ()
+- [] Non-existent user ()
+- [] Invalid input ()
+- [] Bad password ()

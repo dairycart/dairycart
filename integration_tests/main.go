@@ -1,6 +1,7 @@
 package dairytest
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -9,15 +10,58 @@ import (
 	"time"
 )
 
-var client *http.Client
+var requester *Requester
 
 const (
 	maxAttempts = 10
 	baseURL     = `http://dairycart/v1`
+	password    = "Pa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rd"
 )
 
+// Requester is what we use to make requests
+type Requester struct {
+	http.Client
+	AuthToken string
+}
+
+func (r *Requester) execRequest(req *http.Request) (*http.Response, error) {
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", r.AuthToken))
+	return r.Do(req)
+}
+
 func init() {
-	client = &http.Client{}
+	ensureThatDairycartIsAlive()
+	requester = &Requester{}
+	newAdminUserBody := fmt.Sprintf(`
+		{
+			"first_name": "Frank",
+			"last_name": "Zappa",
+			"email": "frank@zappa.com",
+			"password": "%s",
+			"is_admin": true
+		}
+	`, password)
+
+	_, err := createNewUser(newAdminUserBody)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	res, err := authenticateUser("frank@zappa.com", password)
+	if err != nil {
+		log.Fatal(err)
+	}
+	tokenContainer := struct {
+		Token string
+	}{}
+
+	err = json.NewDecoder(res.Body).Decode(&tokenContainer)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	requester.AuthToken = tokenContainer.Token
+	log.Printf("setting requester's AuthToken to %s\n", requester.AuthToken)
 }
 
 func buildPath(parts ...string) string {
@@ -59,103 +103,122 @@ func ensureThatDairycartIsAlive() {
 	}
 }
 
+func createNewUser(JSONBody string) (*http.Response, error) {
+	url := `http://dairycart/user`
+	body := strings.NewReader(JSONBody)
+	req, _ := http.NewRequest(http.MethodPost, url, body)
+	return requester.Do(req)
+}
+
+func authenticateUser(email string, password string) (*http.Response, error) {
+	url := `http://dairycart/login`
+	body := strings.NewReader(fmt.Sprintf(`
+		{
+			"email": %s,
+			"password": %s,
+		}
+	`, email, password))
+	req, _ := http.NewRequest(http.MethodPost, url, body)
+	return requester.Do(req)
+}
+
 func checkProductExistence(sku string) (*http.Response, error) {
 	url := buildPath("product", sku)
 	req, _ := http.NewRequest(http.MethodHead, url, nil)
-	return client.Do(req)
+	return requester.execRequest(req)
 }
 
 func retrieveProduct(sku string) (*http.Response, error) {
 	url := buildPath("product", sku)
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
-	return client.Do(req)
+	return requester.execRequest(req)
 }
 
 func retrieveListOfProducts(queryFilter map[string]string) (*http.Response, error) {
 	path := buildPath("products")
 	url := buildURL(path, queryFilter)
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
-	return client.Do(req)
+	return requester.execRequest(req)
 }
 
 func createProduct(JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
 	url := buildPath("product")
 	req, _ := http.NewRequest(http.MethodPost, url, body)
-	return client.Do(req)
+	return requester.execRequest(req)
 }
 
 func updateProduct(sku string, JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
 	url := buildPath("product", sku)
 	req, _ := http.NewRequest(http.MethodPut, url, body)
-	return client.Do(req)
+	return requester.execRequest(req)
 }
 
 func deleteProduct(sku string) (*http.Response, error) {
 	url := buildPath("product", sku)
 	req, _ := http.NewRequest(http.MethodDelete, url, nil)
-	return client.Do(req)
+	return requester.execRequest(req)
 }
 
 func retrieveProductOptions(productID string, queryFilter map[string]string) (*http.Response, error) {
 	path := buildPath("product", productID, "options")
 	url := buildURL(path, queryFilter)
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
-	return client.Do(req)
+	return requester.execRequest(req)
 }
 
 func createProductOptionForProduct(productID string, JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
 	url := buildPath("product", productID, "options")
 	req, _ := http.NewRequest(http.MethodPost, url, body)
-	return client.Do(req)
+	return requester.execRequest(req)
 }
 
 func updateProductOption(optionID string, JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
 	url := buildPath("product_options", optionID)
 	req, _ := http.NewRequest(http.MethodPut, url, body)
-	return client.Do(req)
+	return requester.execRequest(req)
 }
 
 func createProductOptionValueForOption(optionID string, JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
 	url := buildPath("product_options", optionID, "value")
 	req, _ := http.NewRequest(http.MethodPost, url, body)
-	return client.Do(req)
+	return requester.execRequest(req)
 }
 
 func updateProductOptionValueForOption(valueID string, JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
 	url := buildPath("product_option_values", valueID)
 	req, _ := http.NewRequest(http.MethodPut, url, body)
-	return client.Do(req)
+	return requester.execRequest(req)
 }
 
 func getDiscountByID(discountID string) (*http.Response, error) {
 	url := buildPath("discount", discountID)
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
-	return client.Do(req)
+	return requester.execRequest(req)
 }
 
 func getListOfDiscounts(queryFilter map[string]string) (*http.Response, error) {
 	path := buildPath("discounts")
 	url := buildURL(path, queryFilter)
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
-	return client.Do(req)
+	return requester.execRequest(req)
 }
 
 func createDiscount(JSONBody string) (*http.Response, error) {
 	url := buildPath("discount")
 	body := strings.NewReader(JSONBody)
 	req, _ := http.NewRequest(http.MethodPost, url, body)
-	return client.Do(req)
+	return requester.execRequest(req)
 }
 
 func updateDiscount(discountID string, JSONBody string) (*http.Response, error) {
 	url := buildPath("discount", discountID)
 	body := strings.NewReader(JSONBody)
 	req, _ := http.NewRequest(http.MethodPut, url, body)
-	return client.Do(req)
+	return requester.execRequest(req)
 }

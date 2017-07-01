@@ -32,10 +32,6 @@ const (
 	expectedInternalErrorResponse = `{"status":500,"message":"Unexpected internal error occurred"}`
 )
 
-func init() {
-	ensureThatDairycartIsAlive()
-}
-
 func loadExpectedResponse(t *testing.T, folder string, filename string) string {
 	bodyBytes, err := ioutil.ReadFile(fmt.Sprintf("expected_responses/%s/%s.json", folder, filename))
 	assert.Nil(t, err)

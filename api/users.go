@@ -99,21 +99,24 @@ type TokenResponse struct {
 	Token string `json:"token"`
 }
 
-func validateTokenMiddleware(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-	token, err := jwtRequest.ParseFromRequest(r, jwtRequest.AuthorizationHeaderExtractor,
-		func(token *jwt.Token) (interface{}, error) {
-			return verifyKey, nil
-		})
-
-	if err == nil && token.Valid {
-		next(w, r)
-	} else {
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprint(w, "Unauthorized access to this resource")
+func validateTokenMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		token, err := jwtRequest.ParseFromRequest(req, jwtRequest.AuthorizationHeaderExtractor,
+			func(token *jwt.Token) (interface{}, error) {
+				return verifyKey, nil
+			})
+		if err == nil && token.Valid {
+			next(res, req)
+		} else {
+			res.WriteHeader(http.StatusUnauthorized)
+			errRes := &ErrorResponse{
+				Status:  http.StatusUnauthorized,
+				Message: "Unauthorized access to this resource",
+			}
+			json.NewEncoder(res).Encode(errRes)
+		}
 	}
 }
-
-// non-borrowed stuff
 
 func createUserFromInput(in *UserCreationInput) (*User, error) {
 	salt, err := generateSalt()
