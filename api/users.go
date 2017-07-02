@@ -21,7 +21,7 @@ const (
 	hashCost            = bcrypt.DefaultCost + 3
 	dairycartCookieName = "dairycart"
 
-	usersTableHeaders  = `id, first_name, last_name, email, password, salt, is_admin, created_on, updated_on, archived_on`
+	usersTableHeaders  = `id, first_name, last_name, username, email, password, salt, is_admin, password_last_changed_on, created_on, updated_on, archived_on`
 	userExistenceQuery = `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND archived_on IS NULL)`
 	userDeletionQuery  = `UPDATE users SET archived_on = NOW() WHERE email = $1 AND archived_on IS NULL`
 )
@@ -29,12 +29,14 @@ const (
 // User represents a Dairycart user
 type User struct {
 	DBRow
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
-	Salt      []byte `json:"salt"`
-	IsAdmin   bool   `json:"is_admin"`
+	FirstName             string   `json:"first_name"`
+	LastName              string   `json:"last_name"`
+	Username              string   `json:"username"`
+	Email                 string   `json:"email"`
+	Password              string   `json:"password"`
+	Salt                  []byte   `json:"salt"`
+	IsAdmin               bool     `json:"is_admin"`
+	PasswordLastChangedOn NullTime `json:"password_last_changed_on,omitempty"`
 }
 
 // DisplayUser represents a Dairycart user we can return in responses

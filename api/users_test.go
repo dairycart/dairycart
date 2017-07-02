@@ -26,9 +26,9 @@ const (
 
 func init() {
 	dummySalt = []byte("farts")
-	userTableHeaders = []string{"id", "first_name", "last_name", "email", "password", "salt", "is_admin", "created_on", "updated_on", "archived_on"}
+	userTableHeaders = strings.Split(usersTableHeaders, ", ")
 	exampleUserData = []driver.Value{
-		1, "Frank", "Zappa", "frank@zappa.com", hashedExamplePassword, dummySalt, true, generateExampleTimeForTests(), nil, nil,
+		1, "Frank", "Zappa", "frankzappa", "frank@zappa.com", hashedExamplePassword, dummySalt, true, nil, generateExampleTimeForTests(), nil, nil,
 	}
 }
 
@@ -263,6 +263,7 @@ func TestRetrieveUserFromDB(t *testing.T) {
 		},
 		FirstName: "Frank",
 		LastName:  "Zappa",
+		Username:  "frankzappa",
 		Email:     "frank@zappa.com",
 		Password:  hashedExamplePassword,
 		IsAdmin:   true,

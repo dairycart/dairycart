@@ -72,7 +72,8 @@ func init() {
 		exampleDiscount.LoginRequired,
 		exampleDiscount.CreatedOn,
 		nil,
-		nil}
+		nil,
+	}
 
 	discountHeaders = strings.Split(strings.TrimSpace(discountsTableColumns), ",\n\t\t")
 	discountHeadersWithCount = append([]string{"count"}, discountHeaders...)
