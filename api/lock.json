@@ -1,5 +1,5 @@
 {
-    "memo": "3178bc4d60c058aebfa0c12e4b0c8487f480385253332b3cfe9568ea78375a34",
+    "memo": "af4aea76034797ae761bfaeea67a6472173fcbd8081b2961c98cc25f5456932a",
     "projects": [
         {
             "name": "github.com/Masterminds/squirrel",
@@ -15,15 +15,6 @@
             "revision": "a7a0063072ed89d04285d3d3362aa590ed9f7878",
             "packages": [
                 "spew"
-            ]
-        },
-        {
-            "name": "github.com/dgrijalva/jwt-go",
-            "version": "v3.0.0",
-            "revision": "d2709f9f1f31ebcda9651b03077758c1f3a0018c",
-            "packages": [
-                ".",
-                "request"
             ]
         },
         {
@@ -70,7 +61,7 @@
         {
             "name": "github.com/gorilla/securecookie",
             "version": "v1.1",
-            "revision": "667fe4e3466a040b780561fe9b51a83a3753eefc",
+            "revision": "4b217a2671608446fa0de0dae30af8d8e0b24497",
             "packages": [
                 "."
             ]
@@ -172,7 +163,7 @@
         {
             "name": "golang.org/x/crypto",
             "branch": "master",
-            "revision": "adbae1b6b6fb4b02448a0fc0dbbc9ba2b95b294d",
+            "revision": "5ef0053f77724838734b6945dd364d3847e5de1d",
             "packages": [
                 "bcrypt",
                 "blowfish"
@@ -181,7 +172,7 @@
         {
             "name": "golang.org/x/sys",
             "branch": "master",
-            "revision": "c23410a886927bab8ca5e80b08af6a56faeb330d",
+            "revision": "4ed4d404df456f81e878683a0363ed3013a59003",
             "packages": [
                 "unix"
             ]
