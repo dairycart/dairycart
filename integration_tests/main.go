@@ -76,10 +76,10 @@ func createNewUser(JSONBody string) (*http.Response, error) {
 	url := `http://dairycart/user`
 	body := strings.NewReader(JSONBody)
 	req, _ := http.NewRequest(http.MethodPost, url, body)
-	return requester.Do(req)
+	return requester.Client.Do(req)
 }
 
-func authenticateUser(email string, password string) (*http.Response, error) {
+func loginUser(email string, password string) (*http.Response, error) {
 	url := `http://dairycart/login`
 	body := strings.NewReader(fmt.Sprintf(`
 		{
@@ -88,6 +88,12 @@ func authenticateUser(email string, password string) (*http.Response, error) {
 		}
 	`, email, password))
 	req, _ := http.NewRequest(http.MethodPost, url, body)
+	return requester.Client.Do(req)
+}
+
+func logoutUser(email string, password string) (*http.Response, error) {
+	url := `http://dairycart/logout`
+	req, _ := http.NewRequest(http.MethodPost, url, nil)
 	return requester.Do(req)
 }
 

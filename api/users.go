@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/fatih/structs"
+	"github.com/go-chi/chi"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -21,9 +23,10 @@ const (
 	hashCost            = bcrypt.DefaultCost + 3
 	dairycartCookieName = "dairycart"
 
-	usersTableHeaders  = `id, first_name, last_name, username, email, password, salt, is_admin, password_last_changed_on, created_on, updated_on, archived_on`
-	userExistenceQuery = `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND archived_on IS NULL)`
-	userDeletionQuery  = `UPDATE users SET archived_on = NOW() WHERE email = $1 AND archived_on IS NULL`
+	usersTableHeaders      = `id, first_name, last_name, username, email, password, salt, is_admin, password_last_changed_on, created_on, updated_on, archived_on`
+	userExistenceQuery     = `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND archived_on IS NULL)`
+	userExistenceQueryByID = `SELECT EXISTS(SELECT 1 FROM users WHERE id = $1 AND archived_on IS NULL)`
+	userDeletionQuery      = `UPDATE users SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
 )
 
 // User represents a Dairycart user
@@ -273,7 +276,30 @@ func buildUserLogoutHandler(store *sessions.CookieStore) http.HandlerFunc {
 	}
 }
 
-func archiveUser(db *sqlx.DB, email string) error {
-	_, err := db.Exec(userDeletionQuery, email)
+func archiveUser(db *sqlx.DB, id uint64) error {
+	_, err := db.Exec(userDeletionQuery, id)
 	return err
+}
+
+func buildUserDeletionHandler(db *sqlx.DB) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		userID := chi.URLParam(req, "user_id")
+		// we can eat this error because Mux takes care of validating route params for us
+		userIDInt, _ := strconv.ParseInt(userID, 10, 64)
+
+		// can't create a user with an email that already exists!
+		exists, err := rowExistsInDB(db, userExistenceQueryByID, userID)
+		if err != nil || !exists {
+			respondThatRowDoesNotExist(req, res, "user", userID)
+			return
+		}
+
+		err = archiveUser(db, uint64(userIDInt))
+		if err != nil {
+			notifyOfInternalIssue(res, err, "archive user")
+			return
+		}
+
+		res.WriteHeader(http.StatusOK)
+	}
 }
