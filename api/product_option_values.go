@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/fatih/structs"
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
@@ -131,8 +131,7 @@ func updateProductOptionValueInDB(db *sqlx.DB, v *ProductOptionValue) error {
 func buildProductOptionValueUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		// ProductOptionValueUpdateHandler is a request handler that can update product option values
-		reqVars := mux.Vars(req)
-		optionValueID := reqVars["option_value_id"]
+		optionValueID := chi.URLParam(req, "option_value_id")
 		// eating these errors because Mux should validate these for us.
 		optionValueIDInt, _ := strconv.Atoi(optionValueID)
 
@@ -188,7 +187,7 @@ func optionValueAlreadyExistsForOption(db *sqlx.DB, optionID int64, value string
 func buildProductOptionValueCreationHandler(db *sqlx.DB) http.HandlerFunc {
 	// productOptionValueCreationHandler is a product creation handler
 	return func(res http.ResponseWriter, req *http.Request) {
-		optionID := mux.Vars(req)["option_id"]
+		optionID := chi.URLParam(req, "option_id")
 
 		// we can eat this error because Mux takes care of validating route params for us
 		optionIDInt, _ := strconv.ParseInt(optionID, 10, 64)

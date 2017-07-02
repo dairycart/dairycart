@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/fatih/structs"
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
@@ -128,7 +128,7 @@ func getProductOptionsForProduct(db *sqlx.DB, productID uint64, queryFilter *Que
 
 func buildProductOptionListHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		productID := mux.Vars(req)["product_id"]
+		productID := chi.URLParam(req, "product_id")
 		rawFilterParams := req.URL.Query()
 		queryFilter := parseRawFilterParams(rawFilterParams)
 		productIDInt, _ := strconv.Atoi(productID)
@@ -174,9 +174,8 @@ func updateProductOptionInDB(db *sqlx.DB, a *ProductOption) error {
 func buildProductOptionUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		// ProductOptionUpdateHandler is a request handler that can update product options
-		reqVars := mux.Vars(req)
-		optionID := reqVars["option_id"]
-		// eating this error because Mux should validate this for us.
+		optionID := chi.URLParam(req, "option_id")
+		// eating this error because Chi should validate this for us.
 		optionIDInt, _ := strconv.Atoi(optionID)
 
 		// can't update an option that doesn't exist!
@@ -260,10 +259,10 @@ func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in *ProductOptionCrea
 }
 
 func buildProductOptionCreationHandler(db *sqlx.DB) http.HandlerFunc {
+	// ProductOptionCreationHandler is a request handler that can create product options
 	return func(res http.ResponseWriter, req *http.Request) {
-		// ProductOptionCreationHandler is a request handler that can create product options
-		productID := mux.Vars(req)["product_id"]
-		// eating this error because Mux should validate this for us.
+		productID := chi.URLParam(req, "product_id")
+		// eating this error because Chi should validate this for us.
 		i, _ := strconv.Atoi(productID)
 		productIDInt := uint64(i)
 

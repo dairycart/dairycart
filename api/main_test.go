@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
@@ -55,7 +55,7 @@ func init() {
 
 type TestUtil struct {
 	Response *httptest.ResponseRecorder
-	Router   *mux.Router
+	Router   *chi.Mux
 	DB       *sqlx.DB
 	Mock     sqlmock.Sqlmock
 	Store    *sessions.CookieStore
@@ -88,7 +88,7 @@ func setupTestVariables(t *testing.T) *TestUtil {
 	}
 	store := sessions.NewCookieStore([]byte(secret))
 
-	router := mux.NewRouter()
+	router := chi.NewRouter()
 	SetupAPIRoutes(router, db, store)
 
 	return &TestUtil{
@@ -98,22 +98,6 @@ func setupTestVariables(t *testing.T) *TestUtil {
 		Mock:     mock,
 		Store:    store,
 	}
-}
-
-func setupMockRequestsAndMux(db *sqlx.DB) (*httptest.ResponseRecorder, *mux.Router) {
-	m := mux.NewRouter()
-	store := sessions.NewCookieStore([]byte("farts"))
-	SetupAPIRoutes(m, db, store)
-	return httptest.NewRecorder(), m
-}
-
-func setupDBForTest(t *testing.T) (*sqlx.DB, sqlmock.Sqlmock) {
-	mockDB, mock, err := sqlmock.New()
-	db := sqlx.NewDb(mockDB, "postgres")
-	db.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
-	assert.Nil(t, err)
-
-	return db, mock
 }
 
 func formatQueryForSQLMock(query string) string {

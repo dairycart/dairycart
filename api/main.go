@@ -13,7 +13,8 @@ import (
 	"time"
 
 	// dependencies
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi"
+	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
@@ -95,12 +96,12 @@ func main() {
 	}
 	store := sessions.NewCookieStore([]byte(secret))
 
-	APIRouter := mux.NewRouter()
-	SetupAPIRoutes(APIRouter, db, store)
+	v1APIRouter := chi.NewRouter()
+	SetupAPIRoutes(v1APIRouter, db, store)
 
 	// serve 'em up a lil' sauce
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "👍") })
-	http.Handle("/", APIRouter)
+	http.Handle("/", context.ClearHandler(v1APIRouter))
 	log.Println("Dairycart now listening for requests")
 	http.ListenAndServe(":80", nil)
 }

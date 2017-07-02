@@ -2,10 +2,9 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 )
@@ -20,40 +19,40 @@ func buildRoute(routeParts ...string) string {
 }
 
 // SetupAPIRoutes takes a mux router and a database connection and creates all the API routes for the API
-func SetupAPIRoutes(router *mux.Router, db *sqlx.DB, store *sessions.CookieStore) {
+func SetupAPIRoutes(router *chi.Mux, db *sqlx.DB, store *sessions.CookieStore) {
 	// Auth
-	router.HandleFunc("/login", buildUserLoginHandler(db, store)).Methods(http.MethodPost)
-	router.HandleFunc("/user", buildUserCreationHandler(db, store)).Methods(http.MethodPost)
+	router.Post("/login", buildUserLoginHandler(db, store))
+	router.Post("/user", buildUserCreationHandler(db, store))
 
 	// Products
 	productEndpoint := buildRoute("product", fmt.Sprintf("{sku:%s}", ValidURLCharactersPattern))
-	router.HandleFunc("/v1/product", buildProductCreationHandler(db)).Methods(http.MethodPost)
-	router.HandleFunc("/v1/products", buildProductListHandler(db)).Methods(http.MethodGet)
-	router.HandleFunc(productEndpoint, buildSingleProductHandler(db)).Methods(http.MethodGet)
-	router.HandleFunc(productEndpoint, buildProductUpdateHandler(db)).Methods(http.MethodPut)
-	router.HandleFunc(productEndpoint, buildProductExistenceHandler(db)).Methods(http.MethodHead)
-	router.HandleFunc(productEndpoint, buildProductDeletionHandler(db)).Methods(http.MethodDelete)
+	router.Post("/v1/product", buildProductCreationHandler(db))
+	router.Get("/v1/products", buildProductListHandler(db))
+	router.Get(productEndpoint, buildSingleProductHandler(db))
+	router.Put(productEndpoint, buildProductUpdateHandler(db))
+	router.Head(productEndpoint, buildProductExistenceHandler(db))
+	router.Delete(productEndpoint, buildProductDeletionHandler(db))
 
 	// Product Options
 	productOptionEndpoint := buildRoute("product", "{product_id:[0-9]+}", "options")
 	specificOptionEndpoint := buildRoute("product_options", "{option_id:[0-9]+}")
-	router.HandleFunc(productOptionEndpoint, buildProductOptionListHandler(db)).Methods(http.MethodGet)
-	router.HandleFunc(productOptionEndpoint, buildProductOptionCreationHandler(db)).Methods(http.MethodPost)
-	router.HandleFunc(specificOptionEndpoint, buildProductOptionUpdateHandler(db)).Methods(http.MethodPut)
+	router.Get(productOptionEndpoint, buildProductOptionListHandler(db))
+	router.Post(productOptionEndpoint, buildProductOptionCreationHandler(db))
+	router.Put(specificOptionEndpoint, buildProductOptionUpdateHandler(db))
 
 	// Product Option Values
 	optionValueEndpoint := buildRoute("product_options", "{option_id:[0-9]+}", "value")
 	specificOptionValueEndpoint := buildRoute("product_option_values", "{option_value_id:[0-9]+}")
-	router.HandleFunc(optionValueEndpoint, buildProductOptionValueCreationHandler(db)).Methods(http.MethodPost)
-	router.HandleFunc(specificOptionValueEndpoint, buildProductOptionValueUpdateHandler(db)).Methods(http.MethodPut)
+	router.Post(optionValueEndpoint, buildProductOptionValueCreationHandler(db))
+	router.Put(specificOptionValueEndpoint, buildProductOptionValueUpdateHandler(db))
 
 	// Discounts
 	specificDiscountEndpoint := buildRoute("discount", "{discount_id:[0-9]+}")
-	router.HandleFunc(specificDiscountEndpoint, buildDiscountRetrievalHandler(db)).Methods(http.MethodGet)
-	router.HandleFunc(specificDiscountEndpoint, buildDiscountUpdateHandler(db)).Methods(http.MethodPut)
-	router.HandleFunc(specificDiscountEndpoint, buildDiscountDeletionHandler(db)).Methods(http.MethodDelete)
-	router.HandleFunc(buildRoute("discounts"), buildDiscountListRetrievalHandler(db)).Methods(http.MethodGet)
-	router.HandleFunc(buildRoute("discount"), buildDiscountCreationHandler(db)).Methods(http.MethodPost)
+	router.Get(specificDiscountEndpoint, buildDiscountRetrievalHandler(db))
+	router.Put(specificDiscountEndpoint, buildDiscountUpdateHandler(db))
+	router.Delete(specificDiscountEndpoint, buildDiscountDeletionHandler(db))
+	router.Get(buildRoute("discounts"), buildDiscountListRetrievalHandler(db))
+	router.Post(buildRoute("discount"), buildDiscountCreationHandler(db))
 	// specificDiscountCodeEndpoint := buildRoute("discount", fmt.Sprintf("{code:%s}", ValidURLCharactersPattern))
 	// router.HandleFunc(specificDiscountCodeEndpoint, buildDiscountRetrievalHandler(db)).Methods(http.MethodHead)
 }

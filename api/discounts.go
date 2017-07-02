@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/fatih/structs"
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi"
 	"github.com/imdario/mergo"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -109,7 +109,7 @@ func retrieveDiscountFromDB(db *sqlx.DB, discountID string) (Discount, error) {
 func buildDiscountRetrievalHandler(db *sqlx.DB) http.HandlerFunc {
 	// DiscountRetrievalHandler is a request handler that returns a single Discount
 	return func(res http.ResponseWriter, req *http.Request) {
-		discountID := mux.Vars(req)["discount_id"]
+		discountID := chi.URLParam(req, "discount_id")
 
 		discount, err := retrieveDiscountFromDB(db, discountID)
 		if err == sql.ErrNoRows {
@@ -206,7 +206,7 @@ func archiveDiscount(db *sqlx.DB, discountID string) error {
 func buildDiscountDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 	// ProductDeletionHandler is a request handler that deletes a single product
 	return func(res http.ResponseWriter, req *http.Request) {
-		discountID := mux.Vars(req)["discount_id"]
+		discountID := chi.URLParam(req, "discount_id")
 
 		// can't delete a discount that doesn't exist!
 		exists, err := rowExistsInDB(db, discountExistenceQuery, discountID)
@@ -244,9 +244,9 @@ func updateDiscountInDatabase(db *sqlx.DB, up *Discount) error {
 }
 
 func buildDiscountUpdateHandler(db *sqlx.DB) http.HandlerFunc {
+	// DiscountUpdateHandler is a request handler that can update discounts
 	return func(res http.ResponseWriter, req *http.Request) {
-		// DiscountUpdateHandler is a request handler that can update discounts
-		discountID := mux.Vars(req)["discount_id"]
+		discountID := chi.URLParam(req, "discount_id")
 
 		updatedDiscount, err := validateDiscountUpdateInput(req)
 		if err != nil {

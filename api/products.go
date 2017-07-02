@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/fatih/structs"
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi"
 	"github.com/imdario/mergo"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -188,8 +188,7 @@ func validateProductUpdateInput(req *http.Request) (*Product, error) {
 func buildProductExistenceHandler(db *sqlx.DB) http.HandlerFunc {
 	// ProductExistenceHandler handles requests to check if a sku exists
 	return func(res http.ResponseWriter, req *http.Request) {
-		vars := mux.Vars(req)
-		sku := vars["sku"]
+		sku := chi.URLParam(req, "sku")
 
 		productExists, err := rowExistsInDB(db, skuExistenceQuery, sku)
 		if err != nil {
@@ -215,7 +214,7 @@ func retrieveProductFromDB(db *sqlx.DB, sku string) (Product, error) {
 func buildSingleProductHandler(db *sqlx.DB) http.HandlerFunc {
 	// SingleProductHandler is a request handler that returns a single Product
 	return func(res http.ResponseWriter, req *http.Request) {
-		sku := mux.Vars(req)["sku"]
+		sku := chi.URLParam(req, "sku")
 
 		product, err := retrieveProductFromDB(db, sku)
 		if err == sql.ErrNoRows {
@@ -269,7 +268,7 @@ func deleteProductBySKU(db *sqlx.DB, sku string) error {
 func buildProductDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 	// ProductDeletionHandler is a request handler that deletes a single product
 	return func(res http.ResponseWriter, req *http.Request) {
-		sku := mux.Vars(req)["sku"]
+		sku := chi.URLParam(req, "sku")
 
 		// can't delete a product that doesn't exist!
 		exists, err := rowExistsInDB(db, skuExistenceQuery, sku)
@@ -290,9 +289,9 @@ func updateProductInDatabase(db *sqlx.DB, up *Product) error {
 }
 
 func buildProductUpdateHandler(db *sqlx.DB) http.HandlerFunc {
+	// ProductUpdateHandler is a request handler that can update products
 	return func(res http.ResponseWriter, req *http.Request) {
-		// ProductUpdateHandler is a request handler that can update products
-		sku := mux.Vars(req)["sku"]
+		sku := chi.URLParam(req, "sku")
 
 		newerProduct, err := validateProductUpdateInput(req)
 		if err != nil {

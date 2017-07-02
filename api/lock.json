@@ -1,5 +1,5 @@
 {
-    "memo": "af4aea76034797ae761bfaeea67a6472173fcbd8081b2961c98cc25f5456932a",
+    "memo": "12493e7eec270362bfd48fc1dddde488d8cb466b43c7371be906128a2ccece07",
     "projects": [
         {
             "name": "github.com/Masterminds/squirrel",
@@ -26,6 +26,14 @@
             ]
         },
         {
+            "name": "github.com/go-chi/chi",
+            "version": "v3.0.0",
+            "revision": "967844826e58cf31213a7dfb82455d242ad85101",
+            "packages": [
+                "."
+            ]
+        },
+        {
             "name": "github.com/go-playground/locales",
             "version": "v0.11.1",
             "revision": "b860c92274dfb72f517b8b4c11c6d9f2f8cc9d91",
@@ -45,15 +53,7 @@
         {
             "name": "github.com/gorilla/context",
             "version": "v1.1",
-            "revision": "a85d2e53ba63bdea074dbbbb5983f0516974e87b",
-            "packages": [
-                "."
-            ]
-        },
-        {
-            "name": "github.com/gorilla/mux",
-            "version": "v1.4.0",
-            "revision": "bcd8bc72b08df0f70df986b97f95590779502d31",
+            "revision": "1ea25387ff6f684839d82767c1733ff4d4d15d0a",
             "packages": [
                 "."
             ]
@@ -172,7 +172,7 @@
         {
             "name": "golang.org/x/sys",
             "branch": "master",
-            "revision": "4ed4d404df456f81e878683a0363ed3013a59003",
+            "revision": "d18155cb60f6162f5e706d7f26e4e50a3d4da857",
             "packages": [
                 "unix"
             ]
