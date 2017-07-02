@@ -260,6 +260,19 @@ func buildUserLoginHandler(db *sqlx.DB, store *sessions.CookieStore) http.Handle
 	}
 }
 
+func buildUserLogoutHandler(store *sessions.CookieStore) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		session, err := store.Get(req, dairycartCookieName)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "read session data")
+			return
+		}
+		session.Values["authenticated"] = false
+		session.Save(req, res)
+		res.WriteHeader(http.StatusOK)
+	}
+}
+
 func archiveUser(db *sqlx.DB, email string) error {
 	_, err := db.Exec(userDeletionQuery, email)
 	return err

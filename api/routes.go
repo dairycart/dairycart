@@ -22,6 +22,7 @@ func buildRoute(routeParts ...string) string {
 func SetupAPIRoutes(router *chi.Mux, db *sqlx.DB, store *sessions.CookieStore) {
 	// Auth
 	router.Post("/login", buildUserLoginHandler(db, store))
+	router.Post("/logout", buildUserLogoutHandler(store))
 	router.Post("/user", buildUserCreationHandler(db, store))
 
 	// Products

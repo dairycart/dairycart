@@ -547,6 +547,7 @@ func TestUserLoginHandler(t *testing.T) {
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
+	assert.Contains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
 	assert.Equal(t, 200, testUtil.Response.Code, "status code should be 200")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
@@ -559,6 +560,7 @@ func TestUserLoginHandlerWithInvalidLoginInput(t *testing.T) {
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
+	assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler shouldn't attach a cookie when request is invalid")
 	assert.Equal(t, 400, testUtil.Response.Code, "status code should be 400")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
@@ -625,4 +627,16 @@ func TestUserLoginHandlerWithInvalidPassword(t *testing.T) {
 
 	assert.Equal(t, 401, testUtil.Response.Code, "status code should be 401")
 	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestUserLogoutHandler(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	req, err := http.NewRequest("POST", "/logout", nil)
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Contains(t, testUtil.Response.HeaderMap, "Set-Cookie", "logout handler should attach a cookie when request is valid")
+	assert.Equal(t, 200, testUtil.Response.Code, "status code should be 200")
 }

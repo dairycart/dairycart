@@ -103,3 +103,8 @@ User login routes:
 - [] Non-existent user ()
 - [] Invalid input ()
 - [] Bad password ()
+
+User login scenarios:
+
+- [] Create user and log out ()
+- [] Create user, log out, log back in, and log out again ()
