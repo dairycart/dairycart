@@ -2,28 +2,24 @@ package main
 
 import (
 	"crypto/rand"
-	"crypto/rsa"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/fatih/structs"
+	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"gopkg.in/go-playground/validator.v9"
-
-	jwt "github.com/dgrijalva/jwt-go"
-	jwtRequest "github.com/dgrijalva/jwt-go/request"
-	log "github.com/sirupsen/logrus"
 )
 
 const (
-	saltSize = 1 << 5
-	hashCost = bcrypt.DefaultCost + 3
+	saltSize            = 1 << 5
+	hashCost            = bcrypt.DefaultCost + 3
+	dairycartCookieName = "dairycart"
 
 	privKeyPath = "app.rsa"
 	pubKeyPath  = "app.rsa.pub"
@@ -32,32 +28,6 @@ const (
 	userExistenceQuery = `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND archived_on IS NULL)`
 	userDeletionQuery  = `UPDATE users SET archived_on = NOW() WHERE email = $1 AND archived_on IS NULL`
 )
-
-var (
-	verifyKey *rsa.PublicKey
-	signKey   *rsa.PrivateKey
-)
-
-// This is a lame hack function that exists solely for tests because im bad at programming
-func mustLoadKey(err error, l Fataler) {
-	if err != nil {
-		l.Fatal(err)
-	}
-}
-
-func init() {
-	fatalLogger := log.New()
-
-	signBytes, err := ioutil.ReadFile(privKeyPath)
-	mustLoadKey(err, fatalLogger)
-	signKey, err = jwt.ParseRSAPrivateKeyFromPEM(signBytes)
-	mustLoadKey(err, fatalLogger)
-
-	verifyBytes, err := ioutil.ReadFile(pubKeyPath)
-	mustLoadKey(err, fatalLogger)
-	verifyKey, err = jwt.ParseRSAPublicKeyFromPEM(verifyBytes)
-	mustLoadKey(err, fatalLogger)
-}
 
 // User represents a Dairycart user
 type User struct {
@@ -94,29 +64,18 @@ type UserLoginInput struct {
 	Password string `json:"password"`
 }
 
-// TokenResponse represents what we return to the user
-type TokenResponse struct {
-	Token string `json:"token"`
-}
-
-func validateTokenMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	return func(res http.ResponseWriter, req *http.Request) {
-		token, err := jwtRequest.ParseFromRequest(req, jwtRequest.AuthorizationHeaderExtractor,
-			func(token *jwt.Token) (interface{}, error) {
-				return verifyKey, nil
-			})
-		if err == nil && token.Valid {
-			next(res, req)
-		} else {
-			log.Printf("received the following error with a token: %s", err.Error())
-			res.WriteHeader(http.StatusUnauthorized)
-			errRes := &ErrorResponse{
-				Status:  http.StatusUnauthorized,
-				Message: "Unauthorized access to this resource",
-			}
-			json.NewEncoder(res).Encode(errRes)
+func validateSessionCookieMiddleware(res http.ResponseWriter, req *http.Request, store *sessions.CookieStore, next http.HandlerFunc) {
+	session, err := store.Get(req, dairycartCookieName)
+	if auth, ok := session.Values["authenticated"].(bool); !ok || !auth || err != nil {
+		res.WriteHeader(http.StatusUnauthorized)
+		errRes := &ErrorResponse{
+			Status:  http.StatusUnauthorized,
+			Message: "Unauthorized",
 		}
+		json.NewEncoder(res).Encode(errRes)
+		return
 	}
+	next(res, req)
 }
 
 func createUserFromInput(in *UserCreationInput) (*User, error) {
@@ -183,7 +142,7 @@ func createUserInDB(db *sqlx.DB, u *User) (uint64, error) {
 	return newUserID, err
 }
 
-func buildUserCreationHandler(db *sqlx.DB) http.HandlerFunc {
+func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		userInput, err := validateUserCreationInput(req)
 		if err != nil {
@@ -209,6 +168,7 @@ func buildUserCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			notifyOfInternalIssue(res, err, "insert user in database")
 			return
 		}
+
 		responseUser := &DisplayUser{
 			DBRow: DBRow{
 				ID:        createdUserID,
@@ -219,6 +179,14 @@ func buildUserCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			Email:     newUser.Email,
 			IsAdmin:   newUser.IsAdmin,
 		}
+
+		session, err := store.New(req, dairycartCookieName)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "read session data")
+			return
+		}
+		session.Values["authenticated"] = true
+		session.Save(req, res)
 
 		res.WriteHeader(http.StatusCreated)
 		json.NewEncoder(res).Encode(responseUser)
@@ -254,19 +222,7 @@ func validateLoginInput(req *http.Request) (*UserLoginInput, error) {
 	return loginInfo, nil
 }
 
-func buildToken() (TokenResponse, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodRS512, jwt.MapClaims{
-		"iat": time.Now().Unix(),
-		"exp": time.Now().Add(7 * (24 * time.Hour)).Unix(),
-	})
-	tokenString, err := token.SignedString(signKey)
-	tr := TokenResponse{
-		Token: tokenString,
-	}
-	return tr, err
-}
-
-func buildUserLoginHandler(db *sqlx.DB) http.HandlerFunc {
+func buildUserLoginHandler(db *sqlx.DB, store *sessions.CookieStore) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		loginInput, err := validateLoginInput(req)
 		if err != nil {
@@ -286,19 +242,18 @@ func buildUserLoginHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		jsonWebToken, err := buildToken()
-		if err != nil {
-			notifyOfInternalIssue(res, err, "generate token")
-			return
-		}
-
 		statusToWrite := http.StatusUnauthorized
 		if loginValid {
 			statusToWrite = http.StatusOK
+			session, err := store.Get(req, dairycartCookieName)
+			if err != nil {
+				notifyOfInternalIssue(res, err, "read session data")
+				return
+			}
+			session.Values["authenticated"] = true
+			session.Save(req, res)
 		}
-
 		res.WriteHeader(statusToWrite)
-		json.NewEncoder(res).Encode(jsonWebToken)
 	}
 }
 

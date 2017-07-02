@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
 	"github.com/stretchr/testify/assert"
@@ -51,6 +53,14 @@ func init() {
 	exampleNewerTime = exampleTime.Add(30 * (24 * time.Hour))
 }
 
+type TestUtil struct {
+	Response *httptest.ResponseRecorder
+	Router   *mux.Router
+	DB       *sqlx.DB
+	Mock     sqlmock.Sqlmock
+	Store    *sessions.CookieStore
+}
+
 func generateExampleTimeForTests() time.Time {
 	t, err := time.Parse("2006-01-02 03:04:00.000000", "2016-12-31 12:00:00.000000")
 	if err != nil {
@@ -66,9 +76,34 @@ func setExpectationsForRowCount(mock sqlmock.Sqlmock, table string, queryFilter 
 		WillReturnError(err)
 }
 
+func setupTestVariables(t *testing.T) *TestUtil {
+	mockDB, mock, err := sqlmock.New()
+	db := sqlx.NewDb(mockDB, "postgres")
+	db.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
+	assert.Nil(t, err)
+
+	secret := os.Getenv("DAIRYSECRET")
+	if len(secret) < 32 {
+		log.Fatalf("Something is up with your app secret: `%s`", secret)
+	}
+	store := sessions.NewCookieStore([]byte(secret))
+
+	router := mux.NewRouter()
+	SetupAPIRoutes(router, db, store)
+
+	return &TestUtil{
+		Response: httptest.NewRecorder(),
+		Router:   router,
+		DB:       db,
+		Mock:     mock,
+		Store:    store,
+	}
+}
+
 func setupMockRequestsAndMux(db *sqlx.DB) (*httptest.ResponseRecorder, *mux.Router) {
 	m := mux.NewRouter()
-	SetupAPIRoutes(m, db)
+	store := sessions.NewCookieStore([]byte("farts"))
+	SetupAPIRoutes(m, db, store)
 	return httptest.NewRecorder(), m
 }
 

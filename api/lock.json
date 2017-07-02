@@ -1,5 +1,5 @@
 {
-    "memo": "1e66191e8ce856f67f6c8f30ea8db43ec25eb70d324de90071fb1ecb842f11f1",
+    "memo": "3178bc4d60c058aebfa0c12e4b0c8487f480385253332b3cfe9568ea78375a34",
     "projects": [
         {
             "name": "github.com/Masterminds/squirrel",
@@ -63,6 +63,22 @@
             "name": "github.com/gorilla/mux",
             "version": "v1.4.0",
             "revision": "bcd8bc72b08df0f70df986b97f95590779502d31",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/gorilla/securecookie",
+            "version": "v1.1",
+            "revision": "667fe4e3466a040b780561fe9b51a83a3753eefc",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/gorilla/sessions",
+            "version": "v1.1",
+            "revision": "ca9ada44574153444b00d3fd9c8559e4cc95f896",
             "packages": [
                 "."
             ]

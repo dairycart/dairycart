@@ -1,8 +1,6 @@
 package main
 
 import (
-	"crypto/rand"
-	"crypto/rsa"
 	"database/sql/driver"
 	"fmt"
 	"net/http"
@@ -10,12 +8,10 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/dgrijalva/jwt-go"
 	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
@@ -34,20 +30,6 @@ func init() {
 	exampleUserData = []driver.Value{
 		1, "Frank", "Zappa", "frank@zappa.com", hashedExamplePassword, dummySalt, true, generateExampleTimeForTests(), nil, nil,
 	}
-}
-
-type arbitraryFataler struct {
-	FatalCalled bool
-}
-
-func (f *arbitraryFataler) Fatal(...interface{}) {
-	f.FatalCalled = true
-}
-
-func TestMustLoadKey(t *testing.T) {
-	af := &arbitraryFataler{}
-	mustLoadKey(arbitraryError, af)
-	assert.True(t, af.FatalCalled)
 }
 
 func setExpectationsForUserExistence(mock sqlmock.Sqlmock, email string, exists bool, err error) {
@@ -83,52 +65,48 @@ func setExpectationsForUserDeletion(mock sqlmock.Sqlmock, email string, err erro
 		WillReturnError(err)
 }
 
-func TestValidateTokenMiddleware(t *testing.T) {
+func TestValidateSessionCookieMiddleware(t *testing.T) {
+	t.Parallel()
+
 	handlerWasCalled := false
 	exampleHandler := func(w http.ResponseWriter, r *http.Request) {
 		handlerWasCalled = true
 	}
 
-	db, _ := setupDBForTest(t)
-	res, _ := setupMockRequestsAndMux(db)
+	testUtil := setupTestVariables(t)
 
 	req, err := http.NewRequest("GET", "", nil)
 	assert.Nil(t, err)
 
-	token, err := buildToken()
+	session, err := testUtil.Store.Get(req, dairycartCookieName)
 	assert.Nil(t, err)
-	req.Header.Set("Authorization", token.Token)
+	session.Values["authenticated"] = true
+	session.Save(req, testUtil.Response)
 
-	validateTokenMiddleware(res, req, exampleHandler)
+	validateSessionCookieMiddleware(testUtil.Response, req, testUtil.Store, exampleHandler)
 	assert.True(t, handlerWasCalled)
 }
 
-func TestValidateTokenMiddlewareWithInvalidToken(t *testing.T) {
+func TestValidateSessionCookieMiddlewareWithInvalidCookie(t *testing.T) {
+	t.Parallel()
+
 	handlerWasCalled := false
 	exampleHandler := func(w http.ResponseWriter, r *http.Request) {
 		handlerWasCalled = true
 	}
 
-	db, _ := setupDBForTest(t)
-	res, _ := setupMockRequestsAndMux(db)
+	testUtil := setupTestVariables(t)
 
 	req, err := http.NewRequest("GET", "", nil)
 	assert.Nil(t, err)
 
-	k := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"iat": time.Now().Unix(),
-		"exp": time.Now().Add(7 * (24 * time.Hour)).Unix(),
-	})
-	token, err := k.SignedString(signKey)
-
-	req.Header.Set("Authorization", token)
-	validateTokenMiddleware(res, req, exampleHandler)
+	validateSessionCookieMiddleware(testUtil.Response, req, testUtil.Store, exampleHandler)
 	assert.False(t, handlerWasCalled)
-	assert.Equal(t, http.StatusUnauthorized, res.Result().StatusCode, "middleware should respond that the token is not valid")
 }
 
 func TestCreateUserFromInput(t *testing.T) {
 	t.Parallel()
+
 	exampleUserInput := &UserCreationInput{
 		FirstName: "FirstName",
 		LastName:  "LastName",
@@ -173,6 +151,7 @@ func TestSaltAndHashPassword(t *testing.T) {
 
 func TestValidateUserCreationInput(t *testing.T) {
 	t.Parallel()
+
 	exampleInput := strings.NewReader(fmt.Sprintf(`
 		{
 			"first_name": "Frank",
@@ -191,6 +170,7 @@ func TestValidateUserCreationInput(t *testing.T) {
 
 func TestValidateUserCreationInputWithAwfulpassword(t *testing.T) {
 	t.Parallel()
+
 	exampleInput := strings.NewReader(`
 		{
 			"first_name": "Frank",
@@ -208,8 +188,8 @@ func TestValidateUserCreationInputWithAwfulpassword(t *testing.T) {
 
 func TestValidateUserCreationInputWithGarbageInput(t *testing.T) {
 	t.Parallel()
-	exampleInput := strings.NewReader(exampleGarbageInput)
 
+	exampleInput := strings.NewReader(exampleGarbageInput)
 	req := httptest.NewRequest("GET", "http://example.com", exampleInput)
 	_, err := validateUserCreationInput(req)
 
@@ -227,6 +207,8 @@ func TestValidateUserCreationInputWithCompletelyGarbageInput(t *testing.T) {
 
 func TestCreateUserInDB(t *testing.T) {
 	t.Parallel()
+	testUtil := setupTestVariables(t)
+
 	exampleUser := &User{
 		DBRow: DBRow{
 			ID:        1,
@@ -238,17 +220,18 @@ func TestCreateUserInDB(t *testing.T) {
 		Password:  examplePassword,
 	}
 
-	db, mock := setupDBForTest(t)
-	setExpectationsForUserCreation(mock, exampleUser, nil)
-	newID, err := createUserInDB(db, exampleUser)
+	setExpectationsForUserCreation(testUtil.Mock, exampleUser, nil)
+	newID, err := createUserInDB(testUtil.DB, exampleUser)
 
 	assert.Nil(t, err)
 	assert.Equal(t, exampleUser.ID, newID, "createProductInDB should return the created ID")
-	ensureExpectationsWereMet(t, mock)
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestCreateUserInDBWhenErrorOccurs(t *testing.T) {
 	t.Parallel()
+	testUtil := setupTestVariables(t)
+
 	exampleUser := &User{
 		DBRow: DBRow{
 			ID:        1,
@@ -260,17 +243,16 @@ func TestCreateUserInDBWhenErrorOccurs(t *testing.T) {
 		Password:  examplePassword,
 	}
 
-	db, mock := setupDBForTest(t)
-	setExpectationsForUserCreation(mock, exampleUser, arbitraryError)
-	_, err := createUserInDB(db, exampleUser)
+	setExpectationsForUserCreation(testUtil.Mock, exampleUser, arbitraryError)
+	_, err := createUserInDB(testUtil.DB, exampleUser)
 
 	assert.NotNil(t, err)
-	ensureExpectationsWereMet(t, mock)
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestRetrieveUserFromDB(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
+	testUtil := setupTestVariables(t)
 
 	expected := User{
 		DBRow: DBRow{
@@ -286,16 +268,17 @@ func TestRetrieveUserFromDB(t *testing.T) {
 		Salt: dummySalt, //[0:len(dummySalt):len(dummySalt)],
 	}
 
-	setExpectationsForUserRetrieval(mock, expected.Email, nil)
-	actual, err := retrieveUserFromDB(db, expected.Email)
+	setExpectationsForUserRetrieval(testUtil.Mock, expected.Email, nil)
+	actual, err := retrieveUserFromDB(testUtil.DB, expected.Email)
 	assert.Nil(t, err)
 
 	assert.Equal(t, expected, actual, "expected and actual users should match")
-	ensureExpectationsWereMet(t, mock)
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestPasswordIsValid(t *testing.T) {
 	t.Parallel()
+
 	input := &UserLoginInput{
 		Password: examplePassword,
 	}
@@ -313,6 +296,7 @@ func TestPasswordIsValid(t *testing.T) {
 
 func TestPasswordIsValidFailsWhenPasswordsDoNotMatch(t *testing.T) {
 	t.Parallel()
+
 	input := &UserLoginInput{
 		Password: "password",
 	}
@@ -330,6 +314,7 @@ func TestPasswordIsValidFailsWhenPasswordsDoNotMatch(t *testing.T) {
 
 func TestPasswordIsValidWithVeryLongPassword(t *testing.T) {
 	t.Parallel()
+
 	input := &UserLoginInput{
 		Password: examplePassword,
 	}
@@ -347,6 +332,7 @@ func TestPasswordIsValidWithVeryLongPassword(t *testing.T) {
 
 func TestValidateLoginInput(t *testing.T) {
 	t.Parallel()
+
 	exampleInput := strings.NewReader(fmt.Sprintf(`
 		{
 			"first_name": "Frank",
@@ -372,21 +358,16 @@ func TestValidateLoginInputWithCompletelyGarbageInput(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestBuildToken(t *testing.T) {
-	// this test isn't very good, but otherwise I'm not sure I know how to test this.
-	_, err := buildToken()
-	assert.Nil(t, err)
-}
-
 func TestArchiveUser(t *testing.T) {
 	t.Parallel()
-	exampleEmail := "frank@zappa.com"
-	db, mock := setupDBForTest(t)
-	setExpectationsForUserDeletion(mock, exampleEmail, nil)
+	testUtil := setupTestVariables(t)
 
-	err := archiveUser(db, exampleEmail)
+	exampleEmail := "frank@zappa.com"
+	setExpectationsForUserDeletion(testUtil.Mock, exampleEmail, nil)
+
+	err := archiveUser(testUtil.DB, exampleEmail)
 	assert.Nil(t, err)
-	ensureExpectationsWereMet(t, mock)
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 ////////////////////////////////////////////////////////
@@ -397,6 +378,8 @@ func TestArchiveUser(t *testing.T) {
 
 func TestUserCreationHandler(t *testing.T) {
 	t.Parallel()
+	testUtil := setupTestVariables(t)
+
 	exampleInput := fmt.Sprintf(`
 		{
 			"first_name": "Frank",
@@ -417,35 +400,33 @@ func TestUserCreationHandler(t *testing.T) {
 		Password:  examplePassword,
 	}
 
-	db, mock := setupDBForTest(t)
-	res, router := setupMockRequestsAndMux(db)
-
-	setExpectationsForUserExistence(mock, exampleUser.Email, false, nil)
-	setExpectationsForUserCreation(mock, exampleUser, nil)
+	setExpectationsForUserExistence(testUtil.Mock, exampleUser.Email, false, nil)
+	setExpectationsForUserCreation(testUtil.Mock, exampleUser, nil)
 
 	req, err := http.NewRequest("POST", "/user", strings.NewReader(exampleInput))
 	assert.Nil(t, err)
-	router.ServeHTTP(res, req)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 201, res.Code, "status code should be 201")
-	ensureExpectationsWereMet(t, mock)
+	assert.Equal(t, 201, testUtil.Response.Code, "status code should be 201")
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestUserCreationHandlerWithInvalidInput(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	res, router := setupMockRequestsAndMux(db)
+	testUtil := setupTestVariables(t)
 
 	req, err := http.NewRequest("POST", "/user", strings.NewReader(exampleGarbageInput))
 	assert.Nil(t, err)
-	router.ServeHTTP(res, req)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 400, res.Code, "status code should be 400")
-	ensureExpectationsWereMet(t, mock)
+	assert.Equal(t, 400, testUtil.Response.Code, "status code should be 400")
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestUserCreationHandlerForAlreadyExistentUserEmail(t *testing.T) {
 	t.Parallel()
+	testUtil := setupTestVariables(t)
+
 	exampleInput := fmt.Sprintf(`
 		{
 			"first_name": "Frank",
@@ -454,21 +435,56 @@ func TestUserCreationHandlerForAlreadyExistentUserEmail(t *testing.T) {
 			"password": "%s"
 		}
 	`, examplePassword)
-	db, mock := setupDBForTest(t)
-	res, router := setupMockRequestsAndMux(db)
 
-	setExpectationsForUserExistence(mock, "frank@zappa.com", true, nil)
+	setExpectationsForUserExistence(testUtil.Mock, "frank@zappa.com", true, nil)
 
 	req, err := http.NewRequest("POST", "/user", strings.NewReader(exampleInput))
 	assert.Nil(t, err)
-	router.ServeHTTP(res, req)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 400, res.Code, "status code should be 400")
-	ensureExpectationsWereMet(t, mock)
+	assert.Equal(t, 400, testUtil.Response.Code, "status code should be 400")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestUserCreationHandlerWithErrorCreatingUser(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	exampleInput := fmt.Sprintf(`
+		{
+			"first_name": "Frank",
+			"last_name": "Zappa",
+			"email": "frank@zappa.com",
+			"password": "%s"
+		}
+	`, examplePassword)
+
+	exampleUser := &User{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		FirstName: "Frank",
+		LastName:  "Zappa",
+		Email:     "frank@zappa.com",
+		Password:  examplePassword,
+	}
+
+	setExpectationsForUserExistence(testUtil.Mock, exampleUser.Email, false, nil)
+	setExpectationsForUserCreation(testUtil.Mock, exampleUser, nil)
+
+	req, err := http.NewRequest("POST", "/user", strings.NewReader(exampleInput))
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, 201, testUtil.Response.Code, "status code should be 201")
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestUserCreationHandlerWhenErrorEncounteredInsertingIntoDB(t *testing.T) {
 	t.Parallel()
+	testUtil := setupTestVariables(t)
+
 	exampleInput := fmt.Sprintf(`
 		{
 			"first_name": "Frank",
@@ -489,58 +505,20 @@ func TestUserCreationHandlerWhenErrorEncounteredInsertingIntoDB(t *testing.T) {
 		Password:  "password",
 	}
 
-	db, mock := setupDBForTest(t)
-	res, router := setupMockRequestsAndMux(db)
-
-	setExpectationsForUserExistence(mock, exampleUser.Email, false, nil)
-	setExpectationsForUserCreation(mock, exampleUser, arbitraryError)
+	setExpectationsForUserExistence(testUtil.Mock, exampleUser.Email, false, nil)
+	setExpectationsForUserCreation(testUtil.Mock, exampleUser, arbitraryError)
 
 	req, err := http.NewRequest("POST", "/user", strings.NewReader(exampleInput))
 	assert.Nil(t, err)
-	router.ServeHTTP(res, req)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 500, res.Code, "status code should be 500")
-	ensureExpectationsWereMet(t, mock)
+	assert.Equal(t, 500, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestUserLoginHandler(t *testing.T) {
 	t.Parallel()
-	exampleInput := fmt.Sprintf(`
-		{
-			"email": "frank@zappa.com",
-			"password": "%s"
-		}
-	`, examplePassword)
-
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "Frank",
-		LastName:  "Zappa",
-		Email:     "frank@zappa.com",
-		Password:  examplePassword,
-	}
-
-	db, mock := setupDBForTest(t)
-	res, router := setupMockRequestsAndMux(db)
-
-	setExpectationsForUserRetrieval(mock, exampleUser.Email, nil)
-
-	req, err := http.NewRequest("POST", "/login", strings.NewReader(exampleInput))
-	assert.Nil(t, err)
-	router.ServeHTTP(res, req)
-
-	assert.Equal(t, 200, res.Code, "status code should be 200")
-	ensureExpectationsWereMet(t, mock)
-}
-
-func TestUserLoginHandlerWithIssueSigningJWT(t *testing.T) {
-	oldSignKey := signKey
-	var keyErr error
-	signKey, keyErr = rsa.GenerateKey(rand.Reader, 256)
-	assert.Nil(t, keyErr)
+	testUtil := setupTestVariables(t)
 
 	exampleInput := fmt.Sprintf(`
 		{
@@ -560,36 +538,32 @@ func TestUserLoginHandlerWithIssueSigningJWT(t *testing.T) {
 		Password:  examplePassword,
 	}
 
-	db, mock := setupDBForTest(t)
-	res, router := setupMockRequestsAndMux(db)
-
-	setExpectationsForUserRetrieval(mock, exampleUser.Email, nil)
+	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Email, nil)
 
 	req, err := http.NewRequest("POST", "/login", strings.NewReader(exampleInput))
 	assert.Nil(t, err)
-	router.ServeHTTP(res, req)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 500, res.Code, "status code should be 500")
-	ensureExpectationsWereMet(t, mock)
-	signKey = oldSignKey
+	assert.Equal(t, 200, testUtil.Response.Code, "status code should be 200")
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestUserLoginHandlerWithInvalidLoginInput(t *testing.T) {
 	t.Parallel()
-
-	db, mock := setupDBForTest(t)
-	res, router := setupMockRequestsAndMux(db)
+	testUtil := setupTestVariables(t)
 
 	req, err := http.NewRequest("POST", "/login", strings.NewReader(exampleGarbageInput))
 	assert.Nil(t, err)
-	router.ServeHTTP(res, req)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 400, res.Code, "status code should be 400")
-	ensureExpectationsWereMet(t, mock)
+	assert.Equal(t, 400, testUtil.Response.Code, "status code should be 400")
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestUserLoginHandlerWithErrorRetrievingUserFromDatabase(t *testing.T) {
 	t.Parallel()
+	testUtil := setupTestVariables(t)
+
 	exampleInput := fmt.Sprintf(`
 		{
 			"email": "frank@zappa.com",
@@ -608,21 +582,20 @@ func TestUserLoginHandlerWithErrorRetrievingUserFromDatabase(t *testing.T) {
 		Password:  examplePassword,
 	}
 
-	db, mock := setupDBForTest(t)
-	res, router := setupMockRequestsAndMux(db)
-
-	setExpectationsForUserRetrieval(mock, exampleUser.Email, arbitraryError)
+	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Email, arbitraryError)
 
 	req, err := http.NewRequest("POST", "/login", strings.NewReader(exampleInput))
 	assert.Nil(t, err)
-	router.ServeHTTP(res, req)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 500, res.Code, "status code should be 500")
-	ensureExpectationsWereMet(t, mock)
+	assert.Equal(t, 500, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestUserLoginHandlerWithInvalidPassword(t *testing.T) {
 	t.Parallel()
+	testUtil := setupTestVariables(t)
+
 	exampleInput := `
 		{
 			"email": "frank@zappa.com",
@@ -641,15 +614,12 @@ func TestUserLoginHandlerWithInvalidPassword(t *testing.T) {
 		Password:  examplePassword,
 	}
 
-	db, mock := setupDBForTest(t)
-	res, router := setupMockRequestsAndMux(db)
-
-	setExpectationsForUserRetrieval(mock, exampleUser.Email, nil)
+	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Email, nil)
 
 	req, err := http.NewRequest("POST", "/login", strings.NewReader(exampleInput))
 	assert.Nil(t, err)
-	router.ServeHTTP(res, req)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 401, res.Code, "status code should be 401")
-	ensureExpectationsWereMet(t, mock)
+	assert.Equal(t, 401, testUtil.Response.Code, "status code should be 401")
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }

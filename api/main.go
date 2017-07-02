@@ -13,8 +13,8 @@ import (
 	"time"
 
 	// dependencies
-
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
 	"github.com/mattes/migrate"
@@ -89,8 +89,14 @@ func main() {
 	migrationCount := determineMigrationCount()
 	migrateDatabase(db, migrationCount)
 
+	secret := os.Getenv("DAIRYSECRET")
+	if len(secret) < 32 {
+		log.Fatalf("Something is up with your app secret: `%s`", secret)
+	}
+	store := sessions.NewCookieStore([]byte(secret))
+
 	APIRouter := mux.NewRouter()
-	SetupAPIRoutes(APIRouter, db)
+	SetupAPIRoutes(APIRouter, db, store)
 
 	// serve 'em up a lil' sauce
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "👍") })

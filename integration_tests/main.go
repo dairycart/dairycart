@@ -1,7 +1,6 @@
 package dairytest
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -25,44 +24,13 @@ type Requester struct {
 }
 
 func (r *Requester) execRequest(req *http.Request) (*http.Response, error) {
-	req.Header.Set("Authorization", r.AuthToken)
+	// authorization step goes here
 	return r.Do(req)
 }
 
 func init() {
 	ensureThatDairycartIsAlive()
 	requester = &Requester{}
-	newAdminUserBody := fmt.Sprintf(`
-		{
-			"first_name": "Frank",
-			"last_name": "Zappa",
-			"email": "frank@zappa.com",
-			"password": "%s",
-			"is_admin": true
-		}
-	`, password)
-
-	_, err := createNewUser(newAdminUserBody)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	res, err := authenticateUser("frank@zappa.com", password)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	tokenContainer := struct {
-		Token string
-	}{}
-
-	err = json.NewDecoder(res.Body).Decode(&tokenContainer)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	requester.AuthToken = tokenContainer.Token
-	log.Printf("setting requester's AuthToken to `%s`\n", requester.AuthToken)
 }
 
 func buildPath(parts ...string) string {
