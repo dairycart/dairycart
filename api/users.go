@@ -21,10 +21,7 @@ const (
 	hashCost            = bcrypt.DefaultCost + 3
 	dairycartCookieName = "dairycart"
 
-	privKeyPath = "app.rsa"
-	pubKeyPath  = "app.rsa.pub"
-
-	userRetrievalQuery = `SELECT * FROM users WHERE email = $1`
+	usersTableHeaders  = `id, first_name, last_name, email, password, salt, is_admin, created_on, updated_on, archived_on`
 	userExistenceQuery = `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND archived_on IS NULL)`
 	userDeletionQuery  = `UPDATE users SET archived_on = NOW() WHERE email = $1 AND archived_on IS NULL`
 )
@@ -196,7 +193,8 @@ func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 
 func retrieveUserFromDB(db *sqlx.DB, email string) (User, error) {
 	var u User
-	err := db.Get(&u, userRetrievalQuery, email)
+	query, args := buildUserSelectionQuery(email)
+	err := db.Get(&u, query, args...)
 	return u, err
 }
 

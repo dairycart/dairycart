@@ -260,6 +260,15 @@ func TestBuildDiscountUpdateQuery(t *testing.T) {
 	assert.Equal(t, 11, len(actualArgs), argsEqualityErrorMessage)
 }
 
+func TestBuildUserSelectionQuery(t *testing.T) {
+	t.Parallel()
+	email := "frank@zappa.com"
+	expectedQuery := `SELECT id, first_name, last_name, email, password, salt, is_admin, created_on, updated_on, archived_on FROM users WHERE email = $1 AND archived_on IS NULL`
+	actualQuery, actualArgs := buildUserSelectionQuery(email)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 1, len(actualArgs), argsEqualityErrorMessage)
+}
+
 func TestBuildUserCreationQuery(t *testing.T) {
 	t.Parallel()
 	user := &User{

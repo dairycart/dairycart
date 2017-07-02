@@ -6,20 +6,6 @@ import (
 	"github.com/Masterminds/squirrel"
 )
 
-func buildCountQuery(table string, queryFilter *QueryFilter) string {
-	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	queryBuilder := sqlBuilder.
-		Select("count(id)").
-		From(table).
-		Where(squirrel.Eq{"archived_on": nil})
-
-	// setting this to false so we always get a count
-	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter, false)
-
-	query, _, _ := queryBuilder.ToSql()
-	return query
-}
-
 func applyQueryFilterToQueryBuilder(queryBuilder squirrel.SelectBuilder, queryFilter *QueryFilter, includeOffset bool) squirrel.SelectBuilder {
 	if queryFilter.Limit > 0 {
 		queryBuilder = queryBuilder.Limit(uint64(queryFilter.Limit))
@@ -48,6 +34,20 @@ func applyQueryFilterToQueryBuilder(queryBuilder squirrel.SelectBuilder, queryFi
 		queryBuilder = queryBuilder.Where(squirrel.Lt{"updated_on": queryFilter.UpdatedBefore})
 	}
 	return queryBuilder
+}
+
+func buildCountQuery(table string, queryFilter *QueryFilter) string {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		Select("count(id)").
+		From(table).
+		Where(squirrel.Eq{"archived_on": nil})
+
+	// setting this to false so we always get a count
+	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter, false)
+
+	query, _, _ := queryBuilder.ToSql()
+	return query
 }
 
 ////////////////////////////////////////////////////////
@@ -236,7 +236,7 @@ func buildProductOptionValueCreationQuery(v *ProductOptionValue) (string, []inte
 func buildDiscountListQuery(queryFilter *QueryFilter) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
-		Select(discountDBColumns).
+		Select(discountsTableColumns).
 		From("discounts").
 		Where(squirrel.Or{squirrel.Eq{"expires_on": nil}, squirrel.Gt{"expires_on": "NOW()"}}).
 		Where(squirrel.Eq{"archived_on": nil})
@@ -253,7 +253,7 @@ func buildDiscountCreationQuery(d *Discount) (string, []interface{}) {
 		Insert("discounts").
 		Columns("name", "type", "amount", "starts_on", "expires_on", "requires_code", "code", "limited_use", "number_of_uses", "login_required").
 		Values(d.Name, d.Type, d.Amount, d.StartsOn, d.ExpiresOn, d.RequiresCode, d.Code, d.LimitedUse, d.NumberOfUses, d.LoginRequired).
-		Suffix(fmt.Sprintf("RETURNING%s", discountDBColumns))
+		Suffix(fmt.Sprintf("RETURNING%s", discountsTableColumns))
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
@@ -277,7 +277,7 @@ func buildDiscountUpdateQuery(d *Discount) (string, []interface{}) {
 		Update("discounts").
 		SetMap(updateSetMap).
 		Where(squirrel.Eq{"id": d.ID}).
-		Suffix(fmt.Sprintf("RETURNING%s", discountDBColumns))
+		Suffix(fmt.Sprintf("RETURNING%s", discountsTableColumns))
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
@@ -287,6 +287,18 @@ func buildDiscountUpdateQuery(d *Discount) (string, []interface{}) {
 //                       Users                        //
 //                                                    //
 ////////////////////////////////////////////////////////
+
+func buildUserSelectionQuery(email string) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		Select(usersTableHeaders).
+		From("users").
+		Where(squirrel.Eq{"email": email}).
+		Where(squirrel.Eq{"archived_on": nil})
+
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}
 
 func buildUserCreationQuery(u *User) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)

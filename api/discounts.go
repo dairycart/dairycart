@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	discountDBColumns = `
+	discountsTableColumns = `
 		id,
 		name,
 		type,

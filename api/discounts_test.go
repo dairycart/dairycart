@@ -58,7 +58,6 @@ func init() {
 		ExpiresOn: NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
 	}
 
-	discountHeaders = strings.Split(strings.TrimSpace(discountDBColumns), ",\n\t\t")
 	exampleDiscountData = []driver.Value{
 		exampleDiscount.ID,
 		exampleDiscount.Name,
@@ -75,6 +74,7 @@ func init() {
 		nil,
 		nil}
 
+	discountHeaders = strings.Split(strings.TrimSpace(discountsTableColumns), ",\n\t\t")
 	discountHeadersWithCount = append([]string{"count"}, discountHeaders...)
 	exampleDiscountDataWithCount = append([]driver.Value{3}, exampleDiscountData...)
 }

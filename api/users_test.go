@@ -51,9 +51,11 @@ func setExpectationsForUserCreation(mock sqlmock.Sqlmock, u *User, err error) {
 
 func setExpectationsForUserRetrieval(mock sqlmock.Sqlmock, email string, err error) {
 	exampleRows := sqlmock.NewRows(userTableHeaders).AddRow(exampleUserData...)
-	query := formatQueryForSQLMock(userRetrievalQuery)
+	query, rawArgs := buildUserSelectionQuery(email)
+	query = formatQueryForSQLMock(query)
+	args := argsToDriverValues(rawArgs)
 	mock.ExpectQuery(query).
-		WithArgs(email).
+		WithArgs(args...).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
 }
