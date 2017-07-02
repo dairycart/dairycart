@@ -169,6 +169,12 @@ func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 			return
 		}
 
+		session, err := store.New(req, dairycartCookieName)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "read session data")
+			return
+		}
+
 		responseUser := &DisplayUser{
 			DBRow: DBRow{
 				ID:        createdUserID,
@@ -179,13 +185,8 @@ func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 			Email:     newUser.Email,
 			IsAdmin:   newUser.IsAdmin,
 		}
-
-		session, err := store.New(req, dairycartCookieName)
-		if err != nil {
-			notifyOfInternalIssue(res, err, "read session data")
-			return
-		}
 		session.Values["authenticated"] = true
+		session.Values["is_admin"] = newUser.IsAdmin
 		session.Save(req, res)
 
 		res.WriteHeader(http.StatusCreated)
@@ -242,15 +243,17 @@ func buildUserLoginHandler(db *sqlx.DB, store *sessions.CookieStore) http.Handle
 			return
 		}
 
+		session, err := store.Get(req, dairycartCookieName)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "read session data")
+			return
+		}
+
 		statusToWrite := http.StatusUnauthorized
 		if loginValid {
 			statusToWrite = http.StatusOK
-			session, err := store.Get(req, dairycartCookieName)
-			if err != nil {
-				notifyOfInternalIssue(res, err, "read session data")
-				return
-			}
 			session.Values["authenticated"] = true
+			session.Values["is_admin"] = user.IsAdmin
 			session.Save(req, res)
 		}
 		res.WriteHeader(statusToWrite)
