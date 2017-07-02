@@ -167,33 +167,36 @@ func TestValidateProductOptionUpdateInputWithInvalidInput(t *testing.T) {
 
 func TestRetrieveProductOptionFromDB(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	setExpectationsForProductOptionRetrievalQuery(mock, exampleProductOption, nil)
+	testUtil := setupTestVariables(t)
 
-	actual, err := retrieveProductOptionFromDB(db, exampleProductOption.ID)
+	setExpectationsForProductOptionRetrievalQuery(testUtil.Mock, exampleProductOption, nil)
+
+	actual, err := retrieveProductOptionFromDB(testUtil.DB, exampleProductOption.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, exampleProductOption, actual, "expected and actual product options should match")
-	ensureExpectationsWereMet(t, mock)
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestRetrieveProductOptionFromDBWithNoRows(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	setExpectationsForProductOptionRetrievalQuery(mock, exampleProductOption, sql.ErrNoRows)
+	testUtil := setupTestVariables(t)
 
-	_, err := retrieveProductOptionFromDB(db, exampleProductOption.ID)
+	setExpectationsForProductOptionRetrievalQuery(testUtil.Mock, exampleProductOption, sql.ErrNoRows)
+
+	_, err := retrieveProductOptionFromDB(testUtil.DB, exampleProductOption.ID)
 	assert.NotNil(t, err)
-	ensureExpectationsWereMet(t, mock)
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestCreateProductOptionInDB(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	mock.ExpectBegin()
-	setExpectationsForProductOptionCreation(mock, exampleProductOption, exampleProduct.ID, nil)
-	mock.ExpectCommit()
+	testUtil := setupTestVariables(t)
 
-	tx, err := db.Begin()
+	testUtil.Mock.ExpectBegin()
+	setExpectationsForProductOptionCreation(testUtil.Mock, exampleProductOption, exampleProduct.ID, nil)
+	testUtil.Mock.ExpectCommit()
+
+	tx, err := testUtil.DB.Begin()
 	assert.Nil(t, err)
 
 	actual, err := createProductOptionInDB(tx, exampleProductOption, exampleProduct.ID)
@@ -203,20 +206,21 @@ func TestCreateProductOptionInDB(t *testing.T) {
 	err = tx.Commit()
 	assert.Nil(t, err)
 
-	ensureExpectationsWereMet(t, mock)
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestCreateProductOptionAndValuesInDBFromInput(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	mock.ExpectBegin()
-	setExpectationsForProductOptionCreation(mock, expectedCreatedProductOption, exampleProduct.ID, nil)
-	setExpectationsForProductOptionValueCreation(mock, &expectedCreatedProductOption.Values[0], nil)
-	setExpectationsForProductOptionValueCreation(mock, &expectedCreatedProductOption.Values[1], nil)
-	setExpectationsForProductOptionValueCreation(mock, &expectedCreatedProductOption.Values[2], nil)
-	mock.ExpectCommit()
+	testUtil := setupTestVariables(t)
 
-	tx, err := db.Begin()
+	testUtil.Mock.ExpectBegin()
+	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProduct.ID, nil)
+	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[0], nil)
+	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[1], nil)
+	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[2], nil)
+	testUtil.Mock.ExpectCommit()
+
+	tx, err := testUtil.DB.Begin()
 	assert.Nil(t, err)
 
 	actual, err := createProductOptionAndValuesInDBFromInput(tx, exampleProductOptionInput, exampleProduct.ID)
@@ -226,17 +230,18 @@ func TestCreateProductOptionAndValuesInDBFromInput(t *testing.T) {
 	err = tx.Commit()
 	assert.Nil(t, err)
 
-	ensureExpectationsWereMet(t, mock)
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestCreateProductOptionAndValuesInDBFromInputWithIssueCreatingOption(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	mock.ExpectBegin()
-	setExpectationsForProductOptionCreation(mock, expectedCreatedProductOption, exampleProduct.ID, arbitraryError)
-	mock.ExpectCommit()
+	testUtil := setupTestVariables(t)
 
-	tx, err := db.Begin()
+	testUtil.Mock.ExpectBegin()
+	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProduct.ID, arbitraryError)
+	testUtil.Mock.ExpectCommit()
+
+	tx, err := testUtil.DB.Begin()
 	assert.Nil(t, err)
 
 	_, err = createProductOptionAndValuesInDBFromInput(tx, exampleProductOptionInput, expectedCreatedProductOption.ProductID)
@@ -245,18 +250,19 @@ func TestCreateProductOptionAndValuesInDBFromInputWithIssueCreatingOption(t *tes
 	err = tx.Commit()
 	assert.Nil(t, err)
 
-	ensureExpectationsWereMet(t, mock)
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestCreateProductOptionAndValuesInDBFromInputWithIssueCreatingOptionValue(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	mock.ExpectBegin()
-	setExpectationsForProductOptionCreation(mock, expectedCreatedProductOption, exampleProduct.ID, nil)
-	setExpectationsForProductOptionValueCreation(mock, &expectedCreatedProductOption.Values[0], arbitraryError)
-	mock.ExpectCommit()
+	testUtil := setupTestVariables(t)
 
-	tx, err := db.Begin()
+	testUtil.Mock.ExpectBegin()
+	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProduct.ID, nil)
+	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[0], arbitraryError)
+	testUtil.Mock.ExpectCommit()
+
+	tx, err := testUtil.DB.Begin()
 	assert.Nil(t, err)
 
 	_, err = createProductOptionAndValuesInDBFromInput(tx, exampleProductOptionInput, expectedCreatedProductOption.ProductID)
@@ -265,17 +271,18 @@ func TestCreateProductOptionAndValuesInDBFromInputWithIssueCreatingOptionValue(t
 	err = tx.Commit()
 	assert.Nil(t, err)
 
-	ensureExpectationsWereMet(t, mock)
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestUpdateProductOptionInDB(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	setExpectationsForProductOptionUpdate(mock, expectedCreatedProductOption, nil)
+	testUtil := setupTestVariables(t)
 
-	err := updateProductOptionInDB(db, exampleProductOption)
+	setExpectationsForProductOptionUpdate(testUtil.Mock, expectedCreatedProductOption, nil)
+
+	err := updateProductOptionInDB(testUtil.DB, exampleProductOption)
 	assert.Nil(t, err)
-	ensureExpectationsWereMet(t, mock)
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 ////////////////////////////////////////////////////////
@@ -286,19 +293,19 @@ func TestUpdateProductOptionInDB(t *testing.T) {
 
 func TestProductOptionListHandler(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	res, router := setupMockRequestsAndMux(db)
-	setExpectationsForProductOptionListQueryWithCount(mock, exampleProductOption, nil)
-	setExpectationsForProductOptionValueRetrievalByOptionID(mock, exampleProductOption, nil)
-	setExpectationsForProductOptionValueRetrievalByOptionID(mock, exampleProductOption, nil)
-	setExpectationsForProductOptionValueRetrievalByOptionID(mock, exampleProductOption, nil)
+	testUtil := setupTestVariables(t)
+
+	setExpectationsForProductOptionListQueryWithCount(testUtil.Mock, exampleProductOption, nil)
+	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
+	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
+	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
 
 	productOptionEndpoint := buildRoute("product", strconv.Itoa(int(exampleProduct.ID)), "options")
 	req, err := http.NewRequest("GET", productOptionEndpoint, nil)
 	assert.Nil(t, err)
 
-	router.ServeHTTP(res, req)
-	assert.Equal(t, 200, res.Code, "status code should be 200")
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+	assert.Equal(t, 200, testUtil.Response.Code, "status code should be 200")
 
 	expected := &ProductOptionsResponse{
 		ListResponse: ListResponse{
@@ -309,292 +316,292 @@ func TestProductOptionListHandler(t *testing.T) {
 	}
 
 	actual := &ProductOptionsResponse{}
-	bodyString := res.Body.String()
+	bodyString := testUtil.Response.Body.String()
 	err = json.NewDecoder(strings.NewReader(bodyString)).Decode(actual)
 	assert.Nil(t, err)
 
 	assert.Equal(t, expected.Page, actual.Page, "expected and actual product option pages should be equal")
 	assert.Equal(t, expected.Limit, actual.Limit, "expected and actual product option limits should be equal")
 	assert.Equal(t, expected.Count, actual.Count, "expected and actual product option counts should be equal")
-	ensureExpectationsWereMet(t, mock)
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestProductOptionListHandlerWithErrorsRetrievingValues(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	res, router := setupMockRequestsAndMux(db)
-	setExpectationsForProductOptionListQueryWithCount(mock, exampleProductOption, nil)
-	setExpectationsForProductOptionValueRetrievalByOptionID(mock, exampleProductOption, nil)
-	setExpectationsForProductOptionValueRetrievalByOptionID(mock, exampleProductOption, nil)
-	setExpectationsForProductOptionValueRetrievalByOptionID(mock, exampleProductOption, arbitraryError)
+	testUtil := setupTestVariables(t)
+
+	setExpectationsForProductOptionListQueryWithCount(testUtil.Mock, exampleProductOption, nil)
+	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
+	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
+	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, arbitraryError)
 
 	productOptionEndpoint := buildRoute("product", strconv.Itoa(int(exampleProduct.ID)), "options")
 	req, err := http.NewRequest("GET", productOptionEndpoint, nil)
 	assert.Nil(t, err)
 
-	router.ServeHTTP(res, req)
-	assert.Equal(t, 500, res.Code, "status code should be 500")
-	ensureExpectationsWereMet(t, mock)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+	assert.Equal(t, 500, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestProductOptionListHandlerWithDBErrors(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	res, router := setupMockRequestsAndMux(db)
-	setExpectationsForProductOptionListQueryWithCount(mock, exampleProductOption, arbitraryError)
+	testUtil := setupTestVariables(t)
+
+	setExpectationsForProductOptionListQueryWithCount(testUtil.Mock, exampleProductOption, arbitraryError)
 
 	productOptionEndpoint := buildRoute("product", strconv.Itoa(int(exampleProduct.ID)), "options")
 	req, err := http.NewRequest("GET", productOptionEndpoint, nil)
 	assert.Nil(t, err)
 
-	router.ServeHTTP(res, req)
-	assert.Equal(t, 500, res.Code, "status code should be 500")
-	ensureExpectationsWereMet(t, mock)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+	assert.Equal(t, 500, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestProductOptionCreationHandler(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	res, router := setupMockRequestsAndMux(db)
+	testUtil := setupTestVariables(t)
+
 	productIDString := strconv.Itoa(int(exampleProductOption.ProductID))
-	setExpectationsForProductExistenceByID(mock, productIDString, true, nil)
-	setExpectationsForProductOptionExistenceByName(mock, expectedCreatedProductOption, productIDString, false, nil)
-	mock.ExpectBegin()
-	setExpectationsForProductOptionCreation(mock, expectedCreatedProductOption, exampleProduct.ID, nil)
-	setExpectationsForProductOptionValueCreation(mock, &expectedCreatedProductOption.Values[0], nil)
-	setExpectationsForProductOptionValueCreation(mock, &expectedCreatedProductOption.Values[1], nil)
-	setExpectationsForProductOptionValueCreation(mock, &expectedCreatedProductOption.Values[2], nil)
-	mock.ExpectCommit()
+	setExpectationsForProductExistenceByID(testUtil.Mock, productIDString, true, nil)
+	setExpectationsForProductOptionExistenceByName(testUtil.Mock, expectedCreatedProductOption, productIDString, false, nil)
+	testUtil.Mock.ExpectBegin()
+	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProduct.ID, nil)
+	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[0], nil)
+	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[1], nil)
+	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[2], nil)
+	testUtil.Mock.ExpectCommit()
 
 	productOptionEndpoint := buildRoute("product", productIDString, "options")
 	req, err := http.NewRequest("POST", productOptionEndpoint, strings.NewReader(exampleProductOptionCreationBody))
 	assert.Nil(t, err)
-	router.ServeHTTP(res, req)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 201, res.Code, "status code should be 201")
-	ensureExpectationsWereMet(t, mock)
+	assert.Equal(t, 201, testUtil.Response.Code, "status code should be 201")
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestProductOptionCreationHandlerFailureToSetupTransaction(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	res, router := setupMockRequestsAndMux(db)
+	testUtil := setupTestVariables(t)
+
 	productIDString := strconv.Itoa(int(exampleProductOption.ProductID))
-	setExpectationsForProductExistenceByID(mock, productIDString, true, nil)
-	setExpectationsForProductOptionExistenceByName(mock, expectedCreatedProductOption, productIDString, false, nil)
-	mock.ExpectBegin().WillReturnError(arbitraryError)
+	setExpectationsForProductExistenceByID(testUtil.Mock, productIDString, true, nil)
+	setExpectationsForProductOptionExistenceByName(testUtil.Mock, expectedCreatedProductOption, productIDString, false, nil)
+	testUtil.Mock.ExpectBegin().WillReturnError(arbitraryError)
 
 	productOptionEndpoint := buildRoute("product", productIDString, "options")
 	req, err := http.NewRequest("POST", productOptionEndpoint, strings.NewReader(exampleProductOptionCreationBody))
 	assert.Nil(t, err)
-	router.ServeHTTP(res, req)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 500, res.Code, "status code should be 500")
-	ensureExpectationsWereMet(t, mock)
+	assert.Equal(t, 500, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestProductOptionCreationHandlerFailureToCommitTransaction(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	res, router := setupMockRequestsAndMux(db)
+	testUtil := setupTestVariables(t)
+
 	productIDString := strconv.Itoa(int(exampleProductOption.ProductID))
-	setExpectationsForProductExistenceByID(mock, productIDString, true, nil)
-	setExpectationsForProductOptionExistenceByName(mock, expectedCreatedProductOption, productIDString, false, nil)
-	mock.ExpectBegin()
-	setExpectationsForProductOptionCreation(mock, expectedCreatedProductOption, exampleProduct.ID, nil)
-	setExpectationsForProductOptionValueCreation(mock, &expectedCreatedProductOption.Values[0], nil)
-	setExpectationsForProductOptionValueCreation(mock, &expectedCreatedProductOption.Values[1], nil)
-	setExpectationsForProductOptionValueCreation(mock, &expectedCreatedProductOption.Values[2], nil)
-	mock.ExpectCommit().WillReturnError(arbitraryError)
+	setExpectationsForProductExistenceByID(testUtil.Mock, productIDString, true, nil)
+	setExpectationsForProductOptionExistenceByName(testUtil.Mock, expectedCreatedProductOption, productIDString, false, nil)
+	testUtil.Mock.ExpectBegin()
+	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProduct.ID, nil)
+	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[0], nil)
+	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[1], nil)
+	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[2], nil)
+	testUtil.Mock.ExpectCommit().WillReturnError(arbitraryError)
 
 	productOptionEndpoint := buildRoute("product", productIDString, "options")
 	req, err := http.NewRequest("POST", productOptionEndpoint, strings.NewReader(exampleProductOptionCreationBody))
 	assert.Nil(t, err)
-	router.ServeHTTP(res, req)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 500, res.Code, "status code should be 500")
-	ensureExpectationsWereMet(t, mock)
+	assert.Equal(t, 500, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestProductOptionCreationHandlerWhenOptionWithTheSameNameCheckReturnsNoRows(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	res, router := setupMockRequestsAndMux(db)
+	testUtil := setupTestVariables(t)
+
 	productIDString := strconv.Itoa(int(exampleProductOption.ProductID))
-	setExpectationsForProductExistenceByID(mock, productIDString, true, nil)
-	setExpectationsForProductOptionExistenceByName(mock, expectedCreatedProductOption, productIDString, false, sql.ErrNoRows)
-	mock.ExpectBegin()
-	setExpectationsForProductOptionCreation(mock, expectedCreatedProductOption, exampleProduct.ID, nil)
-	setExpectationsForProductOptionValueCreation(mock, &expectedCreatedProductOption.Values[0], nil)
-	setExpectationsForProductOptionValueCreation(mock, &expectedCreatedProductOption.Values[1], nil)
-	setExpectationsForProductOptionValueCreation(mock, &expectedCreatedProductOption.Values[2], nil)
-	mock.ExpectCommit()
+	setExpectationsForProductExistenceByID(testUtil.Mock, productIDString, true, nil)
+	setExpectationsForProductOptionExistenceByName(testUtil.Mock, expectedCreatedProductOption, productIDString, false, sql.ErrNoRows)
+	testUtil.Mock.ExpectBegin()
+	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProduct.ID, nil)
+	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[0], nil)
+	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[1], nil)
+	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[2], nil)
+	testUtil.Mock.ExpectCommit()
 
 	productOptionEndpoint := buildRoute("product", productIDString, "options")
 	req, err := http.NewRequest("POST", productOptionEndpoint, strings.NewReader(exampleProductOptionCreationBody))
 	assert.Nil(t, err)
-	router.ServeHTTP(res, req)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 201, res.Code, "status code should be 201")
-	ensureExpectationsWereMet(t, mock)
+	assert.Equal(t, 201, testUtil.Response.Code, "status code should be 201")
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestProductOptionCreationHandlerWithNonExistentProduct(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	res, router := setupMockRequestsAndMux(db)
+	testUtil := setupTestVariables(t)
+
 	productIDString := strconv.Itoa(int(exampleProductOption.ProductID))
-	setExpectationsForProductExistenceByID(mock, productIDString, false, nil)
+	setExpectationsForProductExistenceByID(testUtil.Mock, productIDString, false, nil)
 
 	productOptionEndpoint := buildRoute("product", productIDString, "options")
 	req, err := http.NewRequest("POST", productOptionEndpoint, strings.NewReader(exampleProductOptionCreationBody))
 	assert.Nil(t, err)
-	router.ServeHTTP(res, req)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 404, res.Code, "status code should be 404")
-	ensureExpectationsWereMet(t, mock)
+	assert.Equal(t, 404, testUtil.Response.Code, "status code should be 404")
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestProductOptionCreationHandlerWithInvalidOptionCreationInput(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	res, router := setupMockRequestsAndMux(db)
+	testUtil := setupTestVariables(t)
+
 	productIDString := strconv.Itoa(int(exampleProductOption.ProductID))
-	setExpectationsForProductExistenceByID(mock, productIDString, true, nil)
+	setExpectationsForProductExistenceByID(testUtil.Mock, productIDString, true, nil)
 
 	productOptionEndpoint := buildRoute("product", productIDString, "options")
 	req, err := http.NewRequest("POST", productOptionEndpoint, strings.NewReader(exampleGarbageInput))
 	assert.Nil(t, err)
-	router.ServeHTTP(res, req)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 400, res.Code, "status code should be 400")
-	ensureExpectationsWereMet(t, mock)
+	assert.Equal(t, 400, testUtil.Response.Code, "status code should be 400")
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestProductOptionCreationHandlerWhenOptionWithTheSameNameExists(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	res, router := setupMockRequestsAndMux(db)
+	testUtil := setupTestVariables(t)
+
 	productIDString := strconv.Itoa(int(exampleProductOption.ProductID))
-	setExpectationsForProductExistenceByID(mock, productIDString, true, nil)
-	setExpectationsForProductOptionExistenceByName(mock, expectedCreatedProductOption, productIDString, true, nil)
+	setExpectationsForProductExistenceByID(testUtil.Mock, productIDString, true, nil)
+	setExpectationsForProductOptionExistenceByName(testUtil.Mock, expectedCreatedProductOption, productIDString, true, nil)
 
 	productOptionEndpoint := buildRoute("product", productIDString, "options")
 	req, err := http.NewRequest("POST", productOptionEndpoint, strings.NewReader(exampleProductOptionCreationBody))
 	assert.Nil(t, err)
-	router.ServeHTTP(res, req)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 400, res.Code, "status code should be 400")
-	ensureExpectationsWereMet(t, mock)
+	assert.Equal(t, 400, testUtil.Response.Code, "status code should be 400")
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestProductOptionCreationHandlerWithProblemsCreatingOption(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	res, router := setupMockRequestsAndMux(db)
-	productIDString := strconv.Itoa(int(exampleProductOption.ProductID))
-	setExpectationsForProductExistenceByID(mock, productIDString, true, nil)
-	setExpectationsForProductOptionExistenceByName(mock, expectedCreatedProductOption, productIDString, false, nil)
+	testUtil := setupTestVariables(t)
 
-	mock.ExpectBegin()
-	setExpectationsForProductOptionCreation(mock, expectedCreatedProductOption, exampleProduct.ID, arbitraryError)
-	mock.ExpectRollback()
+	productIDString := strconv.Itoa(int(exampleProductOption.ProductID))
+	setExpectationsForProductExistenceByID(testUtil.Mock, productIDString, true, nil)
+	setExpectationsForProductOptionExistenceByName(testUtil.Mock, expectedCreatedProductOption, productIDString, false, nil)
+
+	testUtil.Mock.ExpectBegin()
+	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProduct.ID, arbitraryError)
+	testUtil.Mock.ExpectRollback()
 
 	productOptionEndpoint := buildRoute("product", productIDString, "options")
 	req, err := http.NewRequest("POST", productOptionEndpoint, strings.NewReader(exampleProductOptionCreationBody))
 	assert.Nil(t, err)
-	router.ServeHTTP(res, req)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 500, res.Code, "status code should be 500")
-	ensureExpectationsWereMet(t, mock)
+	assert.Equal(t, 500, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestProductOptionUpdateHandler(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	res, router := setupMockRequestsAndMux(db)
+	testUtil := setupTestVariables(t)
+
 	optionIDString := strconv.Itoa(int(exampleProductOption.ID))
 
-	setExpectationsForProductOptionExistenceByID(mock, exampleProductOption, true, nil)
-	setExpectationsForProductOptionRetrievalQuery(mock, exampleProductOption, nil)
-	setExpectationsForProductOptionUpdate(mock, exampleUpdatedProductOption, nil)
+	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
+	setExpectationsForProductOptionRetrievalQuery(testUtil.Mock, exampleProductOption, nil)
+	setExpectationsForProductOptionUpdate(testUtil.Mock, exampleUpdatedProductOption, nil)
 
 	productOptionEndpoint := buildRoute("product_options", optionIDString)
 	req, err := http.NewRequest("PUT", productOptionEndpoint, strings.NewReader(exampleProductOptionUpdateBody))
 	assert.Nil(t, err)
-	router.ServeHTTP(res, req)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 200, res.Code, "status code should be 200")
-	ensureExpectationsWereMet(t, mock)
+	assert.Equal(t, 200, testUtil.Response.Code, "status code should be 200")
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestProductOptionUpdateHandlerWithNonexistentOption(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	res, router := setupMockRequestsAndMux(db)
+	testUtil := setupTestVariables(t)
+
 	optionIDString := strconv.Itoa(int(exampleProductOption.ID))
 
-	setExpectationsForProductOptionExistenceByID(mock, exampleProductOption, false, nil)
+	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, false, nil)
 
 	productOptionEndpoint := buildRoute("product_options", optionIDString)
 	req, err := http.NewRequest("PUT", productOptionEndpoint, strings.NewReader(exampleProductOptionUpdateBody))
 	assert.Nil(t, err)
-	router.ServeHTTP(res, req)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 404, res.Code, "status code should be 404")
-	ensureExpectationsWereMet(t, mock)
+	assert.Equal(t, 404, testUtil.Response.Code, "status code should be 404")
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestProductOptionUpdateHandlerWithInvalidInput(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	res, router := setupMockRequestsAndMux(db)
+	testUtil := setupTestVariables(t)
+
 	optionIDString := strconv.Itoa(int(exampleProductOption.ID))
 
-	setExpectationsForProductOptionExistenceByID(mock, exampleProductOption, true, nil)
+	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
 
 	productOptionEndpoint := buildRoute("product_options", optionIDString)
 	req, err := http.NewRequest("PUT", productOptionEndpoint, strings.NewReader(exampleGarbageInput))
 	assert.Nil(t, err)
-	router.ServeHTTP(res, req)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 400, res.Code, "status code should be 400")
-	ensureExpectationsWereMet(t, mock)
+	assert.Equal(t, 400, testUtil.Response.Code, "status code should be 400")
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestProductOptionUpdateHandlerWithErrorRetrievingOption(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	res, router := setupMockRequestsAndMux(db)
+	testUtil := setupTestVariables(t)
+
 	optionIDString := strconv.Itoa(int(exampleProductOption.ID))
 
-	setExpectationsForProductOptionExistenceByID(mock, exampleProductOption, true, nil)
-	setExpectationsForProductOptionRetrievalQuery(mock, exampleProductOption, arbitraryError)
+	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
+	setExpectationsForProductOptionRetrievalQuery(testUtil.Mock, exampleProductOption, arbitraryError)
 
 	productOptionEndpoint := buildRoute("product_options", optionIDString)
 	req, err := http.NewRequest("PUT", productOptionEndpoint, strings.NewReader(exampleProductOptionUpdateBody))
 	assert.Nil(t, err)
-	router.ServeHTTP(res, req)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 500, res.Code, "status code should be 500")
-	ensureExpectationsWereMet(t, mock)
+	assert.Equal(t, 500, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestProductOptionUpdateHandlerWithErrorUpdatingOption(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	res, router := setupMockRequestsAndMux(db)
+	testUtil := setupTestVariables(t)
+
 	optionIDString := strconv.Itoa(int(exampleProductOption.ID))
 
-	setExpectationsForProductOptionExistenceByID(mock, exampleProductOption, true, nil)
-	setExpectationsForProductOptionRetrievalQuery(mock, exampleProductOption, nil)
-	setExpectationsForProductOptionUpdate(mock, exampleUpdatedProductOption, arbitraryError)
+	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
+	setExpectationsForProductOptionRetrievalQuery(testUtil.Mock, exampleProductOption, nil)
+	setExpectationsForProductOptionUpdate(testUtil.Mock, exampleUpdatedProductOption, arbitraryError)
 
 	productOptionEndpoint := buildRoute("product_options", optionIDString)
 	req, err := http.NewRequest("PUT", productOptionEndpoint, strings.NewReader(exampleProductOptionUpdateBody))
 	assert.Nil(t, err)
-	router.ServeHTTP(res, req)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 500, res.Code, "status code should be 500")
-	ensureExpectationsWereMet(t, mock)
+	assert.Equal(t, 500, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }

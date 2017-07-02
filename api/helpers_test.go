@@ -291,42 +291,36 @@ func TestNotifyOfInternalIssue(t *testing.T) {
 
 func TestRowExistsInDBWhenDBThrowsError(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	setExpectationsForProductExistence(mock, exampleSKU, true, sql.ErrNoRows)
+	testUtil := setupTestVariables(t)
 
-	exists, err := rowExistsInDB(db, skuExistenceQuery, exampleSKU)
+	setExpectationsForProductExistence(testUtil.Mock, exampleSKU, true, sql.ErrNoRows)
+	exists, err := rowExistsInDB(testUtil.DB, skuExistenceQuery, exampleSKU)
 
 	assert.Nil(t, err)
 	assert.False(t, exists)
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expections: %s", err)
-	}
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestRowExistsInDBForExistingRow(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	setExpectationsForProductExistence(mock, exampleSKU, true, nil)
+	testUtil := setupTestVariables(t)
 
-	exists, err := rowExistsInDB(db, skuExistenceQuery, exampleSKU)
+	setExpectationsForProductExistence(testUtil.Mock, exampleSKU, true, nil)
+	exists, err := rowExistsInDB(testUtil.DB, skuExistenceQuery, exampleSKU)
 
 	assert.Nil(t, err)
 	assert.True(t, exists)
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expections: %s", err)
-	}
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestRowExistsInDBForNonexistentRow(t *testing.T) {
 	t.Parallel()
-	db, mock := setupDBForTest(t)
-	setExpectationsForProductExistence(mock, exampleSKU, false, nil)
+	testUtil := setupTestVariables(t)
 
-	exists, err := rowExistsInDB(db, skuExistenceQuery, exampleSKU)
+	setExpectationsForProductExistence(testUtil.Mock, exampleSKU, false, nil)
+	exists, err := rowExistsInDB(testUtil.DB, skuExistenceQuery, exampleSKU)
 
 	assert.Nil(t, err)
 	assert.False(t, exists)
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expections: %s", err)
-	}
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
