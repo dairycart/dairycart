@@ -285,3 +285,13 @@ func TestBuildUserCreationQuery(t *testing.T) {
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 7, len(actualArgs), argsEqualityErrorMessage)
 }
+
+func TestBuildPasswordResetRowCreationQuery(t *testing.T) {
+	t.Parallel()
+	userID := uint64(1)
+	resetToken := "this_is_a_reset_token"
+	expectedQuery := `INSERT INTO password_reset_tokens (user_id,token) VALUES ($1,$2)`
+	actualQuery, actualArgs := buildPasswordResetRowCreationQuery(userID, resetToken)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
+}

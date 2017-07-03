@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/rand"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/dchest/uniuri"
 	"github.com/fatih/structs"
 	"github.com/go-chi/chi"
 	"github.com/gorilla/sessions"
@@ -21,6 +23,7 @@ import (
 const (
 	saltSize            = 1 << 5
 	hashCost            = bcrypt.DefaultCost + 3
+	resetTokenSize      = 1 << 7
 	dairycartCookieName = "dairycart"
 
 	usersTableHeaders      = `id, first_name, last_name, username, email, password, salt, is_admin, password_last_changed_on, created_on, updated_on, archived_on`
@@ -234,16 +237,20 @@ func buildUserLoginHandler(db *sqlx.DB, store *sessions.CookieStore) http.Handle
 			notifyOfInvalidRequestBody(res, err)
 			return
 		}
+		username := loginInput.Username
 
-		user, err := retrieveUserFromDB(db, loginInput.Username)
-		if err != nil {
+		user, err := retrieveUserFromDB(db, username)
+		if err == sql.ErrNoRows {
+			respondThatRowDoesNotExist(req, res, "user", username)
+			return
+		} else if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve user")
 			return
 		}
 
 		loginValid := passwordIsValid(loginInput, user)
 		if !loginValid {
-			notifyOfInvalidAuthenticationAttempt(res, loginInput.Username)
+			notifyOfInvalidAuthenticationAttempt(res, username)
 			return
 		}
 
@@ -298,6 +305,51 @@ func buildUserDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 		err = archiveUser(db, uint64(userIDInt))
 		if err != nil {
 			notifyOfInternalIssue(res, err, "archive user")
+			return
+		}
+
+		res.WriteHeader(http.StatusOK)
+	}
+}
+
+func createPasswordResetEntryInDatabase(db *sqlx.DB, userID uint64, resetToken string) error {
+	/*
+		NOTE: this docstring is mostly for my own future reference
+
+		I will work to implement the creation of these rows and the validation of their contents,
+		but I won't be implementing the actual emailing of users with these reset tokens just yet.
+		Mostly because email is a ~*~spooky business~*~ and I have absolutely no idea how to test
+		that stuff without getting even real complicated. Towards the end of development, when I
+		feel like Dairycart is closer to being ready to release, I will implement this feature and
+		test it manually on occasion. RIP to my sweet test coverage number.
+	*/
+	query, args := buildPasswordResetRowCreationQuery(userID, resetToken)
+	_, err := db.Exec(query, args...)
+	return err
+}
+
+func buildUserForgottenPasswordHandler(db *sqlx.DB) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		loginInput, err := validateLoginInput(req)
+		if err != nil {
+			notifyOfInvalidRequestBody(res, err)
+			return
+		}
+		username := loginInput.Username
+
+		user, err := retrieveUserFromDB(db, username)
+		if err == sql.ErrNoRows {
+			respondThatRowDoesNotExist(req, res, "user", username)
+			return
+		} else if err != nil {
+			notifyOfInternalIssue(res, err, "retrieve user")
+			return
+		}
+
+		resetToken := uniuri.NewLen(resetTokenSize)
+		err = createPasswordResetEntryInDatabase(db, user.ID, resetToken)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "read session data")
 			return
 		}
 

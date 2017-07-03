@@ -1,5 +1,5 @@
 {
-    "memo": "12493e7eec270362bfd48fc1dddde488d8cb466b43c7371be906128a2ccece07",
+    "memo": "49145d037d18d071115ef1c9c3ff5a1674771ba4a9b86c135b88fe8eb5ab128e",
     "projects": [
         {
             "name": "github.com/Masterminds/squirrel",
@@ -15,6 +15,14 @@
             "revision": "a7a0063072ed89d04285d3d3362aa590ed9f7878",
             "packages": [
                 "spew"
+            ]
+        },
+        {
+            "name": "github.com/dchest/uniuri",
+            "branch": "master",
+            "revision": "8902c56451e9b58ff940bbe5fec35d5f9c04584a",
+            "packages": [
+                "."
             ]
         },
         {

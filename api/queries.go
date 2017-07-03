@@ -284,7 +284,7 @@ func buildDiscountUpdateQuery(d *Discount) (string, []interface{}) {
 
 ////////////////////////////////////////////////////////
 //                                                    //
-//                       Users                        //
+//                       Auth                         //
 //                                                    //
 ////////////////////////////////////////////////////////
 
@@ -323,6 +323,22 @@ func buildUserCreationQuery(u *User) (string, []interface{}) {
 			u.IsAdmin,
 		).
 		Suffix(`RETURNING "id"`)
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}
+
+func buildPasswordResetRowCreationQuery(userID uint64, resetToken string) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		Insert("password_reset_tokens").
+		Columns(
+			"user_id",
+			"token",
+		).
+		Values(
+			userID,
+			resetToken,
+		)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }

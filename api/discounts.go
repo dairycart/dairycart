@@ -259,7 +259,7 @@ func buildDiscountUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 			respondThatRowDoesNotExist(req, res, "discount", discountID)
 			return
 		} else if err != nil {
-			notifyOfInternalIssue(res, err, "retrieving discount from database")
+			notifyOfInternalIssue(res, err, "retrieve discount from database")
 			return
 		}
 

@@ -14,3 +14,15 @@ CREATE TABLE IF NOT EXISTS users (
     UNIQUE ("username"),
     PRIMARY KEY ("id")
 );
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    "id" bigserial,
+    "user_id" bigint NOT NULL,
+    "token" text NOT NULL,
+    "created_on" timestamp DEFAULT NOW(),
+    "expires_on" timestamp NOW() + (15 * interval '1 minute'),
+    "password_reset_on" timestamp,
+    UNIQUE ("token"),
+    PRIMARY KEY ("id"),
+    FOREIGN KEY ("user_id") REFERENCES "users"("id")
+);

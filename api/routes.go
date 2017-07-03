@@ -20,10 +20,13 @@ func buildRoute(routeParts ...string) string {
 
 // SetupAPIRoutes takes a mux router and a database connection and creates all the API routes for the API
 func SetupAPIRoutes(router *chi.Mux, db *sqlx.DB, store *sessions.CookieStore) {
-	// Users
+	// Auth
 	router.Post("/login", buildUserLoginHandler(db, store))
 	router.Post("/logout", buildUserLogoutHandler(store))
 	router.Post("/user", buildUserCreationHandler(db, store))
+	router.Post("/password_reset", buildUserForgottenPasswordHandler(db))
+
+	// Users
 	router.Delete(buildRoute("user", "{user_id:[0-9]+}"), buildUserDeletionHandler(db))
 
 	// Products
