@@ -54,15 +54,16 @@ type DisplayUser struct {
 // UserCreationInput represents the payload used to create a Dairycart user
 type UserCreationInput struct {
 	FirstName string `json:"first_name" validate:"required"`
-	LastName  string `json:"last_name" validate:"required"`
-	Email     string `json:"email" validate:"required,email"`
-	Password  string `json:"password" validate:"required,gte=64"`
+	LastName  string `json:"last_name"  validate:"required"`
+	Username  string `json:"username"   validate:"required"`
+	Email     string `json:"email"      validate:"required,email"`
+	Password  string `json:"password"   validate:"required,gte=64"`
 	IsAdmin   bool   `json:"is_admin"`
 }
 
 // UserLoginInput represents the payload used to log in a Dairycart user
 type UserLoginInput struct {
-	Email    string `json:"email"`
+	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
@@ -153,7 +154,7 @@ func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 		}
 
 		// can't create a user with an email that already exists!
-		exists, err := rowExistsInDB(db, userExistenceQuery, userInput.Email)
+		exists, err := rowExistsInDB(db, userExistenceQuery, userInput.Username)
 		if err != nil || exists {
 			notifyOfInvalidRequestBody(res, fmt.Errorf("user with email `%s` already exists", userInput.Email))
 			return
@@ -196,9 +197,9 @@ func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 	}
 }
 
-func retrieveUserFromDB(db *sqlx.DB, email string) (User, error) {
+func retrieveUserFromDB(db *sqlx.DB, username string) (User, error) {
 	var u User
-	query, args := buildUserSelectionQuery(email)
+	query, args := buildUserSelectionQuery(username)
 	err := db.Get(&u, query, args...)
 	return u, err
 }
@@ -234,7 +235,7 @@ func buildUserLoginHandler(db *sqlx.DB, store *sessions.CookieStore) http.Handle
 			return
 		}
 
-		user, err := retrieveUserFromDB(db, loginInput.Email)
+		user, err := retrieveUserFromDB(db, loginInput.Username)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve user")
 			return
@@ -242,7 +243,7 @@ func buildUserLoginHandler(db *sqlx.DB, store *sessions.CookieStore) http.Handle
 
 		loginValid := passwordIsValid(loginInput, user)
 		if !loginValid {
-			notifyOfInvalidAuthenticationAttempt(res, loginInput.Email)
+			notifyOfInvalidAuthenticationAttempt(res, loginInput.Username)
 			return
 		}
 

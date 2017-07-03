@@ -288,12 +288,12 @@ func buildDiscountUpdateQuery(d *Discount) (string, []interface{}) {
 //                                                    //
 ////////////////////////////////////////////////////////
 
-func buildUserSelectionQuery(email string) (string, []interface{}) {
+func buildUserSelectionQuery(username string) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Select(usersTableHeaders).
 		From("users").
-		Where(squirrel.Eq{"email": email}).
+		Where(squirrel.Eq{"username": username}).
 		Where(squirrel.Eq{"archived_on": nil})
 
 	query, args, _ := queryBuilder.ToSql()
@@ -308,6 +308,7 @@ func buildUserCreationQuery(u *User) (string, []interface{}) {
 			"first_name",
 			"last_name",
 			"email",
+			"username",
 			"password",
 			"salt",
 			"is_admin",
@@ -316,6 +317,7 @@ func buildUserCreationQuery(u *User) (string, []interface{}) {
 			u.FirstName,
 			u.LastName,
 			u.Email,
+			u.Username,
 			u.Password,
 			u.Salt,
 			u.IsAdmin,

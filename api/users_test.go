@@ -32,10 +32,10 @@ func init() {
 	}
 }
 
-func setExpectationsForUserExistence(mock sqlmock.Sqlmock, email string, exists bool, err error) {
+func setExpectationsForUserExistence(mock sqlmock.Sqlmock, username string, exists bool, err error) {
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
 	mock.ExpectQuery(formatQueryForSQLMock(userExistenceQuery)).
-		WithArgs(email).
+		WithArgs(username).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
 }
@@ -167,6 +167,7 @@ func TestValidateUserCreationInput(t *testing.T) {
 			"first_name": "Frank",
 			"last_name": "Zappa",
 			"email": "frank@zappa.com",
+			"username": "frankzappa",
 			"password": "%s"
 		}
 	`, examplePassword))
@@ -186,6 +187,7 @@ func TestValidateUserCreationInputWithAwfulpassword(t *testing.T) {
 			"first_name": "Frank",
 			"last_name": "Zappa",
 			"email": "frank@zappa.com",
+			"username": "frankzappa",
 			"password": "password"
 		}
 	`)
@@ -395,6 +397,7 @@ func TestUserCreationHandler(t *testing.T) {
 			"first_name": "Frank",
 			"last_name": "Zappa",
 			"email": "frank@zappa.com",
+			"username": "frankzappa",
 			"password": "%s"
 		}
 	`, examplePassword)
@@ -407,10 +410,11 @@ func TestUserCreationHandler(t *testing.T) {
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
+		Username:  "frankzappa",
 		Password:  examplePassword,
 	}
 
-	setExpectationsForUserExistence(testUtil.Mock, exampleUser.Email, false, nil)
+	setExpectationsForUserExistence(testUtil.Mock, exampleUser.Username, false, nil)
 	setExpectationsForUserCreation(testUtil.Mock, exampleUser, nil)
 
 	req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
@@ -433,7 +437,7 @@ func TestUserCreationHandlerWithInvalidInput(t *testing.T) {
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
-func TestUserCreationHandlerForAlreadyExistentUserEmail(t *testing.T) {
+func TestUserCreationHandlerForAlreadyExistentUsername(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
@@ -442,11 +446,12 @@ func TestUserCreationHandlerForAlreadyExistentUserEmail(t *testing.T) {
 			"first_name": "Frank",
 			"last_name": "Zappa",
 			"email": "frank@zappa.com",
+			"username": "frankzappa",
 			"password": "%s"
 		}
 	`, examplePassword)
 
-	setExpectationsForUserExistence(testUtil.Mock, "frank@zappa.com", true, nil)
+	setExpectationsForUserExistence(testUtil.Mock, "frankzappa", true, nil)
 
 	req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
 	assert.Nil(t, err)
@@ -465,6 +470,7 @@ func TestUserCreationHandlerWithErrorCreatingUser(t *testing.T) {
 			"first_name": "Frank",
 			"last_name": "Zappa",
 			"email": "frank@zappa.com",
+			"username": "frankzappa",
 			"password": "%s"
 		}
 	`, examplePassword)
@@ -477,10 +483,11 @@ func TestUserCreationHandlerWithErrorCreatingUser(t *testing.T) {
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
+		Username:  "frankzappa",
 		Password:  examplePassword,
 	}
 
-	setExpectationsForUserExistence(testUtil.Mock, exampleUser.Email, false, nil)
+	setExpectationsForUserExistence(testUtil.Mock, exampleUser.Username, false, nil)
 	setExpectationsForUserCreation(testUtil.Mock, exampleUser, nil)
 
 	req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
@@ -500,6 +507,7 @@ func TestUserCreationHandlerWhenErrorEncounteredInsertingIntoDB(t *testing.T) {
 			"first_name": "Frank",
 			"last_name": "Zappa",
 			"email": "frank@zappa.com",
+			"username": "frankzappa",
 			"password": "%s"
 		}
 	`, examplePassword)
@@ -512,10 +520,11 @@ func TestUserCreationHandlerWhenErrorEncounteredInsertingIntoDB(t *testing.T) {
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
+		Username:  "frankzappa",
 		Password:  "password",
 	}
 
-	setExpectationsForUserExistence(testUtil.Mock, exampleUser.Email, false, nil)
+	setExpectationsForUserExistence(testUtil.Mock, exampleUser.Username, false, nil)
 	setExpectationsForUserCreation(testUtil.Mock, exampleUser, arbitraryError)
 
 	req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
@@ -532,7 +541,7 @@ func TestUserLoginHandler(t *testing.T) {
 
 	exampleInput := fmt.Sprintf(`
 		{
-			"email": "frank@zappa.com",
+			"username": "frankzappa",
 			"password": "%s"
 		}
 	`, examplePassword)
@@ -545,10 +554,11 @@ func TestUserLoginHandler(t *testing.T) {
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
+		Username: "frankzappa",
 		Password:  examplePassword,
 	}
 
-	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Email, nil)
+	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, nil)
 
 	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
 	assert.Nil(t, err)
@@ -578,7 +588,7 @@ func TestUserLoginHandlerWithErrorRetrievingUserFromDatabase(t *testing.T) {
 
 	exampleInput := fmt.Sprintf(`
 		{
-			"email": "frank@zappa.com",
+			"username": "frankzappa",
 			"password": "%s"
 		}
 	`, examplePassword)
@@ -591,10 +601,11 @@ func TestUserLoginHandlerWithErrorRetrievingUserFromDatabase(t *testing.T) {
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
+		Username:     "frankzappa",
 		Password:  examplePassword,
 	}
 
-	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Email, arbitraryError)
+	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, arbitraryError)
 
 	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
 	assert.Nil(t, err)
@@ -610,7 +621,7 @@ func TestUserLoginHandlerWithInvalidPassword(t *testing.T) {
 
 	exampleInput := `
 		{
-			"email": "frank@zappa.com",
+			"username": "frankzappa",
 			"password": "password"
 		}
 	`
@@ -623,10 +634,11 @@ func TestUserLoginHandlerWithInvalidPassword(t *testing.T) {
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
+		Username:     "frankzappa",
 		Password:  examplePassword,
 	}
 
-	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Email, nil)
+	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, nil)
 
 	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
 	assert.Nil(t, err)
