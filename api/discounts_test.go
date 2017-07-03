@@ -340,11 +340,11 @@ func TestDiscountRetrievalHandlerWithExistingDiscount(t *testing.T) {
 	discountIDString := strconv.Itoa(int(exampleDiscount.ID))
 	setExpectationsForDiscountRetrievalByID(testUtil.Mock, discountIDString, nil)
 
-	req, err := http.NewRequest("GET", "/v1/discount/1", nil)
+	req, err := http.NewRequest(http.MethodGet, "/v1/discount/1", nil)
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, 200, testUtil.Response.Code, "status code should be 200")
+	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -355,11 +355,11 @@ func TestDiscountRetrievalHandlerWithNoRowsFromDB(t *testing.T) {
 	discountIDString := strconv.Itoa(int(exampleDiscount.ID))
 	setExpectationsForDiscountRetrievalByID(testUtil.Mock, discountIDString, sql.ErrNoRows)
 
-	req, err := http.NewRequest("GET", "/v1/discount/1", nil)
+	req, err := http.NewRequest(http.MethodGet, "/v1/discount/1", nil)
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, 404, testUtil.Response.Code, "status code should be 404")
+	assert.Equal(t, http.StatusNotFound, testUtil.Response.Code, "status code should be 404")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -370,11 +370,11 @@ func TestDiscountRetrievalHandlerWithDBError(t *testing.T) {
 	discountIDString := strconv.Itoa(int(exampleDiscount.ID))
 	setExpectationsForDiscountRetrievalByID(testUtil.Mock, discountIDString, arbitraryError)
 
-	req, err := http.NewRequest("GET", "/v1/discount/1", nil)
+	req, err := http.NewRequest(http.MethodGet, "/v1/discount/1", nil)
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, 500, testUtil.Response.Code, "status code should be 500")
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -385,11 +385,11 @@ func TestDiscountListHandler(t *testing.T) {
 	setExpectationsForDiscountCountQuery(testUtil.Mock, defaultQueryFilter, nil)
 	setExpectationsForDiscountListQuery(testUtil.Mock, nil)
 
-	req, err := http.NewRequest("GET", "/v1/discounts", nil)
+	req, err := http.NewRequest(http.MethodGet, "/v1/discounts", nil)
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, 200, testUtil.Response.Code, "status code should be 200")
+	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
 
 	expected := &DiscountsResponse{
 		ListResponse: ListResponse{
@@ -416,11 +416,11 @@ func TestDiscountListHandlerWithDBErrorWithErrorReturnedFromCountQuery(t *testin
 
 	setExpectationsForDiscountCountQuery(testUtil.Mock, defaultQueryFilter, arbitraryError)
 
-	req, err := http.NewRequest("GET", "/v1/discounts", nil)
+	req, err := http.NewRequest(http.MethodGet, "/v1/discounts", nil)
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, 500, testUtil.Response.Code, "status code should be 500")
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -431,11 +431,11 @@ func TestDiscountListHandlerWithDBErrorWithErrorReturnedFromListQuery(t *testing
 	setExpectationsForDiscountCountQuery(testUtil.Mock, defaultQueryFilter, nil)
 	setExpectationsForDiscountListQuery(testUtil.Mock, arbitraryError)
 
-	req, err := http.NewRequest("GET", "/v1/discounts", nil)
+	req, err := http.NewRequest(http.MethodGet, "/v1/discounts", nil)
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, 500, testUtil.Response.Code, "status code should be 500")
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -458,11 +458,11 @@ func TestDiscountCreationHandler(t *testing.T) {
 	}
 
 	setExpectationsForDiscountCreation(testUtil.Mock, exampleCreatedDiscount, nil)
-	req, err := http.NewRequest("POST", "/v1/discount", strings.NewReader(exampleDiscountCreationInput))
+	req, err := http.NewRequest(http.MethodPost, "/v1/discount", strings.NewReader(exampleDiscountCreationInput))
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, 201, testUtil.Response.Code, "status code should be 201")
+	assert.Equal(t, http.StatusCreated, testUtil.Response.Code, "status code should be 201")
 
 	actual := &Discount{}
 	err = json.NewDecoder(strings.NewReader(testUtil.Response.Body.String())).Decode(actual)
@@ -480,11 +480,11 @@ func TestDiscountCreationHandlerWithInvalidInput(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	req, err := http.NewRequest("POST", "/v1/discount", strings.NewReader(exampleGarbageInput))
+	req, err := http.NewRequest(http.MethodPost, "/v1/discount", strings.NewReader(exampleGarbageInput))
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, 400, testUtil.Response.Code, "status code should be 400")
+	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
 }
 
 func TestDiscountCreationHandlerWithDatabaseErrorUponCreation(t *testing.T) {
@@ -492,11 +492,11 @@ func TestDiscountCreationHandlerWithDatabaseErrorUponCreation(t *testing.T) {
 	testUtil := setupTestVariables(t)
 
 	setExpectationsForDiscountCreation(testUtil.Mock, exampleDiscount, arbitraryError)
-	req, err := http.NewRequest("POST", "/v1/discount", strings.NewReader(exampleDiscountCreationInput))
+	req, err := http.NewRequest(http.MethodPost, "/v1/discount", strings.NewReader(exampleDiscountCreationInput))
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, 500, testUtil.Response.Code, "status code should be 500")
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
 	//ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -508,11 +508,11 @@ func TestDiscountDeletionHandler(t *testing.T) {
 	setExpectationsForDiscountExistence(testUtil.Mock, exampleDiscountID, true, nil)
 	setExpectationsForDiscountDeletion(testUtil.Mock, exampleDiscountID)
 
-	req, err := http.NewRequest("DELETE", "/v1/discount/1", nil)
+	req, err := http.NewRequest(http.MethodDelete, "/v1/discount/1", nil)
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, 200, testUtil.Response.Code, "status code should be 200")
+	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -523,11 +523,11 @@ func TestDiscountDeletionHandlerForNonexistentDiscount(t *testing.T) {
 	exampleDiscountID := strconv.Itoa(int(exampleDiscount.ID))
 	setExpectationsForDiscountExistence(testUtil.Mock, exampleDiscountID, false, nil)
 
-	req, err := http.NewRequest("DELETE", "/v1/discount/1", nil)
+	req, err := http.NewRequest(http.MethodDelete, "/v1/discount/1", nil)
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, 404, testUtil.Response.Code, "status code should be 404")
+	assert.Equal(t, http.StatusNotFound, testUtil.Response.Code, "status code should be 404")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -551,11 +551,11 @@ func TestDiscountUpdateHandler(t *testing.T) {
 	setExpectationsForDiscountRetrievalByID(testUtil.Mock, exampleDiscountID, nil)
 	setExpectationsForDiscountUpdate(testUtil.Mock, updateInput, nil)
 
-	req, err := http.NewRequest("PUT", "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
+	req, err := http.NewRequest(http.MethodPut, "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, 200, testUtil.Response.Code, "status code should be 200")
+	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -566,11 +566,11 @@ func TestDiscountUpdateHandlerForNonexistentDiscount(t *testing.T) {
 	exampleDiscountID := strconv.Itoa(int(exampleDiscount.ID))
 	setExpectationsForDiscountRetrievalByID(testUtil.Mock, exampleDiscountID, sql.ErrNoRows)
 
-	req, err := http.NewRequest("PUT", "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
+	req, err := http.NewRequest(http.MethodPut, "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, 404, testUtil.Response.Code, "status code should be 404")
+	assert.Equal(t, http.StatusNotFound, testUtil.Response.Code, "status code should be 404")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -578,11 +578,11 @@ func TestDiscountUpdateHandlerWithErrorValidatingInput(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	req, err := http.NewRequest("PUT", "/v1/discount/1", strings.NewReader(exampleGarbageInput))
+	req, err := http.NewRequest(http.MethodPut, "/v1/discount/1", strings.NewReader(exampleGarbageInput))
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, 400, testUtil.Response.Code, "status code should be 400")
+	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -605,11 +605,11 @@ func TestDiscountUpdateHandlerWithErrorRetrievingDiscount(t *testing.T) {
 	exampleDiscountID := strconv.Itoa(int(updateInput.ID))
 	setExpectationsForDiscountRetrievalByID(testUtil.Mock, exampleDiscountID, arbitraryError)
 
-	req, err := http.NewRequest("PUT", "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
+	req, err := http.NewRequest(http.MethodPut, "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, 500, testUtil.Response.Code, "status code should be 500")
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -633,10 +633,10 @@ func TestDiscountUpdateHandlerWithErrorUpdatingDiscount(t *testing.T) {
 	setExpectationsForDiscountRetrievalByID(testUtil.Mock, exampleDiscountID, nil)
 	setExpectationsForDiscountUpdate(testUtil.Mock, updateInput, arbitraryError)
 
-	req, err := http.NewRequest("PUT", "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
+	req, err := http.NewRequest(http.MethodPut, "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, 500, testUtil.Response.Code, "status code should be 500")
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }

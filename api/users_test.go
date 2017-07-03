@@ -85,7 +85,7 @@ func TestValidateSessionCookieMiddleware(t *testing.T) {
 
 	testUtil := setupTestVariables(t)
 
-	req, err := http.NewRequest("GET", "", nil)
+	req, err := http.NewRequest(http.MethodGet, "", nil)
 	assert.Nil(t, err)
 
 	session, err := testUtil.Store.Get(req, dairycartCookieName)
@@ -107,7 +107,7 @@ func TestValidateSessionCookieMiddlewareWithInvalidCookie(t *testing.T) {
 
 	testUtil := setupTestVariables(t)
 
-	req, err := http.NewRequest("GET", "", nil)
+	req, err := http.NewRequest(http.MethodGet, "", nil)
 	assert.Nil(t, err)
 
 	validateSessionCookieMiddleware(testUtil.Response, req, testUtil.Store, exampleHandler)
@@ -413,11 +413,11 @@ func TestUserCreationHandler(t *testing.T) {
 	setExpectationsForUserExistence(testUtil.Mock, exampleUser.Email, false, nil)
 	setExpectationsForUserCreation(testUtil.Mock, exampleUser, nil)
 
-	req, err := http.NewRequest("POST", "/user", strings.NewReader(exampleInput))
+	req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 201, testUtil.Response.Code, "status code should be 201")
+	assert.Equal(t, http.StatusCreated, testUtil.Response.Code, "status code should be 201")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -425,11 +425,11 @@ func TestUserCreationHandlerWithInvalidInput(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	req, err := http.NewRequest("POST", "/user", strings.NewReader(exampleGarbageInput))
+	req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleGarbageInput))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 400, testUtil.Response.Code, "status code should be 400")
+	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -448,11 +448,11 @@ func TestUserCreationHandlerForAlreadyExistentUserEmail(t *testing.T) {
 
 	setExpectationsForUserExistence(testUtil.Mock, "frank@zappa.com", true, nil)
 
-	req, err := http.NewRequest("POST", "/user", strings.NewReader(exampleInput))
+	req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 400, testUtil.Response.Code, "status code should be 400")
+	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -483,11 +483,11 @@ func TestUserCreationHandlerWithErrorCreatingUser(t *testing.T) {
 	setExpectationsForUserExistence(testUtil.Mock, exampleUser.Email, false, nil)
 	setExpectationsForUserCreation(testUtil.Mock, exampleUser, nil)
 
-	req, err := http.NewRequest("POST", "/user", strings.NewReader(exampleInput))
+	req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 201, testUtil.Response.Code, "status code should be 201")
+	assert.Equal(t, http.StatusCreated, testUtil.Response.Code, "status code should be 201")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -518,11 +518,11 @@ func TestUserCreationHandlerWhenErrorEncounteredInsertingIntoDB(t *testing.T) {
 	setExpectationsForUserExistence(testUtil.Mock, exampleUser.Email, false, nil)
 	setExpectationsForUserCreation(testUtil.Mock, exampleUser, arbitraryError)
 
-	req, err := http.NewRequest("POST", "/user", strings.NewReader(exampleInput))
+	req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 500, testUtil.Response.Code, "status code should be 500")
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -550,12 +550,12 @@ func TestUserLoginHandler(t *testing.T) {
 
 	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Email, nil)
 
-	req, err := http.NewRequest("POST", "/login", strings.NewReader(exampleInput))
+	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 	assert.Contains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
-	assert.Equal(t, 200, testUtil.Response.Code, "status code should be 200")
+	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -563,12 +563,12 @@ func TestUserLoginHandlerWithInvalidLoginInput(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	req, err := http.NewRequest("POST", "/login", strings.NewReader(exampleGarbageInput))
+	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleGarbageInput))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 	assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler shouldn't attach a cookie when request is invalid")
-	assert.Equal(t, 400, testUtil.Response.Code, "status code should be 400")
+	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -596,11 +596,11 @@ func TestUserLoginHandlerWithErrorRetrievingUserFromDatabase(t *testing.T) {
 
 	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Email, arbitraryError)
 
-	req, err := http.NewRequest("POST", "/login", strings.NewReader(exampleInput))
+	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 500, testUtil.Response.Code, "status code should be 500")
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -628,7 +628,7 @@ func TestUserLoginHandlerWithInvalidPassword(t *testing.T) {
 
 	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Email, nil)
 
-	req, err := http.NewRequest("POST", "/login", strings.NewReader(exampleInput))
+	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
@@ -640,12 +640,12 @@ func TestUserLogoutHandler(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	req, err := http.NewRequest("POST", "/logout", nil)
+	req, err := http.NewRequest(http.MethodPost, "/logout", nil)
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 	assert.Contains(t, testUtil.Response.HeaderMap, "Set-Cookie", "logout handler should attach a cookie when request is valid")
-	assert.Equal(t, 200, testUtil.Response.Code, "status code should be 200")
+	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
 }
 
 func TestUserDeletionHandler(t *testing.T) {
@@ -654,14 +654,14 @@ func TestUserDeletionHandler(t *testing.T) {
 
 	exampleID := uint64(1)
 	exampleIDString := strconv.Itoa(int(exampleID))
-	req, err := http.NewRequest("DELETE", buildRoute("user", exampleIDString), nil)
+	req, err := http.NewRequest(http.MethodDelete, buildRoute("user", exampleIDString), nil)
 	assert.Nil(t, err)
 
 	setExpectationsForUserExistenceByID(testUtil.Mock, exampleIDString, true, nil)
 	setExpectationsForUserDeletion(testUtil.Mock, exampleID, nil)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 200, testUtil.Response.Code, "status code should be 200")
+	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -671,13 +671,13 @@ func TestUserDeletionHandlerForNonexistentUser(t *testing.T) {
 
 	exampleID := uint64(1)
 	exampleIDString := strconv.Itoa(int(exampleID))
-	req, err := http.NewRequest("DELETE", buildRoute("user", exampleIDString), nil)
+	req, err := http.NewRequest(http.MethodDelete, buildRoute("user", exampleIDString), nil)
 	assert.Nil(t, err)
 
 	setExpectationsForUserExistenceByID(testUtil.Mock, exampleIDString, false, nil)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 404, testUtil.Response.Code, "status code should be 404")
+	assert.Equal(t, http.StatusNotFound, testUtil.Response.Code, "status code should be 404")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -687,13 +687,13 @@ func TestUserDeletionHandlerWithArbitraryErrorWhenDeletingUser(t *testing.T) {
 
 	exampleID := uint64(1)
 	exampleIDString := strconv.Itoa(int(exampleID))
-	req, err := http.NewRequest("DELETE", buildRoute("user", exampleIDString), nil)
+	req, err := http.NewRequest(http.MethodDelete, buildRoute("user", exampleIDString), nil)
 	assert.Nil(t, err)
 
 	setExpectationsForUserExistenceByID(testUtil.Mock, exampleIDString, true, nil)
 	setExpectationsForUserDeletion(testUtil.Mock, exampleID, arbitraryError)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, 500, testUtil.Response.Code, "status code should be 500")
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }

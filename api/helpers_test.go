@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
@@ -371,7 +372,7 @@ func TestRespondThatRowDoesNotExist(t *testing.T) {
 	expected := "{\"status\":404,\"message\":\"The item you were looking for (identified by `something`) does not exist\"}"
 
 	assert.Equal(t, expected, actual, "response should indicate the row was not found")
-	assert.Equal(t, 404, w.Code, "status code should be 404")
+	assert.Equal(t, http.StatusNotFound, w.Code, "status code should be 404")
 }
 
 func TestNotifyOfInvalidRequestBody(t *testing.T) {
@@ -383,7 +384,7 @@ func TestNotifyOfInvalidRequestBody(t *testing.T) {
 	expected := `{"status":400,"message":"test"}`
 
 	assert.Equal(t, expected, actual, "response should indicate the request body was invalid")
-	assert.Equal(t, 400, w.Code, "status code should be 404")
+	assert.Equal(t, http.StatusBadRequest, w.Code, "status code should be 404")
 }
 
 func TestNotifyOfInternalIssue(t *testing.T) {
@@ -396,7 +397,7 @@ func TestNotifyOfInternalIssue(t *testing.T) {
 	expected := `{"status":500,"message":"Unexpected internal error occurred"}`
 
 	assert.Equal(t, expected, actual, "response should indicate their was an internal error")
-	assert.Equal(t, 500, w.Code, "status code should be 404")
+	assert.Equal(t, http.StatusInternalServerError, w.Code, "status code should be 404")
 }
 
 func TestRowExistsInDBWhenDBThrowsError(t *testing.T) {

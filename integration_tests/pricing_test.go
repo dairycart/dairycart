@@ -1,6 +1,7 @@
 package dairytest
 
 import (
+	"net/http"
 	"regexp"
 	"strings"
 	"testing"
@@ -16,7 +17,7 @@ func replaceTimeStringsForDiscountTests(body string) string {
 func TestDiscountRetrievalForExistingDiscount(t *testing.T) {
 	resp, err := getDiscountByID(existentID)
 	assert.Nil(t, err)
-	assert.Equal(t, 200, resp.StatusCode, "a successfully retrieved discount should respond 200")
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "a successfully retrieved discount should respond 200")
 
 	body := turnResponseBodyIntoString(t, resp)
 	removedTimeFields := replaceTimeStringsForTests(body)
@@ -28,7 +29,7 @@ func TestDiscountRetrievalForExistingDiscount(t *testing.T) {
 func TestDiscountRetrievalForNonexistentDiscount(t *testing.T) {
 	resp, err := getDiscountByID(nonexistentID)
 	assert.Nil(t, err)
-	assert.Equal(t, 404, resp.StatusCode, "a request for a nonexistent discount should respond 404")
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "a request for a nonexistent discount should respond 404")
 
 	body := turnResponseBodyIntoString(t, resp)
 	actual := replaceTimeStringsForTests(body)
@@ -40,7 +41,7 @@ func TestDiscountRetrievalForNonexistentDiscount(t *testing.T) {
 func TestDiscountListRetrievalWithDefaultFilter(t *testing.T) {
 	resp, err := getListOfDiscounts(nil)
 	assert.Nil(t, err)
-	assert.Equal(t, 200, resp.StatusCode, "requesting a list of products should respond 200")
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "requesting a list of products should respond 200")
 
 	respBody := turnResponseBodyIntoString(t, resp)
 	removedTimeFields := replaceTimeStringsForTests(respBody)
@@ -56,7 +57,7 @@ func TestDiscountListRouteWithCustomFilter(t *testing.T) {
 	}
 	resp, err := getListOfDiscounts(customFilter)
 	assert.Nil(t, err)
-	assert.Equal(t, 200, resp.StatusCode, "requesting a list of products should respond 200")
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "requesting a list of products should respond 200")
 
 	respBody := turnResponseBodyIntoString(t, resp)
 	removedTimeFields := replaceTimeStringsForTests(respBody)
@@ -69,7 +70,7 @@ func TestDiscountCreation(t *testing.T) {
 	newDiscountJSON := loadExampleInput(t, "discounts", "new")
 	resp, err := createDiscount(newDiscountJSON)
 	assert.Nil(t, err)
-	assert.Equal(t, 201, resp.StatusCode, "creating a discount that doesn't exist should respond 201")
+	assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a discount that doesn't exist should respond 201")
 
 	respBody := turnResponseBodyIntoString(t, resp)
 	actual := replaceTimeStringsForTests(respBody)
@@ -80,7 +81,7 @@ func TestDiscountCreation(t *testing.T) {
 func TestDiscountCreationWithInvalidInput(t *testing.T) {
 	resp, err := createDiscount(exampleGarbageInput)
 	assert.Nil(t, err)
-	assert.Equal(t, 400, resp.StatusCode, "creating a discount that doesn't exist should respond 400")
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "creating a discount that doesn't exist should respond 400")
 
 	respBody := turnResponseBodyIntoString(t, resp)
 	actual := replaceTimeStringsForTests(respBody)
@@ -92,7 +93,7 @@ func TestDiscountUpdate(t *testing.T) {
 	updatedDiscountJSON := loadExampleInput(t, "discounts", "update")
 	resp, err := updateDiscount(existentID, updatedDiscountJSON)
 	assert.Nil(t, err)
-	assert.Equal(t, 200, resp.StatusCode, "successfully updating a product should respond 200")
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "successfully updating a product should respond 200")
 
 	body := turnResponseBodyIntoString(t, resp)
 	actual := replaceTimeStringsForTests(body)
@@ -104,11 +105,11 @@ func TestDiscountUpdateInvalidDiscount(t *testing.T) {
 	updatedDiscountJSON := loadExampleInput(t, "discounts", "update")
 	resp, err := updateDiscount(nonexistentID, updatedDiscountJSON)
 	assert.Nil(t, err)
-	assert.Equal(t, 404, resp.StatusCode, "successfully updating a product should respond 404")
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "successfully updating a product should respond 404")
 }
 
 func TestDiscountUpdateWithInvalidBody(t *testing.T) {
 	resp, err := updateDiscount(existentID, exampleGarbageInput)
 	assert.Nil(t, err)
-	assert.Equal(t, 400, resp.StatusCode, "successfully updating a product should respond 400")
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "successfully updating a product should respond 400")
 }
