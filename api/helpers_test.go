@@ -317,11 +317,7 @@ func TestParseRawFilterParams(t *testing.T) {
 
 }
 
-// func valueIsValid(input string) bool {
-// 	return dbValueValidator.MatchString(input)
-// }
-
-func TestDataValueIsValid(t *testing.T) {
+func TestRestrictedStringIsValid(t *testing.T) {
 	testCases := []struct {
 		Input        string
 		ShouldPass   bool
@@ -354,11 +350,7 @@ func TestDataValueIsValid(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		if test.ShouldPass {
-			assert.True(t, dataValueIsValid(test.Input), test.ErrorMessage)
-		} else {
-			assert.False(t, dataValueIsValid(test.Input), test.ErrorMessage)
-		}
+		assert.Equal(t, test.ShouldPass, restrictedStringIsValid(test.Input), test.ErrorMessage)
 	}
 }
 

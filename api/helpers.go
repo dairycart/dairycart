@@ -191,12 +191,13 @@ func parseRawFilterParams(rawFilterParams url.Values) *QueryFilter {
 	return qf
 }
 
-func dataValueIsValid(input string) bool {
+func restrictedStringIsValid(input string) bool {
 	// This is a rather simple function, but is sort of strictly meant to
 	// ensure that certain values (like skus, option values, option names)
 	// aren't allowed to have crazy values in the database
 	dataValidator := regexp.MustCompile(dataValidationPattern)
-	return dataValidator.MatchString(input)
+	matches := dataValidator.MatchString(input)
+	return matches
 }
 
 func getRowCount(db *sqlx.DB, table string, queryFilter *QueryFilter) (uint64, error) {

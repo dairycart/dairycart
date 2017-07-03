@@ -5,7 +5,6 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
@@ -141,28 +140,6 @@ func setExpectationsForProductOptionUpdate(mock sqlmock.Sqlmock, a *ProductOptio
 		WithArgs(queryArgs...).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
-}
-
-func TestValidateProductOptionUpdateInput(t *testing.T) {
-	t.Parallel()
-	expected := &ProductOptionUpdateInput{Name: "something else"}
-	exampleInput := strings.NewReader(exampleProductOptionUpdateBody)
-
-	req := httptest.NewRequest("GET", "http://example.com", exampleInput)
-	actual, err := validateProductOptionUpdateInput(req)
-
-	assert.Nil(t, err)
-	assert.Equal(t, expected, actual, "ProductOptionUpdateInput should match expectation")
-}
-
-func TestValidateProductOptionUpdateInputWithInvalidInput(t *testing.T) {
-	t.Parallel()
-	exampleInput := strings.NewReader(exampleGarbageInput)
-
-	req := httptest.NewRequest("GET", "http://example.com", exampleInput)
-	_, err := validateProductOptionUpdateInput(req)
-
-	assert.NotNil(t, err)
 }
 
 func TestRetrieveProductOptionFromDB(t *testing.T) {

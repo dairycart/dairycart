@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/fatih/structs"
 	"github.com/go-chi/chi"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -151,20 +150,6 @@ func buildProductOptionListHandler(db *sqlx.DB) http.HandlerFunc {
 	}
 }
 
-func validateProductOptionUpdateInput(req *http.Request) (*ProductOptionUpdateInput, error) {
-	i := &ProductOptionUpdateInput{}
-	json.NewDecoder(req.Body).Decode(i)
-
-	s := structs.New(i)
-	// go will happily decode an invalid input into a completely zeroed struct,
-	// so we gotta do checks like this because we're bad at programming.
-	if s.IsZero() {
-		return nil, errors.New("Invalid input provided for product option body")
-	}
-
-	return i, nil
-}
-
 func updateProductOptionInDB(db *sqlx.DB, a *ProductOption) error {
 	optionUpdateQuery, queryArgs := buildProductOptionUpdateQuery(a)
 	err := db.QueryRow(optionUpdateQuery, queryArgs...).Scan(a.generateScanArgs()...)
@@ -185,7 +170,8 @@ func buildProductOptionUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		updatedOptionData, err := validateProductOptionUpdateInput(req)
+		updatedOptionData := &ProductOptionUpdateInput{}
+		err = validateRequestInput(req, updatedOptionData)
 		if err != nil {
 			notifyOfInvalidRequestBody(res, err)
 			return
@@ -206,20 +192,6 @@ func buildProductOptionUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 
 		json.NewEncoder(res).Encode(existingOption)
 	}
-}
-
-func validateProductOptionCreationInput(req *http.Request) (*ProductOptionCreationInput, error) {
-	i := &ProductOptionCreationInput{}
-	json.NewDecoder(req.Body).Decode(i)
-
-	s := structs.New(i)
-	// go will happily decode an invalid input into a completely zeroed struct,
-	// so we gotta do checks like this because we're bad at programming.
-	if s.IsZero() {
-		return nil, errors.New("Invalid input provided for product option body")
-	}
-
-	return i, nil
 }
 
 func createProductOptionInDB(tx *sql.Tx, a *ProductOption, productID uint64) (*ProductOption, error) {
@@ -273,7 +245,8 @@ func buildProductOptionCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		newOptionData, err := validateProductOptionCreationInput(req)
+		newOptionData := &ProductOptionCreationInput{}
+		err = validateRequestInput(req, newOptionData)
 		if err != nil {
 			notifyOfInvalidRequestBody(res, err)
 			return

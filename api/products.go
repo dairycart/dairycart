@@ -8,11 +8,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/fatih/structs"
 	"github.com/go-chi/chi"
 	"github.com/imdario/mergo"
 	"github.com/jmoiron/sqlx"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -161,30 +159,6 @@ type ProductCreationInput struct {
 	Options []*ProductOptionCreationInput `json:"options"`
 }
 
-func validateProductUpdateInput(req *http.Request) (*Product, error) {
-	product := &Product{}
-	err := json.NewDecoder(req.Body).Decode(product)
-	if err != nil {
-		return nil, err
-	}
-
-	p := structs.New(product)
-	// go will happily decode an invalid input into a completely zeroed struct,
-	// so we gotta do checks like this because we're bad at programming.
-	if p.IsZero() {
-		return nil, errors.New("Invalid input provided for product body")
-	}
-
-	// we need to be certain that if a user passed us a SKU, that it isn't set
-	// to something that mux won't disallow them from retrieving later
-	s := p.Field("SKU")
-	if !s.IsZero() && !dataValueIsValid(product.SKU) {
-		return nil, errors.New("Invalid input provided for product SKU")
-	}
-
-	return product, err
-}
-
 func buildProductExistenceHandler(db *sqlx.DB) http.HandlerFunc {
 	// ProductExistenceHandler handles requests to check if a sku exists
 	return func(res http.ResponseWriter, req *http.Request) {
@@ -293,9 +267,14 @@ func buildProductUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := chi.URLParam(req, "sku")
 
-		newerProduct, err := validateProductUpdateInput(req)
+		newerProduct := &Product{}
+		err := validateRequestInput(req, newerProduct)
 		if err != nil {
 			notifyOfInvalidRequestBody(res, err)
+			return
+		}
+		if !restrictedStringIsValid(newerProduct.SKU) {
+			notifyOfInvalidRequestBody(res, fmt.Errorf("The sku received (%s) is invalid", newerProduct.SKU))
 			return
 		}
 
@@ -321,31 +300,6 @@ func buildProductUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 	}
 }
 
-func validateProductCreationInput(req *http.Request) (*ProductCreationInput, error) {
-	pci := &ProductCreationInput{}
-	err := json.NewDecoder(req.Body).Decode(pci)
-	defer req.Body.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	p := structs.New(pci)
-	// go will happily decode an invalid input into a completely zeroed struct,
-	// so we gotta do checks like this because we're bad at programming.
-	if p.IsZero() {
-		return nil, errors.New("Invalid input provided for product body")
-	}
-
-	// we need to be certain that if a user passed us a SKU, that it isn't set
-	// to something that mux won't disallow them from retrieving later
-	s := p.Field("SKU")
-	if !s.IsZero() && !dataValueIsValid(pci.SKU) {
-		return nil, errors.New("Invalid input provided for product SKU")
-	}
-
-	return pci, err
-}
-
 // createProductInDB takes a marshaled Product object and creates an entry for it and a base_product in the database
 func createProductInDB(tx *sql.Tx, np *Product) (uint64, error) {
 	var newProductID uint64
@@ -356,9 +310,14 @@ func createProductInDB(tx *sql.Tx, np *Product) (uint64, error) {
 
 func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		productInput, err := validateProductCreationInput(req)
+		productInput := &ProductCreationInput{}
+		err := validateRequestInput(req, productInput)
 		if err != nil {
 			notifyOfInvalidRequestBody(res, err)
+			return
+		}
+		if !restrictedStringIsValid(productInput.SKU) {
+			notifyOfInvalidRequestBody(res, fmt.Errorf("The sku received (%s) is invalid", productInput.SKU))
 			return
 		}
 

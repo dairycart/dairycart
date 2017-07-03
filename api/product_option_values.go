@@ -55,24 +55,6 @@ type ProductOptionValueUpdateInput struct {
 	Value string `json:"value"`
 }
 
-func validateProductOptionValueUpdateInput(req *http.Request) (*ProductOptionValue, error) {
-	i := &ProductOptionValueUpdateInput{}
-	json.NewDecoder(req.Body).Decode(i)
-
-	s := structs.New(i)
-	// go will happily decode an invalid input into a completely zeroed struct,
-	// so we gotta do checks like this because we're bad at programming.
-	if s.IsZero() {
-		return nil, errors.New("Invalid input provided for product option value body")
-	}
-
-	out := &ProductOptionValue{
-		Value: i.Value,
-	}
-
-	return out, nil
-}
-
 // retrieveProductOptionValue retrieves a ProductOptionValue with a given ID from the database
 func retrieveProductOptionValueFromDB(db *sqlx.DB, id int64) (*ProductOptionValue, error) {
 	v := &ProductOptionValue{}
@@ -142,7 +124,8 @@ func buildProductOptionValueUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		updatedValueData, err := validateProductOptionValueUpdateInput(req)
+		updatedValueData := &ProductOptionValue{}
+		err = validateRequestInput(req, updatedValueData)
 		if err != nil {
 			notifyOfInvalidRequestBody(res, err)
 			return

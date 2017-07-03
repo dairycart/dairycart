@@ -8,11 +8,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/fatih/structs"
 	"github.com/go-chi/chi"
 	"github.com/imdario/mergo"
 	"github.com/jmoiron/sqlx"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -155,22 +153,6 @@ func buildDiscountListRetrievalHandler(db *sqlx.DB) http.HandlerFunc {
 	}
 }
 
-func validateDiscountCreationInput(req *http.Request) (*Discount, error) {
-	d := &Discount{}
-	err := json.NewDecoder(req.Body).Decode(d)
-	if err != nil {
-		return nil, err
-	}
-	defer req.Body.Close()
-
-	s := structs.New(d)
-	if s.IsZero() {
-		return nil, errors.New("Invalid input provided for discount body")
-	}
-
-	return d, err
-}
-
 func createDiscountInDB(db *sqlx.DB, in *Discount) (*Discount, error) {
 	discountCreationQuery, queryArgs := buildDiscountCreationQuery(in)
 	scanArgs := in.generateScanArgs()
@@ -181,7 +163,8 @@ func createDiscountInDB(db *sqlx.DB, in *Discount) (*Discount, error) {
 func buildDiscountCreationHandler(db *sqlx.DB) http.HandlerFunc {
 	// DiscountCreationHandler is a request handler that creates a Discount from user input
 	return func(res http.ResponseWriter, req *http.Request) {
-		newDiscount, err := validateDiscountCreationInput(req)
+		newDiscount := &Discount{}
+		err := validateRequestInput(req, newDiscount)
 		if err != nil {
 			notifyOfInvalidRequestBody(res, err)
 			return
@@ -220,22 +203,6 @@ func buildDiscountDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 	}
 }
 
-func validateDiscountUpdateInput(req *http.Request) (*Discount, error) {
-	d := &Discount{}
-
-	err := json.NewDecoder(req.Body).Decode(d)
-	if err != nil {
-		return nil, err
-	}
-
-	p := structs.New(d)
-	if p.IsZero() {
-		return nil, errors.New("Invalid input provided for product body")
-	}
-
-	return d, nil
-}
-
 func updateDiscountInDatabase(db *sqlx.DB, up *Discount) error {
 	discountUpdateQuery, queryArgs := buildDiscountUpdateQuery(up)
 	scanArgs := up.generateScanArgs()
@@ -248,7 +215,8 @@ func buildDiscountUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		discountID := chi.URLParam(req, "discount_id")
 
-		updatedDiscount, err := validateDiscountUpdateInput(req)
+		updatedDiscount := &Discount{}
+		err := validateRequestInput(req, updatedDiscount)
 		if err != nil {
 			notifyOfInvalidRequestBody(res, err)
 			return

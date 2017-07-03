@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
@@ -194,54 +193,6 @@ func setExpectationsForProductDeletion(mock sqlmock.Sqlmock, sku string) {
 		WillReturnResult(sqlmock.NewResult(1, 1))
 }
 
-func TestValidateProductUpdateInputWithValidInput(t *testing.T) {
-	t.Parallel()
-	expected := &Product{
-		SKU:      exampleSKU,
-		Name:     "Test",
-		UPC:      NullString{sql.NullString{String: "1234567890", Valid: true}},
-		Quantity: 666,
-		Price:    12.34,
-		Cost:     0,
-	}
-
-	req := httptest.NewRequest("GET", "http://example.com", strings.NewReader(exampleProductUpdateInput))
-	actual, err := validateProductUpdateInput(req)
-
-	assert.Nil(t, err)
-	assert.Equal(t, expected, actual, "valid product input should parse into a proper product struct")
-}
-
-func TestValidateProductUpdateInputWithInvalidInput(t *testing.T) {
-	t.Parallel()
-	exampleInput := strings.NewReader(`{"testing": true}`)
-
-	req := httptest.NewRequest("GET", "http://example.com", exampleInput)
-	_, err := validateProductUpdateInput(req)
-
-	assert.NotNil(t, err)
-}
-
-func TestValidateProductUpdateInputWithCompletelyInvalidInput(t *testing.T) {
-	t.Parallel()
-	exampleInput := strings.NewReader(`{"testing":}`)
-
-	req := httptest.NewRequest("GET", "http://example.com", exampleInput)
-	_, err := validateProductUpdateInput(req)
-
-	assert.NotNil(t, err)
-}
-
-func TestValidateProductUpdateInputWithInvalidSKU(t *testing.T) {
-	t.Parallel()
-	exampleInput := strings.NewReader(badSKUUpdateJSON)
-
-	req := httptest.NewRequest("GET", "http://example.com", exampleInput)
-	_, err := validateProductUpdateInput(req)
-
-	assert.NotNil(t, err)
-}
-
 func TestRetrieveProductFromDB(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
@@ -305,78 +256,6 @@ func TestCreateProductInDB(t *testing.T) {
 	err = tx.Commit()
 	assert.Nil(t, err)
 	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-func TestValidateProductCreationInput(t *testing.T) {
-	t.Parallel()
-	exampleProductCreationInput := `
-		{
-			"sku": "skateboard",
-			"name": "Skateboard",
-			"upc": "1234567890",
-			"quantity": 123,
-			"price": 12.34,
-			"cost": 5,
-			"description": "This is a skateboard. Please wear a helmet.",
-			"taxable": true,
-			"product_weight": 8,
-			"product_height": 7,
-			"product_width": 6,
-			"product_length": 5,
-			"package_weight": 4,
-			"package_height": 3,
-			"package_width": 2,
-			"package_length": 1
-		}
-	`
-	expected := &ProductCreationInput{
-		Description:   "This is a skateboard. Please wear a helmet.",
-		Taxable:       true,
-		ProductWeight: 8,
-		ProductHeight: 7,
-		ProductWidth:  6,
-		ProductLength: 5,
-		PackageWeight: 4,
-		PackageHeight: 3,
-		PackageWidth:  2,
-		PackageLength: 1,
-		SKU:           "skateboard",
-		Name:          "Skateboard",
-		UPC:           "1234567890",
-		Quantity:      123,
-		Price:         12.34,
-		Cost:          5,
-	}
-
-	req := httptest.NewRequest("GET", "http://example.com", strings.NewReader(exampleProductCreationInput))
-	actual, err := validateProductCreationInput(req)
-
-	assert.Nil(t, err)
-	assert.Equal(t, expected, actual, "valid product input should parse into a proper product struct")
-}
-
-func TestValidateProductCreationInputWithEmptyInput(t *testing.T) {
-	t.Parallel()
-	req := httptest.NewRequest("GET", "http://example.com", nil)
-	_, err := validateProductCreationInput(req)
-
-	assert.NotNil(t, err)
-}
-
-func TestValidateProductCreationInputWithInvalidInput(t *testing.T) {
-	t.Parallel()
-	req := httptest.NewRequest("GET", "http://example.com", strings.NewReader(exampleGarbageInput))
-	_, err := validateProductCreationInput(req)
-
-	assert.NotNil(t, err)
-}
-
-func TestValidateProductCreationInputWithInvalidSKU(t *testing.T) {
-	t.Parallel()
-	req := httptest.NewRequest("GET", "http://example.com", strings.NewReader(badSKUUpdateJSON))
-	_, err := validateProductCreationInput(req)
-
-	assert.NotNil(t, err)
 }
 
 ////////////////////////////////////////////////////////
@@ -564,6 +443,18 @@ func TestProductUpdateHandlerWithInputValidationError(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
+	req, err := http.NewRequest(http.MethodPut, "/v1/product/example", strings.NewReader(exampleGarbageInput))
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestProductUpdateHandlerWithSKUValidationError(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
 	req, err := http.NewRequest(http.MethodPut, "/v1/product/example", strings.NewReader(badSKUUpdateJSON))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -699,6 +590,18 @@ func TestProductCreationHandler(t *testing.T) {
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 	assert.Equal(t, http.StatusCreated, testUtil.Response.Code, "status code should be 201")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestProductCreationHandlerWithErrorvalidatingInput(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleGarbageInput))
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 

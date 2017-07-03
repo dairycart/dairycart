@@ -5,7 +5,6 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
@@ -220,43 +219,6 @@ func TestRetrieveDiscountFromDBWhenDBReturnsError(t *testing.T) {
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
-func TestValidateDiscountCreationInput(t *testing.T) {
-	t.Parallel()
-	dummyTime, _ := time.Parse("2006-01-02T15:04:05-07:00", exampleDiscountStartTime)
-	expected := &Discount{
-		Name:         "Test",
-		Type:         "flat_amount",
-		Amount:       12.34,
-		StartsOn:     dummyTime,
-		RequiresCode: true,
-		Code:         "TEST",
-	}
-
-	req := httptest.NewRequest("GET", "http://example.com", strings.NewReader(exampleDiscountCreationInput))
-	actual, err := validateDiscountCreationInput(req)
-
-	assert.Nil(t, err)
-	assert.Equal(t, expected, actual, "valid discount creation input should parse into a proper discount creation struct")
-}
-
-func TestValidateDiscountCreationInputWithNoInput(t *testing.T) {
-	t.Parallel()
-
-	req := httptest.NewRequest("GET", "http://example.com", nil)
-	_, err := validateDiscountCreationInput(req)
-
-	assert.NotNil(t, err)
-}
-
-func TestValidateDiscountCreationInputWithInvalidInput(t *testing.T) {
-	t.Parallel()
-
-	req := httptest.NewRequest("GET", "http://example.com", strings.NewReader(exampleGarbageInput))
-	_, err := validateDiscountCreationInput(req)
-
-	assert.NotNil(t, err)
-}
-
 func TestCreateDiscountInDB(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
@@ -280,40 +242,6 @@ func TestArchiveDiscount(t *testing.T) {
 	err := archiveDiscount(testUtil.DB, exampleDiscountID)
 	assert.Nil(t, err)
 	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-func TestValidateDiscountUpdateInput(t *testing.T) {
-	t.Parallel()
-
-	expected := &Discount{
-		Name:         "New Name",
-		RequiresCode: true,
-		Code:         "TEST",
-	}
-
-	req := httptest.NewRequest("GET", "http://example.com", strings.NewReader(exampleDiscountUpdateInput))
-	actual, err := validateDiscountUpdateInput(req)
-
-	assert.Nil(t, err)
-	assert.Equal(t, expected, actual, "valid discount creation input should parse into a proper discount creation struct")
-}
-
-func TestValidateDiscountUpdateInputWithNoInput(t *testing.T) {
-	t.Parallel()
-
-	req := httptest.NewRequest("GET", "http://example.com", nil)
-	_, err := validateDiscountUpdateInput(req)
-
-	assert.NotNil(t, err)
-}
-
-func TestValidateDiscountUpdateInputWithInvalidInput(t *testing.T) {
-	t.Parallel()
-
-	req := httptest.NewRequest("GET", "http://example.com", strings.NewReader(exampleGarbageInput))
-	_, err := validateDiscountUpdateInput(req)
-
-	assert.NotNil(t, err)
 }
 
 func TestUpdateDiscountInDB(t *testing.T) {

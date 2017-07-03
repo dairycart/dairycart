@@ -5,7 +5,6 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"strconv"
 	"strings"
@@ -320,34 +319,6 @@ func TestPasswordIsValidWithVeryLongPassword(t *testing.T) {
 
 	actual := passwordIsValid(input, exampleUser)
 	assert.True(t, actual)
-}
-
-func TestValidateLoginInput(t *testing.T) {
-	t.Parallel()
-
-	exampleInput := strings.NewReader(fmt.Sprintf(`
-		{
-			"first_name": "Frank",
-			"last_name": "Zappa",
-			"email": "frank@zappa.com",
-			"password": "%s"
-		}
-	`, examplePassword))
-
-	req := httptest.NewRequest("GET", "http://example.com", exampleInput)
-	actual, err := validateLoginInput(req)
-
-	assert.Nil(t, err)
-	assert.NotNil(t, actual)
-}
-
-func TestValidateLoginInputWithCompletelyGarbageInput(t *testing.T) {
-	t.Parallel()
-
-	req := httptest.NewRequest("GET", "http://example.com", nil)
-	_, err := validateLoginInput(req)
-
-	assert.NotNil(t, err)
 }
 
 func TestArchiveUser(t *testing.T) {
