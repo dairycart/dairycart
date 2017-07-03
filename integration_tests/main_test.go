@@ -29,6 +29,7 @@ const (
 	nonexistentSKU = "nonexistent"
 
 	exampleGarbageInput           = `{"testing_garbage_input": true}`
+	expectedBadRequestResponse    = `{"status":400,"message":"Invalid input provided in request body"}`
 	expectedInternalErrorResponse = `{"status":500,"message":"Unexpected internal error occurred"}`
 )
 

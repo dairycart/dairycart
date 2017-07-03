@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"net/http"
-	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
@@ -105,30 +104,6 @@ func setExpectationsForProductOptionValueForOptionExistence(mock sqlmock.Sqlmock
 		WithArgs(a.ID, v.Value).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
-}
-
-func TestValidateProductOptionValueCreationInput(t *testing.T) {
-	t.Parallel()
-	expected := &ProductOptionValue{Value: "something"}
-	req := httptest.NewRequest("GET", "http://example.com", strings.NewReader(exampleProductOptionValueCreationBody))
-	actual, err := validateProductOptionValueCreationInput(req)
-
-	assert.Nil(t, err)
-	assert.Equal(t, expected, actual, "ProductOptionUpdateInput should match expectation")
-}
-
-func TestValidateProductOptionValueCreationInputWithCompletelyInvalidInput(t *testing.T) {
-	t.Parallel()
-	req := httptest.NewRequest("GET", "http://example.com", nil)
-	_, err := validateProductOptionValueCreationInput(req)
-	assert.NotNil(t, err)
-}
-
-func TestValidateProductOptionValueCreationInputWithGarbageInput(t *testing.T) {
-	t.Parallel()
-	req := httptest.NewRequest("GET", "http://example.com", strings.NewReader(exampleGarbageInput))
-	_, err := validateProductOptionValueCreationInput(req)
-	assert.NotNil(t, err)
 }
 
 func TestRetrieveProductOptionValueFromDB(t *testing.T) {

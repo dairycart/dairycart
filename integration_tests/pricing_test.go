@@ -85,8 +85,7 @@ func TestDiscountCreationWithInvalidInput(t *testing.T) {
 
 	respBody := turnResponseBodyIntoString(t, resp)
 	actual := replaceTimeStringsForTests(respBody)
-	expected := minifyJSON(t, loadExpectedResponse(t, "discounts", "error_invalid_input"))
-	assert.Equal(t, expected, actual, "discount creation route should respond with created product body")
+	assert.Equal(t, expectedBadRequestResponse, actual, "discount creation route should respond with created product body")
 }
 
 func TestDiscountUpdate(t *testing.T) {

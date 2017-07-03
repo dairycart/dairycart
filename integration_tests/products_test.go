@@ -103,8 +103,7 @@ func TestProductUpdateRouteWithCompletelyInvalidInput(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "trying to update a product with invalid input should respond 400")
 
 	actual := turnResponseBodyIntoString(t, resp)
-	expected := minifyJSON(t, loadExpectedResponse(t, "products", "error_invalid_body"))
-	assert.Equal(t, expected, actual, "product update route should respond with failure message when you try to update a product with invalid input")
+	assert.Equal(t, expectedBadRequestResponse, actual, "product update route should respond with failure message when you try to update a product with invalid input")
 }
 
 func TestProductUpdateRouteWithInvalidSKU(t *testing.T) {
@@ -158,8 +157,7 @@ func TestProductCreationWithInvalidInput(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "creating a product that already exists should respond 400")
 
 	actual := turnResponseBodyIntoString(t, resp)
-	expected := minifyJSON(t, loadExpectedResponse(t, "products", "error_invalid_body"))
-	assert.Equal(t, expected, actual, "product creation route should respond with failure message when you try to create a product with invalid input")
+	assert.Equal(t, expectedBadRequestResponse, actual, "product creation route should respond with failure message when you try to create a product with invalid input")
 }
 
 func TestProductOptionListRetrievalWithDefaultFilter(t *testing.T) {
@@ -207,8 +205,7 @@ func TestProductOptionCreationWithInvalidInput(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "trying to create a new product option with invalid input should respond 400")
 
 	actual := turnResponseBodyIntoString(t, resp)
-	expected := minifyJSON(t, loadExpectedResponse(t, "product_options", "error_invalid_body"))
-	assert.Equal(t, expected, actual, "product option creation route should respond with failure message when you provide it invalid input")
+	assert.Equal(t, expectedBadRequestResponse, actual, "product option creation route should respond with failure message when you provide it invalid input")
 }
 
 func TestProductOptionCreationWithAlreadyExistentName(t *testing.T) {
@@ -242,8 +239,7 @@ func TestProductOptionUpdateWithInvalidInput(t *testing.T) {
 
 	body := turnResponseBodyIntoString(t, resp)
 	actual := replaceTimeStringsForProductTests(replaceTimeStringsForTests(body))
-	expected := minifyJSON(t, loadExpectedResponse(t, "product_options", "error_invalid_body"))
-	assert.Equal(t, expected, actual, "product option update route should respond with failure message when you provide it invalid input")
+	assert.Equal(t, expectedBadRequestResponse, actual, "product option update route should respond with failure message when you provide it invalid input")
 }
 
 func TestProductOptionUpdateForNonexistentOption(t *testing.T) {
@@ -278,8 +274,7 @@ func TestProductOptionValueCreationWithInvalidInput(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "trying to create a new product option value with invalid input should respond 400")
 
 	actual := turnResponseBodyIntoString(t, resp)
-	expected := minifyJSON(t, loadExpectedResponse(t, "product_option_values", "error_invalid_body"))
-	assert.Equal(t, expected, actual, "product option value creation route should respond with failure message when you provide it invalid input")
+	assert.Equal(t, expectedBadRequestResponse, actual, "product option value creation route should respond with failure message when you provide it invalid input")
 }
 
 func TestProductOptionValueCreationWithAlreadyExistentValue(t *testing.T) {
@@ -314,8 +309,7 @@ func TestProductOptionValueUpdateWithInvalidInput(t *testing.T) {
 
 	body := turnResponseBodyIntoString(t, resp)
 	actual := replaceTimeStringsForProductTests(replaceTimeStringsForTests(body))
-	expected := minifyJSON(t, loadExpectedResponse(t, "product_option_values", "error_invalid_body"))
-	assert.Equal(t, expected, actual, "product option update route should respond with failure message when you provide it invalid input")
+	assert.Equal(t, expectedBadRequestResponse, actual, "product option update route should respond with failure message when you provide it invalid input")
 }
 
 func TestProductOptionValueUpdateForNonexistentOption(t *testing.T) {

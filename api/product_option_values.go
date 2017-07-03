@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/fatih/structs"
 	"github.com/go-chi/chi"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -80,28 +79,6 @@ func retrieveProductOptionValueForOptionFromDB(db *sqlx.DB, optionID int64) ([]P
 		values = append(values, value)
 	}
 	return values, nil
-}
-
-func validateProductOptionValueCreationInput(req *http.Request) (*ProductOptionValue, error) {
-	i := &ProductOptionValueCreationInput{}
-	err := json.NewDecoder(req.Body).Decode(i)
-	if err != nil {
-		return nil, err
-	}
-	defer req.Body.Close()
-
-	s := structs.New(i)
-	// go will happily decode an invalid input into a completely zeroed struct,
-	// so we gotta do checks like this because we're bad at programming.
-	if s.IsZero() {
-		return nil, errors.New("Invalid input provided for product option value body")
-	}
-
-	v := &ProductOptionValue{
-		Value: i.Value,
-	}
-
-	return v, err
 }
 
 func updateProductOptionValueInDB(db *sqlx.DB, v *ProductOptionValue) error {
@@ -182,7 +159,8 @@ func buildProductOptionValueCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		newProductOptionValue, err := validateProductOptionValueCreationInput(req)
+		newProductOptionValue := &ProductOptionValue{}
+		err = validateRequestInput(req, newProductOptionValue)
 		if err != nil {
 			notifyOfInvalidRequestBody(res, err)
 			return

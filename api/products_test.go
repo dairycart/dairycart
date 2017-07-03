@@ -455,7 +455,9 @@ func TestProductUpdateHandlerWithSKUValidationError(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	req, err := http.NewRequest(http.MethodPut, "/v1/product/example", strings.NewReader(badSKUUpdateJSON))
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, nil)
+
+	req, err := http.NewRequest(http.MethodPut, "/v1/product/skateboard", strings.NewReader(badSKUUpdateJSON))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 

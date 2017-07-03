@@ -273,10 +273,6 @@ func buildProductUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 			notifyOfInvalidRequestBody(res, err)
 			return
 		}
-		if !restrictedStringIsValid(newerProduct.SKU) {
-			notifyOfInvalidRequestBody(res, fmt.Errorf("The sku received (%s) is invalid", newerProduct.SKU))
-			return
-		}
 
 		existingProduct, err := retrieveProductFromDB(db, sku)
 		if err == sql.ErrNoRows {
@@ -290,6 +286,10 @@ func buildProductUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 		// eating the error here because we've already validated input
 		mergo.Merge(newerProduct, existingProduct)
 
+		if !restrictedStringIsValid(newerProduct.SKU) {
+			notifyOfInvalidRequestBody(res, fmt.Errorf("The sku received (%s) is invalid", newerProduct.SKU))
+			return
+		}
 		err = updateProductInDatabase(db, newerProduct)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "update product in database")
