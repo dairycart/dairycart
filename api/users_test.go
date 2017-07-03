@@ -196,64 +196,6 @@ func TestSaltAndHashPassword(t *testing.T) {
 	assert.Nil(t, bcrypt.CompareHashAndPassword([]byte(actual), saltedPass))
 }
 
-func TestValidateUserCreationInput(t *testing.T) {
-	t.Parallel()
-
-	exampleInput := strings.NewReader(fmt.Sprintf(`
-		{
-			"first_name": "Frank",
-			"last_name": "Zappa",
-			"email": "frank@zappa.com",
-			"username": "frankzappa",
-			"password": "%s"
-		}
-	`, examplePassword))
-
-	req := httptest.NewRequest("GET", "http://example.com", exampleInput)
-	actual, err := validateUserCreationInput(req)
-
-	assert.Nil(t, err)
-	assert.NotNil(t, actual)
-}
-
-func TestValidateUserCreationInputWithAwfulpassword(t *testing.T) {
-	t.Parallel()
-
-	exampleInput := strings.NewReader(`
-		{
-			"first_name": "Frank",
-			"last_name": "Zappa",
-			"email": "frank@zappa.com",
-			"username": "frankzappa",
-			"password": "password"
-		}
-	`)
-
-	req := httptest.NewRequest("GET", "http://example.com", exampleInput)
-	_, err := validateUserCreationInput(req)
-
-	assert.NotNil(t, err)
-}
-
-func TestValidateUserCreationInputWithGarbageInput(t *testing.T) {
-	t.Parallel()
-
-	exampleInput := strings.NewReader(exampleGarbageInput)
-	req := httptest.NewRequest("GET", "http://example.com", exampleInput)
-	_, err := validateUserCreationInput(req)
-
-	assert.NotNil(t, err)
-}
-
-func TestValidateUserCreationInputWithCompletelyGarbageInput(t *testing.T) {
-	t.Parallel()
-
-	req := httptest.NewRequest("GET", "http://example.com", nil)
-	_, err := validateUserCreationInput(req)
-
-	assert.NotNil(t, err)
-}
-
 func TestCreateUserInDB(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)

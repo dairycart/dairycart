@@ -435,3 +435,65 @@ func TestRowExistsInDBForNonexistentRow(t *testing.T) {
 	assert.False(t, exists)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
+
+func TestValidateRequestInput(t *testing.T) {
+	t.Parallel()
+
+	exampleInput := strings.NewReader(fmt.Sprintf(`
+		{
+			"first_name": "Frank",
+			"last_name": "Zappa",
+			"email": "frank@zappa.com",
+			"username": "frankzappa",
+			"password": "%s"
+		}
+	`, examplePassword))
+
+	req := httptest.NewRequest("GET", "http://example.com", exampleInput)
+	actual := &UserCreationInput{}
+	err := validateRequestInput(req, actual)
+
+	assert.Nil(t, err)
+	assert.NotNil(t, actual)
+}
+
+func TestValidateRequestInputWithAwfulpassword(t *testing.T) {
+	t.Parallel()
+
+	exampleInput := strings.NewReader(`
+		{
+			"first_name": "Frank",
+			"last_name": "Zappa",
+			"email": "frank@zappa.com",
+			"username": "frankzappa",
+			"password": "password"
+		}
+	`)
+
+	req := httptest.NewRequest("GET", "http://example.com", exampleInput)
+	actual := &UserCreationInput{}
+	err := validateRequestInput(req, actual)
+
+	assert.NotNil(t, err)
+}
+
+func TestValidateRequestInputWithGarbageInput(t *testing.T) {
+	t.Parallel()
+
+	exampleInput := strings.NewReader(exampleGarbageInput)
+	req := httptest.NewRequest("GET", "http://example.com", exampleInput)
+	actual := &UserCreationInput{}
+	err := validateRequestInput(req, actual)
+
+	assert.NotNil(t, err)
+}
+
+func TestValidateRequestInputWithCompletelyGarbageInput(t *testing.T) {
+	t.Parallel()
+
+	req := httptest.NewRequest("GET", "http://example.com", nil)
+	actual := &UserCreationInput{}
+	err := validateRequestInput(req, actual)
+
+	assert.NotNil(t, err)
+}

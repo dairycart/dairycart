@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
@@ -11,6 +12,9 @@ import (
 	"strconv"
 	"time"
 
+	validator "gopkg.in/go-playground/validator.v9"
+
+	"github.com/fatih/structs"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
@@ -206,10 +210,6 @@ func retrieveListOfRowsFromDB(db *sqlx.DB, query string, args []interface{}, row
 	return db.Select(rows, query, args...)
 }
 
-func noop(...interface{}) {
-	return
-}
-
 // rowExistsInDB will return whether or not a product/option/etc with a given identifier exists in the database
 func rowExistsInDB(db *sqlx.DB, query string, identifier string) (bool, error) {
 	var exists string
@@ -222,6 +222,28 @@ func rowExistsInDB(db *sqlx.DB, query string, identifier string) (bool, error) {
 	}
 
 	return exists == "true", err
+}
+
+func validateRequestInput(req *http.Request, output interface{}) error {
+	err := json.NewDecoder(req.Body).Decode(output)
+	if err != nil {
+		return err
+	}
+
+	p := structs.New(output)
+	// go will happily decode an invalid input into a completely zeroed struct,
+	// so we gotta do checks like this because we're bad at programming.
+	if p.IsZero() {
+		return errors.New("Invalid input provided in request body")
+	}
+
+	validate := validator.New()
+	err = validate.Struct(output)
+	if err != nil {
+		return err
+	}
+
+	return err
 }
 
 func respondThatRowDoesNotExist(req *http.Request, res http.ResponseWriter, itemType, id string) {
