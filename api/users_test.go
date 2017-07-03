@@ -1,10 +1,12 @@
 package main
 
 import (
+	"database/sql"
 	"database/sql/driver"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -25,6 +27,7 @@ const (
 )
 
 func init() {
+	os.Setenv("DAIRYSECRET", "do-not-use-secrets-like-this-plz")
 	dummySalt = []byte("farts")
 	userTableHeaders = strings.Split(usersTableHeaders, ", ")
 	exampleUserData = []driver.Value{
@@ -75,6 +78,40 @@ func setExpectationsForUserDeletion(mock sqlmock.Sqlmock, id uint64, err error) 
 		WillReturnError(err)
 }
 
+func setExpectationsForPasswordResetCreation(mock sqlmock.Sqlmock, id uint64, resetToken string, err error) {
+	query, rawArgs := buildPasswordResetRowCreationQuery(id, resetToken)
+	args := argsToDriverValues(rawArgs)
+	mock.ExpectExec(formatQueryForSQLMock(query)).
+		WithArgs(args...).
+		WillReturnResult(sqlmock.NewResult(1, 1)).
+		WillReturnError(err)
+}
+
+func setExpectationsForPasswordResetCreationWithNoSpecificResetToken(mock sqlmock.Sqlmock, id uint64, err error) {
+	query, _ := buildPasswordResetRowCreationQuery(id, "reset-token")
+	mock.ExpectExec(formatQueryForSQLMock(query)).
+		WillReturnResult(sqlmock.NewResult(1, 1)).
+		WillReturnError(err)
+}
+
+func setExpectationsForPasswordResetEntryExistenceByResetToken(mock sqlmock.Sqlmock, resetToken string, exists bool, err error) {
+	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
+	query := formatQueryForSQLMock(passwordResetExistenceQuery)
+	mock.ExpectQuery(query).
+		WithArgs(resetToken).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
+func setExpectationsForPasswordResetEntryExistenceByUserID(mock sqlmock.Sqlmock, userID string, exists bool, err error) {
+	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
+	query := formatQueryForSQLMock(passwordResetExistenceQueryForUserID)
+	mock.ExpectQuery(query).
+		WithArgs(userID).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
 func TestValidateSessionCookieMiddleware(t *testing.T) {
 	t.Parallel()
 
@@ -90,7 +127,7 @@ func TestValidateSessionCookieMiddleware(t *testing.T) {
 
 	session, err := testUtil.Store.Get(req, dairycartCookieName)
 	assert.Nil(t, err)
-	session.Values["authenticated"] = true
+	session.Values[sessionAuthorizedKeyName] = true
 	session.Save(req, testUtil.Response)
 
 	validateSessionCookieMiddleware(testUtil.Response, req, testUtil.Store, exampleHandler)
@@ -281,8 +318,8 @@ func TestRetrieveUserFromDB(t *testing.T) {
 		Salt: dummySalt, //[0:len(dummySalt):len(dummySalt)],
 	}
 
-	setExpectationsForUserRetrieval(testUtil.Mock, expected.Email, nil)
-	actual, err := retrieveUserFromDB(testUtil.DB, expected.Email)
+	setExpectationsForUserRetrieval(testUtil.Mock, expected.Username, nil)
+	actual, err := retrieveUserFromDB(testUtil.DB, expected.Username)
 	assert.Nil(t, err)
 
 	assert.Equal(t, expected, actual, "expected and actual users should match")
@@ -382,6 +419,18 @@ func TestArchiveUser(t *testing.T) {
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
+func TestCreatePasswordResetEntryInDatabase(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	userID := uint64(1)
+	resetToken := "reset-token"
+	setExpectationsForPasswordResetCreation(testUtil.Mock, userID, resetToken, nil)
+
+	err := createPasswordResetEntryInDatabase(testUtil.DB, userID, resetToken)
+	assert.Nil(t, err)
+}
+
 ////////////////////////////////////////////////////////
 //                                                    //
 //                 HTTP Handler Tests                 //
@@ -423,6 +472,44 @@ func TestUserCreationHandler(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, testUtil.Response.Code, "status code should be 201")
 	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestUserCreationHandlerFailsWhenCreatingAdminUsersWithoutAlreadyHavingAdminUserStatusJeezLouiseThisIsALongFunctionName(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	exampleInput := fmt.Sprintf(`
+		{
+			"first_name": "Frank",
+			"last_name": "Zappa",
+			"email": "frank@zappa.com",
+			"username": "frankzappa",
+			"password": "%s",
+			"is_admin": true
+		}
+	`, examplePassword)
+
+	// exampleUser := &User{
+	// 	DBRow: DBRow{
+	// 		ID:        1,
+	// 		CreatedOn: generateExampleTimeForTests(),
+	// 	},
+	// 	FirstName: "Frank",
+	// 	LastName:  "Zappa",
+	// 	Email:     "frank@zappa.com",
+	// 	Username:  "frankzappa",
+	// 	Password:  examplePassword,
+	// }
+
+	// setExpectationsForUserExistence(testUtil.Mock, exampleUser.Username, false, nil)
+	// setExpectationsForUserCreation(testUtil.Mock, exampleUser, nil)
+
+	req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusForbidden, testUtil.Response.Code, "status code should be 401")
+	// ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestUserCreationHandlerWithInvalidInput(t *testing.T) {
@@ -554,7 +641,7 @@ func TestUserLoginHandler(t *testing.T) {
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
-		Username: "frankzappa",
+		Username:  "frankzappa",
 		Password:  examplePassword,
 	}
 
@@ -582,6 +669,39 @@ func TestUserLoginHandlerWithInvalidLoginInput(t *testing.T) {
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
+func TestUserLoginHandlerWithNoMatchingUserInDatabase(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	exampleInput := fmt.Sprintf(`
+		{
+			"username": "frankzappa",
+			"password": "%s"
+		}
+	`, examplePassword)
+
+	exampleUser := &User{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		FirstName: "Frank",
+		LastName:  "Zappa",
+		Email:     "frank@zappa.com",
+		Username:  "frankzappa",
+		Password:  examplePassword,
+	}
+
+	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, sql.ErrNoRows)
+
+	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusNotFound, testUtil.Response.Code, "status code should be 404")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
 func TestUserLoginHandlerWithErrorRetrievingUserFromDatabase(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
@@ -601,7 +721,7 @@ func TestUserLoginHandlerWithErrorRetrievingUserFromDatabase(t *testing.T) {
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
-		Username:     "frankzappa",
+		Username:  "frankzappa",
 		Password:  examplePassword,
 	}
 
@@ -634,7 +754,7 @@ func TestUserLoginHandlerWithInvalidPassword(t *testing.T) {
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
-		Username:     "frankzappa",
+		Username:  "frankzappa",
 		Password:  examplePassword,
 	}
 
@@ -666,7 +786,7 @@ func TestUserDeletionHandler(t *testing.T) {
 
 	exampleID := uint64(1)
 	exampleIDString := strconv.Itoa(int(exampleID))
-	req, err := http.NewRequest(http.MethodDelete, buildRoute("user", exampleIDString), nil)
+	req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
 	assert.Nil(t, err)
 
 	setExpectationsForUserExistenceByID(testUtil.Mock, exampleIDString, true, nil)
@@ -683,7 +803,7 @@ func TestUserDeletionHandlerForNonexistentUser(t *testing.T) {
 
 	exampleID := uint64(1)
 	exampleIDString := strconv.Itoa(int(exampleID))
-	req, err := http.NewRequest(http.MethodDelete, buildRoute("user", exampleIDString), nil)
+	req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
 	assert.Nil(t, err)
 
 	setExpectationsForUserExistenceByID(testUtil.Mock, exampleIDString, false, nil)
@@ -699,7 +819,7 @@ func TestUserDeletionHandlerWithArbitraryErrorWhenDeletingUser(t *testing.T) {
 
 	exampleID := uint64(1)
 	exampleIDString := strconv.Itoa(int(exampleID))
-	req, err := http.NewRequest(http.MethodDelete, buildRoute("user", exampleIDString), nil)
+	req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
 	assert.Nil(t, err)
 
 	setExpectationsForUserExistenceByID(testUtil.Mock, exampleIDString, true, nil)
@@ -707,5 +827,220 @@ func TestUserDeletionHandlerWithArbitraryErrorWhenDeletingUser(t *testing.T) {
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestUserForgottenPasswordHandler(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	exampleInput := fmt.Sprintf(`
+		{
+			"username": "frankzappa",
+			"password": "%s"
+		}
+	`, examplePassword)
+
+	exampleUser := &User{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		FirstName: "Frank",
+		LastName:  "Zappa",
+		Email:     "frank@zappa.com",
+		Username:  "frankzappa",
+		Password:  examplePassword,
+	}
+	userID := strconv.Itoa(int(exampleUser.ID))
+
+	req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleInput))
+	assert.Nil(t, err)
+
+	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, nil)
+	setExpectationsForPasswordResetEntryExistenceByUserID(testUtil.Mock, userID, false, nil)
+	setExpectationsForPasswordResetCreationWithNoSpecificResetToken(testUtil.Mock, exampleUser.ID, nil)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestUserForgottenPasswordHandlerWithInvalidInput(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleGarbageInput))
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestUserForgottenPasswordHandlerWithNonexistentUser(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	exampleInput := fmt.Sprintf(`
+		{
+			"username": "frankzappa",
+			"password": "%s"
+		}
+	`, examplePassword)
+
+	exampleUser := &User{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		FirstName: "Frank",
+		LastName:  "Zappa",
+		Email:     "frank@zappa.com",
+		Username:  "frankzappa",
+		Password:  examplePassword,
+	}
+
+	req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleInput))
+	assert.Nil(t, err)
+
+	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, sql.ErrNoRows)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusNotFound, testUtil.Response.Code, "status code should be 404")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestUserForgottenPasswordHandlerWithErrorRetrievingUserFromDB(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	exampleInput := fmt.Sprintf(`
+		{
+			"username": "frankzappa",
+			"password": "%s"
+		}
+	`, examplePassword)
+
+	exampleUser := &User{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		FirstName: "Frank",
+		LastName:  "Zappa",
+		Email:     "frank@zappa.com",
+		Username:  "frankzappa",
+		Password:  examplePassword,
+	}
+
+	req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleInput))
+	assert.Nil(t, err)
+
+	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, arbitraryError)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestUserForgottenPasswordHandlerWithAlreadyExistentPasswordResetEntry(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	exampleInput := fmt.Sprintf(`
+		{
+			"username": "frankzappa",
+			"password": "%s"
+		}
+	`, examplePassword)
+
+	exampleUser := &User{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		FirstName: "Frank",
+		LastName:  "Zappa",
+		Email:     "frank@zappa.com",
+		Username:  "frankzappa",
+		Password:  examplePassword,
+	}
+	userID := strconv.Itoa(int(exampleUser.ID))
+
+	req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleInput))
+	assert.Nil(t, err)
+
+	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, nil)
+	setExpectationsForPasswordResetEntryExistenceByUserID(testUtil.Mock, userID, true, nil)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestUserForgottenPasswordHandlerWithErrorCreatingResetToken(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	exampleInput := fmt.Sprintf(`
+		{
+			"username": "frankzappa",
+			"password": "%s"
+		}
+	`, examplePassword)
+
+	exampleUser := &User{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		FirstName: "Frank",
+		LastName:  "Zappa",
+		Email:     "frank@zappa.com",
+		Username:  "frankzappa",
+		Password:  examplePassword,
+	}
+	userID := strconv.Itoa(int(exampleUser.ID))
+
+	req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleInput))
+	assert.Nil(t, err)
+
+	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, nil)
+	setExpectationsForPasswordResetEntryExistenceByUserID(testUtil.Mock, userID, false, nil)
+	setExpectationsForPasswordResetCreationWithNoSpecificResetToken(testUtil.Mock, exampleUser.ID, arbitraryError)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestPasswordResetValidationHandler(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	exampleResetToken := "reset-token"
+	req, err := http.NewRequest(http.MethodHead, fmt.Sprintf("/password_reset/%s", exampleResetToken), nil)
+	assert.Nil(t, err)
+
+	setExpectationsForPasswordResetEntryExistenceByResetToken(testUtil.Mock, exampleResetToken, true, nil)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestPasswordResetValidationHandlerForNonexistentToken(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	exampleResetToken := "reset-token"
+	req, err := http.NewRequest(http.MethodHead, fmt.Sprintf("/password_reset/%s", exampleResetToken), nil)
+	assert.Nil(t, err)
+
+	setExpectationsForPasswordResetEntryExistenceByResetToken(testUtil.Mock, exampleResetToken, false, nil)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusNotFound, testUtil.Response.Code, "status code should be 404")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }

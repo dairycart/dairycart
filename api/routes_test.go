@@ -25,7 +25,7 @@ func TestBuildRoute(t *testing.T) {
 	for _, x := range inputOutputMap {
 		input := x.In
 		expected := x.Out
-		actual := buildRoute(input...)
+		actual := buildRoute("v1", input...)
 		assert.Equal(t, expected, actual, `buildRoute with input of ["%s"] should equal %s`, strings.Join(input, `", "`), expected)
 	}
 }

@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
     "user_id" bigint NOT NULL,
     "token" text NOT NULL,
     "created_on" timestamp DEFAULT NOW(),
-    "expires_on" timestamp NOW() + (15 * interval '1 minute'),
+    "expires_on" timestamp DEFAULT NOW() + (15 * interval '1 minute'),
     "password_reset_on" timestamp,
     UNIQUE ("token"),
     PRIMARY KEY ("id"),

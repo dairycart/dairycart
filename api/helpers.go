@@ -218,8 +218,6 @@ func rowExistsInDB(db *sqlx.DB, query string, identifier string) (bool, error) {
 	if err == sql.ErrNoRows {
 		return false, nil
 	} else if err != nil {
-		errStr := err.Error()
-		noop(errStr)
 		return false, err
 	}
 
@@ -269,8 +267,8 @@ func notifyOfInternalIssue(res http.ResponseWriter, err error, attemptedTask str
 	json.NewEncoder(res).Encode(errRes)
 }
 
-func notifyOfInvalidAuthenticationAttempt(res http.ResponseWriter, email string) {
-	log.Printf("Invalid login for %s\n", email)
+func notifyOfInvalidAuthenticationAttempt(res http.ResponseWriter, username string) {
+	log.Printf("Invalid login for %s\n", username)
 	res.WriteHeader(http.StatusUnauthorized)
 	errRes := &ErrorResponse{
 		Status:  http.StatusUnauthorized,

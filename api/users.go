@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -21,15 +20,21 @@ import (
 )
 
 const (
-	saltSize            = 1 << 5
-	hashCost            = bcrypt.DefaultCost + 3
-	resetTokenSize      = 1 << 7
-	dairycartCookieName = "dairycart"
+	saltSize                 = 1 << 5
+	hashCost                 = bcrypt.DefaultCost + 3
+	resetTokenSize           = 1 << 7
+	dairycartCookieName      = "dairycart"
+	sessionAdminKeyName      = "is_admin"
+	sessionAuthorizedKeyName = "authenticated"
 
-	usersTableHeaders      = `id, first_name, last_name, username, email, password, salt, is_admin, password_last_changed_on, created_on, updated_on, archived_on`
-	userExistenceQuery     = `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND archived_on IS NULL)`
-	userExistenceQueryByID = `SELECT EXISTS(SELECT 1 FROM users WHERE id = $1 AND archived_on IS NULL)`
-	userDeletionQuery      = `UPDATE users SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
+	usersTableHeaders       = `id, first_name, last_name, username, email, password, salt, is_admin, password_last_changed_on, created_on, updated_on, archived_on`
+	userExistenceQuery      = `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND archived_on IS NULL)`
+	adminUserExistenceQuery = `SELECT EXISTS(SELECT 1 FROM users WHERE is_admin is true AND archived_on IS NULL)`
+	userExistenceQueryByID  = `SELECT EXISTS(SELECT 1 FROM users WHERE id = $1 AND archived_on IS NULL)`
+	userDeletionQuery       = `UPDATE users SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
+
+	passwordResetExistenceQueryForUserID = `SELECT EXISTS(SELECT 1 FROM password_reset_tokens WHERE user_id = $1 AND NOW() < expires_on)`
+	passwordResetExistenceQuery          = `SELECT EXISTS(SELECT 1 FROM password_reset_tokens WHERE token = $1 AND NOW() < expires_on)`
 )
 
 // User represents a Dairycart user
@@ -72,7 +77,7 @@ type UserLoginInput struct {
 
 func validateSessionCookieMiddleware(res http.ResponseWriter, req *http.Request, store *sessions.CookieStore, next http.HandlerFunc) {
 	session, err := store.Get(req, dairycartCookieName)
-	if auth, ok := session.Values["authenticated"].(bool); !ok || !auth || err != nil {
+	if auth, ok := session.Values[sessionAuthorizedKeyName].(bool); !ok || !auth || err != nil {
 		res.WriteHeader(http.StatusUnauthorized)
 		errRes := &ErrorResponse{
 			Status:  http.StatusUnauthorized,
@@ -99,6 +104,7 @@ func createUserFromInput(in *UserCreationInput) (*User, error) {
 		FirstName: in.FirstName,
 		LastName:  in.LastName,
 		Email:     in.Email,
+		Username:  in.Username,
 		Password:  string(saltedAndHashedPassword),
 		Salt:      salt,
 		IsAdmin:   in.IsAdmin,
@@ -156,10 +162,23 @@ func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 			return
 		}
 
+		session, err := store.Get(req, dairycartCookieName)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "read session data")
+			return
+		}
+		if userInput.IsAdmin {
+			// only an admin user can create an admin user
+			if admin, ok := session.Values[sessionAdminKeyName].(bool); !ok || !admin {
+				http.Error(res, "Forbidden", http.StatusForbidden)
+				return
+			}
+		}
+
 		// can't create a user with an email that already exists!
 		exists, err := rowExistsInDB(db, userExistenceQuery, userInput.Username)
 		if err != nil || exists {
-			notifyOfInvalidRequestBody(res, fmt.Errorf("user with email `%s` already exists", userInput.Email))
+			notifyOfInvalidRequestBody(res, errors.New("username already taken"))
 			return
 		}
 
@@ -175,12 +194,6 @@ func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 			return
 		}
 
-		session, err := store.New(req, dairycartCookieName)
-		if err != nil {
-			notifyOfInternalIssue(res, err, "read session data")
-			return
-		}
-
 		responseUser := &DisplayUser{
 			DBRow: DBRow{
 				ID:        createdUserID,
@@ -191,8 +204,8 @@ func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 			Email:     newUser.Email,
 			IsAdmin:   newUser.IsAdmin,
 		}
-		session.Values["authenticated"] = true
-		session.Values["is_admin"] = newUser.IsAdmin
+		session.Values[sessionAuthorizedKeyName] = true
+		session.Values[sessionAdminKeyName] = newUser.IsAdmin
 		session.Save(req, res)
 
 		res.WriteHeader(http.StatusCreated)
@@ -263,8 +276,8 @@ func buildUserLoginHandler(db *sqlx.DB, store *sessions.CookieStore) http.Handle
 		statusToWrite := http.StatusUnauthorized
 		if loginValid {
 			statusToWrite = http.StatusOK
-			session.Values["authenticated"] = true
-			session.Values["is_admin"] = user.IsAdmin
+			session.Values[sessionAuthorizedKeyName] = true
+			session.Values[sessionAdminKeyName] = user.IsAdmin
 			session.Save(req, res)
 		}
 		res.WriteHeader(statusToWrite)
@@ -278,7 +291,7 @@ func buildUserLogoutHandler(store *sessions.CookieStore) http.HandlerFunc {
 			notifyOfInternalIssue(res, err, "read session data")
 			return
 		}
-		session.Values["authenticated"] = false
+		session.Values[sessionAuthorizedKeyName] = false
 		session.Save(req, res)
 		res.WriteHeader(http.StatusOK)
 	}
@@ -295,7 +308,7 @@ func buildUserDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 		// we can eat this error because Mux takes care of validating route params for us
 		userIDInt, _ := strconv.ParseInt(userID, 10, 64)
 
-		// can't create a user with an email that already exists!
+		// can't delete a user with an email that already exists!
 		exists, err := rowExistsInDB(db, userExistenceQueryByID, userID)
 		if err != nil || !exists {
 			respondThatRowDoesNotExist(req, res, "user", userID)
@@ -346,10 +359,31 @@ func buildUserForgottenPasswordHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
+		userIDString := strconv.Itoa(int(user.ID))
+		exists, err := rowExistsInDB(db, passwordResetExistenceQueryForUserID, userIDString)
+		if err != nil || exists {
+			notifyOfInvalidRequestBody(res, errors.New("user has existent, non-expired password reset request"))
+			return
+		}
+
 		resetToken := uniuri.NewLen(resetTokenSize)
 		err = createPasswordResetEntryInDatabase(db, user.ID, resetToken)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "read session data")
+			return
+		}
+
+		res.WriteHeader(http.StatusOK)
+	}
+}
+
+func buildUserPasswordResetTokenValidationHandler(db *sqlx.DB) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		resetToken := chi.URLParam(req, "reset_token")
+
+		exists, err := rowExistsInDB(db, passwordResetExistenceQuery, resetToken)
+		if err != nil || !exists {
+			res.WriteHeader(http.StatusNotFound)
 			return
 		}
 
