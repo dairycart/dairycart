@@ -7,12 +7,14 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	"unicode"
 
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/dchest/uniuri"
 	"github.com/go-chi/chi"
 	"github.com/gorilla/sessions"
+	"github.com/imdario/mergo"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
@@ -23,6 +25,7 @@ const (
 	resetTokenSize           = 1 << 7
 	dairycartCookieName      = "dairycart"
 	sessionAdminKeyName      = "is_admin"
+	sessionUserIDKeyName     = "user_id"
 	sessionAuthorizedKeyName = "authenticated"
 
 	usersTableHeaders       = `id, first_name, last_name, username, email, password, salt, is_admin, password_last_changed_on, created_on, updated_on, archived_on`
@@ -46,6 +49,24 @@ type User struct {
 	Salt                  []byte   `json:"salt"`
 	IsAdmin               bool     `json:"is_admin"`
 	PasswordLastChangedOn NullTime `json:"password_last_changed_on,omitempty"`
+}
+
+// generateScanArgs generates an array of pointers to struct fields for sql.Scan to populate
+func (u *User) generateScanArgs() []interface{} {
+	return []interface{}{
+		&u.ID,
+		&u.FirstName,
+		&u.LastName,
+		&u.Username,
+		&u.Email,
+		&u.Password,
+		&u.Salt,
+		&u.IsAdmin,
+		&u.PasswordLastChangedOn,
+		&u.CreatedOn,
+		&u.UpdatedOn,
+		&u.ArchivedOn,
+	}
 }
 
 // DisplayUser represents a Dairycart user we can return in responses
@@ -75,13 +96,12 @@ type UserLoginInput struct {
 
 // UserUpdateInput represents the payload used to update a Dairycart user
 type UserUpdateInput struct {
-	FirstName       string `json:"first_name"       validate:"required"`
-	LastName        string `json:"last_name"        validate:"required"`
-	Username        string `json:"username"         validate:"required"`
-	Email           string `json:"email"            validate:"required,email"`
+	FirstName       string `json:"first_name"       validate:"omitempty"`
+	LastName        string `json:"last_name"        validate:"omitempty"`
+	Username        string `json:"username"         validate:"omitempty"`
+	Email           string `json:"email"            validate:"omitempty,email"`
 	CurrentPassword string `json:"current_password" validate:"required,gte=64"`
-	NewPassword     string `json:"new_password"     validate:"required,gte=64"`
-	IsAdmin         bool   `json:"is_admin"`
+	NewPassword     string `json:"new_password"     validate:"omitempty,gte=64"`
 }
 
 func validateSessionCookieMiddleware(res http.ResponseWriter, req *http.Request, store *sessions.CookieStore, next http.HandlerFunc) {
@@ -96,6 +116,23 @@ func validateSessionCookieMiddleware(res http.ResponseWriter, req *http.Request,
 		return
 	}
 	next(res, req)
+}
+
+func passwordIsValid(s string) bool {
+	var hasNumber bool
+	var hasUpper bool
+	var hasSpecial bool
+	for _, letter := range s {
+		switch {
+		case unicode.IsNumber(letter):
+			hasNumber = true
+		case unicode.IsUpper(letter):
+			hasUpper = true
+		case unicode.IsPunct(letter) || unicode.IsSymbol(letter):
+			hasSpecial = true
+		}
+	}
+	return len(s) >= 64 && hasNumber && hasUpper && hasSpecial
 }
 
 func createUserFromInput(in *UserCreationInput) (*User, error) {
@@ -119,6 +156,17 @@ func createUserFromInput(in *UserCreationInput) (*User, error) {
 		IsAdmin:   in.IsAdmin,
 	}
 	return user, nil
+}
+
+func createUserFromUpdateInput(in *UserUpdateInput, hashedPassword string) *User {
+	out := &User{
+		FirstName: in.FirstName,
+		LastName:  in.LastName,
+		Username:  in.Username,
+		Email:     in.Email,
+		Password:  hashedPassword,
+	}
+	return out
 }
 
 func generateSalt() ([]byte, error) {
@@ -147,10 +195,24 @@ func retrieveUserFromDB(db *sqlx.DB, username string) (User, error) {
 	return u, err
 }
 
-func passwordIsValid(in *UserLoginInput, u User) bool {
-	saltedInputPassword := append(u.Salt, in.Password...)
+func retrieveUserFromDBByID(db *sqlx.DB, userID uint64) (User, error) {
+	var u User
+	query, args := buildUserSelectionQueryByID(userID)
+	err := db.Get(&u, query, args...)
+	return u, err
+}
+
+func passwordMatches(password string, u User) bool {
+	saltedInputPassword := append(u.Salt, password...)
 	err := bcrypt.CompareHashAndPassword([]byte(u.Password), saltedInputPassword)
 	return err == nil
+}
+
+func updateUserInDatabase(db *sqlx.DB, u *User, passwordChanged bool) error {
+	userUpdateQuery, queryArgs := buildUserUpdateQuery(u, passwordChanged)
+	scanArgs := u.generateScanArgs()
+	err := db.QueryRow(userUpdateQuery, queryArgs...).Scan(scanArgs...)
+	return err
 }
 
 func archiveUser(db *sqlx.DB, id uint64) error {
@@ -225,6 +287,7 @@ func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 			Email:     newUser.Email,
 			IsAdmin:   newUser.IsAdmin,
 		}
+		session.Values[sessionUserIDKeyName] = createdUserID
 		session.Values[sessionAuthorizedKeyName] = true
 		session.Values[sessionAdminKeyName] = newUser.IsAdmin
 		session.Save(req, res)
@@ -253,9 +316,9 @@ func buildUserLoginHandler(db *sqlx.DB, store *sessions.CookieStore) http.Handle
 			return
 		}
 
-		loginValid := passwordIsValid(loginInput, user)
+		loginValid := passwordMatches(loginInput.Password, user)
 		if !loginValid {
-			notifyOfInvalidAuthenticationAttempt(res, username)
+			notifyOfInvalidAuthenticationAttempt(res)
 			return
 		}
 
@@ -268,6 +331,7 @@ func buildUserLoginHandler(db *sqlx.DB, store *sessions.CookieStore) http.Handle
 		statusToWrite := http.StatusUnauthorized
 		if loginValid {
 			statusToWrite = http.StatusOK
+			session.Values[sessionUserIDKeyName] = user.ID
 			session.Values[sessionAuthorizedKeyName] = true
 			session.Values[sessionAdminKeyName] = user.IsAdmin
 			session.Save(req, res)
@@ -360,5 +424,64 @@ func buildUserPasswordResetTokenValidationHandler(db *sqlx.DB) http.HandlerFunc 
 		}
 
 		res.WriteHeader(http.StatusOK)
+	}
+}
+
+func buildUserInfoUpdateHandler(db *sqlx.DB) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		userID := chi.URLParam(req, "user_id")
+		// eating these errors because Chi should validate these for us.
+		userIDInt, _ := strconv.Atoi(userID)
+
+		updatedUserInfo := &UserUpdateInput{}
+		err := validateRequestInput(req, updatedUserInfo)
+		if err != nil {
+			notifyOfInvalidRequestBody(res, err)
+			return
+		}
+
+		newPassword := updatedUserInfo.NewPassword
+		passwordChanged := newPassword != ""
+		if passwordChanged && !passwordIsValid(newPassword) {
+			notifyOfInvalidRequestBody(res, errors.New("provided password is invalid"))
+			return
+		}
+
+		existingUser, err := retrieveUserFromDBByID(db, uint64(userIDInt))
+		if err == sql.ErrNoRows {
+			respondThatRowDoesNotExist(req, res, "user ID", userID)
+			return
+		} else if err != nil {
+			notifyOfInternalIssue(res, err, "retrieve user")
+			return
+		}
+
+		loginValid := passwordMatches(updatedUserInfo.CurrentPassword, existingUser)
+		if !loginValid {
+			notifyOfInvalidAuthenticationAttempt(res)
+			return
+		}
+
+		hashedPassword := existingUser.Password
+		if passwordChanged {
+			var err error
+			hashedPassword, err = saltAndHashPassword(newPassword, existingUser.Salt)
+			if err != nil {
+				notifyOfInternalIssue(res, err, "retrieve user")
+				return
+			}
+		}
+
+		updatedUser := createUserFromUpdateInput(updatedUserInfo, hashedPassword)
+		// eating the error here because we've already validated input
+		mergo.Merge(updatedUser, existingUser)
+
+		err = updateUserInDatabase(db, updatedUser, passwordChanged)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "update user in database")
+			return
+		}
+
+		json.NewEncoder(res).Encode(updatedUser)
 	}
 }

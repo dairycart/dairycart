@@ -269,6 +269,15 @@ func TestBuildUserSelectionQuery(t *testing.T) {
 	assert.Equal(t, 1, len(actualArgs), argsEqualityErrorMessage)
 }
 
+func TestBuildUserSelectionQueryByID(t *testing.T) {
+	t.Parallel()
+	userID := uint64(1)
+	expectedQuery := `SELECT id, first_name, last_name, username, email, password, salt, is_admin, password_last_changed_on, created_on, updated_on, archived_on FROM users WHERE id = $1 AND archived_on IS NULL`
+	actualQuery, actualArgs := buildUserSelectionQueryByID(userID)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 1, len(actualArgs), argsEqualityErrorMessage)
+}
+
 func TestBuildUserCreationQuery(t *testing.T) {
 	t.Parallel()
 	user := &User{
@@ -294,4 +303,40 @@ func TestBuildPasswordResetRowCreationQuery(t *testing.T) {
 	actualQuery, actualArgs := buildPasswordResetRowCreationQuery(userID, resetToken)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
+}
+
+func TestBuildUserUpdateQueryWithoutPasswordChange(t *testing.T) {
+	t.Parallel()
+
+	user := &User{
+		FirstName: "FirstName",
+		LastName:  "LastName",
+		Email:     "Email",
+		Password:  "Password",
+		Salt:      []byte("Salt"),
+		IsAdmin:   true,
+	}
+	expectedQuery := `UPDATE users SET email = $1, first_name = $2, is_admin = $3, last_name = $4, updated_on = NOW(), username = $5 WHERE username = $6 RETURNING id, first_name, last_name, username, email, password, salt, is_admin, password_last_changed_on, created_on, updated_on, archived_on`
+	actualQuery, actualArgs := buildUserUpdateQuery(user, false)
+
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 6, len(actualArgs), argsEqualityErrorMessage)
+}
+
+func TestBuildUserUpdateQueryWithPasswordChange(t *testing.T) {
+	t.Parallel()
+
+	user := &User{
+		FirstName: "FirstName",
+		LastName:  "LastName",
+		Email:     "Email",
+		Password:  "Password",
+		Salt:      []byte("Salt"),
+		IsAdmin:   true,
+	}
+	expectedQuery := `UPDATE users SET email = $1, first_name = $2, is_admin = $3, last_name = $4, password = $5, password_last_changed_on = NOW(), updated_on = NOW(), username = $6 WHERE username = $7 RETURNING id, first_name, last_name, username, email, password, salt, is_admin, password_last_changed_on, created_on, updated_on, archived_on`
+	actualQuery, actualArgs := buildUserUpdateQuery(user, true)
+
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 7, len(actualArgs), argsEqualityErrorMessage)
 }

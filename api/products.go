@@ -76,11 +76,12 @@ type Product struct {
 	ProductLength float32 `json:"product_length"`
 
 	// Package dimensions
-	PackageWeight      float32 `json:"package_weight"`
-	PackageHeight      float32 `json:"package_height"`
-	PackageWidth       float32 `json:"package_width"`
-	PackageLength      float32 `json:"package_length"`
-	QuantityPerPackage int32   `json:"quantity_per_package"`
+	PackageWeight float32 `json:"package_weight"`
+	PackageHeight float32 `json:"package_height"`
+	PackageWidth  float32 `json:"package_width"`
+	PackageLength float32 `json:"package_length"`
+	// TODO: change this and the other quantity field to a uint32
+	QuantityPerPackage int32 `json:"quantity_per_package"`
 
 	AvailableOn time.Time `json:"available_on"`
 }
@@ -284,7 +285,7 @@ func buildProductUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 
 		// eating the error here because we've already validated input
-		mergo.Merge(newerProduct, existingProduct)
+		mergo.Merge(newerProduct, &existingProduct)
 
 		if !restrictedStringIsValid(newerProduct.SKU) {
 			notifyOfInvalidRequestBody(res, fmt.Errorf("The sku received (%s) is invalid", newerProduct.SKU))

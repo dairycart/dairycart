@@ -253,6 +253,7 @@ func respondThatRowDoesNotExist(req *http.Request, res http.ResponseWriter, item
 		"product option value": "id",
 		"product":              "sku",
 		"discount":             "id",
+		"user":                 "username",
 	}
 
 	// in case we forget one, default to ID
@@ -290,8 +291,8 @@ func notifyOfInternalIssue(res http.ResponseWriter, err error, attemptedTask str
 	json.NewEncoder(res).Encode(errRes)
 }
 
-func notifyOfInvalidAuthenticationAttempt(res http.ResponseWriter, username string) {
-	log.Printf("Invalid login for %s\n", username)
+func notifyOfInvalidAuthenticationAttempt(res http.ResponseWriter) {
+	log.Printf("Invalid login attempt")
 	res.WriteHeader(http.StatusUnauthorized)
 	errRes := &ErrorResponse{
 		Status:  http.StatusUnauthorized,

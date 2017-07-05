@@ -300,6 +300,18 @@ func buildUserSelectionQuery(username string) (string, []interface{}) {
 	return query, args
 }
 
+func buildUserSelectionQueryByID(userID uint64) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		Select(usersTableHeaders).
+		From("users").
+		Where(squirrel.Eq{"id": userID}).
+		Where(squirrel.Eq{"archived_on": nil})
+
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}
+
 func buildUserCreationQuery(u *User) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
@@ -339,6 +351,30 @@ func buildPasswordResetRowCreationQuery(userID uint64, resetToken string) (strin
 			userID,
 			resetToken,
 		)
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}
+
+func buildUserUpdateQuery(u *User, passwordChanged bool) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	updateSetMap := map[string]interface{}{
+		"first_name": u.FirstName,
+		"last_name":  u.LastName,
+		"username":   u.Username,
+		"email":      u.Email,
+		"is_admin":   u.IsAdmin,
+		"updated_on": squirrel.Expr("NOW()"),
+	}
+	if passwordChanged {
+		updateSetMap["password"] = u.Password
+		updateSetMap["password_last_changed_on"] = squirrel.Expr("NOW()")
+	}
+
+	queryBuilder := sqlBuilder.
+		Update("users").
+		SetMap(updateSetMap).
+		Where(squirrel.Eq{"username": u.Username}).
+		Suffix(fmt.Sprintf("RETURNING %s", usersTableHeaders))
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }

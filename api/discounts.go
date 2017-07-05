@@ -232,7 +232,7 @@ func buildDiscountUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 
 		// eating the error here because we've already validated input
-		mergo.Merge(updatedDiscount, existingDiscount)
+		mergo.Merge(updatedDiscount, &existingDiscount)
 
 		err = updateDiscountInDatabase(db, updatedDiscount)
 		if err != nil {

@@ -59,10 +59,58 @@ func setExpectationsForUserCreation(mock sqlmock.Sqlmock, u *User, err error) {
 		WillReturnError(err)
 }
 
+func setExpectationsForSpecificUserRetrieval(mock sqlmock.Sqlmock, u *User, err error) {
+	exampleRow := []driver.Value{
+		u.ID,
+		u.FirstName,
+		u.LastName,
+		u.Username,
+		u.Email,
+		u.Password,
+		u.Salt,
+		u.IsAdmin,
+		u.PasswordLastChangedOn,
+		u.CreatedOn,
+		u.UpdatedOn,
+		u.ArchivedOn,
+	}
+
+	exampleRows := sqlmock.NewRows(userTableHeaders).AddRow(exampleRow...)
+	query, rawArgs := buildUserSelectionQuery(u.Email)
+	query = formatQueryForSQLMock(query)
+	args := argsToDriverValues(rawArgs)
+	mock.ExpectQuery(query).
+		WithArgs(args...).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
 func setExpectationsForUserRetrieval(mock sqlmock.Sqlmock, email string, err error) {
 	exampleRows := sqlmock.NewRows(userTableHeaders).AddRow(exampleUserData...)
 	query, rawArgs := buildUserSelectionQuery(email)
 	query = formatQueryForSQLMock(query)
+	args := argsToDriverValues(rawArgs)
+	mock.ExpectQuery(query).
+		WithArgs(args...).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
+func setExpectationsForUserRetrievalByID(mock sqlmock.Sqlmock, userID uint64, err error) {
+	exampleRows := sqlmock.NewRows(userTableHeaders).AddRow(exampleUserData...)
+	query, rawArgs := buildUserSelectionQueryByID(userID)
+	query = formatQueryForSQLMock(query)
+	args := argsToDriverValues(rawArgs)
+	mock.ExpectQuery(query).
+		WithArgs(args...).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
+func setExpectationsForUserUpdate(mock sqlmock.Sqlmock, u *User, passwordChanged bool, err error) {
+	exampleRows := sqlmock.NewRows(userTableHeaders).AddRow(exampleUserData...)
+	rawQuery, rawArgs := buildUserUpdateQuery(u, passwordChanged)
+	query := formatQueryForSQLMock(rawQuery)
 	args := argsToDriverValues(rawArgs)
 	mock.ExpectQuery(query).
 		WithArgs(args...).
@@ -150,6 +198,26 @@ func TestValidateSessionCookieMiddlewareWithInvalidCookie(t *testing.T) {
 	assert.False(t, handlerWasCalled)
 }
 
+func TestPasswordIsValid(t *testing.T) {
+	inputOutputMap := map[string]bool{
+		// the worst password ever
+		"password": false,
+		// should pass, but only barely
+		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaA1!": true,
+		// the example password we've already been using all over the place
+		examplePassword: true,
+	}
+
+	for in, expected := range inputOutputMap {
+		actual := passwordIsValid(in)
+		msg := fmt.Sprintf("expected password `%s` to be considered valid, but it was considered invalid", in)
+		if !expected {
+			msg = fmt.Sprintf("expected password `%s` to be considered invalid, but it was considered valid", in)
+		}
+		assert.Equal(t, expected, actual, msg)
+	}
+}
+
 func TestCreateUserFromInput(t *testing.T) {
 	t.Parallel()
 
@@ -176,6 +244,27 @@ func TestCreateUserFromInput(t *testing.T) {
 	assert.Equal(t, expected.IsAdmin, actual.IsAdmin, "IsAdmin fields should match")
 	assert.NotEqual(t, expected.Password, actual.Password, "Generated User password should not have the same password as the user input")
 	assert.Equal(t, saltSize, len(actual.Salt), fmt.Sprintf("Generated salt should be %d bytes large", saltSize))
+}
+
+func TestCreateUserFromUpdateInput(t *testing.T) {
+	t.Parallel()
+
+	exampleUserUpdateInput := &UserUpdateInput{
+		FirstName: "FirstName",
+		LastName:  "LastName",
+		Username:  "Username",
+		Email:     "Email",
+	}
+	expected := &User{
+		FirstName: "FirstName",
+		LastName:  "LastName",
+		Username:  "Username",
+		Email:     "Email",
+		Password:  hashedExamplePassword,
+	}
+	actual := createUserFromUpdateInput(exampleUserUpdateInput, hashedExamplePassword)
+
+	assert.Equal(t, expected, actual, "expected and actual output were not equal")
 }
 
 func TestGenerateSalt(t *testing.T) {
@@ -255,8 +344,7 @@ func TestRetrieveUserFromDB(t *testing.T) {
 		Email:     "frank@zappa.com",
 		Password:  hashedExamplePassword,
 		IsAdmin:   true,
-		// for some reason I'm too stupid to understand, go wants to copy this value with a cap of 8
-		Salt: dummySalt, //[0:len(dummySalt):len(dummySalt)],
+		Salt:      dummySalt,
 	}
 
 	setExpectationsForUserRetrieval(testUtil.Mock, expected.Username, nil)
@@ -267,12 +355,34 @@ func TestRetrieveUserFromDB(t *testing.T) {
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
-func TestPasswordIsValid(t *testing.T) {
+func TestRetrieveUserFromDBByID(t *testing.T) {
 	t.Parallel()
+	testUtil := setupTestVariables(t)
 
-	input := &UserLoginInput{
-		Password: examplePassword,
+	expected := User{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		FirstName: "Frank",
+		LastName:  "Zappa",
+		Username:  "frankzappa",
+		Email:     "frank@zappa.com",
+		Password:  hashedExamplePassword,
+		IsAdmin:   true,
+		Salt:      dummySalt,
 	}
+
+	setExpectationsForUserRetrievalByID(testUtil.Mock, expected.ID, nil)
+	actual, err := retrieveUserFromDBByID(testUtil.DB, expected.ID)
+	assert.Nil(t, err)
+
+	assert.Equal(t, expected, actual, "expected and actual users should match")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestPasswordMatches(t *testing.T) {
+	t.Parallel()
 
 	saltedPasswordHash, err := saltAndHashPassword(examplePassword, dummySalt)
 	assert.Nil(t, err)
@@ -281,16 +391,12 @@ func TestPasswordIsValid(t *testing.T) {
 		Salt:     dummySalt,
 	}
 
-	actual := passwordIsValid(input, exampleUser)
+	actual := passwordMatches(examplePassword, exampleUser)
 	assert.True(t, actual)
 }
 
-func TestPasswordIsValidFailsWhenPasswordsDoNotMatch(t *testing.T) {
+func TestPasswordMatchesFailsWhenPasswordsDoNotMatch(t *testing.T) {
 	t.Parallel()
-
-	input := &UserLoginInput{
-		Password: "password",
-	}
 
 	saltedPasswordHash, err := saltAndHashPassword(examplePassword, dummySalt)
 	assert.Nil(t, err)
@@ -299,16 +405,12 @@ func TestPasswordIsValidFailsWhenPasswordsDoNotMatch(t *testing.T) {
 		Salt:     dummySalt,
 	}
 
-	actual := passwordIsValid(input, exampleUser)
+	actual := passwordMatches("password", exampleUser)
 	assert.False(t, actual)
 }
 
-func TestPasswordIsValidWithVeryLongPassword(t *testing.T) {
+func TestPasswordMatchesWithVeryLongPassword(t *testing.T) {
 	t.Parallel()
-
-	input := &UserLoginInput{
-		Password: examplePassword,
-	}
 
 	saltedPasswordHash, err := saltAndHashPassword(examplePassword, dummySalt)
 	assert.Nil(t, err)
@@ -317,8 +419,33 @@ func TestPasswordIsValidWithVeryLongPassword(t *testing.T) {
 		Salt:     dummySalt,
 	}
 
-	actual := passwordIsValid(input, exampleUser)
+	actual := passwordMatches(examplePassword, exampleUser)
 	assert.True(t, actual)
+}
+
+func TestUpdateUserInDatabase(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	examplePasswordChanged := false
+	exampleUser := &User{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		FirstName: "Frank",
+		LastName:  "Zappa",
+		Username:  "frankzappa",
+		Email:     "frank@zappa.com",
+		Password:  hashedExamplePassword,
+		IsAdmin:   true,
+		Salt:      dummySalt,
+	}
+	setExpectationsForUserUpdate(testUtil.Mock, exampleUser, examplePasswordChanged, nil)
+
+	err := updateUserInDatabase(testUtil.DB, exampleUser, examplePasswordChanged)
+	assert.Nil(t, err)
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestArchiveUser(t *testing.T) {
@@ -957,3 +1084,54 @@ func TestPasswordResetValidationHandlerForNonexistentToken(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, testUtil.Response.Code, "status code should be 404")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
+
+// func TestUserUpdateHandler(t *testing.T) {
+// 	t.Parallel()
+// 	testUtil := setupTestVariables(t)
+
+// 	exampleUserUpdateInput := fmt.Sprintf(`
+// 		{
+// 			"username": "captain_beefheart",
+// 			"password": %s
+// 		}
+// 	`, examplePassword)
+
+// 	examplePasswordChanged := false
+// 	beforeUser := &User{
+// 		DBRow: DBRow{
+// 			ID:        1,
+// 			CreatedOn: generateExampleTimeForTests(),
+// 		},
+// 		FirstName: "Frank",
+// 		LastName:  "Zappa",
+// 		Username:  "frankzappa",
+// 		Email:     "frank@zappa.com",
+// 		Password:  hashedExamplePassword,
+// 		IsAdmin:   true,
+// 		Salt:      dummySalt,
+// 	}
+
+// 	afterUser := &User{
+// 		DBRow: DBRow{
+// 			ID:        1,
+// 			CreatedOn: generateExampleTimeForTests(),
+// 		},
+// 		FirstName: "Frank",
+// 		LastName:  "Zappa",
+// 		Username:  "frankzappa",
+// 		Email:     "frank@zappa.com",
+// 		Password:  hashedExamplePassword,
+// 		IsAdmin:   true,
+// 		Salt:      dummySalt,
+// 	}
+
+// 	setExpectationsForSpecificUserRetrieval(testUtil.Mock, beforeUser, nil)
+// 	setExpectationsForUserUpdate(testUtil.Mock, afterUser, examplePasswordChanged, nil)
+
+// 	req, err := http.NewRequest(http.MethodPut, "/v1/user/1", strings.NewReader(exampleUserUpdateInput))
+// 	assert.Nil(t, err)
+
+// 	testUtil.Router.ServeHTTP(testUtil.Response, req)
+// 	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
+// 	ensureExpectationsWereMet(t, testUtil.Mock)
+// }
