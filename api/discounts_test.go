@@ -479,7 +479,7 @@ func TestDiscountUpdateHandler(t *testing.T) {
 	setExpectationsForDiscountRetrievalByID(testUtil.Mock, exampleDiscountID, nil)
 	setExpectationsForDiscountUpdate(testUtil.Mock, updateInput, nil)
 
-	req, err := http.NewRequest(http.MethodPut, "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
+	req, err := http.NewRequest(http.MethodPatch, "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -494,7 +494,7 @@ func TestDiscountUpdateHandlerForNonexistentDiscount(t *testing.T) {
 	exampleDiscountID := strconv.Itoa(int(exampleDiscount.ID))
 	setExpectationsForDiscountRetrievalByID(testUtil.Mock, exampleDiscountID, sql.ErrNoRows)
 
-	req, err := http.NewRequest(http.MethodPut, "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
+	req, err := http.NewRequest(http.MethodPatch, "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -506,7 +506,7 @@ func TestDiscountUpdateHandlerWithErrorValidatingInput(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	req, err := http.NewRequest(http.MethodPut, "/v1/discount/1", strings.NewReader(exampleGarbageInput))
+	req, err := http.NewRequest(http.MethodPatch, "/v1/discount/1", strings.NewReader(exampleGarbageInput))
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -533,7 +533,7 @@ func TestDiscountUpdateHandlerWithErrorRetrievingDiscount(t *testing.T) {
 	exampleDiscountID := strconv.Itoa(int(updateInput.ID))
 	setExpectationsForDiscountRetrievalByID(testUtil.Mock, exampleDiscountID, arbitraryError)
 
-	req, err := http.NewRequest(http.MethodPut, "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
+	req, err := http.NewRequest(http.MethodPatch, "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -561,7 +561,7 @@ func TestDiscountUpdateHandlerWithErrorUpdatingDiscount(t *testing.T) {
 	setExpectationsForDiscountRetrievalByID(testUtil.Mock, exampleDiscountID, nil)
 	setExpectationsForDiscountUpdate(testUtil.Mock, updateInput, arbitraryError)
 
-	req, err := http.NewRequest(http.MethodPut, "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
+	req, err := http.NewRequest(http.MethodPatch, "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)

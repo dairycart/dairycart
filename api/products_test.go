@@ -417,7 +417,7 @@ func TestProductUpdateHandler(t *testing.T) {
 	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, nil)
 	setExpectationsForProductUpdateHandler(testUtil.Mock, exampleUpdatedProduct, nil)
 
-	req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), strings.NewReader(exampleProductUpdateInput))
+	req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), strings.NewReader(exampleProductUpdateInput))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
@@ -431,7 +431,7 @@ func TestProductUpdateHandlerWithNonexistentProduct(t *testing.T) {
 
 	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, sql.ErrNoRows)
 
-	req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), strings.NewReader(exampleProductUpdateInput))
+	req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), strings.NewReader(exampleProductUpdateInput))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
@@ -443,7 +443,7 @@ func TestProductUpdateHandlerWithInputValidationError(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	req, err := http.NewRequest(http.MethodPut, "/v1/product/example", strings.NewReader(exampleGarbageInput))
+	req, err := http.NewRequest(http.MethodPatch, "/v1/product/example", strings.NewReader(exampleGarbageInput))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
@@ -457,7 +457,7 @@ func TestProductUpdateHandlerWithSKUValidationError(t *testing.T) {
 
 	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, nil)
 
-	req, err := http.NewRequest(http.MethodPut, "/v1/product/skateboard", strings.NewReader(badSKUUpdateJSON))
+	req, err := http.NewRequest(http.MethodPatch, "/v1/product/skateboard", strings.NewReader(badSKUUpdateJSON))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
@@ -471,7 +471,7 @@ func TestProductUpdateHandlerWithDBErrorRetrievingProduct(t *testing.T) {
 
 	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, arbitraryError)
 
-	req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), strings.NewReader(exampleProductUpdateInput))
+	req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), strings.NewReader(exampleProductUpdateInput))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
@@ -486,7 +486,7 @@ func TestProductUpdateHandlerWithDBErrorUpdatingProduct(t *testing.T) {
 	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, nil)
 	setExpectationsForProductUpdateHandler(testUtil.Mock, exampleUpdatedProduct, arbitraryError)
 
-	req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), strings.NewReader(exampleProductUpdateInput))
+	req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), strings.NewReader(exampleProductUpdateInput))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 

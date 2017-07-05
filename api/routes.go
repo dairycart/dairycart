@@ -26,7 +26,7 @@ func SetupAPIRoutes(router *chi.Mux, db *sqlx.DB, store *sessions.CookieStore) {
 	router.Post("/login", buildUserLoginHandler(db, store))
 	router.Post("/logout", buildUserLogoutHandler(store))
 	router.Post("/user", buildUserCreationHandler(db, store))
-	router.Put(fmt.Sprintf("/user/{user_id:%s}", NumericPattern), buildUserInfoUpdateHandler(db))
+	router.Patch(fmt.Sprintf("/user/{user_id:%s}", NumericPattern), buildUserInfoUpdateHandler(db))
 	router.Post("/password_reset", buildUserForgottenPasswordHandler(db))
 	router.Head("/password_reset/{reset_token}", buildUserPasswordResetTokenValidationHandler(db))
 	//router.Head("/password_reset/{reset_token:[a-zA-Z0-9]{}}", buildUserPasswordResetTokenValidationHandler(db))
@@ -40,7 +40,7 @@ func SetupAPIRoutes(router *chi.Mux, db *sqlx.DB, store *sessions.CookieStore) {
 		r.Post("/product", buildProductCreationHandler(db))
 		r.Get("/products", buildProductListHandler(db))
 		r.Get(productEndpoint, buildSingleProductHandler(db))
-		r.Put(productEndpoint, buildProductUpdateHandler(db))
+		r.Patch(productEndpoint, buildProductUpdateHandler(db))
 		r.Head(productEndpoint, buildProductExistenceHandler(db))
 		r.Delete(productEndpoint, buildProductDeletionHandler(db))
 
@@ -49,18 +49,18 @@ func SetupAPIRoutes(router *chi.Mux, db *sqlx.DB, store *sessions.CookieStore) {
 		specificOptionEndpoint := fmt.Sprintf("/product_options/{option_id:%s}", NumericPattern)
 		r.Get(productOptionEndpoint, buildProductOptionListHandler(db))
 		r.Post(productOptionEndpoint, buildProductOptionCreationHandler(db))
-		r.Put(specificOptionEndpoint, buildProductOptionUpdateHandler(db))
+		r.Patch(specificOptionEndpoint, buildProductOptionUpdateHandler(db))
 
 		// Product Option Values
 		optionValueEndpoint := fmt.Sprintf("/product_options/{option_id:%s}/value", NumericPattern)
 		specificOptionValueEndpoint := fmt.Sprintf("/product_option_values/{option_value_id:%s}", NumericPattern)
 		r.Post(optionValueEndpoint, buildProductOptionValueCreationHandler(db))
-		r.Put(specificOptionValueEndpoint, buildProductOptionValueUpdateHandler(db))
+		r.Patch(specificOptionValueEndpoint, buildProductOptionValueUpdateHandler(db))
 
 		// Discounts
 		specificDiscountEndpoint := fmt.Sprintf("/discount/{discount_id:%s}", NumericPattern)
 		r.Get(specificDiscountEndpoint, buildDiscountRetrievalHandler(db))
-		r.Put(specificDiscountEndpoint, buildDiscountUpdateHandler(db))
+		r.Patch(specificDiscountEndpoint, buildDiscountUpdateHandler(db))
 		r.Delete(specificDiscountEndpoint, buildDiscountDeletionHandler(db))
 		r.Get("/discounts", buildDiscountListRetrievalHandler(db))
 		r.Post("/discount", buildDiscountCreationHandler(db))

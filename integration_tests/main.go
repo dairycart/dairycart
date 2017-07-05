@@ -126,7 +126,7 @@ func createProduct(JSONBody string) (*http.Response, error) {
 func updateProduct(sku string, JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
 	url := buildPath("product", sku)
-	req, _ := http.NewRequest(http.MethodPut, url, body)
+	req, _ := http.NewRequest(http.MethodPatch, url, body)
 	return requester.execRequest(req)
 }
 
@@ -153,7 +153,7 @@ func createProductOptionForProduct(productID string, JSONBody string) (*http.Res
 func updateProductOption(optionID string, JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
 	url := buildPath("product_options", optionID)
-	req, _ := http.NewRequest(http.MethodPut, url, body)
+	req, _ := http.NewRequest(http.MethodPatch, url, body)
 	return requester.execRequest(req)
 }
 
@@ -167,7 +167,7 @@ func createProductOptionValueForOption(optionID string, JSONBody string) (*http.
 func updateProductOptionValueForOption(valueID string, JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
 	url := buildPath("product_option_values", valueID)
-	req, _ := http.NewRequest(http.MethodPut, url, body)
+	req, _ := http.NewRequest(http.MethodPatch, url, body)
 	return requester.execRequest(req)
 }
 
@@ -194,6 +194,6 @@ func createDiscount(JSONBody string) (*http.Response, error) {
 func updateDiscount(discountID string, JSONBody string) (*http.Response, error) {
 	url := buildPath("discount", discountID)
 	body := strings.NewReader(JSONBody)
-	req, _ := http.NewRequest(http.MethodPut, url, body)
+	req, _ := http.NewRequest(http.MethodPatch, url, body)
 	return requester.execRequest(req)
 }

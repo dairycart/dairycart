@@ -332,7 +332,7 @@ func TestProductOptionValueUpdateHandler(t *testing.T) {
 	setExpectationsForProductOptionValueUpdate(testUtil.Mock, exampleUpdatedProductOptionValue, nil)
 
 	productOptionValueEndpoint := buildRoute("v1", "product_option_values", optionValueIDString)
-	req, err := http.NewRequest(http.MethodPut, productOptionValueEndpoint, strings.NewReader(exampleProductOptionValueUpdateBody))
+	req, err := http.NewRequest(http.MethodPatch, productOptionValueEndpoint, strings.NewReader(exampleProductOptionValueUpdateBody))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
@@ -349,7 +349,7 @@ func TestProductOptionValueUpdateHandlerWhereOptionValueDoesNotExist(t *testing.
 	setExpectationsForProductOptionValueExistence(testUtil.Mock, exampleProductOptionValue, false, nil)
 
 	productOptionValueEndpoint := buildRoute("v1", "product_option_values", optionValueIDString)
-	req, err := http.NewRequest(http.MethodPut, productOptionValueEndpoint, strings.NewReader(exampleProductOptionValueUpdateBody))
+	req, err := http.NewRequest(http.MethodPatch, productOptionValueEndpoint, strings.NewReader(exampleProductOptionValueUpdateBody))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
@@ -366,7 +366,7 @@ func TestProductOptionValueUpdateHandlerWhereInputIsInvalid(t *testing.T) {
 	setExpectationsForProductOptionValueExistence(testUtil.Mock, exampleProductOptionValue, true, nil)
 
 	productOptionValueEndpoint := buildRoute("v1", "product_option_values", optionValueIDString)
-	req, err := http.NewRequest(http.MethodPut, productOptionValueEndpoint, strings.NewReader(exampleGarbageInput))
+	req, err := http.NewRequest(http.MethodPatch, productOptionValueEndpoint, strings.NewReader(exampleGarbageInput))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
@@ -384,7 +384,7 @@ func TestProductOptionValueUpdateHandlerWhereErrorEncounteredRetrievingOption(t 
 	setExpectationsForProductOptionValueRetrieval(testUtil.Mock, exampleProductOptionValue, arbitraryError)
 
 	productOptionValueEndpoint := buildRoute("v1", "product_option_values", optionValueIDString)
-	req, err := http.NewRequest(http.MethodPut, productOptionValueEndpoint, strings.NewReader(exampleProductOptionValueUpdateBody))
+	req, err := http.NewRequest(http.MethodPatch, productOptionValueEndpoint, strings.NewReader(exampleProductOptionValueUpdateBody))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
@@ -403,7 +403,7 @@ func TestProductOptionValueUpdateHandlerWhereErrorEncounteredUpdatingOption(t *t
 	setExpectationsForProductOptionValueUpdate(testUtil.Mock, exampleUpdatedProductOptionValue, arbitraryError)
 
 	productOptionValueEndpoint := buildRoute("v1", "product_option_values", optionValueIDString)
-	req, err := http.NewRequest(http.MethodPut, productOptionValueEndpoint, strings.NewReader(exampleProductOptionValueUpdateBody))
+	req, err := http.NewRequest(http.MethodPatch, productOptionValueEndpoint, strings.NewReader(exampleProductOptionValueUpdateBody))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 

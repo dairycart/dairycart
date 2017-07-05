@@ -1137,7 +1137,7 @@ func TestUserUpdateHandler(t *testing.T) {
 	setExpectationsForUserRetrievalByID(testUtil.Mock, beforeUser.ID, nil)
 	setExpectationsForUserUpdate(testUtil.Mock, afterUser, examplePasswordChanged, nil)
 
-	req, err := http.NewRequest(http.MethodPut, "/user/1", strings.NewReader(exampleUserUpdateInput))
+	req, err := http.NewRequest(http.MethodPatch, "/user/1", strings.NewReader(exampleUserUpdateInput))
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -1149,7 +1149,7 @@ func TestUserUpdateHandlerWithInvalidInput(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	req, err := http.NewRequest(http.MethodPut, "/user/1", strings.NewReader(exampleGarbageInput))
+	req, err := http.NewRequest(http.MethodPatch, "/user/1", strings.NewReader(exampleGarbageInput))
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -1168,7 +1168,7 @@ func TestUserUpdateHandlerWhileAttemptingToChangePasswordToAnInvalidPassword(t *
  		}
  	`, examplePassword)
 
-	req, err := http.NewRequest(http.MethodPut, "/user/1", strings.NewReader(exampleUserUpdateInput))
+	req, err := http.NewRequest(http.MethodPatch, "/user/1", strings.NewReader(exampleUserUpdateInput))
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -1203,7 +1203,7 @@ func TestUserUpdateHandlerForNonexistentUser(t *testing.T) {
 
 	setExpectationsForUserRetrievalByID(testUtil.Mock, beforeUser.ID, sql.ErrNoRows)
 
-	req, err := http.NewRequest(http.MethodPut, "/user/1", strings.NewReader(exampleUserUpdateInput))
+	req, err := http.NewRequest(http.MethodPatch, "/user/1", strings.NewReader(exampleUserUpdateInput))
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -1238,7 +1238,7 @@ func TestUserUpdateHandlerWithErrorRetrievingUser(t *testing.T) {
 
 	setExpectationsForUserRetrievalByID(testUtil.Mock, beforeUser.ID, arbitraryError)
 
-	req, err := http.NewRequest(http.MethodPut, "/user/1", strings.NewReader(exampleUserUpdateInput))
+	req, err := http.NewRequest(http.MethodPatch, "/user/1", strings.NewReader(exampleUserUpdateInput))
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -1273,7 +1273,7 @@ func TestUserUpdateHandlerWhenPasswordDoesNotMatchExpectation(t *testing.T) {
 
 	setExpectationsForUserRetrievalByID(testUtil.Mock, beforeUser.ID, nil)
 
-	req, err := http.NewRequest(http.MethodPut, "/user/1", strings.NewReader(exampleUserUpdateInput))
+	req, err := http.NewRequest(http.MethodPatch, "/user/1", strings.NewReader(exampleUserUpdateInput))
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -1326,7 +1326,7 @@ func TestUserUpdateHandlerWithNewPassword(t *testing.T) {
 	setExpectationsForUserRetrievalByID(testUtil.Mock, beforeUser.ID, nil)
 	setExpectationsForUserUpdateWithoutSpecifyingPassword(testUtil.Mock, afterUser, examplePasswordChanged, nil)
 
-	req, err := http.NewRequest(http.MethodPut, "/user/1", strings.NewReader(exampleUserUpdateInput))
+	req, err := http.NewRequest(http.MethodPatch, "/user/1", strings.NewReader(exampleUserUpdateInput))
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -1377,7 +1377,7 @@ func TestUserUpdateHandlerWithErrorUpdatingUser(t *testing.T) {
 	setExpectationsForUserRetrievalByID(testUtil.Mock, beforeUser.ID, nil)
 	setExpectationsForUserUpdate(testUtil.Mock, afterUser, examplePasswordChanged, arbitraryError)
 
-	req, err := http.NewRequest(http.MethodPut, "/user/1", strings.NewReader(exampleUserUpdateInput))
+	req, err := http.NewRequest(http.MethodPatch, "/user/1", strings.NewReader(exampleUserUpdateInput))
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
