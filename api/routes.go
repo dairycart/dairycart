@@ -24,6 +24,7 @@ func SetupAPIRoutes(router *chi.Mux, db *sqlx.DB, store *sessions.CookieStore) {
 	router.Post("/login", buildUserLoginHandler(db, store))
 	router.Post("/logout", buildUserLogoutHandler(store))
 	router.Post("/user", buildUserCreationHandler(db, store))
+	router.Put("/user/{user_id:[0-9]+}", buildUserInfoUpdateHandler(db))
 	router.Post("/password_reset", buildUserForgottenPasswordHandler(db))
 	router.Head("/password_reset/{reset_token}", buildUserPasswordResetTokenValidationHandler(db))
 	//router.Head("/password_reset/{reset_token:[a-zA-Z0-9]{}}", buildUserPasswordResetTokenValidationHandler(db))

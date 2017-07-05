@@ -467,7 +467,7 @@ func buildUserInfoUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 			var err error
 			hashedPassword, err = saltAndHashPassword(newPassword, existingUser.Salt)
 			if err != nil {
-				notifyOfInternalIssue(res, err, "retrieve user")
+				notifyOfInternalIssue(res, err, "update user")
 				return
 			}
 		}
@@ -478,7 +478,7 @@ func buildUserInfoUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 
 		err = updateUserInDatabase(db, updatedUser, passwordChanged)
 		if err != nil {
-			notifyOfInternalIssue(res, err, "update user in database")
+			notifyOfInternalIssue(res, err, "update user")
 			return
 		}
 

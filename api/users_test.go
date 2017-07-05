@@ -118,6 +118,15 @@ func setExpectationsForUserUpdate(mock sqlmock.Sqlmock, u *User, passwordChanged
 		WillReturnError(err)
 }
 
+func setExpectationsForUserUpdateWithoutSpecifyingPassword(mock sqlmock.Sqlmock, u *User, passwordChanged bool, err error) {
+	exampleRows := sqlmock.NewRows(userTableHeaders).AddRow(exampleUserData...)
+	rawQuery, _ := buildUserUpdateQuery(u, passwordChanged)
+	query := formatQueryForSQLMock(rawQuery)
+	mock.ExpectQuery(query).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
 func setExpectationsForUserDeletion(mock sqlmock.Sqlmock, id uint64, err error) {
 	mock.ExpectExec(formatQueryForSQLMock(userDeletionQuery)).
 		WithArgs(id).
@@ -1085,53 +1094,293 @@ func TestPasswordResetValidationHandlerForNonexistentToken(t *testing.T) {
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
-// func TestUserUpdateHandler(t *testing.T) {
-// 	t.Parallel()
-// 	testUtil := setupTestVariables(t)
+func TestUserUpdateHandler(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
 
-// 	exampleUserUpdateInput := fmt.Sprintf(`
-// 		{
-// 			"username": "captain_beefheart",
-// 			"password": %s
-// 		}
-// 	`, examplePassword)
+	exampleUserUpdateInput := fmt.Sprintf(`
+ 		{
+ 			"username": "captain_beefheart",
+ 			"current_password": "%s"
+ 		}
+ 	`, examplePassword)
 
-// 	examplePasswordChanged := false
-// 	beforeUser := &User{
-// 		DBRow: DBRow{
-// 			ID:        1,
-// 			CreatedOn: generateExampleTimeForTests(),
-// 		},
-// 		FirstName: "Frank",
-// 		LastName:  "Zappa",
-// 		Username:  "frankzappa",
-// 		Email:     "frank@zappa.com",
-// 		Password:  hashedExamplePassword,
-// 		IsAdmin:   true,
-// 		Salt:      dummySalt,
-// 	}
+	examplePasswordChanged := false
+	beforeUser := &User{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		FirstName: "Frank",
+		LastName:  "Zappa",
+		Username:  "frankzappa",
+		Email:     "frank@zappa.com",
+		Password:  hashedExamplePassword,
+		IsAdmin:   true,
+		Salt:      dummySalt,
+	}
 
-// 	afterUser := &User{
-// 		DBRow: DBRow{
-// 			ID:        1,
-// 			CreatedOn: generateExampleTimeForTests(),
-// 		},
-// 		FirstName: "Frank",
-// 		LastName:  "Zappa",
-// 		Username:  "frankzappa",
-// 		Email:     "frank@zappa.com",
-// 		Password:  hashedExamplePassword,
-// 		IsAdmin:   true,
-// 		Salt:      dummySalt,
-// 	}
+	afterUser := &User{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		FirstName: "Frank",
+		LastName:  "Zappa",
+		Username:  "captain_beefheart",
+		Email:     "frank@zappa.com",
+		Password:  hashedExamplePassword,
+		IsAdmin:   true,
+		Salt:      dummySalt,
+	}
 
-// 	setExpectationsForSpecificUserRetrieval(testUtil.Mock, beforeUser, nil)
-// 	setExpectationsForUserUpdate(testUtil.Mock, afterUser, examplePasswordChanged, nil)
+	setExpectationsForUserRetrievalByID(testUtil.Mock, beforeUser.ID, nil)
+	setExpectationsForUserUpdate(testUtil.Mock, afterUser, examplePasswordChanged, nil)
 
-// 	req, err := http.NewRequest(http.MethodPut, "/v1/user/1", strings.NewReader(exampleUserUpdateInput))
-// 	assert.Nil(t, err)
+	req, err := http.NewRequest(http.MethodPut, "/user/1", strings.NewReader(exampleUserUpdateInput))
+	assert.Nil(t, err)
 
-// 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-// 	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
-// 	ensureExpectationsWereMet(t, testUtil.Mock)
-// }
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestUserUpdateHandlerWithInvalidInput(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	req, err := http.NewRequest(http.MethodPut, "/user/1", strings.NewReader(exampleGarbageInput))
+	assert.Nil(t, err)
+
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestUserUpdateHandlerWhileAttemptingToChangePasswordToAnInvalidPassword(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	exampleUserUpdateInput := fmt.Sprintf(`
+ 		{
+ 			"new_password": "passwordpasswordpasswordpasswordpasswordpasswordpasswordpassword",
+ 			"current_password": "%s"
+ 		}
+ 	`, examplePassword)
+
+	req, err := http.NewRequest(http.MethodPut, "/user/1", strings.NewReader(exampleUserUpdateInput))
+	assert.Nil(t, err)
+
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestUserUpdateHandlerForNonexistentUser(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	exampleUserUpdateInput := fmt.Sprintf(`
+ 		{
+ 			"username": "captain_beefheart",
+ 			"current_password": "%s"
+ 		}
+ 	`, examplePassword)
+
+	beforeUser := &User{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		FirstName: "Frank",
+		LastName:  "Zappa",
+		Username:  "frankzappa",
+		Email:     "frank@zappa.com",
+		Password:  hashedExamplePassword,
+		IsAdmin:   true,
+		Salt:      dummySalt,
+	}
+
+	setExpectationsForUserRetrievalByID(testUtil.Mock, beforeUser.ID, sql.ErrNoRows)
+
+	req, err := http.NewRequest(http.MethodPut, "/user/1", strings.NewReader(exampleUserUpdateInput))
+	assert.Nil(t, err)
+
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+	assert.Equal(t, http.StatusNotFound, testUtil.Response.Code, "status code should be 404")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestUserUpdateHandlerWithErrorRetrievingUser(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	exampleUserUpdateInput := fmt.Sprintf(`
+ 		{
+ 			"username": "captain_beefheart",
+ 			"current_password": "%s"
+ 		}
+ 	`, examplePassword)
+
+	beforeUser := &User{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		FirstName: "Frank",
+		LastName:  "Zappa",
+		Username:  "frankzappa",
+		Email:     "frank@zappa.com",
+		Password:  hashedExamplePassword,
+		IsAdmin:   true,
+		Salt:      dummySalt,
+	}
+
+	setExpectationsForUserRetrievalByID(testUtil.Mock, beforeUser.ID, arbitraryError)
+
+	req, err := http.NewRequest(http.MethodPut, "/user/1", strings.NewReader(exampleUserUpdateInput))
+	assert.Nil(t, err)
+
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestUserUpdateHandlerWhenPasswordDoesNotMatchExpectation(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	exampleUserUpdateInput := fmt.Sprintf(`
+ 		{
+ 			"username": "captain_beefheart",
+ 			"current_password": "%s"
+ 		}
+ 	`, fmt.Sprintf("%s!", examplePassword))
+
+	beforeUser := &User{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		FirstName: "Frank",
+		LastName:  "Zappa",
+		Username:  "frankzappa",
+		Email:     "frank@zappa.com",
+		Password:  hashedExamplePassword,
+		IsAdmin:   true,
+		Salt:      dummySalt,
+	}
+
+	setExpectationsForUserRetrievalByID(testUtil.Mock, beforeUser.ID, nil)
+
+	req, err := http.NewRequest(http.MethodPut, "/user/1", strings.NewReader(exampleUserUpdateInput))
+	assert.Nil(t, err)
+
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+	assert.Equal(t, http.StatusUnauthorized, testUtil.Response.Code, "status code should be 401")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestUserUpdateHandlerWithNewPassword(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	exampleNewPassword := "P@ssw0rdP@ssw0rdP@ssw0rdP@ssw0rdP@ssw0rdP@ssw0rdP@ssw0rdP@ssw0rd"
+	exampleNewPasswordHashed := "$2a$13$xhhweT6OnsU7l6GyPGdin.YDANUGnFEu7xJQb7eU/zv4KBCiRwWbC"
+	exampleUserUpdateInput := fmt.Sprintf(`
+ 		{
+ 			"new_password": "%s",
+ 			"current_password": "%s"
+ 		}
+ 	`, exampleNewPassword, examplePassword)
+
+	examplePasswordChanged := true
+	beforeUser := &User{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		FirstName: "Frank",
+		LastName:  "Zappa",
+		Username:  "frankzappa",
+		Email:     "frank@zappa.com",
+		Password:  hashedExamplePassword,
+		IsAdmin:   true,
+		Salt:      dummySalt,
+	}
+
+	afterUser := &User{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		FirstName: "Frank",
+		LastName:  "Zappa",
+		Username:  "captain_beefheart",
+		Email:     "frank@zappa.com",
+		Password:  exampleNewPasswordHashed,
+		IsAdmin:   true,
+		Salt:      dummySalt,
+	}
+
+	setExpectationsForUserRetrievalByID(testUtil.Mock, beforeUser.ID, nil)
+	setExpectationsForUserUpdateWithoutSpecifyingPassword(testUtil.Mock, afterUser, examplePasswordChanged, nil)
+
+	req, err := http.NewRequest(http.MethodPut, "/user/1", strings.NewReader(exampleUserUpdateInput))
+	assert.Nil(t, err)
+
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestUserUpdateHandlerWithErrorUpdatingUser(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	exampleUserUpdateInput := fmt.Sprintf(`
+ 		{
+ 			"username": "captain_beefheart",
+ 			"current_password": "%s"
+ 		}
+ 	`, examplePassword)
+
+	examplePasswordChanged := false
+	beforeUser := &User{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		FirstName: "Frank",
+		LastName:  "Zappa",
+		Username:  "frankzappa",
+		Email:     "frank@zappa.com",
+		Password:  hashedExamplePassword,
+		IsAdmin:   true,
+		Salt:      dummySalt,
+	}
+
+	afterUser := &User{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		FirstName: "Frank",
+		LastName:  "Zappa",
+		Username:  "captain_beefheart",
+		Email:     "frank@zappa.com",
+		Password:  hashedExamplePassword,
+		IsAdmin:   true,
+		Salt:      dummySalt,
+	}
+
+	setExpectationsForUserRetrievalByID(testUtil.Mock, beforeUser.ID, nil)
+	setExpectationsForUserUpdate(testUtil.Mock, afterUser, examplePasswordChanged, arbitraryError)
+
+	req, err := http.NewRequest(http.MethodPut, "/user/1", strings.NewReader(exampleUserUpdateInput))
+	assert.Nil(t, err)
+
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
