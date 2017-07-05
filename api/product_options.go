@@ -24,6 +24,8 @@ const (
 	productOptionExistenceQuery                 = `SELECT EXISTS(SELECT 1 FROM product_options WHERE id = $1 AND archived_on IS NULL)`
 	productOptionRetrievalQuery                 = `SELECT * FROM product_options WHERE id = $1`
 	productOptionExistenceQueryForProductByName = `SELECT EXISTS(SELECT 1 FROM product_options WHERE name = $1 AND product_id = $2 and archived_on IS NULL)`
+	productOptionDeletionQuery                  = `UPDATE product_options SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
+	productOptionValuesDeletionQueryByOptionID  = `UPDATE product_option_values SET archived_on = NOW() WHERE option_id = $1 AND archived_on IS NULL`
 )
 
 // ProductOption represents a products variant options. If you have a t-shirt that comes in three colors
@@ -252,7 +254,7 @@ func buildProductOptionCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		// can't create an option that already exist!
+		// can't create an option that already exists!
 		optionExists, err := productOptionAlreadyExistsForProduct(db, newOptionData, productID)
 		if err != nil || optionExists {
 			notifyOfInvalidRequestBody(res, fmt.Errorf("product option with the name `%s` already exists", newOptionData.Name))
@@ -280,5 +282,57 @@ func buildProductOptionCreationHandler(db *sqlx.DB) http.HandlerFunc {
 
 		res.WriteHeader(http.StatusCreated)
 		json.NewEncoder(res).Encode(newProductOption)
+	}
+}
+
+func archiveProductOption(db *sqlx.Tx, optionID uint64) error {
+	_, err := db.Exec(productOptionDeletionQuery, optionID)
+	return err
+}
+
+func archiveProductOptionValuesForOption(db *sqlx.Tx, optionID uint64) error {
+	_, err := db.Exec(productOptionValuesDeletionQueryByOptionID, optionID)
+	return err
+}
+
+func buildProductOptionDeletionHandler(db *sqlx.DB) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		// ProductOptionDeletionHandler is a request handler that can delete product options
+		optionID := chi.URLParam(req, "option_id")
+		// eating this error because Chi should validate this for us.
+		optionIDInt, _ := strconv.Atoi(optionID)
+
+		// can't delete an option that doesn't exist!
+		optionExists, err := rowExistsInDB(db, productOptionExistenceQuery, optionID)
+		if err != nil || !optionExists {
+			respondThatRowDoesNotExist(req, res, "product option", optionID)
+			return
+		}
+
+		tx, err := db.Beginx()
+		if err != nil {
+			notifyOfInternalIssue(res, err, "starting a new transaction")
+			return
+		}
+
+		err = archiveProductOptionValuesForOption(tx, uint64(optionIDInt))
+		if err != nil {
+			notifyOfInternalIssue(res, err, "archiving product option values")
+			return
+		}
+
+		err = archiveProductOption(tx, uint64(optionIDInt))
+		if err != nil {
+			notifyOfInternalIssue(res, err, "archiving product options")
+			return
+		}
+
+		err = tx.Commit()
+		if err != nil {
+			notifyOfInternalIssue(res, err, "closing out transaction")
+			return
+		}
+
+		res.WriteHeader(http.StatusOK)
 	}
 }

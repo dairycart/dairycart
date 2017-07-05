@@ -18,6 +18,7 @@ const (
 	productOptionValueExistenceForOptionIDQuery = `SELECT EXISTS(SELECT 1 FROM product_option_values WHERE product_option_id = $1 AND value = $2 AND archived_on IS NULL)`
 	productOptionValueRetrievalQuery            = `SELECT * FROM product_option_values WHERE id = $1`
 	productOptionValueRetrievalForOptionIDQuery = `SELECT * FROM product_option_values WHERE product_option_id = $1 AND archived_on IS NULL`
+	productOptionValueDeletionQuery             = `UPDATE product_option_values SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
 )
 
 // ProductOptionValue represents a product's option values. If you have a t-shirt that comes in three colors
@@ -196,5 +197,34 @@ func buildProductOptionValueCreationHandler(db *sqlx.DB) http.HandlerFunc {
 
 		res.WriteHeader(http.StatusCreated)
 		json.NewEncoder(res).Encode(newProductOptionValue)
+	}
+}
+
+func archiveProductOptionValue(db *sqlx.DB, id uint64) error {
+	_, err := db.Exec(productOptionValueDeletionQuery, id)
+	return err
+}
+
+func buildProductOptionValueDeletionHandler(db *sqlx.DB) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		// ProductOptionValueDeletionHandler is a request handler that can delete product option values
+		optionValueID := chi.URLParam(req, "option_value_id")
+		// eating these errors because Mux should validate these for us.
+		optionValueIDInt, _ := strconv.Atoi(optionValueID)
+
+		// can't delete an option value that doesn't exist!
+		optionValueExists, err := rowExistsInDB(db, productOptionValueExistenceQuery, optionValueID)
+		if err != nil || !optionValueExists {
+			respondThatRowDoesNotExist(req, res, "product option value", optionValueID)
+			return
+		}
+
+		err = archiveProductOptionValue(db, uint64(optionValueIDInt))
+		if err != nil {
+			notifyOfInternalIssue(res, err, "closing out transaction")
+			return
+		}
+
+		res.WriteHeader(http.StatusOK)
 	}
 }
