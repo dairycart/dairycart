@@ -20,19 +20,20 @@ const (
 	newChecklistFilePath = "integration_tests/README_linked.md"
 )
 
-type Result struct {
+type result struct {
 	Filename string
 	Line     int
+	UseCount int
 }
 
-func failIfErr(err error) {
+func must(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-func generateFunctionToLineNumberMap(file *os.File, filename string, nameValidator *regexp.Regexp) map[string]Result {
-	functionNamesToLineNumberMap := map[string]Result{}
+func generateFunctionToLineNumberMap(file *os.File, filename string, nameValidator *regexp.Regexp) map[string]*result {
+	functionNamesToLineNumberMap := map[string]*result{}
 	validationPattern := fmt.Sprintf(`func %s\(t \*testing\.T\) \{`, functionNamePattern)
 	funcValidator := regexp.MustCompile(validationPattern)
 	lineNumber := 0
@@ -43,7 +44,7 @@ func generateFunctionToLineNumberMap(file *os.File, filename string, nameValidat
 		line := scanner.Text()
 		if funcValidator.MatchString(line) {
 			functionName := string(nameValidator.Find([]byte(line)))
-			functionNamesToLineNumberMap[functionName] = Result{
+			functionNamesToLineNumberMap[functionName] = &result{
 				Filename: filename,
 				Line:     lineNumber,
 			}
@@ -56,7 +57,7 @@ func generateFunctionToLineNumberMap(file *os.File, filename string, nameValidat
 	return functionNamesToLineNumberMap
 }
 
-func replaceLinksInChecklistFile(old *os.File, new *os.File, nameValidator *regexp.Regexp, functionNamesToLineNumberMap map[string]Result) {
+func replaceLinksInChecklistFile(old *os.File, new *os.File, nameValidator *regexp.Regexp, functionNamesToLineNumberMap map[string]*result) {
 	checklistValidator := regexp.MustCompile(checklistNamePattern)
 
 	lineNumber := 0
@@ -73,11 +74,11 @@ func replaceLinksInChecklistFile(old *os.File, new *os.File, nameValidator *rege
 			checklistPart := strings.Split(line, "(")[0]
 			newLine := fmt.Sprintf("%s%s", checklistPart, link)
 			_, err := new.WriteString(fmt.Sprintf("%s\n", newLine))
-			failIfErr(err)
-			delete(functionNamesToLineNumberMap, functionName)
+			must(err)
+			functionNamesToLineNumberMap[functionName].UseCount++
 		} else {
 			_, err := new.WriteString(fmt.Sprintf("%s\n", line))
-			failIfErr(err)
+			must(err)
 		}
 	}
 
@@ -92,7 +93,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	functionNamesToLineNumberMap := map[string]Result{}
+	functionNamesToLineNumberMap := map[string]*result{}
 	nameValidator := regexp.MustCompile(functionNamePattern)
 	for _, f := range files {
 		fileName := f.Name()
@@ -112,21 +113,27 @@ func main() {
 	}
 
 	checklistFile, err := os.Open(checklistFilePath)
-	failIfErr(err)
+	must(err)
 	defer checklistFile.Close()
 
 	newChecklistFile, err := os.Create(newChecklistFilePath)
-	failIfErr(err)
+	must(err)
 	defer newChecklistFile.Close()
 
 	replaceLinksInChecklistFile(checklistFile, newChecklistFile, nameValidator, functionNamesToLineNumberMap)
-	failIfErr(os.Remove(checklistFilePath))
-	failIfErr(os.Rename(newChecklistFilePath, checklistFilePath))
+	must(os.Remove(checklistFilePath))
+	must(os.Rename(newChecklistFilePath, checklistFilePath))
 
 	if len(functionNamesToLineNumberMap) != 0 {
+		missingDeclarations := 0
 		for f, ln := range functionNamesToLineNumberMap {
-			log.Printf("\t%s (line %d)\n", f, ln.Line)
+			if ln.UseCount == 0 {
+				missingDeclarations++
+				log.Printf("\t%s (line %d)\n", f, ln.Line)
+			}
 		}
-		log.Fatalf("There are %d tests which are unaccounted for in the README", len(functionNamesToLineNumberMap))
+		if missingDeclarations != 0 {
+			log.Fatalf("There are %d tests which are unaccounted for in the README", missingDeclarations)
+		}
 	}
 }

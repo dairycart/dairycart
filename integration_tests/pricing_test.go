@@ -15,6 +15,8 @@ func replaceTimeStringsForDiscountTests(body string) string {
 }
 
 func TestDiscountRetrievalForExistingDiscount(t *testing.T) {
+	// /* TODO: */
+	// t.Parallel()
 	resp, err := getDiscountByID(existentID)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "a successfully retrieved discount should respond 200")
@@ -27,6 +29,7 @@ func TestDiscountRetrievalForExistingDiscount(t *testing.T) {
 }
 
 func TestDiscountRetrievalForNonexistentDiscount(t *testing.T) {
+	t.Parallel()
 	resp, err := getDiscountByID(nonexistentID)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "a request for a nonexistent discount should respond 404")
@@ -79,6 +82,7 @@ func TestDiscountCreation(t *testing.T) {
 }
 
 func TestDiscountCreationWithInvalidInput(t *testing.T) {
+	t.Parallel()
 	resp, err := createDiscount(exampleGarbageInput)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "creating a discount that doesn't exist should respond 400")
@@ -101,6 +105,7 @@ func TestDiscountUpdate(t *testing.T) {
 }
 
 func TestDiscountUpdateInvalidDiscount(t *testing.T) {
+	t.Parallel()
 	updatedDiscountJSON := loadExampleInput(t, "discounts", "update")
 	resp, err := updateDiscount(nonexistentID, updatedDiscountJSON)
 	assert.Nil(t, err)
@@ -108,6 +113,7 @@ func TestDiscountUpdateInvalidDiscount(t *testing.T) {
 }
 
 func TestDiscountUpdateWithInvalidBody(t *testing.T) {
+	t.Parallel()
 	resp, err := updateDiscount(existentID, exampleGarbageInput)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "successfully updating a product should respond 400")

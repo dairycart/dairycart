@@ -46,6 +46,7 @@ func TestProductRetrievalRouteForNonexistentProduct(t *testing.T) {
 }
 
 func TestProductRetrievalRoute(t *testing.T) {
+	t.Parallel()
 	resp, err := retrieveProduct(existentSKU)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "requesting a product should respond 200")
@@ -126,18 +127,6 @@ func TestProductUpdateRouteForNonexistentProduct(t *testing.T) {
 	assert.Equal(t, expected, actual, "trying to update a product that doesn't exist should respond 404")
 }
 
-func TestProductCreation(t *testing.T) {
-	newProductJSON := loadExampleInput(t, "products", "new")
-	resp, err := createProduct(newProductJSON)
-	assert.Nil(t, err)
-	assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product that doesn't exist should respond 201")
-
-	body := turnResponseBodyIntoString(t, resp)
-	actual := replaceTimeStringsForProductTests(replaceTimeStringsForTests(body))
-	expected := minifyJSON(t, loadExpectedResponse(t, "products", "created"))
-	assert.Equal(t, expected, actual, "product creation route should respond with created product body")
-}
-
 func TestProductCreationWithAlreadyExistentSKU(t *testing.T) {
 	t.Parallel()
 	existentProductJSON := loadExpectedResponse(t, "products", "already_existent_sku")
@@ -209,6 +198,8 @@ func TestProductOptionCreationWithInvalidInput(t *testing.T) {
 }
 
 func TestProductOptionCreationWithAlreadyExistentName(t *testing.T) {
+	// /* TODO: */
+	// t.Parallel()
 	newOptionJSON := loadExampleInput(t, "product_options", "new")
 	existingOptionJSON := strings.Replace(newOptionJSON, "example_value", "color", 1)
 	resp, err := createProductOptionForProduct(existentID, existingOptionJSON)
@@ -233,6 +224,7 @@ func TestProductOptionUpdate(t *testing.T) {
 }
 
 func TestProductOptionUpdateWithInvalidInput(t *testing.T) {
+	t.Parallel()
 	resp, err := updateProductOption(existentID, exampleGarbageInput)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "successfully updating a product should respond 400")
@@ -278,6 +270,7 @@ func TestProductOptionValueCreationWithInvalidInput(t *testing.T) {
 }
 
 func TestProductOptionValueCreationWithAlreadyExistentValue(t *testing.T) {
+	t.Parallel()
 	newOptionJSON := loadExampleInput(t, "product_option_values", "new")
 	existingOptionJSON := strings.Replace(newOptionJSON, "example_value", "blue", 1)
 	resp, err := createProductOptionValueForOption(existentID, existingOptionJSON)
@@ -342,8 +335,6 @@ func TestProductOptionValueUpdateForAlreadyExistentValue(t *testing.T) {
 	assert.Equal(t, expectedInternalErrorResponse, actual, "product option update route should respond with 404 message when you try to delete a product that doesn't exist")
 }
 
-// I'd like to keep these functions last if at all possible.
-
 func TestProductDeletionRouteForNonexistentProduct(t *testing.T) {
 	t.Parallel()
 	resp, err := deleteProduct(nonexistentSKU)
@@ -355,12 +346,30 @@ func TestProductDeletionRouteForNonexistentProduct(t *testing.T) {
 	assert.Equal(t, expected, actual, "product deletion route should respond with 404 message when you try to delete a product that doesn't exist")
 }
 
-func TestProductDeletionRouteForNewlyCreatedProduct(t *testing.T) {
-	resp, err := deleteProduct("new-product")
-	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a product that exists should respond 200")
+func TestProductCreationAndDeletion(t *testing.T) {
+	t.Parallel()
+	testProductCreation := func(t *testing.T) {
+		newProductJSON := loadExampleInput(t, "products", "new")
+		resp, err := createProduct(newProductJSON)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product that doesn't exist should respond 201")
 
-	actual := turnResponseBodyIntoString(t, resp)
-	expected := "Successfully deleted product `new-product`"
-	assert.Equal(t, expected, actual, "product deletion route should respond with affirmative message upon successful deletion")
+		body := turnResponseBodyIntoString(t, resp)
+		actual := replaceTimeStringsForProductTests(replaceTimeStringsForTests(body))
+		expected := minifyJSON(t, loadExpectedResponse(t, "products", "created"))
+		assert.Equal(t, expected, actual, "product creation route should respond with created product body")
+	}
+
+	testDeleteProduct := func(t *testing.T) {
+		resp, err := deleteProduct("new-product")
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a product that exists should respond 200")
+
+		actual := turnResponseBodyIntoString(t, resp)
+		expected := "Successfully deleted product `new-product`"
+		assert.Equal(t, expected, actual, "product deletion route should respond with affirmative message upon successful deletion")
+	}
+
+	t.Run("create product", testProductCreation)
+	t.Run("delete created product", testDeleteProduct)
 }
