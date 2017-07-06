@@ -21,7 +21,9 @@ const (
 	// function, and as a consequence, the tests, would fail spectacularly).
 	// Note that this pattern needs to be run as ungreedy because of the possiblity of prefix and or
 	// suffixed commas
-	timeFieldReplacementPattern = `(?U)(,?)"(created_on|updated_on|archived_on)":"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z)?"(,?)`
+	idReplacementPattern          = `(?U)(,?)"(id)":\s?\d+,`
+	timeFieldReplacementPattern   = `(?U)(,?)"(created_on|updated_on|archived_on)":"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z)?"(,?)`
+	productTimeReplacementPattern = `(?U)(,?)"(available_on)":"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z)?"(,?)`
 
 	existentID     = "1"
 	nonexistentID  = "999999999"
@@ -45,6 +47,16 @@ func loadExampleInput(t *testing.T, folder string, filename string) string {
 	assert.Nil(t, err)
 	assert.NotEmpty(t, bodyBytes, "example input file requested is empty and should not be")
 	return strings.TrimSpace(string(bodyBytes))
+}
+
+func cleanAPIResponseBody(body string) string {
+	idRegex := regexp.MustCompile(idReplacementPattern)
+	productTimeRegex := regexp.MustCompile(productTimeReplacementPattern)
+	allRowsTimeRegex := regexp.MustCompile(timeFieldReplacementPattern)
+	out := allRowsTimeRegex.ReplaceAllString(body, "")
+	out = productTimeRegex.ReplaceAllString(out, "")
+	out = idRegex.ReplaceAllString(out, "")
+	return out
 }
 
 func replaceTimeStringsForTests(body string) string {

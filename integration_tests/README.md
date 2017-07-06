@@ -32,7 +32,7 @@ Create product route:
 
 Delete product route:
 
-- [x] Newly Created SKU ([TestProductCreationAndDeletion](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/products_test.go.go#L349))
+- [x] Newly created SKU ([TestProductCreationAndDeletion](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/products_test.go.go#L349))
 - [x] Nonexistent SKU ([TestProductDeletionRouteForNonexistentProduct](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/products_test.go.go#L338))
 
 ## Product Options
@@ -54,6 +54,11 @@ Update product option route:
 - [x] Invalid input ([TestProductOptionUpdateWithInvalidInput](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/products_test.go.go#L226))
 - [x] Nonexistent option ([TestProductOptionUpdateForNonexistentOption](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/products_test.go.go#L237))
 
+Delete product option route:
+
+- [] Newly created option value ()
+- [] Nonexistent option ()
+
 ## Product Option Values
 
 Create product option values route:
@@ -68,6 +73,11 @@ Update product option value route:
 - [x] Invalid input ([TestProductOptionValueUpdateWithInvalidInput](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/products_test.go.go#L297))
 - [x] Nonexistent option value ([TestProductOptionValueUpdateForNonexistentOption](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/products_test.go.go#L308))
 - [x] Duplicate option value ([TestProductOptionValueUpdateForAlreadyExistentValue](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/products_test.go.go#L321))
+
+Delete product option value route:
+
+- [] Newly created option value ()
+- [] Nonexistent option value ()
 
 Single discount route:
 
