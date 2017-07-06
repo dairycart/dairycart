@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/jmoiron/sqlx"
@@ -25,12 +24,9 @@ const (
 // and three sizes, then there are two ProductOptions for that base_product, color and size, and six ProductOptionValues,
 // One for each color and one for each size.
 type ProductOptionValue struct {
-	ID              int64     `json:"id"`
-	ProductOptionID int64     `json:"product_option_id"`
-	Value           string    `json:"value"`
-	CreatedOn       time.Time `json:"created_on"`
-	UpdatedOn       NullTime  `json:"updated_on,omitempty"`
-	ArchivedOn      NullTime  `json:"archived_on,omitempty"`
+	DBRow
+	ProductOptionID int64  `json:"product_option_id"`
+	Value           string `json:"value"`
 }
 
 func (pav *ProductOptionValue) generateScanArgs() []interface{} {
@@ -56,7 +52,7 @@ type ProductOptionValueUpdateInput struct {
 }
 
 // retrieveProductOptionValue retrieves a ProductOptionValue with a given ID from the database
-func retrieveProductOptionValueFromDB(db *sqlx.DB, id int64) (*ProductOptionValue, error) {
+func retrieveProductOptionValueFromDB(db *sqlx.DB, id uint64) (*ProductOptionValue, error) {
 	v := &ProductOptionValue{}
 	err := db.QueryRow(productOptionValueRetrievalQuery, id).Scan(v.generateScanArgs()...)
 	if err == sql.ErrNoRows {
@@ -109,7 +105,7 @@ func buildProductOptionValueUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		existingOptionValue, err := retrieveProductOptionValueFromDB(db, int64(optionValueIDInt))
+		existingOptionValue, err := retrieveProductOptionValueFromDB(db, uint64(optionValueIDInt))
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve product option value from the database")
 			return
@@ -127,8 +123,8 @@ func buildProductOptionValueUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 }
 
 // createProductOptionValueInDB creates a ProductOptionValue tied to a ProductOption
-func createProductOptionValueInDB(tx *sql.Tx, v *ProductOptionValue) (int64, error) {
-	var newOptionValueID int64
+func createProductOptionValueInDB(tx *sql.Tx, v *ProductOptionValue) (uint64, error) {
+	var newOptionValueID uint64
 	query, args := buildProductOptionValueCreationQuery(v)
 	err := tx.QueryRow(query, args...).Scan(&newOptionValueID)
 	return newOptionValueID, err

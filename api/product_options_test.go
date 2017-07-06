@@ -60,15 +60,21 @@ func init() {
 		ProductID: exampleProductOption.ProductID,
 		Values: []ProductOptionValue{
 			{
-				ID:              256, // == exampleProductOptionValue.ID,
+				DBRow: DBRow{
+					ID: 256, // == exampleProductOptionValue.ID,
+				},
 				ProductOptionID: exampleProductOption.ID,
 				Value:           "one",
 			}, {
-				ID:              256, // == exampleProductOptionValue.ID,
+				DBRow: DBRow{
+					ID: 256, // == exampleProductOptionValue.ID,
+				},
 				ProductOptionID: exampleProductOption.ID,
 				Value:           "two",
 			}, {
-				ID:              256, // == exampleProductOptionValue.ID,
+				DBRow: DBRow{
+					ID: 256, // == exampleProductOptionValue.ID,
+				},
 				ProductOptionID: exampleProductOption.ID,
 				Value:           "three",
 			},
