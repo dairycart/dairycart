@@ -25,7 +25,7 @@ const (
 // One for each color and one for each size.
 type ProductOptionValue struct {
 	DBRow
-	ProductOptionID int64  `json:"product_option_id"`
+	ProductOptionID uint64 `json:"product_option_id"`
 	Value           string `json:"value"`
 }
 
@@ -42,7 +42,7 @@ func (pav *ProductOptionValue) generateScanArgs() []interface{} {
 
 // ProductOptionValueCreationInput is a struct to use for creating product option values
 type ProductOptionValueCreationInput struct {
-	ProductOptionID int64
+	ProductOptionID uint64
 	Value           string `json:"value"`
 }
 
@@ -62,7 +62,7 @@ func retrieveProductOptionValueFromDB(db *sqlx.DB, id uint64) (*ProductOptionVal
 }
 
 // retrieveProductOptionValue retrieves a ProductOptionValue with a given product option ID from the database
-func retrieveProductOptionValueForOptionFromDB(db *sqlx.DB, optionID int64) ([]ProductOptionValue, error) {
+func retrieveProductOptionValueForOptionFromDB(db *sqlx.DB, optionID uint64) ([]ProductOptionValue, error) {
 	var values []ProductOptionValue
 
 	rows, err := db.Query(productOptionValueRetrievalForOptionIDQuery, optionID)
@@ -162,7 +162,7 @@ func buildProductOptionValueCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			notifyOfInvalidRequestBody(res, err)
 			return
 		}
-		newProductOptionValue.ProductOptionID = optionIDInt
+		newProductOptionValue.ProductOptionID = uint64(optionIDInt)
 
 		// can't create a product option value that already exists
 		productOptionValueExistsByValue, err := optionValueAlreadyExistsForOption(db, optionIDInt, newProductOptionValue.Value)

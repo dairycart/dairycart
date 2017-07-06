@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/jmoiron/sqlx"
@@ -31,13 +30,10 @@ const (
 // ProductOption represents a products variant options. If you have a t-shirt that comes in three colors
 // and three sizes, then there are two ProductOptions for that base_product, color and size.
 type ProductOption struct {
-	ID         int64                `json:"id"`
-	Name       string               `json:"name"`
-	ProductID  uint64               `json:"product_id"`
-	Values     []ProductOptionValue `json:"values"`
-	CreatedOn  time.Time            `json:"created_on"`
-	UpdatedOn  NullTime             `json:"updated_on,omitempty"`
-	ArchivedOn NullTime             `json:"archived_on,omitempty"`
+	DBRow
+	Name      string               `json:"name"`
+	ProductID uint64               `json:"product_id"`
+	Values    []ProductOptionValue `json:"values"`
 }
 
 func (a *ProductOption) generateScanArgs() []interface{} {
@@ -87,7 +83,7 @@ func productOptionAlreadyExistsForProduct(db *sqlx.DB, in *ProductOptionCreation
 }
 
 // retrieveProductOptionFromDB retrieves a ProductOption with a given ID from the database
-func retrieveProductOptionFromDB(db *sqlx.DB, id int64) (*ProductOption, error) {
+func retrieveProductOptionFromDB(db *sqlx.DB, id uint64) (*ProductOption, error) {
 	option := &ProductOption{}
 	scanArgs := option.generateScanArgs()
 	err := db.QueryRow(productOptionRetrievalQuery, id).Scan(scanArgs...)
@@ -179,7 +175,7 @@ func buildProductOptionUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		existingOption, err := retrieveProductOptionFromDB(db, int64(optionIDInt))
+		existingOption, err := retrieveProductOptionFromDB(db, uint64(optionIDInt))
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve product option from the database")
 			return
@@ -204,7 +200,7 @@ func createProductOptionInDB(tx *sql.Tx, a *ProductOption, productID uint64) (*P
 	query, queryArgs := buildProductOptionCreationQuery(a, productID)
 	err := tx.QueryRow(query, queryArgs...).Scan(&newOptionID)
 
-	a.ID = newOptionID
+	a.ID = uint64(newOptionID)
 	a.ProductID = productID
 	return a, err
 }

@@ -50,6 +50,7 @@ func SetupAPIRoutes(router *chi.Mux, db *sqlx.DB, store *sessions.CookieStore) {
 		r.Get(productOptionEndpoint, buildProductOptionListHandler(db))
 		r.Post(productOptionEndpoint, buildProductOptionCreationHandler(db))
 		r.Patch(specificOptionEndpoint, buildProductOptionUpdateHandler(db))
+		r.Delete(specificOptionEndpoint, buildProductOptionDeletionHandler(db))
 
 		// Product Option Values
 		optionValueEndpoint := fmt.Sprintf("/product_options/{option_id:%s}/value", NumericPattern)

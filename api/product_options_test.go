@@ -42,20 +42,26 @@ var (
 
 func init() {
 	exampleProductOption = &ProductOption{
-		ID:        123,
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
 		Name:      "something",
 		ProductID: 2, // == exampleProduct.ID
-		CreatedOn: generateExampleTimeForTests(),
 	}
 	exampleUpdatedProductOption = &ProductOption{
-		ID:        exampleProductOption.ID,
+		DBRow: DBRow{
+			ID: exampleProductOption.ID,
+		},
 		Name:      "something else",
 		ProductID: exampleProductOption.ProductID,
 	}
 	productOptionHeaders = []string{"id", "name", "product_id", "created_on", "updated_on", "archived_on"}
 
 	expectedCreatedProductOption = &ProductOption{
-		ID:        exampleProductOption.ID,
+		DBRow: DBRow{
+			ID: exampleProductOption.ID,
+		},
 		Name:      "something",
 		ProductID: exampleProductOption.ProductID,
 		Values: []ProductOptionValue{
@@ -145,6 +151,20 @@ func setExpectationsForProductOptionUpdate(mock sqlmock.Sqlmock, a *ProductOptio
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
 		WithArgs(queryArgs...).
 		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
+func setExpectationsForProductOptionDeletion(mock sqlmock.Sqlmock, id uint64, err error) {
+	mock.ExpectExec(formatQueryForSQLMock(productOptionDeletionQuery)).
+		WithArgs(id).
+		WillReturnResult(sqlmock.NewResult(1, 1)).
+		WillReturnError(err)
+}
+
+func setExpectationsForProductOptionValuesDeletionByOptionID(mock sqlmock.Sqlmock, id uint64, err error) {
+	mock.ExpectExec(formatQueryForSQLMock(productOptionValuesDeletionQueryByOptionID)).
+		WithArgs(id).
+		WillReturnResult(sqlmock.NewResult(1, 1)).
 		WillReturnError(err)
 }
 
@@ -264,6 +284,34 @@ func TestUpdateProductOptionInDB(t *testing.T) {
 	setExpectationsForProductOptionUpdate(testUtil.Mock, expectedCreatedProductOption, nil)
 
 	err := updateProductOptionInDB(testUtil.DB, exampleProductOption)
+	assert.Nil(t, err)
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestArchiveProductOption(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	testUtil.Mock.ExpectBegin()
+	tx, err := testUtil.DB.Beginx()
+	assert.Nil(t, err)
+	setExpectationsForProductOptionDeletion(testUtil.Mock, 1, nil)
+
+	err = archiveProductOption(tx, 1)
+	assert.Nil(t, err)
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestArchiveProductOptionValuesForOption(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	testUtil.Mock.ExpectBegin()
+	tx, err := testUtil.DB.Beginx()
+	assert.Nil(t, err)
+	setExpectationsForProductOptionValuesDeletionByOptionID(testUtil.Mock, 1, nil)
+
+	err = archiveProductOptionValuesForOption(tx, 1)
 	assert.Nil(t, err)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
@@ -582,6 +630,121 @@ func TestProductOptionUpdateHandlerWithErrorUpdatingOption(t *testing.T) {
 
 	productOptionEndpoint := buildRoute("v1", "product_options", optionIDString)
 	req, err := http.NewRequest(http.MethodPatch, productOptionEndpoint, strings.NewReader(exampleProductOptionUpdateBody))
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestProductOptionDeletionHandler(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	optionIDString := strconv.Itoa(int(exampleProductOption.ID))
+
+	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
+	testUtil.Mock.ExpectBegin()
+	setExpectationsForProductOptionValuesDeletionByOptionID(testUtil.Mock, exampleProductOption.ID, nil)
+	setExpectationsForProductOptionDeletion(testUtil.Mock, exampleProductOption.ID, nil)
+	testUtil.Mock.ExpectCommit()
+
+	productOptionEndpoint := buildRoute("v1", "product_options", optionIDString)
+	req, err := http.NewRequest(http.MethodDelete, productOptionEndpoint, strings.NewReader(exampleProductOptionCreationBody))
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestProductOptionDeletionHandlerForNonexistentOption(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	optionIDString := strconv.Itoa(int(exampleProductOption.ID))
+
+	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, false, nil)
+	productOptionEndpoint := buildRoute("v1", "product_options", optionIDString)
+	req, err := http.NewRequest(http.MethodDelete, productOptionEndpoint, strings.NewReader(exampleProductOptionCreationBody))
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusNotFound, testUtil.Response.Code, "status code should be 404")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestProductOptionDeletionHandlerWithErrorCreatingTransaction(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	optionIDString := strconv.Itoa(int(exampleProductOption.ID))
+
+	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
+	testUtil.Mock.ExpectBegin().WillReturnError(arbitraryError)
+
+	productOptionEndpoint := buildRoute("v1", "product_options", optionIDString)
+	req, err := http.NewRequest(http.MethodDelete, productOptionEndpoint, strings.NewReader(exampleProductOptionCreationBody))
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestProductOptionDeletionHandlerWithErrorDeletingOptionValues(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	optionIDString := strconv.Itoa(int(exampleProductOption.ID))
+
+	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
+	testUtil.Mock.ExpectBegin()
+	setExpectationsForProductOptionValuesDeletionByOptionID(testUtil.Mock, exampleProductOption.ID, arbitraryError)
+
+	productOptionEndpoint := buildRoute("v1", "product_options", optionIDString)
+	req, err := http.NewRequest(http.MethodDelete, productOptionEndpoint, strings.NewReader(exampleProductOptionCreationBody))
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestProductOptionDeletionHandlerWithErrorDeletingOption(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	optionIDString := strconv.Itoa(int(exampleProductOption.ID))
+
+	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
+	testUtil.Mock.ExpectBegin()
+	setExpectationsForProductOptionValuesDeletionByOptionID(testUtil.Mock, exampleProductOption.ID, nil)
+	setExpectationsForProductOptionDeletion(testUtil.Mock, exampleProductOption.ID, arbitraryError)
+
+	productOptionEndpoint := buildRoute("v1", "product_options", optionIDString)
+	req, err := http.NewRequest(http.MethodDelete, productOptionEndpoint, strings.NewReader(exampleProductOptionCreationBody))
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestProductOptionDeletionHandlerWithErrorCommittingTransaction(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	optionIDString := strconv.Itoa(int(exampleProductOption.ID))
+
+	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
+	testUtil.Mock.ExpectBegin()
+	setExpectationsForProductOptionValuesDeletionByOptionID(testUtil.Mock, exampleProductOption.ID, nil)
+	setExpectationsForProductOptionDeletion(testUtil.Mock, exampleProductOption.ID, nil)
+	testUtil.Mock.ExpectCommit().WillReturnError(arbitraryError)
+
+	productOptionEndpoint := buildRoute("v1", "product_options", optionIDString)
+	req, err := http.NewRequest(http.MethodDelete, productOptionEndpoint, strings.NewReader(exampleProductOptionCreationBody))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
