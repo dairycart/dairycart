@@ -168,6 +168,28 @@ func setExpectationsForPasswordResetEntryExistenceByUserID(mock sqlmock.Sqlmock,
 		WillReturnError(err)
 }
 
+func setExpectationsForLoginAttemptExhaustionQuery(mock sqlmock.Sqlmock, username string, exhausted bool, err error) {
+	count := 0
+	if exhausted {
+		count = 666
+	}
+	exampleRows := sqlmock.NewRows([]string{""}).AddRow(count)
+	query := formatQueryForSQLMock(loginAttemptExhaustionQuery)
+	mock.ExpectQuery(query).
+		WithArgs(username).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
+func setExpectationsForLoginAttemptCreationQuery(mock sqlmock.Sqlmock, username string, successful bool, err error) {
+	query, rawArgs := buildLoginAttemptCreationQuery(username, successful)
+	args := argsToDriverValues(rawArgs)
+	mock.ExpectExec(formatQueryForSQLMock(query)).
+		WithArgs(args...).
+		WillReturnResult(sqlmock.NewResult(1, 1)).
+		WillReturnError(err)
+}
+
 func TestValidateSessionCookieMiddleware(t *testing.T) {
 	t.Parallel()
 
@@ -480,6 +502,42 @@ func TestCreatePasswordResetEntryInDatabase(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestLoginAttemptsHaveBeenExhausted(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	exampleUsername := "farts"
+	setExpectationsForLoginAttemptExhaustionQuery(testUtil.Mock, exampleUsername, false, nil)
+
+	exhausted, err := loginAttemptsHaveBeenExhausted(testUtil.DB, exampleUsername)
+	assert.False(t, exhausted)
+	assert.Nil(t, err)
+}
+
+func TestLoginAttemptsHaveBeenExhaustedWithErrorExecutingQuery(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	exampleUsername := "farts"
+	setExpectationsForLoginAttemptExhaustionQuery(testUtil.Mock, exampleUsername, false, arbitraryError)
+
+	exhausted, err := loginAttemptsHaveBeenExhausted(testUtil.DB, exampleUsername)
+	assert.False(t, exhausted)
+	assert.NotNil(t, err)
+}
+
+func TestCreateLoginAttemptRowInDatabase(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	exampleUsername := "farts"
+	successful := true
+	setExpectationsForLoginAttemptCreationQuery(testUtil.Mock, exampleUsername, successful, nil)
+
+	err := createLoginAttemptRowInDatabase(testUtil.DB, exampleUsername, successful)
+	assert.Nil(t, err)
+}
+
 ////////////////////////////////////////////////////////
 //                                                    //
 //                 HTTP Handler Tests                 //
@@ -538,27 +596,12 @@ func TestUserCreationHandlerFailsWhenCreatingAdminUsersWithoutAlreadyHavingAdmin
 		}
 	`, examplePassword)
 
-	// exampleUser := &User{
-	// 	DBRow: DBRow{
-	// 		ID:        1,
-	// 		CreatedOn: generateExampleTimeForTests(),
-	// 	},
-	// 	FirstName: "Frank",
-	// 	LastName:  "Zappa",
-	// 	Email:     "frank@zappa.com",
-	// 	Username:  "frankzappa",
-	// 	Password:  examplePassword,
-	// }
-
-	// setExpectationsForUserExistence(testUtil.Mock, exampleUser.Username, false, nil)
-	// setExpectationsForUserCreation(testUtil.Mock, exampleUser, nil)
-
 	req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 	assert.Equal(t, http.StatusForbidden, testUtil.Response.Code, "status code should be 401")
-	// ensureExpectationsWereMet(t, testUtil.Mock)
+	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestUserCreationHandlerWithInvalidInput(t *testing.T) {
@@ -694,7 +737,9 @@ func TestUserLoginHandler(t *testing.T) {
 		Password:  examplePassword,
 	}
 
+	setExpectationsForLoginAttemptExhaustionQuery(testUtil.Mock, exampleUser.Username, false, nil)
 	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, nil)
+	setExpectationsForLoginAttemptCreationQuery(testUtil.Mock, exampleUser.Username, true, nil)
 
 	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
 	assert.Nil(t, err)
@@ -715,6 +760,74 @@ func TestUserLoginHandlerWithInvalidLoginInput(t *testing.T) {
 
 	assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler shouldn't attach a cookie when request is invalid")
 	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestUserLoginHandlerWhenLoginAttemptsHaveBeenExhausted(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	exampleInput := fmt.Sprintf(`
+		{
+			"username": "frankzappa",
+			"password": "%s"
+		}
+	`, examplePassword)
+
+	exampleUser := &User{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		FirstName: "Frank",
+		LastName:  "Zappa",
+		Email:     "frank@zappa.com",
+		Username:  "frankzappa",
+		Password:  examplePassword,
+	}
+
+	setExpectationsForLoginAttemptExhaustionQuery(testUtil.Mock, exampleUser.Username, true, nil)
+
+	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
+	assert.Equal(t, http.StatusUnauthorized, testUtil.Response.Code, "status code should be 403")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestUserLoginHandlerWhenErrorOccursCheckingLoginAttempts(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	exampleInput := fmt.Sprintf(`
+		{
+			"username": "frankzappa",
+			"password": "%s"
+		}
+	`, examplePassword)
+
+	exampleUser := &User{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		FirstName: "Frank",
+		LastName:  "Zappa",
+		Email:     "frank@zappa.com",
+		Username:  "frankzappa",
+		Password:  examplePassword,
+	}
+
+	setExpectationsForLoginAttemptExhaustionQuery(testUtil.Mock, exampleUser.Username, false, arbitraryError)
+
+	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -741,6 +854,7 @@ func TestUserLoginHandlerWithNoMatchingUserInDatabase(t *testing.T) {
 		Password:  examplePassword,
 	}
 
+	setExpectationsForLoginAttemptExhaustionQuery(testUtil.Mock, exampleUser.Username, false, nil)
 	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, sql.ErrNoRows)
 
 	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
@@ -774,7 +888,43 @@ func TestUserLoginHandlerWithErrorRetrievingUserFromDatabase(t *testing.T) {
 		Password:  examplePassword,
 	}
 
+	setExpectationsForLoginAttemptExhaustionQuery(testUtil.Mock, exampleUser.Username, false, nil)
 	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, arbitraryError)
+
+	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestUserLoginHandlerWithErrorCreatingLoginAttemptRow(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	exampleInput := fmt.Sprintf(`
+		{
+			"username": "frankzappa",
+			"password": "%s"
+		}
+	`, examplePassword)
+
+	exampleUser := &User{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		FirstName: "Frank",
+		LastName:  "Zappa",
+		Email:     "frank@zappa.com",
+		Username:  "frankzappa",
+		Password:  examplePassword,
+	}
+
+	setExpectationsForLoginAttemptExhaustionQuery(testUtil.Mock, exampleUser.Username, false, nil)
+	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, nil)
+	setExpectationsForLoginAttemptCreationQuery(testUtil.Mock, exampleUser.Username, true, arbitraryError)
 
 	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
 	assert.Nil(t, err)
@@ -807,7 +957,9 @@ func TestUserLoginHandlerWithInvalidPassword(t *testing.T) {
 		Password:  examplePassword,
 	}
 
+	setExpectationsForLoginAttemptExhaustionQuery(testUtil.Mock, exampleUser.Username, false, nil)
 	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, nil)
+	setExpectationsForLoginAttemptCreationQuery(testUtil.Mock, exampleUser.Username, false, nil)
 
 	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
 	assert.Nil(t, err)

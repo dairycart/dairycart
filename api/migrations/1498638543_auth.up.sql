@@ -26,3 +26,10 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
     PRIMARY KEY ("id"),
     FOREIGN KEY ("user_id") REFERENCES "users"("id")
 );
+
+CREATE TABLE IF NOT EXISTS login_attempts (
+    "id" bigserial,
+    "username" text NOT NULL,
+    "successful" boolean NOT NULL DEFAULT 'false',
+    "created_on" timestamp DEFAULT NOW()
+)

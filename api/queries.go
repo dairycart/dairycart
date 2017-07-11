@@ -378,3 +378,19 @@ func buildUserUpdateQuery(u *User, passwordChanged bool) (string, []interface{})
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
+
+func buildLoginAttemptCreationQuery(username string, successful bool) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		Insert("login_attempts").
+		Columns(
+			"username",
+			"successful",
+		).
+		Values(
+			username,
+			successful,
+		)
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}

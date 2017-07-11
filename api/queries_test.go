@@ -340,3 +340,11 @@ func TestBuildUserUpdateQueryWithPasswordChange(t *testing.T) {
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 7, len(actualArgs), argsEqualityErrorMessage)
 }
+
+func TestBuildLoginAttemptCreationQuery(t *testing.T) {
+	expectedQuery := `INSERT INTO login_attempts (username,successful) VALUES ($1,$2)`
+	actualQuery, actualArgs := buildLoginAttemptCreationQuery("farts", true)
+
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
+}

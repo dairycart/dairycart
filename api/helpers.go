@@ -300,3 +300,13 @@ func notifyOfInvalidAuthenticationAttempt(res http.ResponseWriter) {
 	}
 	json.NewEncoder(res).Encode(errRes)
 }
+
+func notifyOfExaustedAuthenticationAttempts(res http.ResponseWriter) {
+	log.Printf("Invalid login attempt")
+	res.WriteHeader(http.StatusUnauthorized)
+	errRes := &ErrorResponse{
+		Status:  http.StatusUnauthorized,
+		Message: "Too many authentication attempts made. Please wait fifteen minutes before attempting to authenticate again.",
+	}
+	json.NewEncoder(res).Encode(errRes)
+}

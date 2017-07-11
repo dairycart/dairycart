@@ -36,6 +36,14 @@ const (
 
 	passwordResetExistenceQueryForUserID = `SELECT EXISTS(SELECT 1 FROM password_reset_tokens WHERE user_id = $1 AND NOW() < expires_on)`
 	passwordResetExistenceQuery          = `SELECT EXISTS(SELECT 1 FROM password_reset_tokens WHERE token = $1 AND NOW() < expires_on)`
+
+	loginAttemptExhaustionQuery = `
+		SELECT count(id) FROM login_attempts
+			WHERE username = $1
+			AND created_on < NOW()
+			AND successful IS false
+			AND created_on > (NOW() - (15 * interval '1 minute'))
+	`
 )
 
 // User represents a Dairycart user
@@ -236,6 +244,23 @@ func createPasswordResetEntryInDatabase(db *sqlx.DB, userID uint64, resetToken s
 	return err
 }
 
+func loginAttemptsHaveBeenExhausted(db *sqlx.DB, username string) (bool, error) {
+	var loginCount uint64
+
+	err := db.QueryRow(loginAttemptExhaustionQuery, username).Scan(&loginCount)
+	if err != nil {
+		return false, err
+	}
+
+	return loginCount >= 10, err
+}
+
+func createLoginAttemptRowInDatabase(db *sqlx.DB, username string, successful bool) error {
+	query, args := buildLoginAttemptCreationQuery(username, successful)
+	_, err := db.Exec(query, args...)
+	return err
+}
+
 func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		userInput := &UserCreationInput{}
@@ -307,6 +332,15 @@ func buildUserLoginHandler(db *sqlx.DB, store *sessions.CookieStore) http.Handle
 		}
 		username := loginInput.Username
 
+		exhaustedAttempts, err := loginAttemptsHaveBeenExhausted(db, username)
+		if exhaustedAttempts {
+			notifyOfExaustedAuthenticationAttempts(res)
+			return
+		} else if err != nil {
+			notifyOfInternalIssue(res, err, "retrieve user")
+			return
+		}
+
 		user, err := retrieveUserFromDB(db, username)
 		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "user", username)
@@ -317,6 +351,12 @@ func buildUserLoginHandler(db *sqlx.DB, store *sessions.CookieStore) http.Handle
 		}
 
 		loginValid := passwordMatches(loginInput.Password, user)
+		err = createLoginAttemptRowInDatabase(db, username, loginValid)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "create login attempt entry")
+			return
+		}
+
 		if !loginValid {
 			notifyOfInvalidAuthenticationAttempt(res)
 			return
