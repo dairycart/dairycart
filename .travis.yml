@@ -1,0 +1,13 @@
+language: go
+
+services:
+  - docker
+
+go:
+  - master
+
+script:
+  - run_all_tests.sh
+
+# after_success:
+#   - bash <(curl -s https://codecov.io/bash)
