@@ -157,6 +157,12 @@ func updateProductOption(optionID string, JSONBody string) (*http.Response, erro
 	return requester.execRequest(req)
 }
 
+func deleteProductOption(optionID string) (*http.Response, error) {
+	url := buildPath("product_options", optionID)
+	req, _ := http.NewRequest(http.MethodDelete, url, nil)
+	return requester.execRequest(req)
+}
+
 func createProductOptionValueForOption(optionID string, JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
 	url := buildPath("product_options", optionID, "value")
