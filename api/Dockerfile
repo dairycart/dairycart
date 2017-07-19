@@ -1,6 +1,6 @@
 # build stage
 FROM golang:alpine AS build-stage
-WORKDIR /go/src/github.com/verygoodsoftwarenotvirus/dairycart
+WORKDIR /go/src/github.com/dairycart/dairycart
 
 ADD . .
 RUN go build -o /dairycart

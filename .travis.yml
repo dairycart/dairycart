@@ -1,3 +1,5 @@
+sudo: required
+
 language: go
 
 services:
@@ -6,8 +8,22 @@ services:
 go:
   - master
 
-script:
-  - run_all_tests.sh
+before_install:
+  # dump this step once multi-stage builds hit stable docker
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+  - sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+  - sudo apt-get update
+  - sudo apt-get -y install docker-ce
+  # this stays after the above goes away
+  - docker build -t api_test -f api/test.Dockerfile .
 
-# after_success:
-#   - bash <(curl -s https://codecov.io/bash)
+script:
+  # unit tests
+  - docker run --name api_test --rm api_test
+  # integration tests
+  - docker-compose --file docker-compose-test.yml up --abort-on-container-exit --build --remove-orphans --force-recreate
+  # coverage output
+  - go test github.com/dairycart/dairycart/api -coverprofile=coverage.out -tags test
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

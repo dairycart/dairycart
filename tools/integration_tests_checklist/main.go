@@ -70,7 +70,7 @@ func replaceLinksInChecklistFile(old *os.File, new *os.File, nameValidator *rege
 			if _, ok := functionNamesToLineNumberMap[functionName]; !ok {
 				log.Fatalf("encountered function name %s that doesn't have a corresponding entry in the line number map", functionName)
 			}
-			link := fmt.Sprintf(`([%s](https://github.com/verygoodsoftwarenotvirus/dairycart/blob/master/integration_tests/%s.go#L%d))`, functionName, functionNamesToLineNumberMap[functionName].Filename, functionNamesToLineNumberMap[functionName].Line)
+			link := fmt.Sprintf(`([%s](https://github.com/dairycart/dairycart/blob/master/integration_tests/%s.go#L%d))`, functionName, functionNamesToLineNumberMap[functionName].Filename, functionNamesToLineNumberMap[functionName].Line)
 			checklistPart := strings.Split(line, "(")[0]
 			newLine := fmt.Sprintf("%s%s", checklistPart, link)
 			_, err := new.WriteString(fmt.Sprintf("%s\n", newLine))

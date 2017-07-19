@@ -1,6 +1,6 @@
 # final stage
 FROM golang:alpine
-WORKDIR /go/src/github.com/verygoodsoftwarenotvirus/dairycart
+WORKDIR /go/src/github.com/dairycart/dairycart
 
 ADD api .
 

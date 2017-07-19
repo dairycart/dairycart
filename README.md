@@ -1,4 +1,4 @@
-# Dairycart
+# Dairycart  [![Build Status](https://travis-ci.org/dairycart/dairycart.svg?branch=master)](https://travis-ci.org/dairycart/dairycart) [![codecov](https://codecov.io/gh/dairycart/dairycart/branch/master/graph/badge.svg)](https://codecov.io/gh/dairycart/dairycart)
 
 Dairycart is an open-source eCommerce platform written in Go.
 
@@ -25,7 +25,7 @@ The Trello board for this project can be found [here](https://trello.com/b/z3lgK
 ## Reporting Issues
 
 Thusfar, Dairycart's development has been a solo effort, and this may still be the case for some time. That being the case, there are most definitely issues with the
-code that warrant reporting. Any issues can be reported using the [Github Issue Tracker](https://github.com/verygoodsoftwarenotvirus/dairycart/issues/new) for this repository. Please ensure any issues filed adhere to the [Code of Conduct](CODE_OF_CONDUCT.md).
+code that warrant reporting. Any issues can be reported using the [Github Issue Tracker](https://github.com/dairycart/dairycart/issues/new) for this repository. Please ensure any issues filed adhere to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Getting involved
 
