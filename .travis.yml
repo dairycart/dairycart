@@ -23,7 +23,7 @@ script:
   # integration tests
   - docker-compose --file docker-compose-test.yml up --abort-on-container-exit --build --remove-orphans --force-recreate
   # coverage output
-  - go test github.com/verygoodsoftwarenotvirus/dairycart/api -coverprofile=coverage.out -tags test
+  - go test github.com/dairycart/dairycart/api -coverprofile=coverage.out -tags test
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
