@@ -1,3 +1,4 @@
+[![Stories in Ready](https://badge.waffle.io/dairycart/dairycart.png?label=ready&title=Ready)](https://waffle.io/dairycart/dairycart?utm_source=badge)
 # Dairycart  [![Build Status](https://travis-ci.org/dairycart/dairycart.svg?branch=master)](https://travis-ci.org/dairycart/dairycart) [![codecov](https://codecov.io/gh/dairycart/dairycart/branch/master/graph/badge.svg)](https://codecov.io/gh/dairycart/dairycart)
 
 Dairycart is an open-source eCommerce platform written in Go.
