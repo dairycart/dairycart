@@ -1,6 +1,7 @@
 package dairytest
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -76,4 +77,16 @@ func minifyJSON(t *testing.T, jsonBody string) string {
 	minified, err := jsonMinifier.String("application/json", jsonBody)
 	assert.Nil(t, err)
 	return minified
+}
+
+func retrieveIDFromResponseBody(body string, t *testing.T) uint64 {
+	idContainer := struct {
+		ID uint64 `json:"id"`
+	}{}
+	err := json.Unmarshal([]byte(body), &idContainer)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, idContainer)
+	assert.NotEqual(t, 0, idContainer.ID)
+
+	return idContainer.ID
 }

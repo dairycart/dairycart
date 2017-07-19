@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -47,6 +48,20 @@ func createProductCreationBody(sku string, upc string) string {
 		}
 	`
 	return fmt.Sprintf(bodyTemplate, sku, upcPart)
+}
+
+func createProductOptionCreationBody(name string) string {
+	output := fmt.Sprintf(`
+		{
+			"name": "%s",
+			"values": [
+				"one",
+				"two",
+				"three"
+			]
+		}
+	`, name)
+	return output
 }
 
 func TestProductExistenceRouteForExistingProduct(t *testing.T) {
@@ -818,32 +833,77 @@ func TestProductOptionListRetrievalWithCustomFilter(t *testing.T) {
 }
 
 func TestProductOptionCreation(t *testing.T) {
-	newOptionJSON := loadExampleInput(t, "product_options", "new")
-	resp, err := createProductOptionForProduct(existentID, newOptionJSON)
-	assert.Nil(t, err)
-	assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product option that doesn't exist should respond 201")
+	t.Parallel()
 
-	body := turnResponseBodyIntoString(t, resp)
-	actual := cleanAPIResponseBody(body)
-	expected := minifyJSON(t, `
-		{
-			"name": "example_value",
-			"product_id": 1,
-			"values": [
-				{
-					"product_option_id": 3,
-					"value": "one"
-				},{
-					"product_option_id": 3,
-					"value": "two"
-				},{
-					"product_option_id": 3,
-					"value": "three"
-				}
-			]
-		}
-	`)
-	assert.Equal(t, expected, actual, "product option creation route should respond with created product option body")
+	testOptionName := "example_option_to_create"
+	var createdOptionID uint64
+	testProductOptionCreation := func(t *testing.T) {
+		newOptionJSON := createProductOptionCreationBody(testOptionName)
+		resp, err := createProductOptionForProduct(existentID, newOptionJSON)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product option that doesn't exist should respond 201")
+
+		body := turnResponseBodyIntoString(t, resp)
+		createdOptionID = retrieveIDFromResponseBody(body, t)
+		actual := cleanAPIResponseBody(body)
+
+		expected := minifyJSON(t, fmt.Sprintf(`
+			{
+				"name": "%s",
+				"product_id": 1,
+				"values": [
+					{
+						"product_option_id": %d,
+						"value": "one"
+					},{
+						"product_option_id": %d,
+						"value": "two"
+					},{
+						"product_option_id": %d,
+						"value": "three"
+					}
+				]
+			}
+		`, testOptionName, createdOptionID, createdOptionID, createdOptionID))
+		assert.Equal(t, expected, actual, "product option creation route should respond with created product option body")
+	}
+
+	testDeleteProductOption := func(t *testing.T) {
+		resp, err := deleteProductOption(strconv.Itoa(int(createdOptionID)))
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a product that exists should respond 200")
+	}
+
+	t.Run("create product option", testProductOptionCreation)
+	t.Run("delete created product option", testDeleteProductOption)
+}
+
+func TestProductOptionDeletion(t *testing.T) {
+	t.Parallel()
+
+	testOptionName := "example_option_to_delete"
+	var createdOptionID uint64
+	testProductOptionCreation := func(t *testing.T) {
+		newOptionJSON := createProductOptionCreationBody(testOptionName)
+		resp, err := createProductOptionForProduct(existentID, newOptionJSON)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product option that doesn't exist should respond 201")
+
+		body := turnResponseBodyIntoString(t, resp)
+		createdOptionID = retrieveIDFromResponseBody(body, t)
+	}
+
+	testDeleteProductOption := func(t *testing.T) {
+		resp, err := deleteProductOption(strconv.Itoa(int(createdOptionID)))
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a product that exists should respond 200")
+
+		actual := turnResponseBodyIntoString(t, resp)
+		assert.Equal(t, "", actual, "product option deletion route should respond with affirmative message upon successful deletion")
+	}
+
+	t.Run("create product option", testProductOptionCreation)
+	t.Run("delete created product option", testDeleteProductOption)
 }
 
 func TestProductOptionCreationWithInvalidInput(t *testing.T) {

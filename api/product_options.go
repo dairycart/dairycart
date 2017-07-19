@@ -24,7 +24,7 @@ const (
 	productOptionRetrievalQuery                 = `SELECT * FROM product_options WHERE id = $1`
 	productOptionExistenceQueryForProductByName = `SELECT EXISTS(SELECT 1 FROM product_options WHERE name = $1 AND product_id = $2 and archived_on IS NULL)`
 	productOptionDeletionQuery                  = `UPDATE product_options SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
-	productOptionValuesDeletionQueryByOptionID  = `UPDATE product_option_values SET archived_on = NOW() WHERE option_id = $1 AND archived_on IS NULL`
+	productOptionValuesDeletionQueryByOptionID  = `UPDATE product_option_values SET archived_on = NOW() WHERE product_option_id = $1 AND archived_on IS NULL`
 )
 
 // ProductOption represents a products variant options. If you have a t-shirt that comes in three colors
