@@ -13,11 +13,9 @@ before_install:
   - sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
   - sudo apt-get update
   - sudo apt-get -y install docker-ce
+  - bash <(curl -s https://codecov.io/bash)
   - docker build -t api_test -f api/test.Dockerfile .
 
 script:
   - docker run --name api_test --rm api_test
   - docker-compose --file docker-compose-test.yml up --abort-on-container-exit --build --remove-orphans --force-recreate
-
-# after_success:
-#   - bash <(curl -s https://codecov.io/bash)
