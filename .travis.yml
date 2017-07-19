@@ -1,3 +1,5 @@
+sudo: required
+
 language: go
 
 services:
@@ -6,8 +8,12 @@ services:
 go:
   - master
 
+before_install:
+  - docker build -t api_test -f api/test.Dockerfile .
+
 script:
-  - run_all_tests.sh
+  - docker run --name api_test --rm api_test
+  - docker-compose --file docker-compose-test.yml up --abort-on-container-exit --build --remove-orphans --force-recreate
 
 # after_success:
 #   - bash <(curl -s https://codecov.io/bash)
