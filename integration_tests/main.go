@@ -177,6 +177,12 @@ func updateProductOptionValueForOption(valueID string, JSONBody string) (*http.R
 	return requester.execRequest(req)
 }
 
+func deleteProductOptionValueForOption(optionID string) (*http.Response, error) {
+	url := buildPath("product_option_values", optionID)
+	req, _ := http.NewRequest(http.MethodDelete, url, nil)
+	return requester.execRequest(req)
+}
+
 func getDiscountByID(discountID string) (*http.Response, error) {
 	url := buildPath("discount", discountID)
 	req, _ := http.NewRequest(http.MethodGet, url, nil)

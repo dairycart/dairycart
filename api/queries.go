@@ -92,60 +92,68 @@ func buildProductUpdateQuery(p *Product) (string, []interface{}) {
 
 func buildProductCreationQuery(p *Product) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+
+	columns := []string{
+		"name",
+		"subtitle",
+		"description",
+		"sku",
+		"manufacturer",
+		"brand",
+		"quantity",
+		"taxable",
+		"price",
+		"on_sale",
+		"sale_price",
+		"cost",
+		"product_weight",
+		"product_height",
+		"product_width",
+		"product_length",
+		"package_weight",
+		"package_height",
+		"package_width",
+		"package_length",
+		"quantity_per_package",
+		"available_on",
+		"updated_on",
+	}
+
+	values := []interface{}{
+		p.Name,
+		p.Subtitle.String,
+		p.Description,
+		p.SKU,
+		p.Manufacturer.String,
+		p.Brand.String,
+		p.Quantity,
+		p.Taxable,
+		p.Price,
+		p.OnSale,
+		p.SalePrice,
+		p.Cost,
+		p.ProductWeight,
+		p.ProductHeight,
+		p.ProductWidth,
+		p.ProductLength,
+		p.PackageWeight,
+		p.PackageHeight,
+		p.PackageWidth,
+		p.PackageLength,
+		p.QuantityPerPackage,
+		p.AvailableOn,
+		squirrel.Expr("NOW()"),
+	}
+
+	if p.UPC.Valid && p.UPC.String != "" {
+		columns = append(columns, "upc")
+		values = append(values, p.UPC.String)
+	}
+
 	queryBuilder := sqlBuilder.
 		Insert("products").
-		Columns(
-			"name",
-			"subtitle",
-			"description",
-			"sku",
-			"upc",
-			"manufacturer",
-			"brand",
-			"quantity",
-			"taxable",
-			"price",
-			"on_sale",
-			"sale_price",
-			"cost",
-			"product_weight",
-			"product_height",
-			"product_width",
-			"product_length",
-			"package_weight",
-			"package_height",
-			"package_width",
-			"package_length",
-			"quantity_per_package",
-			"available_on",
-			"updated_on",
-		).
-		Values(
-			p.Name,
-			p.Subtitle.String,
-			p.Description,
-			p.SKU,
-			p.UPC.String,
-			p.Manufacturer.String,
-			p.Brand.String,
-			p.Quantity,
-			p.Taxable,
-			p.Price,
-			p.OnSale,
-			p.SalePrice,
-			p.Cost,
-			p.ProductWeight,
-			p.ProductHeight,
-			p.ProductWidth,
-			p.ProductLength,
-			p.PackageWeight,
-			p.PackageHeight,
-			p.PackageWidth,
-			p.PackageLength,
-			p.QuantityPerPackage,
-			p.AvailableOn,
-			squirrel.Expr("NOW()"),
-		).
+		Columns(columns...).
+		Values(values...).
 		Suffix(`RETURNING "id"`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args

@@ -36,6 +36,18 @@ const (
 	expectedInternalErrorResponse = `{"status":500,"message":"Unexpected internal error occurred"}`
 )
 
+type listResponse struct {
+	Count uint64        `json:"count"`
+	Limit uint8         `json:"limit"`
+	Page  uint64        `json:"page"`
+	Data  []interface{} `json:"data"`
+}
+
+type subtest struct {
+	Message string
+	Test    func(t *testing.T)
+}
+
 func loadExpectedResponse(t *testing.T, folder string, filename string) string {
 	bodyBytes, err := ioutil.ReadFile(fmt.Sprintf("expected_responses/%s/%s.json", folder, filename))
 	assert.Nil(t, err)
@@ -86,7 +98,27 @@ func retrieveIDFromResponseBody(body string, t *testing.T) uint64 {
 	err := json.Unmarshal([]byte(body), &idContainer)
 	assert.Nil(t, err)
 	assert.NotEmpty(t, idContainer)
-	assert.NotEqual(t, 0, idContainer.ID)
+	assert.NotZero(t, idContainer.ID, fmt.Sprintf("ID should not be zero, body is:\n%s", body))
 
 	return idContainer.ID
+}
+
+func parseResponseIntoStruct(body string, t *testing.T) listResponse {
+	lr := listResponse{}
+	err := json.Unmarshal([]byte(body), &lr)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, lr)
+
+	return lr
+}
+
+// func runSubtestSuite(t *testing.T, testFuncs map[string]func(t *testing.T)) {
+func runSubtestSuite(t *testing.T, tests []subtest) {
+	testPassed := true
+	for _, test := range tests {
+		if !testPassed {
+			t.FailNow()
+		}
+		testPassed = t.Run(test.Message, test.Test)
+	}
 }
