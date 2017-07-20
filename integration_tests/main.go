@@ -209,3 +209,9 @@ func updateDiscount(discountID string, JSONBody string) (*http.Response, error) 
 	req, _ := http.NewRequest(http.MethodPatch, url, body)
 	return requester.execRequest(req)
 }
+
+func deleteDiscount(discountID string) (*http.Response, error) {
+	url := buildPath("discount", discountID)
+	req, _ := http.NewRequest(http.MethodDelete, url, nil)
+	return requester.execRequest(req)
+}
