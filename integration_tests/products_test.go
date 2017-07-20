@@ -581,6 +581,18 @@ func TestProductOptionDeletion(t *testing.T) {
 	runSubtestSuite(t, subtests)
 }
 
+func TestProductOptionDeletionForNonexistentOption(t *testing.T) {
+	t.Parallel()
+
+	resp, err := deleteProductOption(nonexistentID)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "trying to delete a product option that doesn't exist should respond 404")
+
+	actual := turnResponseBodyIntoString(t, resp)
+	expected := `{"status":404,"message":"The product option you were looking for (id ` + "`999999999`" + `) does not exist"}`
+	assert.Equal(t, expected, actual, "product option deletion route should respond with affirmative message upon successful deletion")
+}
+
 func TestProductOptionCreationWithInvalidInput(t *testing.T) {
 	t.Parallel()
 	resp, err := createProductOptionForProduct(existentID, exampleGarbageInput)
@@ -861,6 +873,18 @@ func TestProductOptionValueDeletion(t *testing.T) {
 		},
 	}
 	runSubtestSuite(t, subtests)
+}
+
+func TestProductOptionValueDeletionForNonexistentOptionValue(t *testing.T) {
+	t.Parallel()
+
+	resp, err := deleteProductOptionValueForOption(nonexistentID)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "trying to delete a product that exists should respond 404")
+
+	actual := turnResponseBodyIntoString(t, resp)
+	expected := `{"status":404,"message":"The product option value you were looking for (id ` + "`999999999`" + `) does not exist"}`
+	assert.Equal(t, expected, actual, "product option deletion route should respond with affirmative message upon successful deletion")
 }
 
 func TestProductOptionValueCreationWithInvalidInput(t *testing.T) {

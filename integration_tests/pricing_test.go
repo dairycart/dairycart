@@ -203,6 +203,18 @@ func TestDiscountDeletion(t *testing.T) {
 	runSubtestSuite(t, subtests)
 }
 
+func TestDiscountDeletionForNonexistentDiscount(t *testing.T) {
+	t.Parallel()
+
+	resp, err := deleteDiscount(nonexistentID)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "trying to delete a discount that doesn't exists should respond 404")
+
+	actual := turnResponseBodyIntoString(t, resp)
+	expected := `{"status":404,"message":"The discount you were looking for (id ` + "`999999999`" + `) does not exist"}`
+	assert.Equal(t, expected, actual, "discount deletion route should respond with affirmative message upon successful deletion")
+}
+
 func TestDiscountCreationWithInvalidInput(t *testing.T) {
 	t.Parallel()
 	resp, err := createDiscount(exampleGarbageInput)
