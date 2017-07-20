@@ -100,6 +100,11 @@ Update discount route:
 - [x] Invalid input ([TestDiscountUpdateInvalidDiscount](https://github.com/dairycart/dairycart/blob/master/integration_tests/pricing_test.go.go#L107))
 - [x] Nonexistent Body ([TestDiscountUpdateWithInvalidBody](https://github.com/dairycart/dairycart/blob/master/integration_tests/pricing_test.go.go#L115))
 
+Delete discount route:
+
+- [] Newly created discount ()
+- [] Nonexistent discount ()
+
 User creation routes:
 
 - [] Valid input ()
