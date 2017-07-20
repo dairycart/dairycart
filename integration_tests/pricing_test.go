@@ -16,7 +16,7 @@ func replaceTimeStringsForDiscountTests(body string) string {
 	return strings.TrimSpace(re.ReplaceAllString(body, ""))
 }
 
-func createDiscountBody(code string) string {
+func createDiscountCreationBody(code string) string {
 	output := fmt.Sprintf(`
 		{
 			"name": "Test",
@@ -30,8 +30,19 @@ func createDiscountBody(code string) string {
 	return output
 }
 
+func createDiscountUpdateBody(name string, code string) string {
+	output := fmt.Sprintf(`
+		{
+			"name": "%s",
+			"requires_code": true,
+			"code": "%s"
+		}
+	`, name, code)
+	return output
+}
+
 func TestDiscountRetrievalForExistingDiscount(t *testing.T) {
-	// FIXME: parallelize
+	t.Parallel()
 	resp, err := getDiscountByID(existentID)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "a successfully retrieved discount should respond 200")
@@ -39,7 +50,17 @@ func TestDiscountRetrievalForExistingDiscount(t *testing.T) {
 	body := turnResponseBodyIntoString(t, resp)
 	removedTimeFields := replaceTimeStringsForTests(body)
 	actual := replaceTimeStringsForDiscountTests(removedTimeFields)
-	expected := minifyJSON(t, loadExpectedResponse(t, "discounts", "retrieved"))
+	expected := minifyJSON(t, `
+		{
+			"id": 1,
+			"name": "10% off",
+			"type": "percentage",
+			"amount": 10,
+			"requires_code": false,
+			"limited_use": false,
+			"login_required": false
+		}
+	`)
 	assert.Equal(t, expected, actual, "discount route should return a serialized discount object")
 }
 
@@ -51,26 +72,32 @@ func TestDiscountRetrievalForNonexistentDiscount(t *testing.T) {
 
 	body := turnResponseBodyIntoString(t, resp)
 	actual := replaceTimeStringsForTests(body)
-	expected := minifyJSON(t, loadExpectedResponse(t, "discounts", "error_discount_does_not_exist"))
+	// TODO: stop adding strings
+	expected := minifyJSON(t, `
+		{
+			"status": 404,
+			"message": "The discount you were looking for (id `+"`999999999`"+`) does not exist"
+		}
+	`)
 	assert.Equal(t, expected, actual, "product option update route should respond with 404 message when you try to delete a product that doesn't exist")
 
 }
 
 func TestDiscountListRetrievalWithDefaultFilter(t *testing.T) {
-	// FIXME: parallelize
+	t.Parallel()
 	resp, err := getListOfDiscounts(nil)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "requesting a list of products should respond 200")
 
-	respBody := turnResponseBodyIntoString(t, resp)
-	removedTimeFields := replaceTimeStringsForTests(respBody)
-	actual := replaceTimeStringsForDiscountTests(removedTimeFields)
-	expected := minifyJSON(t, loadExpectedResponse(t, "discounts", "list_with_default_filter"))
-	assert.Equal(t, expected, actual, "product list route should respond with a list of products")
+	body := turnResponseBodyIntoString(t, resp)
+	lr := parseResponseIntoStruct(body, t)
+	assert.True(t, len(lr.Data) <= int(lr.Limit), "discount list route should not return more data than the limit")
+	assert.Equal(t, uint8(25), lr.Limit, "discount list route should respond with the default limit when a ilmit is not specified")
+	assert.Equal(t, uint64(1), lr.Page, "discount list route should respond with the first page when a page is not specified")
 }
 
 func TestDiscountListRouteWithCustomFilter(t *testing.T) {
-	// FIXME: parallelize
+	t.Parallel()
 	customFilter := map[string]string{
 		"page":  "2",
 		"limit": "2",
@@ -79,11 +106,10 @@ func TestDiscountListRouteWithCustomFilter(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "requesting a list of products should respond 200")
 
-	respBody := turnResponseBodyIntoString(t, resp)
-	removedTimeFields := replaceTimeStringsForTests(respBody)
-	actual := replaceTimeStringsForDiscountTests(removedTimeFields)
-	expected := minifyJSON(t, loadExpectedResponse(t, "discounts", "list_with_custom_filter"))
-	assert.Equal(t, expected, actual, "product list route should respond with a customized list of products")
+	body := turnResponseBodyIntoString(t, resp)
+	lr := parseResponseIntoStruct(body, t)
+	assert.Equal(t, uint8(2), lr.Limit, "discount list route should respond with the specified limit")
+	assert.Equal(t, uint64(2), lr.Page, "discount list route should respond with the specified page")
 }
 
 func TestDiscountCreation(t *testing.T) {
@@ -93,7 +119,7 @@ func TestDiscountCreation(t *testing.T) {
 	testDiscountCode := "TEST"
 
 	testCreateDiscount := func(t *testing.T) {
-		newDiscountJSON := createDiscountBody(testDiscountCode)
+		newDiscountJSON := createDiscountCreationBody(testDiscountCode)
 		resp, err := createDiscount(newDiscountJSON)
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a discount that doesn't exist should respond 201")
@@ -146,7 +172,7 @@ func TestDiscountDeletion(t *testing.T) {
 	testDiscountCode := "deletion"
 
 	testCreateDiscount := func(t *testing.T) {
-		newDiscountJSON := createDiscountBody(testDiscountCode)
+		newDiscountJSON := createDiscountCreationBody(testDiscountCode)
 		resp, err := createDiscount(newDiscountJSON)
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a discount that doesn't exist should respond 201")
@@ -189,21 +215,75 @@ func TestDiscountCreationWithInvalidInput(t *testing.T) {
 }
 
 func TestDiscountUpdate(t *testing.T) {
-	// FIXME: parallelize
-	updatedDiscountJSON := loadExampleInput(t, "discounts", "update")
-	resp, err := updateDiscount(existentID, updatedDiscountJSON)
-	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "successfully updating a product should respond 200")
+	t.Parallel()
 
-	body := turnResponseBodyIntoString(t, resp)
-	actual := replaceTimeStringsForTests(body)
-	expected := minifyJSON(t, loadExpectedResponse(t, "discounts", "updated"))
-	assert.Equal(t, expected, actual, "product option update response should reflect the updated fields")
+	var createdDiscountID uint64
+	testDiscountCode := "update"
+
+	testCreateDiscount := func(t *testing.T) {
+		newDiscountJSON := createDiscountCreationBody(testDiscountCode)
+		resp, err := createDiscount(newDiscountJSON)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a discount that doesn't exist should respond 201")
+		body := turnResponseBodyIntoString(t, resp)
+		createdDiscountID = retrieveIDFromResponseBody(body, t)
+	}
+
+	testUpdateDiscount := func(t *testing.T) {
+		updatedDiscountJSON := createDiscountUpdateBody("new name", testDiscountCode)
+		resp, err := updateDiscount(existentID, updatedDiscountJSON)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode, "successfully updating a product should respond 200")
+
+		body := turnResponseBodyIntoString(t, resp)
+		actual := replaceTimeStringsForTests(body)
+		expected := minifyJSON(t, `
+			{
+				"id": 1,
+				"name": "new name",
+				"type": "percentage",
+				"amount": 10,
+				"starts_on": "0001-01-01T00:00:00Z",
+				"expires_on": "0001-01-01T00:00:00.000000Z",
+				"requires_code": true,
+				"code": "update",
+				"limited_use": false,
+				"login_required": false
+			}
+		`)
+		assert.Equal(t, expected, actual, "product option update response should reflect the updated fields")
+	}
+
+	testDeleteDiscount := func(t *testing.T) {
+		resp, err := deleteDiscount(strconv.Itoa(int(createdDiscountID)))
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a discount that exists should respond 200")
+
+		actual := turnResponseBodyIntoString(t, resp)
+		expected := fmt.Sprintf("Successfully archived discount `%d`", createdDiscountID)
+		assert.Equal(t, expected, actual, "discount deletion route should respond with affirmative message upon successful deletion")
+	}
+
+	subtests := []subtest{
+		subtest{
+			Message: "create discount",
+			Test:    testCreateDiscount,
+		},
+		subtest{
+			Message: "update discount",
+			Test:    testUpdateDiscount,
+		},
+		subtest{
+			Message: "delete created discount",
+			Test:    testDeleteDiscount,
+		},
+	}
+	runSubtestSuite(t, subtests)
 }
 
 func TestDiscountUpdateInvalidDiscount(t *testing.T) {
 	t.Parallel()
-	updatedDiscountJSON := loadExampleInput(t, "discounts", "update")
+	updatedDiscountJSON := createDiscountUpdateBody("new name", "TEST")
 	resp, err := updateDiscount(nonexistentID, updatedDiscountJSON)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "successfully updating a product should respond 404")
