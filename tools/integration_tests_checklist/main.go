@@ -21,9 +21,11 @@ const (
 )
 
 type result struct {
-	Filename string
-	Line     int
-	UseCount int
+	Filename        string
+	FunctionName    string
+	DeclarationLine int
+	CompletionLine  int
+	UseCount        int
 }
 
 func must(err error) {
@@ -39,14 +41,23 @@ func generateFunctionToLineNumberMap(file *os.File, filename string, nameValidat
 	lineNumber := 0
 
 	scanner := bufio.NewScanner(file)
+	currentResult := &result{}
+
 	for scanner.Scan() {
 		lineNumber++
 		line := scanner.Text()
+		if line == "}" && currentResult.FunctionName != "" {
+			// log.Printf("closing function bracket found on line %d of %s", lineNumber, file.Name())
+			currentResult.CompletionLine = lineNumber
+			functionNamesToLineNumberMap[currentResult.FunctionName] = currentResult
+			currentResult = &result{}
+		}
 		if funcValidator.MatchString(line) {
 			functionName := string(nameValidator.Find([]byte(line)))
-			functionNamesToLineNumberMap[functionName] = &result{
-				Filename: filename,
-				Line:     lineNumber,
+			currentResult = &result{
+				FunctionName:    functionName,
+				Filename:        filename,
+				DeclarationLine: lineNumber,
 			}
 		}
 	}
@@ -70,12 +81,13 @@ func replaceLinksInChecklistFile(old *os.File, new *os.File, nameValidator *rege
 			if _, ok := functionNamesToLineNumberMap[functionName]; !ok {
 				log.Fatalf("encountered function name %s that doesn't have a corresponding entry in the line number map", functionName)
 			}
-			link := fmt.Sprintf(`([%s](https://github.com/dairycart/dairycart/blob/master/integration_tests/%s.go#L%d))`, functionName, functionNamesToLineNumberMap[functionName].Filename, functionNamesToLineNumberMap[functionName].Line)
+			result := functionNamesToLineNumberMap[functionName]
+			link := fmt.Sprintf(`([%s](https://github.com/dairycart/dairycart/blob/master/integration_tests/%s#L%d-L%d))`, functionName, result.Filename, result.DeclarationLine, result.CompletionLine)
 			checklistPart := strings.Split(line, "(")[0]
 			newLine := fmt.Sprintf("%s%s", checklistPart, link)
 			_, err := new.WriteString(fmt.Sprintf("%s\n", newLine))
 			must(err)
-			functionNamesToLineNumberMap[functionName].UseCount++
+			result.UseCount++
 		} else {
 			_, err := new.WriteString(fmt.Sprintf("%s\n", line))
 			must(err)
@@ -129,7 +141,7 @@ func main() {
 		for f, ln := range functionNamesToLineNumberMap {
 			if ln.UseCount == 0 {
 				missingDeclarations++
-				log.Printf("\t%s (line %d)\n", f, ln.Line)
+				log.Printf("\t%s (line %d)\n", f, ln.DeclarationLine)
 			}
 		}
 		if missingDeclarations != 0 {
