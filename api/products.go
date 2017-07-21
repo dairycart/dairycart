@@ -325,7 +325,7 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 		// can't create a product with a sku that already exists!
 		exists, err := rowExistsInDB(db, skuExistenceQuery, productInput.SKU)
 		if err != nil || exists {
-			notifyOfInvalidRequestBody(res, fmt.Errorf("product with sku `%s` already exists", productInput.SKU))
+			notifyOfInvalidRequestBody(res, fmt.Errorf("product with sku '%s' already exists", productInput.SKU))
 			return
 		}
 

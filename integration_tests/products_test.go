@@ -109,11 +109,10 @@ func TestProductRetrievalRouteForNonexistentProduct(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "requesting a product that doesn't exist should respond 404")
 
 	actual := turnResponseBodyIntoString(t, resp)
-	// TODO: stop adding strings
 	expected := minifyJSON(t, `
 		{
 			"status": 404,
-			"message": "The product you were looking for (sku `+"`nonexistent`"+`) does not exist"
+			"message": "The product you were looking for (sku 'nonexistent') does not exist"
 		}
 	`)
 	assert.Equal(t, expected, actual, "trying to retrieve a product that doesn't exist should respond 404")
@@ -282,11 +281,10 @@ func TestProductUpdateRouteForNonexistentProduct(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "requesting a product that doesn't exist should respond 404")
 
 	actual := turnResponseBodyIntoString(t, resp)
-	// TODO: stop adding strings
 	expected := minifyJSON(t, `
 		{
 			"status": 404,
-			"message": "The product you were looking for (sku `+"`nonexistent`"+`) does not exist"
+			"message": "The product you were looking for (sku 'nonexistent') does not exist"
 		}
 	`)
 	assert.Equal(t, expected, actual, "trying to update a product that doesn't exist should respond 404")
@@ -394,11 +392,10 @@ func TestProductDeletionRouteForNonexistentProduct(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "trying to delete a product that doesn't exist should respond 404")
 
 	actual := turnResponseBodyIntoString(t, resp)
-	// TODO: stop adding strings
 	expected := minifyJSON(t, `
 		{
 			"status": 404,
-			"message": "The product you were looking for (sku `+"`nonexistent`"+`) does not exist"
+			"message": "The product you were looking for (sku 'nonexistent') does not exist"
 		}
 	`)
 	assert.Equal(t, expected, actual, "product deletion route should respond with 404 message when you try to delete a product that doesn't exist")
@@ -437,11 +434,10 @@ func TestProductCreationWithAlreadyExistentSKU(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "creating a product that already exists should respond 400")
 
 	actual := turnResponseBodyIntoString(t, resp)
-	// TODO: stop adding string
 	expected := minifyJSON(t, `
 		{
 			"status": 400,
-			"message": "product with sku `+"`t-shirt`"+` already exists"
+			"message": "product with sku 't-shirt' already exists"
 		}
 	`)
 	assert.Equal(t, expected, actual, "product creation route should respond with failure message when you try to create a sku that already exists")
@@ -589,7 +585,7 @@ func TestProductOptionDeletionForNonexistentOption(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "trying to delete a product option that doesn't exist should respond 404")
 
 	actual := turnResponseBodyIntoString(t, resp)
-	expected := `{"status":404,"message":"The product option you were looking for (id ` + "`999999999`" + `) does not exist"}`
+	expected := `{"status":404,"message":"The product option you were looking for (id '999999999') does not exist"}`
 	assert.Equal(t, expected, actual, "product option deletion route should respond with affirmative message upon successful deletion")
 }
 
@@ -731,11 +727,10 @@ func TestProductOptionUpdateForNonexistentOption(t *testing.T) {
 
 	body := turnResponseBodyIntoString(t, resp)
 	actual := cleanAPIResponseBody(body)
-	// TODO: stop adding strings
 	expected := minifyJSON(t, `
 		{
 			"status": 404,
-			"message": "The product option you were looking for (id `+"`999999999`"+`) does not exist"
+			"message": "The product option you were looking for (id '999999999') does not exist"
 		}
 	`)
 	assert.Equal(t, expected, actual, "product option update route should respond with 404 message when you try to delete a product that doesn't exist")
@@ -883,7 +878,7 @@ func TestProductOptionValueDeletionForNonexistentOptionValue(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "trying to delete a product that exists should respond 404")
 
 	actual := turnResponseBodyIntoString(t, resp)
-	expected := `{"status":404,"message":"The product option value you were looking for (id ` + "`999999999`" + `) does not exist"}`
+	expected := `{"status":404,"message":"The product option value you were looking for (id '999999999') does not exist"}`
 	assert.Equal(t, expected, actual, "product option deletion route should respond with affirmative message upon successful deletion")
 }
 
@@ -907,11 +902,10 @@ func TestProductOptionValueCreationWithAlreadyExistentValue(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "creating a product option value that already exists should respond 400")
 
 	actual := turnResponseBodyIntoString(t, resp)
-	// TODO: stop adding strings
 	expected := minifyJSON(t, `
 		{
 			"status": 400,
-			"message": "product option value `+"`blue`"+` already exists for option ID 1"
+			"message": "product option value 'blue' already exists for option ID 1"
 		}
 	`)
 	assert.Equal(t, expected, actual, "product option value creation route should respond with failure message when you try to create a value that already exists")
@@ -939,11 +933,10 @@ func TestProductOptionValueUpdateForNonexistentOption(t *testing.T) {
 
 	body := turnResponseBodyIntoString(t, resp)
 	actual := cleanAPIResponseBody(body)
-	// TODO: stop adding strings
 	expected := minifyJSON(t, `
 		{
 			"status": 404,
-			"message": "The product option value you were looking for (id `+"`999999999`"+`) does not exist"
+			"message": "The product option value you were looking for (id '999999999') does not exist"
 		}
 	`)
 	assert.Equal(t, expected, actual, "product option update route should respond with 404 message when you try to delete a product that doesn't exist")
