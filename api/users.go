@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"time"
 	"unicode"
 
 	"golang.org/x/crypto/bcrypt"
@@ -29,7 +28,7 @@ const (
 	sessionAuthorizedKeyName = "authenticated"
 
 	usersTableHeaders       = `id, first_name, last_name, username, email, password, salt, is_admin, password_last_changed_on, created_on, updated_on, archived_on`
-	userExistenceQuery      = `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND archived_on IS NULL)`
+	userExistenceQuery      = `SELECT EXISTS(SELECT 1 FROM users WHERE username = $1 AND archived_on IS NULL)`
 	adminUserExistenceQuery = `SELECT EXISTS(SELECT 1 FROM users WHERE is_admin is true AND archived_on IS NULL)`
 	userExistenceQueryByID  = `SELECT EXISTS(SELECT 1 FROM users WHERE id = $1 AND archived_on IS NULL)`
 	userDeletionQuery       = `UPDATE users SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
@@ -275,10 +274,16 @@ func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 			notifyOfInternalIssue(res, err, "read session data")
 			return
 		}
+
 		if userInput.IsAdmin {
 			// only an admin user can create an admin user
 			if admin, ok := session.Values[sessionAdminKeyName].(bool); !ok || !admin {
-				http.Error(res, "Forbidden", http.StatusForbidden)
+				res.WriteHeader(http.StatusForbidden)
+				errRes := &ErrorResponse{
+					Status:  http.StatusForbidden,
+					Message: "User is not authorized to create admin users",
+				}
+				json.NewEncoder(res).Encode(errRes)
 				return
 			}
 		}
@@ -304,8 +309,9 @@ func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 
 		responseUser := &DisplayUser{
 			DBRow: DBRow{
-				ID:        createdUserID,
-				CreatedOn: time.Now(),
+				ID: createdUserID,
+				// FIXME: use real created_on value
+				// CreatedOn: time.Now(),
 			},
 			FirstName: newUser.FirstName,
 			LastName:  newUser.LastName,

@@ -23,6 +23,8 @@ services:
       dockerfile: Dockerfile
     links:
       - dairycart
+    environment:
+      DAIRYCART_DB_URL: postgres://dairytest:hunter2@database:5432/dairytest?sslmode=disable
   database:
     image: postgres:alpine
     ports:
