@@ -262,11 +262,11 @@ func respondThatRowDoesNotExist(req *http.Request, res http.ResponseWriter, item
 		identifier = "identified by"
 	}
 
-	log.Printf("informing user that the %s they were looking for (%s %s) does not exist\n", itemType, identifier, id)
+	log.Printf("informing user that the %s they were looking for (%s '%s') does not exist\n", itemType, identifier, id)
 	res.WriteHeader(http.StatusNotFound)
 	errRes := &ErrorResponse{
 		Status:  http.StatusNotFound,
-		Message: fmt.Sprintf("The %s you were looking for (%s `%s`) does not exist", itemType, identifier, id),
+		Message: fmt.Sprintf("The %s you were looking for (%s '%s') does not exist", itemType, identifier, id),
 	}
 	json.NewEncoder(res).Encode(errRes)
 }

@@ -253,7 +253,7 @@ func buildProductOptionCreationHandler(db *sqlx.DB) http.HandlerFunc {
 		// can't create an option that already exists!
 		optionExists, err := productOptionAlreadyExistsForProduct(db, newOptionData, productID)
 		if err != nil || optionExists {
-			notifyOfInvalidRequestBody(res, fmt.Errorf("product option with the name `%s` already exists", newOptionData.Name))
+			notifyOfInvalidRequestBody(res, fmt.Errorf("product option with the name '%s' already exists", newOptionData.Name))
 			return
 		}
 

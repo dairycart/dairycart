@@ -324,7 +324,7 @@ func TestRestrictedStringIsValid(t *testing.T) {
 		ErrorMessage string
 	}{
 		{
-			Input:        "this_sku_is_fine",
+			Input:        "this_string_is_fine",
 			ShouldPass:   true,
 			ErrorMessage: "ordinary sku example should pass",
 		},
@@ -361,7 +361,7 @@ func TestRespondThatRowDoesNotExist(t *testing.T) {
 	respondThatRowDoesNotExist(req, w, "item", "something")
 
 	actual := strings.TrimSpace(w.Body.String())
-	expected := "{\"status\":404,\"message\":\"The item you were looking for (identified by `something`) does not exist\"}"
+	expected := `{"status":404,"message":"The item you were looking for (identified by 'something') does not exist"}`
 
 	assert.Equal(t, expected, actual, "response should indicate the row was not found")
 	assert.Equal(t, http.StatusNotFound, w.Code, "status code should be 404")

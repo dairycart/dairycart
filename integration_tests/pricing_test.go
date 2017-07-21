@@ -72,11 +72,10 @@ func TestDiscountRetrievalForNonexistentDiscount(t *testing.T) {
 
 	body := turnResponseBodyIntoString(t, resp)
 	actual := replaceTimeStringsForTests(body)
-	// TODO: stop adding strings
 	expected := minifyJSON(t, `
 		{
 			"status": 404,
-			"message": "The discount you were looking for (id `+"`999999999`"+`) does not exist"
+			"message": "The discount you were looking for (id '999999999') does not exist"
 		}
 	`)
 	assert.Equal(t, expected, actual, "product option update route should respond with 404 message when you try to delete a product that doesn't exist")
@@ -211,7 +210,7 @@ func TestDiscountDeletionForNonexistentDiscount(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "trying to delete a discount that doesn't exists should respond 404")
 
 	actual := turnResponseBodyIntoString(t, resp)
-	expected := `{"status":404,"message":"The discount you were looking for (id ` + "`999999999`" + `) does not exist"}`
+	expected := `{"status":404,"message":"The discount you were looking for (id '999999999') does not exist"}`
 	assert.Equal(t, expected, actual, "discount deletion route should respond with affirmative message upon successful deletion")
 }
 

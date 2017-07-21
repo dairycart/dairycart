@@ -48,20 +48,6 @@ type subtest struct {
 	Test    func(t *testing.T)
 }
 
-func loadExpectedResponse(t *testing.T, folder string, filename string) string {
-	bodyBytes, err := ioutil.ReadFile(fmt.Sprintf("expected_responses/%s/%s.json", folder, filename))
-	assert.Nil(t, err)
-	assert.NotEmpty(t, bodyBytes, "example response file requested is empty and should not be")
-	return strings.TrimSpace(string(bodyBytes))
-}
-
-func loadExampleInput(t *testing.T, folder string, filename string) string {
-	bodyBytes, err := ioutil.ReadFile(fmt.Sprintf("example_inputs/%s/%s.json", folder, filename))
-	assert.Nil(t, err)
-	assert.NotEmpty(t, bodyBytes, "example input file requested is empty and should not be")
-	return strings.TrimSpace(string(bodyBytes))
-}
-
 func cleanAPIResponseBody(body string) string {
 	idRegex := regexp.MustCompile(idReplacementPattern)
 	productTimeRegex := regexp.MustCompile(productTimeReplacementPattern)
