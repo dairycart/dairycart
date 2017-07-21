@@ -109,6 +109,7 @@ User creation routes:
 
 - [x] Valid input, regular user ([TestUserCreation](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L26-L58))
 - [x] Valid input, admin user ([TestAdminUserCreation](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L88-L120))
+- [x] Valid input, admin user, without admin credentials ()
 - [x] Already existent user ([TestUserCreationForAlreadyExistentUsername](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L122-L165))
 - [x] Invalid password ([TestUserCreationWithInvalidPassword](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L60-L74))
 - [x] Invalid input ([TestUserCreationWithInvalidCreationBody](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L76-L86))
@@ -117,6 +118,7 @@ User deletion routes:
 
 - [] Regular user ()
 - [] Admin user ()
+- [] Admin user without admin credentials ()
 - [] Non existent user ()
 
 User login routes:
@@ -126,7 +128,6 @@ User login routes:
 - [] Invalid input ()
 - [] Bad password ()
 
-User login scenarios:
+User logout routes:
 
-- [] Create user and log out ()
-- [] Create user, log out, log back in, and log out again ()
+- [] Log out ()
