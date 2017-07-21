@@ -107,10 +107,17 @@ Delete discount route:
 
 User creation routes:
 
-- [] Valid input ()
+- [] Valid input, regular user ()
+- [] Valid input, admin user ()
 - [] Already existent user ()
 - [] Invalid input ()
 - [] Bad password ()
+
+User deletion routes:
+
+- [] Regular user ()
+- [] Admin user ()
+- [] Non existent user ()
 
 User login routes:
 

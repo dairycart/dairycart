@@ -133,8 +133,6 @@ func TestDiscountCreation(t *testing.T) {
 				"name": "Test",
 				"type": "flat_amount",
 				"amount": 12.34,
-				"starts_on": "2016-12-01T12:00:00Z",
-				"expires_on": "",
 				"requires_code": true,
 				"code": "%s",
 				"limited_use": false,
@@ -242,26 +240,24 @@ func TestDiscountUpdate(t *testing.T) {
 
 	testUpdateDiscount := func(t *testing.T) {
 		updatedDiscountJSON := createDiscountUpdateBody("new name", testDiscountCode)
-		resp, err := updateDiscount(existentID, updatedDiscountJSON)
+		resp, err := updateDiscount(strconv.Itoa(int(createdDiscountID)), updatedDiscountJSON)
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusOK, resp.StatusCode, "successfully updating a product should respond 200")
 
 		body := turnResponseBodyIntoString(t, resp)
 		actual := replaceTimeStringsForTests(body)
-		expected := minifyJSON(t, `
+		expected := minifyJSON(t, fmt.Sprintf(`
 			{
-				"id": 1,
+				"id": %d,
 				"name": "new name",
-				"type": "percentage",
-				"amount": 10,
-				"starts_on": "0001-01-01T00:00:00Z",
-				"expires_on": "0001-01-01T00:00:00.000000Z",
+				"type": "flat_amount",
+				"amount": 12.34,
 				"requires_code": true,
 				"code": "update",
 				"limited_use": false,
 				"login_required": false
 			}
-		`)
+		`, createdDiscountID))
 		assert.Equal(t, expected, actual, "product option update response should reflect the updated fields")
 	}
 

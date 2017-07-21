@@ -33,6 +33,12 @@ func init() {
 	requester = &Requester{}
 }
 
+////////////////////////////////////////////////////////
+//                                                    //
+//                 Helper Functions                   //
+//                                                    //
+////////////////////////////////////////////////////////
+
 func buildPath(parts ...string) string {
 	return fmt.Sprintf("%s/%s", baseURL, strings.Join(parts, "/"))
 }
@@ -72,6 +78,12 @@ func ensureThatDairycartIsAlive() {
 	}
 }
 
+////////////////////////////////////////////////////////
+//                                                    //
+//                  Auth Functions                    //
+//                                                    //
+////////////////////////////////////////////////////////
+
 func createNewUser(JSONBody string) (*http.Response, error) {
 	url := `http://dairycart/user`
 	body := strings.NewReader(JSONBody)
@@ -79,23 +91,35 @@ func createNewUser(JSONBody string) (*http.Response, error) {
 	return requester.Client.Do(req)
 }
 
-func loginUser(email string, password string) (*http.Response, error) {
+func loginUser(username string, password string) (*http.Response, error) {
 	url := `http://dairycart/login`
 	body := strings.NewReader(fmt.Sprintf(`
 		{
-			"email": "%s",
+			"username": "%s",
 			"password": "%s"
 		}
-	`, email, password))
+	`, username, password))
 	req, _ := http.NewRequest(http.MethodPost, url, body)
 	return requester.Client.Do(req)
 }
 
-func logoutUser(email string, password string) (*http.Response, error) {
+func logoutUser(username string, password string) (*http.Response, error) {
 	url := `http://dairycart/logout`
 	req, _ := http.NewRequest(http.MethodPost, url, nil)
 	return requester.Do(req)
 }
+
+func deleteUser(userID string) (*http.Response, error) {
+	url := buildPath("user", userID)
+	req, _ := http.NewRequest(http.MethodDelete, url, nil)
+	return requester.Do(req)
+}
+
+////////////////////////////////////////////////////////
+//                                                    //
+//                 Product Functions                  //
+//                                                    //
+////////////////////////////////////////////////////////
 
 func checkProductExistence(sku string) (*http.Response, error) {
 	url := buildPath("product", sku)
@@ -136,6 +160,12 @@ func deleteProduct(sku string) (*http.Response, error) {
 	return requester.execRequest(req)
 }
 
+////////////////////////////////////////////////////////
+//                                                    //
+//             Product Option Functions               //
+//                                                    //
+////////////////////////////////////////////////////////
+
 func retrieveProductOptions(productID string, queryFilter map[string]string) (*http.Response, error) {
 	path := buildPath("product", productID, "options")
 	url := buildURL(path, queryFilter)
@@ -163,6 +193,12 @@ func deleteProductOption(optionID string) (*http.Response, error) {
 	return requester.execRequest(req)
 }
 
+////////////////////////////////////////////////////////
+//                                                    //
+//          Product Option Value Functions            //
+//                                                    //
+////////////////////////////////////////////////////////
+
 func createProductOptionValueForOption(optionID string, JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
 	url := buildPath("product_options", optionID, "value")
@@ -182,6 +218,12 @@ func deleteProductOptionValueForOption(optionID string) (*http.Response, error) 
 	req, _ := http.NewRequest(http.MethodDelete, url, nil)
 	return requester.execRequest(req)
 }
+
+////////////////////////////////////////////////////////
+//                                                    //
+//                Discount Functions                  //
+//                                                    //
+////////////////////////////////////////////////////////
 
 func getDiscountByID(discountID string) (*http.Response, error) {
 	url := buildPath("discount", discountID)

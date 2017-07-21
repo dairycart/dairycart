@@ -22,9 +22,10 @@ const (
 	// function, and as a consequence, the tests, would fail spectacularly).
 	// Note that this pattern needs to be run as ungreedy because of the possiblity of prefix and or
 	// suffixed commas
-	idReplacementPattern          = `(?U)(,?)"(id)":\s?\d+,`
-	timeFieldReplacementPattern   = `(?U)(,?)"(created_on|updated_on|archived_on)":"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z)?"(,?)`
-	productTimeReplacementPattern = `(?U)(,?)"(available_on)":"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z)?"(,?)`
+	idReplacementPattern                = `(?U)(,?)"(id)":\s?\d+,`
+	productTimeReplacementPattern       = `(?U)(,?)"(available_on)":"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z)?"(,?)`
+	timeFieldReplacementPattern         = `(?U)(,?)"(created_on|updated_on|archived_on)":"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z)?"(,?)`
+	discountTimeFieldReplacementPattern = `(?U)(,?)"(starts_on|expires_on)":"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z)?"(,?)`
 
 	existentID     = "1"
 	nonexistentID  = "999999999"
@@ -50,17 +51,24 @@ type subtest struct {
 
 func cleanAPIResponseBody(body string) string {
 	idRegex := regexp.MustCompile(idReplacementPattern)
-	productTimeRegex := regexp.MustCompile(productTimeReplacementPattern)
 	allRowsTimeRegex := regexp.MustCompile(timeFieldReplacementPattern)
+	productTimeRegex := regexp.MustCompile(productTimeReplacementPattern)
+	discountTimeRegex := regexp.MustCompile(discountTimeFieldReplacementPattern)
 	out := allRowsTimeRegex.ReplaceAllString(body, "")
 	out = productTimeRegex.ReplaceAllString(out, "")
+	out = discountTimeRegex.ReplaceAllString(out, "")
 	out = idRegex.ReplaceAllString(out, "")
 	return out
 }
 
 func replaceTimeStringsForTests(body string) string {
-	re := regexp.MustCompile(timeFieldReplacementPattern)
-	return strings.TrimSpace(re.ReplaceAllString(body, ""))
+	genericTimeRegex := regexp.MustCompile(timeFieldReplacementPattern)
+	productTimeRegex := regexp.MustCompile(productTimeReplacementPattern)
+	discountTimeRegex := regexp.MustCompile(discountTimeFieldReplacementPattern)
+	out := strings.TrimSpace(genericTimeRegex.ReplaceAllString(body, ""))
+	out = productTimeRegex.ReplaceAllString(out, "")
+	out = discountTimeRegex.ReplaceAllString(out, "")
+	return out
 }
 
 func turnResponseBodyIntoString(t *testing.T, res *http.Response) string {
