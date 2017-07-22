@@ -125,11 +125,23 @@ func ensureThatDairycartIsAlive() {
 //                                                    //
 ////////////////////////////////////////////////////////
 
-func createNewUser(JSONBody string) (*http.Response, error) {
+func createNewUser(JSONBody string, createAsSuperUser bool) (*http.Response, error) {
 	url := buildVersionlessPath("user")
 	body := strings.NewReader(JSONBody)
 	req, _ := http.NewRequest(http.MethodPost, url, body)
-	return requester.ExecuteAuthorizedRequest(req)
+	if createAsSuperUser {
+		return requester.ExecuteAuthorizedRequest(req)
+	}
+	return requester.Do(req)
+}
+
+func deleteUser(userID string, deleteAsSuperUser bool) (*http.Response, error) {
+	url := buildPath("user", userID)
+	req, _ := http.NewRequest(http.MethodDelete, url, nil)
+	if deleteAsSuperUser {
+		return requester.ExecuteAuthorizedRequest(req)
+	}
+	return requester.Do(req)
 }
 
 func loginUser(username string, password string) (*http.Response, error) {
@@ -147,12 +159,6 @@ func loginUser(username string, password string) (*http.Response, error) {
 func logoutUser(username string, password string) (*http.Response, error) {
 	url := buildVersionlessPath("logout")
 	req, _ := http.NewRequest(http.MethodPost, url, nil)
-	return requester.Do(req)
-}
-
-func deleteUser(userID string) (*http.Response, error) {
-	url := buildPath("user", userID)
-	req, _ := http.NewRequest(http.MethodDelete, url, nil)
 	return requester.Do(req)
 }
 

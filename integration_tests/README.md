@@ -107,19 +107,20 @@ Delete discount route:
 
 User creation routes:
 
-- [x] Valid input, regular user ([TestUserCreation](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L26-L58))
-- [x] Valid input, admin user ([TestAdminUserCreation](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L88-L120))
-- [x] Valid input, admin user, without admin credentials ()
-- [x] Already existent user ([TestUserCreationForAlreadyExistentUsername](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L122-L165))
-- [x] Invalid password ([TestUserCreationWithInvalidPassword](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L60-L74))
-- [x] Invalid input ([TestUserCreationWithInvalidCreationBody](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L76-L86))
+- [x] Valid input, regular user ([TestUserCreation](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L26-L59))
+- [x] Valid input, admin user ([TestAdminUserCreation](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L91-L124))
+- [x] Valid input, admin user, without admin credentials ([TestAdminUserCreationFailsWithoutAdminCredentials](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L126-L133))
+- [x] Already existent user ([TestUserCreationForAlreadyExistentUsername](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L135-L179))
+- [x] Invalid password ([TestUserCreationWithInvalidPassword](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L61-L76))
+- [x] Invalid input ([TestUserCreationWithInvalidCreationBody](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L78-L89))
 
 User deletion routes:
 
-- [] Regular user ()
-- [] Admin user ()
+- [x] Regular user ([TestUserDeletion](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L181-L213))
+- [] Regular user without admin credentials ()
+- [x] Admin user ([TestAdminUserDeletion](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L227-L259))
 - [] Admin user without admin credentials ()
-- [] Non existent user ()
+- [x] Non existent user ([TestUserDeletionForNonexistentUser](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L215-L225))
 
 User login routes:
 
