@@ -271,6 +271,17 @@ func respondThatRowDoesNotExist(req *http.Request, res http.ResponseWriter, item
 	json.NewEncoder(res).Encode(errRes)
 }
 
+func notifyOfInvalidRequestCookie(res http.ResponseWriter) {
+	log.Printf("Encountered error reading request cookie")
+	res.WriteHeader(http.StatusBadRequest)
+	err := errors.New("invalid request cookie")
+	errRes := &ErrorResponse{
+		Status:  http.StatusBadRequest,
+		Message: err.Error(),
+	}
+	json.NewEncoder(res).Encode(errRes)
+}
+
 func notifyOfInvalidRequestBody(res http.ResponseWriter, err error) {
 	log.Printf("Encountered this error decoding a request body: %v\n", err)
 	res.WriteHeader(http.StatusBadRequest)

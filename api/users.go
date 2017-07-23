@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"time"
 	"unicode"
 
 	"golang.org/x/crypto/bcrypt"
@@ -29,7 +28,7 @@ const (
 	sessionAuthorizedKeyName = "authenticated"
 
 	usersTableHeaders       = `id, first_name, last_name, username, email, password, salt, is_admin, password_last_changed_on, created_on, updated_on, archived_on`
-	userExistenceQuery      = `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND archived_on IS NULL)`
+	userExistenceQuery      = `SELECT EXISTS(SELECT 1 FROM users WHERE username = $1 AND archived_on IS NULL)`
 	adminUserExistenceQuery = `SELECT EXISTS(SELECT 1 FROM users WHERE is_admin is true AND archived_on IS NULL)`
 	userExistenceQueryByID  = `SELECT EXISTS(SELECT 1 FROM users WHERE id = $1 AND archived_on IS NULL)`
 	userDeletionQuery       = `UPDATE users SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
@@ -145,11 +144,14 @@ func passwordIsValid(s string) bool {
 
 func createUserFromInput(in *UserCreationInput) (*User, error) {
 	salt, err := generateSalt()
+	// COVERAGE NOTE: I cannot seem to synthesize this error for the sake of testing, so if you're
+	// seeing this in a coverage report and the line below is red, just know that I tried. :(
 	if err != nil {
 		return nil, err
 	}
 
 	saltedAndHashedPassword, err := saltAndHashPassword(in.Password, salt)
+	// COVERAGE NOTE: see above
 	if err != nil {
 		return nil, err
 	}
@@ -272,13 +274,19 @@ func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 
 		session, err := store.Get(req, dairycartCookieName)
 		if err != nil {
-			notifyOfInternalIssue(res, err, "read session data")
+			notifyOfInvalidRequestCookie(res)
 			return
 		}
+
 		if userInput.IsAdmin {
 			// only an admin user can create an admin user
 			if admin, ok := session.Values[sessionAdminKeyName].(bool); !ok || !admin {
-				http.Error(res, "Forbidden", http.StatusForbidden)
+				res.WriteHeader(http.StatusForbidden)
+				errRes := &ErrorResponse{
+					Status:  http.StatusForbidden,
+					Message: "User is not authorized to create admin users",
+				}
+				json.NewEncoder(res).Encode(errRes)
 				return
 			}
 		}
@@ -291,6 +299,7 @@ func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 		}
 
 		newUser, err := createUserFromInput(userInput)
+		// COVERAGE NOTE: see note in createUserFromInput
 		if err != nil {
 			notifyOfInternalIssue(res, err, "creating user")
 			return
@@ -304,8 +313,9 @@ func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 
 		responseUser := &DisplayUser{
 			DBRow: DBRow{
-				ID:        createdUserID,
-				CreatedOn: time.Now(),
+				ID: createdUserID,
+				// FIXME: use real created_on value
+				// CreatedOn: time.Now(),
 			},
 			FirstName: newUser.FirstName,
 			LastName:  newUser.LastName,
@@ -364,7 +374,7 @@ func buildUserLoginHandler(db *sqlx.DB, store *sessions.CookieStore) http.Handle
 
 		session, err := store.Get(req, dairycartCookieName)
 		if err != nil {
-			notifyOfInternalIssue(res, err, "read session data")
+			notifyOfInvalidRequestCookie(res)
 			return
 		}
 
@@ -384,7 +394,7 @@ func buildUserLogoutHandler(store *sessions.CookieStore) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		session, err := store.Get(req, dairycartCookieName)
 		if err != nil {
-			notifyOfInternalIssue(res, err, "read session data")
+			notifyOfInvalidRequestCookie(res)
 			return
 		}
 		session.Values[sessionAuthorizedKeyName] = false
@@ -393,23 +403,41 @@ func buildUserLogoutHandler(store *sessions.CookieStore) http.HandlerFunc {
 	}
 }
 
-func buildUserDeletionHandler(db *sqlx.DB) http.HandlerFunc {
+func buildUserDeletionHandler(db *sqlx.DB, store *sessions.CookieStore) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		userID := chi.URLParam(req, "user_id")
 		// we can eat this error because Mux takes care of validating route params for us
 		userIDInt, _ := strconv.ParseInt(userID, 10, 64)
 
-		// can't delete a user with an email that already exists!
+		// can't delete a user that doesn't already exist!
 		exists, err := rowExistsInDB(db, userExistenceQueryByID, userID)
 		if err != nil || !exists {
 			respondThatRowDoesNotExist(req, res, "user", userID)
 			return
 		}
 
-		err = archiveUser(db, uint64(userIDInt))
+		session, err := store.Get(req, dairycartCookieName)
 		if err != nil {
-			notifyOfInternalIssue(res, err, "archive user")
+			notifyOfInvalidRequestCookie(res)
 			return
+		}
+
+		// only an admin user can delete an admin user
+		admin, ok := session.Values[sessionAdminKeyName].(bool)
+		if !ok || !admin {
+			res.WriteHeader(http.StatusForbidden)
+			errRes := &ErrorResponse{
+				Status:  http.StatusForbidden,
+				Message: "User is not authorized to delete users",
+			}
+			json.NewEncoder(res).Encode(errRes)
+			return
+		} else if admin {
+			err = archiveUser(db, uint64(userIDInt))
+			if err != nil {
+				notifyOfInternalIssue(res, err, "archive user")
+				return
+			}
 		}
 
 		res.WriteHeader(http.StatusOK)
@@ -502,10 +530,12 @@ func buildUserInfoUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
+		// TODO: Evaluate whether or not I should be reusing the salt here.
 		hashedPassword := existingUser.Password
 		if passwordChanged {
 			var err error
 			hashedPassword, err = saltAndHashPassword(newPassword, existingUser.Salt)
+			// COVERAGE NOTE: see note in createUserFromInput
 			if err != nil {
 				notifyOfInternalIssue(res, err, "update user")
 				return

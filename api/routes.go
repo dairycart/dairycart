@@ -33,7 +33,7 @@ func SetupAPIRoutes(router *chi.Mux, db *sqlx.DB, store *sessions.CookieStore) {
 
 	router.Route("/v1", func(r chi.Router) {
 		// Users
-		r.Delete(fmt.Sprintf("/user/{user_id:%s}", NumericPattern), buildUserDeletionHandler(db))
+		r.Delete(fmt.Sprintf("/user/{user_id:%s}", NumericPattern), buildUserDeletionHandler(db, store))
 
 		// Products
 		productEndpoint := fmt.Sprintf("/product/{sku:%s}", ValidURLCharactersPattern)
