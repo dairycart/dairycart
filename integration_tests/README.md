@@ -107,28 +107,29 @@ Delete discount route:
 
 User creation routes:
 
-- [x] Valid input, regular user ([TestUserCreation](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L26-L59))
-- [x] Valid input, admin user ([TestAdminUserCreation](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L91-L124))
-- [x] Valid input, admin user, without admin credentials ([TestAdminUserCreationFailsWithoutAdminCredentials](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L126-L133))
-- [x] Already existent user ([TestUserCreationForAlreadyExistentUsername](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L135-L179))
-- [x] Invalid password ([TestUserCreationWithInvalidPassword](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L61-L76))
-- [x] Invalid input ([TestUserCreationWithInvalidCreationBody](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L78-L89))
+- [x] Valid input, regular user ([TestUserCreation](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L27-L60))
+- [x] Valid input, admin user ([TestAdminUserCreation](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L92-L125))
+- [x] Valid input, admin user, without admin credentials ([TestAdminUserCreationFailsWithoutAdminCredentials](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L127-L134))
+- [x] Already existent user ([TestUserCreationForAlreadyExistentUsername](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L136-L180))
+- [x] Invalid password ([TestUserCreationWithInvalidPassword](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L62-L77))
+- [x] Invalid input ([TestUserCreationWithInvalidCreationBody](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L79-L90))
 
 User deletion routes:
 
-- [x] Regular user ([TestUserDeletion](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L181-L213))
-- [x] Regular user without admin credentials ([TestUserDeletionAsRegularUser](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L227-L261))
-- [x] Admin user ([TestAdminUserDeletion](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L263-L295))
-- [x] Admin user without admin credentials ([TestAdminUserDeletionAsRegularUser](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L297-L331))
-- [x] Non existent user ([TestUserDeletionForNonexistentUser](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L215-L225))
+- [x] Regular user ([TestUserDeletion](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L182-L214))
+- [x] Regular user without admin credentials ([TestUserDeletionAsRegularUser](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L228-L262))
+- [x] Admin user ([TestAdminUserDeletion](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L264-L296))
+- [x] Admin user without admin credentials ([TestAdminUserDeletionAsRegularUser](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L298-L332))
+- [x] Non existent user ([TestUserDeletionForNonexistentUser](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L216-L226))
 
 User login routes:
 
-- [] Valid password ()
-- [] Non-existent user ()
-- [] Invalid input ()
-- [] Bad password ()
+- [x] Valid password ([TestUserLogin](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L334-L391))
+- [x] Bad password ([TestUserLoginWithInvalidPassword](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L393-L450))
+- [x] Nonexistent user ([TestUserLoginForNonexistentUser](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L463-L471))
+- [x] Invalid input ([TestUserLoginWithInvalidInput](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L452-L461))
 
 User logout routes:
 
-- [] Log out ()
+- [] Valid user ()
+- [] Nonexistent user ()

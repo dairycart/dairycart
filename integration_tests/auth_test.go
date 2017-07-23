@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -328,4 +329,143 @@ func TestAdminUserDeletionAsRegularUser(t *testing.T) {
 		},
 	}
 	runSubtestSuite(t, subtests)
+}
+
+func TestUserLogin(t *testing.T) {
+	t.Parallel()
+
+	var createdUserID uint64
+	testUsername := "test_user_login"
+	userShouldBeAdmin := false
+	testUserCookie := &http.Cookie{}
+
+	testCreateUser := func(t *testing.T) {
+		newUserJSON := createUserCreationBody(testUsername, validPassword, userShouldBeAdmin)
+		resp, err := createNewUser(newUserJSON, userShouldBeAdmin)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a user that doesn't exist should respond 201")
+		testUserCookie = resp.Cookies()[0]
+
+		body := turnResponseBodyIntoString(t, resp)
+		createdUserID = retrieveIDFromResponseBody(body, t)
+	}
+
+	testLogoutUser := func(t *testing.T) {
+		resp, err := logoutUser(testUsername, validPassword, testUserCookie)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode, "logging out as a logged in user should respond 200")
+	}
+
+	testLoginUser := func(t *testing.T) {
+		resp, err := loginUser(testUsername, validPassword)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode, "logging in as a valid user should respond 200")
+		assert.Contains(t, resp.Header, "Set-Cookie", "login handler should attach a cookie when request is valid")
+	}
+
+	testDeleteUser := func(t *testing.T) {
+		resp, err := deleteUser(strconv.Itoa(int(createdUserID)), true)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a user that exists should respond 200")
+	}
+
+	subtests := []subtest{
+		subtest{
+			Message: "create user",
+			Test:    testCreateUser,
+		},
+		subtest{
+			Message: "logout user before logging in again",
+			Test:    testLogoutUser,
+		},
+		subtest{
+			Message: "login user",
+			Test:    testLoginUser,
+		},
+		subtest{
+			Message: "delete created user",
+			Test:    testDeleteUser,
+		},
+	}
+	runSubtestSuite(t, subtests)
+}
+
+func TestUserLoginWithInvalidPassword(t *testing.T) {
+	t.Parallel()
+
+	var createdUserID uint64
+	testUsername := "test_user_login_with_bad_password"
+	userShouldBeAdmin := false
+	testUserCookie := &http.Cookie{}
+
+	testCreateUser := func(t *testing.T) {
+		newUserJSON := createUserCreationBody(testUsername, validPassword, userShouldBeAdmin)
+		resp, err := createNewUser(newUserJSON, userShouldBeAdmin)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a user that doesn't exist should respond 201")
+		testUserCookie = resp.Cookies()[0]
+
+		body := turnResponseBodyIntoString(t, resp)
+		createdUserID = retrieveIDFromResponseBody(body, t)
+	}
+
+	testLogoutUser := func(t *testing.T) {
+		resp, err := logoutUser(testUsername, validPassword, testUserCookie)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode, "creating a user that doesn't exist should respond 200")
+	}
+
+	testLoginUser := func(t *testing.T) {
+		resp, err := loginUser(testUsername, "password")
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode, "logging in with the wrong password should respond 401")
+		assert.NotContains(t, resp.Header, "Set-Cookie", "login handler should not attach a cookie when request is invalid")
+	}
+
+	testDeleteUser := func(t *testing.T) {
+		resp, err := deleteUser(strconv.Itoa(int(createdUserID)), true)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a user that exists should respond 200")
+	}
+
+	subtests := []subtest{
+		subtest{
+			Message: "create user",
+			Test:    testCreateUser,
+		},
+		subtest{
+			Message: "logout user before logging in again",
+			Test:    testLogoutUser,
+		},
+		subtest{
+			Message: "login user",
+			Test:    testLoginUser,
+		},
+		subtest{
+			Message: "delete created user",
+			Test:    testDeleteUser,
+		},
+	}
+	runSubtestSuite(t, subtests)
+}
+
+func TestUserLoginWithInvalidInput(t *testing.T) {
+	url := buildVersionlessPath("login")
+	body := strings.NewReader(exampleGarbageInput)
+	req, err := http.NewRequest(http.MethodPost, url, body)
+	assert.Nil(t, err)
+
+	resp, err := requester.Do(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "attempting to log in a user with invalid input should respond 400")
+}
+
+func TestUserLoginForNonexistentUser(t *testing.T) {
+	t.Parallel()
+
+	testUsername := "test_user_login_for_nonexistent_user"
+	resp, err := loginUser(testUsername, validPassword)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "attempting to log in a user that doesn't exist should respond 404")
+	assert.NotContains(t, resp.Header, "Set-Cookie", "login handler should not attach a cookie when request is inalid")
 }
