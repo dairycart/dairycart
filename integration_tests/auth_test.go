@@ -224,6 +224,42 @@ func TestUserDeletionForNonexistentUser(t *testing.T) {
 	assert.Equal(t, expected, actual, "anticipated response body should match")
 }
 
+func TestUserDeletionAsRegularUser(t *testing.T) {
+	t.Parallel()
+
+	var createdUserID uint64
+	testUsername := "test_user_deletion_as_regular_user"
+	userShouldBeAdmin := false
+	testCreateUser := func(t *testing.T) {
+		newUserJSON := createUserCreationBody(testUsername, validPassword, userShouldBeAdmin)
+		resp, err := createNewUser(newUserJSON, userShouldBeAdmin)
+		assert.Nil(t, err)
+		createdUserID = retrieveIDFromResponseBody(turnResponseBodyIntoString(t, resp), t)
+	}
+
+	testDeleteUser := func(t *testing.T) {
+		resp, err := deleteUser(strconv.Itoa(int(createdUserID)), userShouldBeAdmin)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusForbidden, resp.StatusCode, "trying to delete an admin user as a regular user should respond 403")
+
+		expected := `{"status":403,"message":"User is not authorized to delete users"}`
+		actual := turnResponseBodyIntoString(t, resp)
+		assert.Equal(t, expected, actual, "anticipated response body should match")
+	}
+
+	subtests := []subtest{
+		subtest{
+			Message: "create user",
+			Test:    testCreateUser,
+		},
+		subtest{
+			Message: "delete created user",
+			Test:    testDeleteUser,
+		},
+	}
+	runSubtestSuite(t, subtests)
+}
+
 func TestAdminUserDeletion(t *testing.T) {
 	t.Parallel()
 
@@ -243,6 +279,42 @@ func TestAdminUserDeletion(t *testing.T) {
 		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete an admin user that exists should respond 200")
 		body := turnResponseBodyIntoString(t, resp)
 		assert.Empty(t, body)
+	}
+
+	subtests := []subtest{
+		subtest{
+			Message: "create admin user",
+			Test:    testCreateUser,
+		},
+		subtest{
+			Message: "delete created admin user",
+			Test:    testDeleteUser,
+		},
+	}
+	runSubtestSuite(t, subtests)
+}
+
+func TestAdminUserDeletionAsRegularUser(t *testing.T) {
+	t.Parallel()
+
+	var createdUserID uint64
+	testUsername := "test_admin_user_deletion_as_non_admin"
+	userShouldBeAdmin := true
+	testCreateUser := func(t *testing.T) {
+		newUserJSON := createUserCreationBody(testUsername, validPassword, userShouldBeAdmin)
+		resp, err := createNewUser(newUserJSON, userShouldBeAdmin)
+		assert.Nil(t, err)
+		createdUserID = retrieveIDFromResponseBody(turnResponseBodyIntoString(t, resp), t)
+	}
+
+	testDeleteUser := func(t *testing.T) {
+		resp, err := deleteUser(strconv.Itoa(int(createdUserID)), false)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusForbidden, resp.StatusCode, "trying to delete an admin user as a regular user should respond 403")
+
+		expected := `{"status":403,"message":"User is not authorized to delete users"}`
+		actual := turnResponseBodyIntoString(t, resp)
+		assert.Equal(t, expected, actual, "anticipated response body should match")
 	}
 
 	subtests := []subtest{

@@ -26,20 +26,27 @@ const (
 // Requester is what we use to make requests
 type Requester struct {
 	http.Client
-	AuthCookie *http.Cookie
+	AdminAuthCookie   *http.Cookie
+	RegularAuthCookie *http.Cookie
 }
 
-// ExecuteAuthorizedRequest takes a regular prepared Request struct and adds our superuser Auth cookie before making the request.
-func (r *Requester) ExecuteAuthorizedRequest(req *http.Request) (*http.Response, error) {
-	req.AddCookie(r.AuthCookie)
+// ExecuteRequestAsAdmin takes a regular prepared Request struct and adds our admin Auth cookie before making the request.
+func (r *Requester) ExecuteRequestAsAdmin(req *http.Request) (*http.Response, error) {
+	req.AddCookie(r.AdminAuthCookie)
+	return r.Do(req)
+}
+
+// ExecuteRequestAsRegularUser takes a regular prepared Request struct and adds our regular Auth cookie before making the request.
+func (r *Requester) ExecuteRequestAsRegularUser(req *http.Request) (*http.Response, error) {
+	req.AddCookie(r.RegularAuthCookie)
 	return r.Do(req)
 }
 
 func init() {
 	ensureThatDairycartIsAlive()
-	createSuperUser()
+	createUsers()
 	requester = &Requester{}
-	getSuperUserCookie()
+	getUserCookies()
 }
 
 ////////////////////////////////////////////////////////
@@ -71,7 +78,7 @@ func buildURL(path string, queryParams map[string]string) string {
 	return url.String()
 }
 
-func createSuperUser() {
+func createUsers() {
 	// Connect to the database
 	dbURL := os.Getenv("DAIRYCART_DB_URL")
 	db, err := sql.Open("postgres", dbURL)
@@ -89,14 +96,25 @@ func createSuperUser() {
 	if err != nil {
 		log.Fatalf("error encountered creating super user: %v", err)
 	}
+
+	_, err = db.Exec(`INSERT INTO users ("first_name", "last_name", "username", "email", "password", "salt", "is_admin") VALUES ('admin', 'user', 'regular', 'regular@user.com', '$2a$13$NSHE6gf1FlATM3YUgVWGIe9Ao4DUUHydreuE7eZoc8DNbxq1rw.yq', 'fake_salt_here'::bytea, 'false')`)
+	if err != nil {
+		log.Fatalf("error encountered creating regular user: %v", err)
+	}
 }
 
-func getSuperUserCookie() {
-	resp, err := loginUser("admin", validPassword)
+func getUserCookies() {
+	resp, err := loginUser("regular", validPassword)
 	if err != nil {
 		log.Fatal(err)
 	}
-	requester.AuthCookie = resp.Cookies()[0]
+	requester.RegularAuthCookie = resp.Cookies()[0]
+
+	resp, err = loginUser("admin", validPassword)
+	if err != nil {
+		log.Fatal(err)
+	}
+	requester.AdminAuthCookie = resp.Cookies()[0]
 }
 
 func ensureThatDairycartIsAlive() {
@@ -130,18 +148,18 @@ func createNewUser(JSONBody string, createAsSuperUser bool) (*http.Response, err
 	body := strings.NewReader(JSONBody)
 	req, _ := http.NewRequest(http.MethodPost, url, body)
 	if createAsSuperUser {
-		return requester.ExecuteAuthorizedRequest(req)
+		return requester.ExecuteRequestAsAdmin(req)
 	}
-	return requester.Do(req)
+	return requester.ExecuteRequestAsRegularUser(req)
 }
 
 func deleteUser(userID string, deleteAsSuperUser bool) (*http.Response, error) {
 	url := buildPath("user", userID)
 	req, _ := http.NewRequest(http.MethodDelete, url, nil)
 	if deleteAsSuperUser {
-		return requester.ExecuteAuthorizedRequest(req)
+		return requester.ExecuteRequestAsAdmin(req)
 	}
-	return requester.Do(req)
+	return requester.ExecuteRequestAsRegularUser(req)
 }
 
 func loginUser(username string, password string) (*http.Response, error) {
@@ -156,9 +174,10 @@ func loginUser(username string, password string) (*http.Response, error) {
 	return requester.Do(req)
 }
 
-func logoutUser(username string, password string) (*http.Response, error) {
+func logoutUser(username string, password string, cookie *http.Cookie) (*http.Response, error) {
 	url := buildVersionlessPath("logout")
 	req, _ := http.NewRequest(http.MethodPost, url, nil)
+	req.AddCookie(cookie)
 	return requester.Do(req)
 }
 
@@ -171,40 +190,40 @@ func logoutUser(username string, password string) (*http.Response, error) {
 func checkProductExistence(sku string) (*http.Response, error) {
 	url := buildPath("product", sku)
 	req, _ := http.NewRequest(http.MethodHead, url, nil)
-	return requester.Do(req)
+	return requester.ExecuteRequestAsRegularUser(req)
 }
 
 func retrieveProduct(sku string) (*http.Response, error) {
 	url := buildPath("product", sku)
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
-	return requester.Do(req)
+	return requester.ExecuteRequestAsRegularUser(req)
 }
 
 func retrieveListOfProducts(queryFilter map[string]string) (*http.Response, error) {
 	path := buildPath("products")
 	url := buildURL(path, queryFilter)
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
-	return requester.Do(req)
+	return requester.ExecuteRequestAsRegularUser(req)
 }
 
 func createProduct(JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
 	url := buildPath("product")
 	req, _ := http.NewRequest(http.MethodPost, url, body)
-	return requester.Do(req)
+	return requester.ExecuteRequestAsRegularUser(req)
 }
 
 func updateProduct(sku string, JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
 	url := buildPath("product", sku)
 	req, _ := http.NewRequest(http.MethodPatch, url, body)
-	return requester.Do(req)
+	return requester.ExecuteRequestAsRegularUser(req)
 }
 
 func deleteProduct(sku string) (*http.Response, error) {
 	url := buildPath("product", sku)
 	req, _ := http.NewRequest(http.MethodDelete, url, nil)
-	return requester.Do(req)
+	return requester.ExecuteRequestAsRegularUser(req)
 }
 
 ////////////////////////////////////////////////////////
@@ -217,27 +236,27 @@ func retrieveProductOptions(productID string, queryFilter map[string]string) (*h
 	path := buildPath("product", productID, "options")
 	url := buildURL(path, queryFilter)
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
-	return requester.Do(req)
+	return requester.ExecuteRequestAsRegularUser(req)
 }
 
 func createProductOptionForProduct(productID string, JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
 	url := buildPath("product", productID, "options")
 	req, _ := http.NewRequest(http.MethodPost, url, body)
-	return requester.Do(req)
+	return requester.ExecuteRequestAsRegularUser(req)
 }
 
 func updateProductOption(optionID string, JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
 	url := buildPath("product_options", optionID)
 	req, _ := http.NewRequest(http.MethodPatch, url, body)
-	return requester.Do(req)
+	return requester.ExecuteRequestAsRegularUser(req)
 }
 
 func deleteProductOption(optionID string) (*http.Response, error) {
 	url := buildPath("product_options", optionID)
 	req, _ := http.NewRequest(http.MethodDelete, url, nil)
-	return requester.Do(req)
+	return requester.ExecuteRequestAsRegularUser(req)
 }
 
 ////////////////////////////////////////////////////////
@@ -250,20 +269,20 @@ func createProductOptionValueForOption(optionID string, JSONBody string) (*http.
 	body := strings.NewReader(JSONBody)
 	url := buildPath("product_options", optionID, "value")
 	req, _ := http.NewRequest(http.MethodPost, url, body)
-	return requester.Do(req)
+	return requester.ExecuteRequestAsRegularUser(req)
 }
 
 func updateProductOptionValueForOption(valueID string, JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
 	url := buildPath("product_option_values", valueID)
 	req, _ := http.NewRequest(http.MethodPatch, url, body)
-	return requester.Do(req)
+	return requester.ExecuteRequestAsRegularUser(req)
 }
 
 func deleteProductOptionValueForOption(optionID string) (*http.Response, error) {
 	url := buildPath("product_option_values", optionID)
 	req, _ := http.NewRequest(http.MethodDelete, url, nil)
-	return requester.Do(req)
+	return requester.ExecuteRequestAsRegularUser(req)
 }
 
 ////////////////////////////////////////////////////////
@@ -275,32 +294,32 @@ func deleteProductOptionValueForOption(optionID string) (*http.Response, error) 
 func getDiscountByID(discountID string) (*http.Response, error) {
 	url := buildPath("discount", discountID)
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
-	return requester.Do(req)
+	return requester.ExecuteRequestAsRegularUser(req)
 }
 
 func getListOfDiscounts(queryFilter map[string]string) (*http.Response, error) {
 	path := buildPath("discounts")
 	url := buildURL(path, queryFilter)
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
-	return requester.Do(req)
+	return requester.ExecuteRequestAsRegularUser(req)
 }
 
 func createDiscount(JSONBody string) (*http.Response, error) {
 	url := buildPath("discount")
 	body := strings.NewReader(JSONBody)
 	req, _ := http.NewRequest(http.MethodPost, url, body)
-	return requester.Do(req)
+	return requester.ExecuteRequestAsRegularUser(req)
 }
 
 func updateDiscount(discountID string, JSONBody string) (*http.Response, error) {
 	url := buildPath("discount", discountID)
 	body := strings.NewReader(JSONBody)
 	req, _ := http.NewRequest(http.MethodPatch, url, body)
-	return requester.Do(req)
+	return requester.ExecuteRequestAsRegularUser(req)
 }
 
 func deleteDiscount(discountID string) (*http.Response, error) {
 	url := buildPath("discount", discountID)
 	req, _ := http.NewRequest(http.MethodDelete, url, nil)
-	return requester.Do(req)
+	return requester.ExecuteRequestAsRegularUser(req)
 }

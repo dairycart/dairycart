@@ -117,9 +117,9 @@ User creation routes:
 User deletion routes:
 
 - [x] Regular user ([TestUserDeletion](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L181-L213))
-- [] Regular user without admin credentials ()
-- [x] Admin user ([TestAdminUserDeletion](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L227-L259))
-- [] Admin user without admin credentials ()
+- [x] Regular user without admin credentials ([TestUserDeletionAsRegularUser](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L227-L261))
+- [x] Admin user ([TestAdminUserDeletion](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L263-L295))
+- [x] Admin user without admin credentials ([TestAdminUserDeletionAsRegularUser](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L297-L331))
 - [x] Non existent user ([TestUserDeletionForNonexistentUser](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L215-L225))
 
 User login routes:

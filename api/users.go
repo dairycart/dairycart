@@ -144,11 +144,14 @@ func passwordIsValid(s string) bool {
 
 func createUserFromInput(in *UserCreationInput) (*User, error) {
 	salt, err := generateSalt()
+	// COVERAGE NOTE: I cannot seem to synthesize this error for the sake of testing, so if you're
+	// seeing this in a coverage report and the line below is red, just know that I tried. :(
 	if err != nil {
 		return nil, err
 	}
 
 	saltedAndHashedPassword, err := saltAndHashPassword(in.Password, salt)
+	// COVERAGE NOTE: see above
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +274,7 @@ func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 
 		session, err := store.Get(req, dairycartCookieName)
 		if err != nil {
-			notifyOfInternalIssue(res, err, "read session data")
+			notifyOfInvalidRequestCookie(res)
 			return
 		}
 
@@ -296,6 +299,7 @@ func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 		}
 
 		newUser, err := createUserFromInput(userInput)
+		// COVERAGE NOTE: see note in createUserFromInput
 		if err != nil {
 			notifyOfInternalIssue(res, err, "creating user")
 			return
@@ -370,7 +374,7 @@ func buildUserLoginHandler(db *sqlx.DB, store *sessions.CookieStore) http.Handle
 
 		session, err := store.Get(req, dairycartCookieName)
 		if err != nil {
-			notifyOfInternalIssue(res, err, "read session data")
+			notifyOfInvalidRequestCookie(res)
 			return
 		}
 
@@ -390,7 +394,7 @@ func buildUserLogoutHandler(store *sessions.CookieStore) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		session, err := store.Get(req, dairycartCookieName)
 		if err != nil {
-			notifyOfInternalIssue(res, err, "read session data")
+			notifyOfInvalidRequestCookie(res)
 			return
 		}
 		session.Values[sessionAuthorizedKeyName] = false
@@ -399,23 +403,41 @@ func buildUserLogoutHandler(store *sessions.CookieStore) http.HandlerFunc {
 	}
 }
 
-func buildUserDeletionHandler(db *sqlx.DB) http.HandlerFunc {
+func buildUserDeletionHandler(db *sqlx.DB, store *sessions.CookieStore) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		userID := chi.URLParam(req, "user_id")
 		// we can eat this error because Mux takes care of validating route params for us
 		userIDInt, _ := strconv.ParseInt(userID, 10, 64)
 
-		// can't delete a user with an email that already exists!
+		// can't delete a user that doesn't already exist!
 		exists, err := rowExistsInDB(db, userExistenceQueryByID, userID)
 		if err != nil || !exists {
 			respondThatRowDoesNotExist(req, res, "user", userID)
 			return
 		}
 
-		err = archiveUser(db, uint64(userIDInt))
+		session, err := store.Get(req, dairycartCookieName)
 		if err != nil {
-			notifyOfInternalIssue(res, err, "archive user")
+			notifyOfInvalidRequestCookie(res)
 			return
+		}
+
+		// only an admin user can delete an admin user
+		admin, ok := session.Values[sessionAdminKeyName].(bool)
+		if !ok || !admin {
+			res.WriteHeader(http.StatusForbidden)
+			errRes := &ErrorResponse{
+				Status:  http.StatusForbidden,
+				Message: "User is not authorized to delete users",
+			}
+			json.NewEncoder(res).Encode(errRes)
+			return
+		} else if admin {
+			err = archiveUser(db, uint64(userIDInt))
+			if err != nil {
+				notifyOfInternalIssue(res, err, "archive user")
+				return
+			}
 		}
 
 		res.WriteHeader(http.StatusOK)
@@ -508,10 +530,12 @@ func buildUserInfoUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
+		// TODO: Evaluate whether or not I should be reusing the salt here.
 		hashedPassword := existingUser.Password
 		if passwordChanged {
 			var err error
 			hashedPassword, err = saltAndHashPassword(newPassword, existingUser.Salt)
+			// COVERAGE NOTE: see note in createUserFromInput
 			if err != nil {
 				notifyOfInternalIssue(res, err, "update user")
 				return

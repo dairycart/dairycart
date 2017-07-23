@@ -23,6 +23,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/gorilla/securecookie"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -143,6 +144,25 @@ func argsToDriverValues(args []interface{}) []driver.Value {
 		rv = append(rv, x)
 	}
 	return rv
+}
+
+func buildCookieForRequest(store *sessions.CookieStore, authorized bool, admin bool) (*http.Cookie, error) {
+	session, err := store.New(&http.Request{}, dairycartCookieName)
+	if err != nil {
+		return nil, err
+	}
+	session.Values[sessionUserIDKeyName] = 666
+	session.Values[sessionAuthorizedKeyName] = authorized
+	session.Values[sessionAdminKeyName] = admin
+
+	encoded, err := securecookie.EncodeMulti(session.Name(), session.Values, store.Codecs...)
+	cookie := sessions.NewCookie(session.Name(), encoded, session.Options)
+
+	return cookie, nil
+}
+
+func attachBadCookieToRequest(req *http.Request) {
+	req.Header.Set("Cookie", fmt.Sprintf("%s=this is a bad cookie", dairycartCookieName))
 }
 
 ///////////////////////////////////////////////////////

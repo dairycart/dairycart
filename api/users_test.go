@@ -581,7 +581,7 @@ func TestUserCreationHandler(t *testing.T) {
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
-func TestUserCreationHandlerFailsWhenCreatingAdminUsersWithoutAlreadyHavingAdminUserStatusJeezLouiseThisIsALongFunctionName(t *testing.T) {
+func TestUserCreationHandlerFailsWhenCreatingAdminUsersAsRegularUser(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
@@ -610,6 +610,30 @@ func TestUserCreationHandlerWithInvalidInput(t *testing.T) {
 
 	req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleGarbageInput))
 	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestUserCreationHandlerWithInvalidCookie(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	exampleInput := fmt.Sprintf(`
+		{
+			"first_name": "Frank",
+			"last_name": "Zappa",
+			"email": "frank@zappa.com",
+			"username": "frankzappa",
+			"password": "%s"
+		}
+	`, examplePassword)
+
+	req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
+	assert.Nil(t, err)
+	attachBadCookieToRequest(req)
+
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
@@ -969,6 +993,44 @@ func TestUserLoginHandlerWithInvalidPassword(t *testing.T) {
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
+func TestUserLoginHandlerWithInvalidCookie(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	exampleInput := fmt.Sprintf(`
+		{
+			"username": "frankzappa",
+			"password": "%s"
+		}
+	`, examplePassword)
+
+	exampleUser := &User{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		FirstName: "Frank",
+		LastName:  "Zappa",
+		Email:     "frank@zappa.com",
+		Username:  "frankzappa",
+		Password:  examplePassword,
+	}
+
+	setExpectationsForLoginAttemptExhaustionQuery(testUtil.Mock, exampleUser.Username, false, nil)
+	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, nil)
+	setExpectationsForLoginAttemptCreationQuery(testUtil.Mock, exampleUser.Username, true, nil)
+
+	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
+	assert.Nil(t, err)
+	attachBadCookieToRequest(req)
+
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should not attach a cookie when request is invalid")
+	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
 func TestUserLogoutHandler(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
@@ -981,6 +1043,19 @@ func TestUserLogoutHandler(t *testing.T) {
 	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
 }
 
+func TestUserLogoutHandlerWithInvalidCookie(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	req, err := http.NewRequest(http.MethodPost, "/logout", nil)
+	assert.Nil(t, err)
+	attachBadCookieToRequest(req)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "logout handler should not attach a cookie when request is invalid")
+	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
+}
+
 func TestUserDeletionHandler(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
@@ -989,6 +1064,10 @@ func TestUserDeletionHandler(t *testing.T) {
 	exampleIDString := strconv.Itoa(int(exampleID))
 	req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
 	assert.Nil(t, err)
+
+	cookie, err := buildCookieForRequest(testUtil.Store, true, true)
+	assert.Nil(t, err)
+	req.AddCookie(cookie)
 
 	setExpectationsForUserExistenceByID(testUtil.Mock, exampleIDString, true, nil)
 	setExpectationsForUserDeletion(testUtil.Mock, exampleID, nil)
@@ -1014,6 +1093,44 @@ func TestUserDeletionHandlerForNonexistentUser(t *testing.T) {
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
+func TestUserDeletionHandlerWithInvalidCookie(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	exampleID := uint64(1)
+	exampleIDString := strconv.Itoa(int(exampleID))
+	req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
+	assert.Nil(t, err)
+
+	attachBadCookieToRequest(req)
+
+	setExpectationsForUserExistenceByID(testUtil.Mock, exampleIDString, true, nil)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestUserDeletionHandlerWhenDeletingAdminUserAsRegularUser(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	exampleID := uint64(1)
+	exampleIDString := strconv.Itoa(int(exampleID))
+	req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
+	assert.Nil(t, err)
+
+	cookie, err := buildCookieForRequest(testUtil.Store, true, false)
+	assert.Nil(t, err)
+	req.AddCookie(cookie)
+
+	setExpectationsForUserExistenceByID(testUtil.Mock, exampleIDString, true, nil)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusForbidden, testUtil.Response.Code, "status code should be 403")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
 func TestUserDeletionHandlerWithArbitraryErrorWhenDeletingUser(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
@@ -1022,6 +1139,10 @@ func TestUserDeletionHandlerWithArbitraryErrorWhenDeletingUser(t *testing.T) {
 	exampleIDString := strconv.Itoa(int(exampleID))
 	req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
 	assert.Nil(t, err)
+
+	cookie, err := buildCookieForRequest(testUtil.Store, true, true)
+	assert.Nil(t, err)
+	req.AddCookie(cookie)
 
 	setExpectationsForUserExistenceByID(testUtil.Mock, exampleIDString, true, nil)
 	setExpectationsForUserDeletion(testUtil.Mock, exampleID, arbitraryError)
