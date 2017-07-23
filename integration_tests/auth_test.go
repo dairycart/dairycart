@@ -469,3 +469,53 @@ func TestUserLoginForNonexistentUser(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "attempting to log in a user that doesn't exist should respond 404")
 	assert.NotContains(t, resp.Header, "Set-Cookie", "login handler should not attach a cookie when request is inalid")
 }
+
+func TestUserLogout(t *testing.T) {
+	t.Parallel()
+
+	var createdUserID uint64
+	testUsername := "test_user_logout"
+	userShouldBeAdmin := false
+	testUserCookie := &http.Cookie{}
+
+	testCreateUser := func(t *testing.T) {
+		newUserJSON := createUserCreationBody(testUsername, validPassword, userShouldBeAdmin)
+		resp, err := createNewUser(newUserJSON, userShouldBeAdmin)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a user that doesn't exist should respond 201")
+		testUserCookie = resp.Cookies()[0]
+
+		body := turnResponseBodyIntoString(t, resp)
+		createdUserID = retrieveIDFromResponseBody(body, t)
+	}
+
+	testLogoutUser := func(t *testing.T) {
+		resp, err := logoutUser(testUsername, validPassword, testUserCookie)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode, "logging out as a logged in user should respond 200")
+		body := turnResponseBodyIntoString(t, resp)
+		assert.Empty(t, body)
+	}
+
+	testDeleteUser := func(t *testing.T) {
+		resp, err := deleteUser(strconv.Itoa(int(createdUserID)), true)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a user that exists should respond 200")
+	}
+
+	subtests := []subtest{
+		subtest{
+			Message: "create user",
+			Test:    testCreateUser,
+		},
+		subtest{
+			Message: "logout user",
+			Test:    testLogoutUser,
+		},
+		subtest{
+			Message: "delete created user",
+			Test:    testDeleteUser,
+		},
+	}
+	runSubtestSuite(t, subtests)
+}

@@ -131,5 +131,4 @@ User login routes:
 
 User logout routes:
 
-- [] Valid user ()
-- [] Nonexistent user ()
+- [x] Valid user ([TestUserLogout](https://github.com/dairycart/dairycart/blob/master/integration_tests/auth_test.go#L473-L521))
