@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 )
 
@@ -149,10 +150,11 @@ func buildProductOptionListHandler(db *sqlx.DB) http.HandlerFunc {
 	}
 }
 
-func updateProductOptionInDB(db *sqlx.DB, a *ProductOption) error {
+func updateProductOptionInDB(db *sqlx.DB, a *ProductOption) (time.Time, error) {
+	var updatedOn time.Time
 	optionUpdateQuery, queryArgs := buildProductOptionUpdateQuery(a)
-	err := db.QueryRow(optionUpdateQuery, queryArgs...).Scan(a.generateScanArgs()...)
-	return err
+	err := db.QueryRow(optionUpdateQuery, queryArgs...).Scan(&updatedOn)
+	return updatedOn, err
 }
 
 func buildProductOptionUpdateHandler(db *sqlx.DB) http.HandlerFunc {
@@ -183,11 +185,12 @@ func buildProductOptionUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 		existingOption.Name = updatedOptionData.Name
 
-		err = updateProductOptionInDB(db, existingOption)
+		optionUpdatedOn, err := updateProductOptionInDB(db, existingOption)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "update product option in the database")
 			return
 		}
+		existingOption.UpdatedOn = NullTime{pq.NullTime{Time: optionUpdatedOn, Valid: true}}
 
 		json.NewEncoder(res).Encode(existingOption)
 	}

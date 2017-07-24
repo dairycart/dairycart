@@ -187,7 +187,7 @@ func buildProductOptionUpdateQuery(a *ProductOption) (string, []interface{}) {
 		Update("product_options").
 		SetMap(productOptionUpdateSetMap).
 		Where(squirrel.Eq{"id": a.ID}).
-		Suffix(`RETURNING *`)
+		Suffix(`RETURNING updated_on`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }

@@ -148,8 +148,7 @@ func setExpectationsForProductOptionCreation(mock sqlmock.Sqlmock, a *ProductOpt
 }
 
 func setExpectationsForProductOptionUpdate(mock sqlmock.Sqlmock, a *ProductOption, err error) {
-	exampleRows := sqlmock.NewRows(productOptionHeaders).
-		AddRow([]driver.Value{a.ID, a.Name, a.ProductID, generateExampleTimeForTests(), nil, nil}...)
+	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests())
 	query, args := buildProductOptionUpdateQuery(a)
 	queryArgs := argsToDriverValues(args)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
@@ -288,8 +287,9 @@ func TestUpdateProductOptionInDB(t *testing.T) {
 
 	setExpectationsForProductOptionUpdate(testUtil.Mock, expectedCreatedProductOption, nil)
 
-	err := updateProductOptionInDB(testUtil.DB, exampleProductOption)
+	updatedOn, err := updateProductOptionInDB(testUtil.DB, exampleProductOption)
 	assert.Nil(t, err)
+	assert.Equal(t, generateExampleTimeForTests(), updatedOn, "updateProductOptionInDB should return the time the option was updated on")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
