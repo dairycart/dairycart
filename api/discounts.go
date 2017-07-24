@@ -153,11 +153,12 @@ func buildDiscountListRetrievalHandler(db *sqlx.DB) http.HandlerFunc {
 	}
 }
 
-func createDiscountInDB(db *sqlx.DB, in *Discount) (*Discount, error) {
+func createDiscountInDB(db *sqlx.DB, in *Discount) (uint64, time.Time, error) {
+	var createdID uint64
+	var createdOn time.Time
 	discountCreationQuery, queryArgs := buildDiscountCreationQuery(in)
-	scanArgs := in.generateScanArgs()
-	err := db.QueryRow(discountCreationQuery, queryArgs...).Scan(scanArgs...)
-	return in, err
+	err := db.QueryRow(discountCreationQuery, queryArgs...).Scan(&createdID, &createdOn)
+	return createdID, createdOn, err
 }
 
 func buildDiscountCreationHandler(db *sqlx.DB) http.HandlerFunc {
@@ -170,11 +171,13 @@ func buildDiscountCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		newDiscount, err = createDiscountInDB(db, newDiscount)
+		id, createdOn, err := createDiscountInDB(db, newDiscount)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "insert discount into database")
 			return
 		}
+		newDiscount.ID = id
+		newDiscount.CreatedOn = createdOn
 
 		res.WriteHeader(http.StatusCreated)
 		json.NewEncoder(res).Encode(newDiscount)

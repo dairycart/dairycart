@@ -261,7 +261,7 @@ func buildDiscountCreationQuery(d *Discount) (string, []interface{}) {
 		Insert("discounts").
 		Columns("name", "type", "amount", "starts_on", "expires_on", "requires_code", "code", "limited_use", "number_of_uses", "login_required").
 		Values(d.Name, d.Type, d.Amount, d.StartsOn, d.ExpiresOn, d.RequiresCode, d.Code, d.LimitedUse, d.NumberOfUses, d.LoginRequired).
-		Suffix(fmt.Sprintf("RETURNING%s", discountsTableColumns))
+		Suffix("RETURNING id, created_on")
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }

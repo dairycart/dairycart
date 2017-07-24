@@ -216,22 +216,7 @@ func TestBuildDiscountListQuery(t *testing.T) {
 
 func TestBuildDiscountCreationQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `INSERT INTO discounts (name,type,amount,starts_on,expires_on,requires_code,code,limited_use,number_of_uses,login_required) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING
-		id,
-		name,
-		type,
-		amount,
-		starts_on,
-		expires_on,
-		requires_code,
-		code,
-		limited_use,
-		number_of_uses,
-		login_required,
-		created_on,
-		updated_on,
-		archived_on
-	`
+	expectedQuery := `INSERT INTO discounts (name,type,amount,starts_on,expires_on,requires_code,code,limited_use,number_of_uses,login_required) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id, created_on`
 	actualQuery, actualArgs := buildDiscountCreationQuery(exampleDiscount)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 10, len(actualArgs), argsEqualityErrorMessage)
