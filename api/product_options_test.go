@@ -60,7 +60,8 @@ func init() {
 
 	expectedCreatedProductOption = &ProductOption{
 		DBRow: DBRow{
-			ID: exampleProductOption.ID,
+			ID:        exampleProductOption.ID,
+			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:      "something",
 		ProductID: exampleProductOption.ProductID,
@@ -137,7 +138,7 @@ func setExpectationsForProductOptionListQueryWithCount(mock sqlmock.Sqlmock, a *
 }
 
 func setExpectationsForProductOptionCreation(mock sqlmock.Sqlmock, a *ProductOption, productID uint64, err error) {
-	exampleRows := sqlmock.NewRows([]string{"id"}).AddRow(exampleProductOption.ID)
+	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(exampleProductOption.ID, generateExampleTimeForTests())
 	query, args := buildProductOptionCreationQuery(a, productID)
 	queryArgs := argsToDriverValues(args)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
@@ -205,9 +206,10 @@ func TestCreateProductOptionInDB(t *testing.T) {
 	tx, err := testUtil.DB.Begin()
 	assert.Nil(t, err)
 
-	actual, err := createProductOptionInDB(tx, exampleProductOption, exampleProduct.ID)
+	newOptionID, createdOn, err := createProductOptionInDB(tx, exampleProductOption, exampleProduct.ID)
 	assert.Nil(t, err)
-	assert.Equal(t, exampleProductOption, actual, "Creating a product option should return the created product option")
+	assert.Equal(t, exampleProductOption.ID, newOptionID, "Creating a product option should return the created product option ID")
+	assert.Equal(t, exampleProductOption.CreatedOn, createdOn, "Creating a product option should return the created product option creation date")
 
 	err = tx.Commit()
 	assert.Nil(t, err)

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/jmoiron/sqlx"
@@ -192,25 +193,26 @@ func buildProductOptionUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 	}
 }
 
-func createProductOptionInDB(tx *sql.Tx, a *ProductOption, productID uint64) (*ProductOption, error) {
-	var newOptionID int64
+func createProductOptionInDB(tx *sql.Tx, o *ProductOption, productID uint64) (uint64, time.Time, error) {
+	var newOptionID uint64
+	var createdOn time.Time
 	// using QueryRow instead of Exec because we want it to return the newly created row's ID
 	// Exec normally returns a sql.Result, which has a LastInsertedID() method, but when I tested
 	// this locally, it never worked. ¯\_(ツ)_/¯
-	query, queryArgs := buildProductOptionCreationQuery(a, productID)
-	err := tx.QueryRow(query, queryArgs...).Scan(&newOptionID)
+	query, queryArgs := buildProductOptionCreationQuery(o, productID)
+	err := tx.QueryRow(query, queryArgs...).Scan(&newOptionID, &createdOn)
 
-	a.ID = uint64(newOptionID)
-	a.ProductID = productID
-	return a, err
+	return newOptionID, createdOn, err
 }
 
 func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in *ProductOptionCreationInput, productID uint64) (*ProductOption, error) {
-	newProductOption := &ProductOption{Name: in.Name}
-	newProductOption, err := createProductOptionInDB(tx, newProductOption, productID)
+	newProductOption := &ProductOption{Name: in.Name, ProductID: productID}
+	newProductOptionID, newProductOptionCreatedOn, err := createProductOptionInDB(tx, newProductOption, productID)
 	if err != nil {
 		return nil, err
 	}
+	newProductOption.ID = newProductOptionID
+	newProductOption.CreatedOn = newProductOptionCreatedOn
 
 	for _, value := range in.Values {
 		newOptionValue := ProductOptionValue{

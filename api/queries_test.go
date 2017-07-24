@@ -184,7 +184,7 @@ func TestBuildProductOptionUpdateQuery(t *testing.T) {
 
 func TestBuildProductOptionCreationQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `INSERT INTO product_options (name,product_id) VALUES ($1,$2) RETURNING id`
+	expectedQuery := `INSERT INTO product_options (name,product_id) VALUES ($1,$2) RETURNING id, created_on`
 	actualQuery, actualArgs := buildProductOptionCreationQuery(&ProductOption{}, exampleProduct.ID)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)

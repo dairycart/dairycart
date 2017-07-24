@@ -198,7 +198,7 @@ func buildProductOptionCreationQuery(a *ProductOption, productID uint64) (string
 		Insert("product_options").
 		Columns("name", "product_id").
 		Values(a.Name, productID).
-		Suffix(`RETURNING id`)
+		Suffix(`RETURNING id, created_on`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
