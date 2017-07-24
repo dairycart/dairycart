@@ -142,7 +142,7 @@ func setExpectationsForDiscountExistence(mock sqlmock.Sqlmock, discountID string
 }
 
 func setExpectationsForDiscountUpdate(mock sqlmock.Sqlmock, d *Discount, err error) {
-	exampleRows := sqlmock.NewRows(discountHeaders).AddRow(exampleDiscountReadData...)
+	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(exampleTime)
 	query, rawArgs := buildDiscountUpdateQuery(d)
 	args := argsToDriverValues(rawArgs)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
@@ -244,8 +244,10 @@ func TestUpdateDiscountInDB(t *testing.T) {
 
 	setExpectationsForDiscountUpdate(testUtil.Mock, exampleDiscount, nil)
 
-	err := updateDiscountInDatabase(testUtil.DB, exampleDiscount)
+	updatedTime, err := updateDiscountInDatabase(testUtil.DB, exampleDiscount)
 	assert.Nil(t, err)
+
+	assert.Equal(t, updatedTime, exampleTime, "updateDiscountInDatabase should return the appropriate time")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 

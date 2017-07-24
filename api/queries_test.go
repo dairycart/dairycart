@@ -224,22 +224,7 @@ func TestBuildDiscountCreationQuery(t *testing.T) {
 
 func TestBuildDiscountUpdateQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `UPDATE discounts SET amount = $1, code = $2, expires_on = $3, limited_use = $4, login_required = $5, name = $6, number_of_uses = $7, requires_code = $8, starts_on = $9, type = $10, updated_on = NOW() WHERE id = $11 RETURNING
-		id,
-		name,
-		type,
-		amount,
-		starts_on,
-		expires_on,
-		requires_code,
-		code,
-		limited_use,
-		number_of_uses,
-		login_required,
-		created_on,
-		updated_on,
-		archived_on
-	`
+	expectedQuery := `UPDATE discounts SET amount = $1, code = $2, expires_on = $3, limited_use = $4, login_required = $5, name = $6, number_of_uses = $7, requires_code = $8, starts_on = $9, type = $10, updated_on = NOW() WHERE id = $11 RETURNING updated_on`
 	actualQuery, actualArgs := buildDiscountUpdateQuery(exampleDiscount)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 11, len(actualArgs), argsEqualityErrorMessage)

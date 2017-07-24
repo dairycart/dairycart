@@ -285,7 +285,7 @@ func buildDiscountUpdateQuery(d *Discount) (string, []interface{}) {
 		Update("discounts").
 		SetMap(updateSetMap).
 		Where(squirrel.Eq{"id": d.ID}).
-		Suffix(fmt.Sprintf("RETURNING%s", discountsTableColumns))
+		Suffix("RETURNING updated_on")
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
