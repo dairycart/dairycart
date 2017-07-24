@@ -192,7 +192,7 @@ func TestBuildProductOptionCreationQuery(t *testing.T) {
 
 func TestBuildProductOptionValueUpdateQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `UPDATE product_option_values SET updated_on = NOW(), value = $1 WHERE id = $2 RETURNING *`
+	expectedQuery := `UPDATE product_option_values SET updated_on = NOW(), value = $1 WHERE id = $2 RETURNING updated_on`
 	actualQuery, actualArgs := buildProductOptionValueUpdateQuery(&ProductOptionValue{})
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)

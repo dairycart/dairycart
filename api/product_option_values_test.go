@@ -82,7 +82,7 @@ func setExpectationsForProductOptionValueRetrieval(mock sqlmock.Sqlmock, v *Prod
 }
 
 func setExpectationsForProductOptionValueCreation(mock sqlmock.Sqlmock, v *ProductOptionValue, err error) {
-	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(exampleProductOptionValue.ID, exampleTime)
+	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(exampleProductOptionValue.ID, generateExampleTimeForTests())
 	query, _ := buildProductOptionValueCreationQuery(v)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
 		WithArgs(v.ProductOptionID, v.Value).
@@ -91,8 +91,7 @@ func setExpectationsForProductOptionValueCreation(mock sqlmock.Sqlmock, v *Produ
 }
 
 func setExpectationsForProductOptionValueUpdate(mock sqlmock.Sqlmock, v *ProductOptionValue, err error) {
-	exampleRows := sqlmock.NewRows(productOptionHeaders).
-		AddRow([]driver.Value{v.ID, v.ProductOptionID, v.Value, generateExampleTimeForTests(), nil, nil}...)
+	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests())
 	query, args := buildProductOptionValueUpdateQuery(v)
 	queryArgs := argsToDriverValues(args)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
@@ -154,7 +153,7 @@ func TestCreateProductOptionValue(t *testing.T) {
 	newID, createdOn, err := createProductOptionValueInDB(tx, exampleProductOptionValue)
 	assert.Nil(t, err)
 	assert.Equal(t, exampleProductOptionValue.ID, newID, "OptionValue ID should be returned after successful creation")
-	assert.Equal(t, exampleTime, createdOn, "OptionValue CreatedOn should be returned after successful creation")
+	assert.Equal(t, generateExampleTimeForTests(), createdOn, "OptionValue CreatedOn should be returned after successful creation")
 
 	err = tx.Commit()
 	assert.Nil(t, err)
@@ -167,8 +166,9 @@ func TestUpdateProductOptionValueInDB(t *testing.T) {
 
 	setExpectationsForProductOptionValueUpdate(testUtil.Mock, exampleProductOptionValue, nil)
 
-	err := updateProductOptionValueInDB(testUtil.DB, exampleProductOptionValue)
+	updatedOn, err := updateProductOptionValueInDB(testUtil.DB, exampleProductOptionValue)
 	assert.Nil(t, err)
+	assert.Equal(t, generateExampleTimeForTests(), updatedOn, "updateProductOptionValueInDB should return the correct updated time")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 

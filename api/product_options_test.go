@@ -68,21 +68,21 @@ func init() {
 			{
 				DBRow: DBRow{
 					ID:        256, // == exampleProductOptionValue.ID,
-					CreatedOn: exampleTime,
+					CreatedOn: generateExampleTimeForTests(),
 				},
 				ProductOptionID: exampleProductOption.ID,
 				Value:           "one",
 			}, {
 				DBRow: DBRow{
 					ID:        256, // == exampleProductOptionValue.ID,
-					CreatedOn: exampleTime,
+					CreatedOn: generateExampleTimeForTests(),
 				},
 				ProductOptionID: exampleProductOption.ID,
 				Value:           "two",
 			}, {
 				DBRow: DBRow{
 					ID:        256, // == exampleProductOptionValue.ID,
-					CreatedOn: exampleTime,
+					CreatedOn: generateExampleTimeForTests(),
 				},
 				ProductOptionID: exampleProductOption.ID,
 				Value:           "three",

@@ -41,9 +41,7 @@ var (
 	customQueryFilter      *QueryFilter
 
 	arbitraryError   error
-	exampleTime      time.Time
 	exampleOlderTime time.Time
-	exampleNewerTime time.Time
 )
 
 func init() {
@@ -55,8 +53,6 @@ func init() {
 	if timeParseErr != nil {
 		log.Fatalf("error parsing time")
 	}
-	exampleTime = exampleOlderTime.Add(30 * (24 * time.Hour))
-	exampleNewerTime = exampleTime.Add(30 * (24 * time.Hour))
 
 	defaultQueryFilter = &QueryFilter{
 		Page:  1,
