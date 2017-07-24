@@ -217,11 +217,12 @@ func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in *ProductOptionCrea
 			ProductOptionID: newProductOption.ID,
 			Value:           value,
 		}
-		newOptionValueID, err := createProductOptionValueInDB(tx, &newOptionValue)
+		newOptionValueID, optionCreatedOn, err := createProductOptionValueInDB(tx, &newOptionValue)
 		if err != nil {
 			return nil, err
 		}
 		newOptionValue.ID = newOptionValueID
+		newOptionValue.CreatedOn = optionCreatedOn
 		newProductOption.Values = append(newProductOption.Values, newOptionValue)
 	}
 

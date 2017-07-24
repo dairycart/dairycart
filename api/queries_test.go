@@ -153,7 +153,7 @@ func TestBuildProductUpdateQuery(t *testing.T) {
 
 func TestBuildProductCreationQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `INSERT INTO products (name,subtitle,description,sku,manufacturer,brand,quantity,taxable,price,on_sale,sale_price,cost,product_weight,product_height,product_width,product_length,package_weight,package_height,package_width,package_length,quantity_per_package,available_on,updated_on,upc) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,NOW(),$23) RETURNING "id"`
+	expectedQuery := `INSERT INTO products (name,subtitle,description,sku,manufacturer,brand,quantity,taxable,price,on_sale,sale_price,cost,product_weight,product_height,product_width,product_length,package_weight,package_height,package_width,package_length,quantity_per_package,available_on,updated_on,upc) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,NOW(),$23) RETURNING id`
 	actualQuery, actualArgs := buildProductCreationQuery(exampleProduct)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 23, len(actualArgs), argsEqualityErrorMessage)
@@ -184,7 +184,7 @@ func TestBuildProductOptionUpdateQuery(t *testing.T) {
 
 func TestBuildProductOptionCreationQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `INSERT INTO product_options (name,product_id) VALUES ($1,$2) RETURNING "id"`
+	expectedQuery := `INSERT INTO product_options (name,product_id) VALUES ($1,$2) RETURNING id`
 	actualQuery, actualArgs := buildProductOptionCreationQuery(&ProductOption{}, exampleProduct.ID)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
@@ -200,7 +200,7 @@ func TestBuildProductOptionValueUpdateQuery(t *testing.T) {
 
 func TestBuildProductOptionValueCreationQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `INSERT INTO product_option_values (product_option_id,value) VALUES ($1,$2) RETURNING "id"`
+	expectedQuery := `INSERT INTO product_option_values (product_option_id,value) VALUES ($1,$2) RETURNING id, created_on`
 	actualQuery, actualArgs := buildProductOptionValueCreationQuery(&ProductOptionValue{})
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
@@ -259,7 +259,7 @@ func TestBuildUserCreationQuery(t *testing.T) {
 		IsAdmin:   true,
 	}
 
-	expectedQuery := `INSERT INTO users (first_name,last_name,email,username,password,salt,is_admin) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "id"`
+	expectedQuery := `INSERT INTO users (first_name,last_name,email,username,password,salt,is_admin) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`
 	actualQuery, actualArgs := buildUserCreationQuery(user)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 7, len(actualArgs), argsEqualityErrorMessage)

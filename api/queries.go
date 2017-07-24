@@ -154,7 +154,7 @@ func buildProductCreationQuery(p *Product) (string, []interface{}) {
 		Insert("products").
 		Columns(columns...).
 		Values(values...).
-		Suffix(`RETURNING "id"`)
+		Suffix(`RETURNING id`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
@@ -198,7 +198,7 @@ func buildProductOptionCreationQuery(a *ProductOption, productID uint64) (string
 		Insert("product_options").
 		Columns("name", "product_id").
 		Values(a.Name, productID).
-		Suffix(`RETURNING "id"`)
+		Suffix(`RETURNING id`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
@@ -230,7 +230,7 @@ func buildProductOptionValueCreationQuery(v *ProductOptionValue) (string, []inte
 		Insert("product_option_values").
 		Columns("product_option_id", "value").
 		Values(v.ProductOptionID, v.Value).
-		Suffix(`RETURNING "id"`)
+		Suffix(`RETURNING id, created_on`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
@@ -342,7 +342,7 @@ func buildUserCreationQuery(u *User) (string, []interface{}) {
 			u.Salt,
 			u.IsAdmin,
 		).
-		Suffix(`RETURNING "id"`)
+		Suffix(`RETURNING id`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }

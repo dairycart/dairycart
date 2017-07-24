@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/jmoiron/sqlx"
@@ -123,11 +124,12 @@ func buildProductOptionValueUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 }
 
 // createProductOptionValueInDB creates a ProductOptionValue tied to a ProductOption
-func createProductOptionValueInDB(tx *sql.Tx, v *ProductOptionValue) (uint64, error) {
+func createProductOptionValueInDB(tx *sql.Tx, v *ProductOptionValue) (uint64, time.Time, error) {
 	var newOptionValueID uint64
+	var createdOn time.Time
 	query, args := buildProductOptionValueCreationQuery(v)
-	err := tx.QueryRow(query, args...).Scan(&newOptionValueID)
-	return newOptionValueID, err
+	err := tx.QueryRow(query, args...).Scan(&newOptionValueID, &createdOn)
+	return newOptionValueID, createdOn, err
 }
 
 func optionValueAlreadyExistsForOption(db *sqlx.DB, optionID int64, value string) (bool, error) {
@@ -177,13 +179,14 @@ func buildProductOptionValueCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		newProductOptionValueID, err := createProductOptionValueInDB(tx, newProductOptionValue)
+		newProductOptionValueID, createdOn, err := createProductOptionValueInDB(tx, newProductOptionValue)
 		if err != nil {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "insert product in database")
 			return
 		}
 		newProductOptionValue.ID = newProductOptionValueID
+		newProductOptionValue.CreatedOn = createdOn
 
 		err = tx.Commit()
 		if err != nil {

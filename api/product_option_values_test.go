@@ -82,7 +82,7 @@ func setExpectationsForProductOptionValueRetrieval(mock sqlmock.Sqlmock, v *Prod
 }
 
 func setExpectationsForProductOptionValueCreation(mock sqlmock.Sqlmock, v *ProductOptionValue, err error) {
-	exampleRows := sqlmock.NewRows([]string{"id"}).AddRow(exampleProductOptionValue.ID)
+	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(exampleProductOptionValue.ID, exampleTime)
 	query, _ := buildProductOptionValueCreationQuery(v)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
 		WithArgs(v.ProductOptionID, v.Value).
@@ -151,9 +151,10 @@ func TestCreateProductOptionValue(t *testing.T) {
 	tx, err := testUtil.DB.Begin()
 	assert.Nil(t, err)
 
-	actual, err := createProductOptionValueInDB(tx, exampleProductOptionValue)
+	newID, createdOn, err := createProductOptionValueInDB(tx, exampleProductOptionValue)
 	assert.Nil(t, err)
-	assert.Equal(t, exampleProductOptionValue.ID, actual, "OptionValue should be returned after successful creation")
+	assert.Equal(t, exampleProductOptionValue.ID, newID, "OptionValue ID should be returned after successful creation")
+	assert.Equal(t, exampleTime, createdOn, "OptionValue CreatedOn should be returned after successful creation")
 
 	err = tx.Commit()
 	assert.Nil(t, err)
