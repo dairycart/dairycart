@@ -31,17 +31,6 @@ type ProductOptionValue struct {
 	Value           string `json:"value"`
 }
 
-func (pav *ProductOptionValue) generateScanArgs() []interface{} {
-	return []interface{}{
-		&pav.ID,
-		&pav.ProductOptionID,
-		&pav.Value,
-		&pav.CreatedOn,
-		&pav.UpdatedOn,
-		&pav.ArchivedOn,
-	}
-}
-
 // ProductOptionValueCreationInput is a struct to use for creating product option values
 type ProductOptionValueCreationInput struct {
 	ProductOptionID uint64
@@ -56,28 +45,19 @@ type ProductOptionValueUpdateInput struct {
 // retrieveProductOptionValue retrieves a ProductOptionValue with a given ID from the database
 func retrieveProductOptionValueFromDB(db *sqlx.DB, id uint64) (*ProductOptionValue, error) {
 	v := &ProductOptionValue{}
-	// FIXME: use sqlx instead of generateScanArgs
-	err := db.QueryRow(productOptionValueRetrievalQuery, id).Scan(v.generateScanArgs()...)
+	err := db.QueryRowx(productOptionValueRetrievalQuery, id).StructScan(v)
 	if err == sql.ErrNoRows {
 		return v, errors.Wrap(err, "Error querying for product option values")
 	}
 	return v, err
 }
 
-// retrieveProductOptionValue retrieves a ProductOptionValue with a given product option ID from the database
-func retrieveProductOptionValueForOptionFromDB(db *sqlx.DB, optionID uint64) ([]ProductOptionValue, error) {
+// retrieveProductOptionValuesForOptionFromDB retrieves a list of ProductOptionValue with a given product_option_id from the database
+func retrieveProductOptionValuesForOptionFromDB(db *sqlx.DB, optionID uint64) ([]ProductOptionValue, error) {
 	var values []ProductOptionValue
-
-	rows, err := db.Query(productOptionValueRetrievalForOptionIDQuery, optionID)
+	err := db.Select(&values, productOptionValueRetrievalForOptionIDQuery, optionID)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error encountered querying for products")
-	}
-	defer rows.Close()
-	for rows.Next() {
-		value := ProductOptionValue{}
-		// FIXME: use sqlx instead of generateScanArgs
-		_ = rows.Scan(value.generateScanArgs()...)
-		values = append(values, value)
 	}
 	return values, nil
 }

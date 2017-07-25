@@ -1,10 +1,6 @@
 package main
 
-import (
-	"fmt"
-
-	"github.com/Masterminds/squirrel"
-)
+import "github.com/Masterminds/squirrel"
 
 func applyQueryFilterToQueryBuilder(queryBuilder squirrel.SelectBuilder, queryFilter *QueryFilter, includeOffset bool) squirrel.SelectBuilder {
 	if queryFilter.Limit > 0 {
@@ -169,7 +165,7 @@ func buildProductCreationQuery(p *Product) (string, []interface{}) {
 func buildProductOptionListQuery(productID uint64, queryFilter *QueryFilter) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
-		Select(fmt.Sprintf("count(id) over (), %s", productOptionsHeaders)).
+		Select(productOptionsHeaders).
 		From("product_options").
 		Where(squirrel.Eq{"product_id": productID}).
 		Where(squirrel.Eq{"archived_on": nil})

@@ -126,11 +126,11 @@ func setExpectationsForProductOptionRetrievalQuery(mock sqlmock.Sqlmock, a *Prod
 		WillReturnError(err)
 }
 
-func setExpectationsForProductOptionListQueryWithCount(mock sqlmock.Sqlmock, a *ProductOption, err error) {
-	exampleRows := sqlmock.NewRows([]string{"count", "id", "name", "product_id", "created_on", "updated_on", "archived_on"}).
-		AddRow([]driver.Value{3, a.ID, a.Name, a.ProductID, generateExampleTimeForTests(), nil, nil}...).
-		AddRow([]driver.Value{3, a.ID, a.Name, a.ProductID, generateExampleTimeForTests(), nil, nil}...).
-		AddRow([]driver.Value{3, a.ID, a.Name, a.ProductID, generateExampleTimeForTests(), nil, nil}...)
+func setExpectationsForProductOptionListQuery(mock sqlmock.Sqlmock, a *ProductOption, err error) {
+	exampleRows := sqlmock.NewRows([]string{"id", "name", "product_id", "created_on", "updated_on", "archived_on"}).
+		AddRow([]driver.Value{a.ID, a.Name, a.ProductID, generateExampleTimeForTests(), nil, nil}...).
+		AddRow([]driver.Value{a.ID, a.Name, a.ProductID, generateExampleTimeForTests(), nil, nil}...).
+		AddRow([]driver.Value{a.ID, a.Name, a.ProductID, generateExampleTimeForTests(), nil, nil}...)
 	query, _ := buildProductOptionListQuery(exampleProduct.ID, defaultQueryFilter)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
 		WillReturnRows(exampleRows).
@@ -331,7 +331,7 @@ func TestProductOptionListHandler(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	setExpectationsForProductOptionListQueryWithCount(testUtil.Mock, exampleProductOption, nil)
+	setExpectationsForProductOptionListQuery(testUtil.Mock, exampleProductOption, nil)
 	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
 	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
 	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
@@ -347,7 +347,8 @@ func TestProductOptionListHandler(t *testing.T) {
 		ListResponse: ListResponse{
 			Page:  1,
 			Limit: 25,
-			Count: 3,
+			// FIXME: use proper count queries
+			Count: 0,
 		},
 	}
 
@@ -366,7 +367,7 @@ func TestProductOptionListHandlerWithErrorsRetrievingValues(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	setExpectationsForProductOptionListQueryWithCount(testUtil.Mock, exampleProductOption, nil)
+	setExpectationsForProductOptionListQuery(testUtil.Mock, exampleProductOption, nil)
 	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
 	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
 	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, arbitraryError)
@@ -384,7 +385,7 @@ func TestProductOptionListHandlerWithDBErrors(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	setExpectationsForProductOptionListQueryWithCount(testUtil.Mock, exampleProductOption, arbitraryError)
+	setExpectationsForProductOptionListQuery(testUtil.Mock, exampleProductOption, arbitraryError)
 
 	productOptionEndpoint := buildRoute("v1", "product", strconv.Itoa(int(exampleProduct.ID)), "options")
 	req, err := http.NewRequest(http.MethodGet, productOptionEndpoint, nil)
