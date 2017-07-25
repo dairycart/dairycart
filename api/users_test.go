@@ -1068,7 +1068,7 @@ func TestUserDeletionHandler(t *testing.T) {
 	req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
 	assert.Nil(t, err)
 
-	cookie, err := buildCookieForRequest(testUtil.Store, true, true)
+	cookie, err := buildCookieForRequest(t, testUtil.Store, true, true)
 	assert.Nil(t, err)
 	req.AddCookie(cookie)
 
@@ -1123,7 +1123,7 @@ func TestUserDeletionHandlerWhenDeletingAdminUserAsRegularUser(t *testing.T) {
 	req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
 	assert.Nil(t, err)
 
-	cookie, err := buildCookieForRequest(testUtil.Store, true, false)
+	cookie, err := buildCookieForRequest(t, testUtil.Store, true, false)
 	assert.Nil(t, err)
 	req.AddCookie(cookie)
 
@@ -1143,7 +1143,7 @@ func TestUserDeletionHandlerWithArbitraryErrorWhenDeletingUser(t *testing.T) {
 	req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
 	assert.Nil(t, err)
 
-	cookie, err := buildCookieForRequest(testUtil.Store, true, true)
+	cookie, err := buildCookieForRequest(t, testUtil.Store, true, true)
 	assert.Nil(t, err)
 	req.AddCookie(cookie)
 

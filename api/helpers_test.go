@@ -142,7 +142,7 @@ func argsToDriverValues(args []interface{}) []driver.Value {
 	return rv
 }
 
-func buildCookieForRequest(store *sessions.CookieStore, authorized bool, admin bool) (*http.Cookie, error) {
+func buildCookieForRequest(t *testing.T, store *sessions.CookieStore, authorized bool, admin bool) (*http.Cookie, error) {
 	session, err := store.New(&http.Request{}, dairycartCookieName)
 	if err != nil {
 		return nil, err
