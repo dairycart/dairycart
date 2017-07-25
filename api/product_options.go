@@ -38,24 +38,6 @@ type ProductOption struct {
 	Values    []ProductOptionValue `json:"values"`
 }
 
-func (a *ProductOption) generateScanArgs() []interface{} {
-	return []interface{}{
-		&a.ID,
-		&a.Name,
-		&a.ProductID,
-		&a.CreatedOn,
-		&a.UpdatedOn,
-		&a.ArchivedOn,
-	}
-}
-
-func (a *ProductOption) generateScanArgsWithCount(count *uint64) []interface{} {
-	scanArgs := []interface{}{count}
-	// FIXME: use sqlx instead of generateScanArgs
-	optionScanArgs := a.generateScanArgs()
-	return append(scanArgs, optionScanArgs...)
-}
-
 // ProductOptionsResponse is a product option response struct
 type ProductOptionsResponse struct {
 	ListResponse
@@ -88,9 +70,7 @@ func productOptionAlreadyExistsForProduct(db *sqlx.DB, in *ProductOptionCreation
 // retrieveProductOptionFromDB retrieves a ProductOption with a given ID from the database
 func retrieveProductOptionFromDB(db *sqlx.DB, id uint64) (*ProductOption, error) {
 	option := &ProductOption{}
-	// FIXME: use sqlx instead of generateScanArgs
-	scanArgs := option.generateScanArgs()
-	err := db.QueryRow(productOptionRetrievalQuery, id).Scan(scanArgs...)
+	err := db.QueryRowx(productOptionRetrievalQuery, id).StructScan(option)
 	if err == sql.ErrNoRows {
 		return option, errors.Wrap(err, "Error querying for product")
 	}
@@ -102,28 +82,17 @@ func getProductOptionsForProduct(db *sqlx.DB, productID uint64, queryFilter *Que
 	var count uint64
 
 	query, args := buildProductOptionListQuery(productID, queryFilter)
-	rows, err := db.Query(query, args...)
+	err := db.Select(&options, query, args...)
 	if err != nil {
 		return nil, 0, errors.Wrap(err, "Error encountered querying for product options")
 	}
 
-	defer rows.Close()
-	for rows.Next() {
-		var option ProductOption
-		var queryCount uint64
-
-		// FIXME: use sqlx instead of generateScanArgs
-		scanArgs := option.generateScanArgsWithCount(&queryCount)
-		_ = rows.Scan(scanArgs...)
-
-		count = queryCount
-		optionValues, err := retrieveProductOptionValueForOptionFromDB(db, option.ID)
+	for _, option := range options {
+		optionValues, err := retrieveProductOptionValuesForOptionFromDB(db, option.ID)
 		if err != nil {
 			return options, 0, errors.Wrap(err, "Error retrieving product option values for option")
 		}
 		option.Values = optionValues
-
-		options = append(options, option)
 	}
 	return options, count, nil
 }

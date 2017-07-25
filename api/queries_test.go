@@ -161,7 +161,7 @@ func TestBuildProductCreationQuery(t *testing.T) {
 
 func TestBuildProductOptionListQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := `SELECT count(id) over (), id,
+	expectedQuery := `SELECT id,
 		name,
 		product_id,
 		created_on,
