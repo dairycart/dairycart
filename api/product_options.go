@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 )
 
@@ -49,6 +51,7 @@ func (a *ProductOption) generateScanArgs() []interface{} {
 
 func (a *ProductOption) generateScanArgsWithCount(count *uint64) []interface{} {
 	scanArgs := []interface{}{count}
+	// FIXME: use sqlx instead of generateScanArgs
 	optionScanArgs := a.generateScanArgs()
 	return append(scanArgs, optionScanArgs...)
 }
@@ -85,6 +88,7 @@ func productOptionAlreadyExistsForProduct(db *sqlx.DB, in *ProductOptionCreation
 // retrieveProductOptionFromDB retrieves a ProductOption with a given ID from the database
 func retrieveProductOptionFromDB(db *sqlx.DB, id uint64) (*ProductOption, error) {
 	option := &ProductOption{}
+	// FIXME: use sqlx instead of generateScanArgs
 	scanArgs := option.generateScanArgs()
 	err := db.QueryRow(productOptionRetrievalQuery, id).Scan(scanArgs...)
 	if err == sql.ErrNoRows {
@@ -108,6 +112,7 @@ func getProductOptionsForProduct(db *sqlx.DB, productID uint64, queryFilter *Que
 		var option ProductOption
 		var queryCount uint64
 
+		// FIXME: use sqlx instead of generateScanArgs
 		scanArgs := option.generateScanArgsWithCount(&queryCount)
 		_ = rows.Scan(scanArgs...)
 
@@ -148,10 +153,11 @@ func buildProductOptionListHandler(db *sqlx.DB) http.HandlerFunc {
 	}
 }
 
-func updateProductOptionInDB(db *sqlx.DB, a *ProductOption) error {
+func updateProductOptionInDB(db *sqlx.DB, a *ProductOption) (time.Time, error) {
+	var updatedOn time.Time
 	optionUpdateQuery, queryArgs := buildProductOptionUpdateQuery(a)
-	err := db.QueryRow(optionUpdateQuery, queryArgs...).Scan(a.generateScanArgs()...)
-	return err
+	err := db.QueryRow(optionUpdateQuery, queryArgs...).Scan(&updatedOn)
+	return updatedOn, err
 }
 
 func buildProductOptionUpdateHandler(db *sqlx.DB) http.HandlerFunc {
@@ -182,46 +188,49 @@ func buildProductOptionUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 		existingOption.Name = updatedOptionData.Name
 
-		err = updateProductOptionInDB(db, existingOption)
+		optionUpdatedOn, err := updateProductOptionInDB(db, existingOption)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "update product option in the database")
 			return
 		}
+		existingOption.UpdatedOn = NullTime{pq.NullTime{Time: optionUpdatedOn, Valid: true}}
 
 		json.NewEncoder(res).Encode(existingOption)
 	}
 }
 
-func createProductOptionInDB(tx *sql.Tx, a *ProductOption, productID uint64) (*ProductOption, error) {
-	var newOptionID int64
+func createProductOptionInDB(tx *sql.Tx, o *ProductOption, productID uint64) (uint64, time.Time, error) {
+	var newOptionID uint64
+	var createdOn time.Time
 	// using QueryRow instead of Exec because we want it to return the newly created row's ID
 	// Exec normally returns a sql.Result, which has a LastInsertedID() method, but when I tested
 	// this locally, it never worked. ¯\_(ツ)_/¯
-	query, queryArgs := buildProductOptionCreationQuery(a, productID)
-	err := tx.QueryRow(query, queryArgs...).Scan(&newOptionID)
+	query, queryArgs := buildProductOptionCreationQuery(o, productID)
+	err := tx.QueryRow(query, queryArgs...).Scan(&newOptionID, &createdOn)
 
-	a.ID = uint64(newOptionID)
-	a.ProductID = productID
-	return a, err
+	return newOptionID, createdOn, err
 }
 
 func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in *ProductOptionCreationInput, productID uint64) (*ProductOption, error) {
-	newProductOption := &ProductOption{Name: in.Name}
-	newProductOption, err := createProductOptionInDB(tx, newProductOption, productID)
+	newProductOption := &ProductOption{Name: in.Name, ProductID: productID}
+	newProductOptionID, newProductOptionCreatedOn, err := createProductOptionInDB(tx, newProductOption, productID)
 	if err != nil {
 		return nil, err
 	}
+	newProductOption.ID = newProductOptionID
+	newProductOption.CreatedOn = newProductOptionCreatedOn
 
 	for _, value := range in.Values {
 		newOptionValue := ProductOptionValue{
 			ProductOptionID: newProductOption.ID,
 			Value:           value,
 		}
-		newOptionValueID, err := createProductOptionValueInDB(tx, &newOptionValue)
+		newOptionValueID, optionCreatedOn, err := createProductOptionValueInDB(tx, &newOptionValue)
 		if err != nil {
 			return nil, err
 		}
 		newOptionValue.ID = newOptionValueID
+		newOptionValue.CreatedOn = optionCreatedOn
 		newProductOption.Values = append(newProductOption.Values, newOptionValue)
 	}
 

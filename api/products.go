@@ -258,6 +258,7 @@ func buildProductDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 }
 
 func updateProductInDatabase(db *sqlx.DB, up *Product) error {
+	// FIXME: this update function is not like the others.
 	productUpdateQuery, queryArgs := buildProductUpdateQuery(up)
 	err := db.QueryRowx(productUpdateQuery, queryArgs...).StructScan(up)
 	return err
@@ -302,11 +303,12 @@ func buildProductUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 }
 
 // createProductInDB takes a marshaled Product object and creates an entry for it and a base_product in the database
-func createProductInDB(tx *sql.Tx, np *Product) (uint64, error) {
+func createProductInDB(tx *sql.Tx, np *Product) (uint64, time.Time, error) {
 	var newProductID uint64
+	var createdOn time.Time
 	productCreationQuery, queryArgs := buildProductCreationQuery(np)
-	err := tx.QueryRow(productCreationQuery, queryArgs...).Scan(&newProductID)
-	return newProductID, err
+	err := tx.QueryRow(productCreationQuery, queryArgs...).Scan(&newProductID, &createdOn)
+	return newProductID, createdOn, err
 }
 
 func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
@@ -336,13 +338,14 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 
 		newProduct := newProductFromCreationInput(productInput)
-		newProductID, err := createProductInDB(tx, newProduct)
+		newProductID, createdOn, err := createProductInDB(tx, newProduct)
 		if err != nil {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "insert product in database")
 			return
 		}
 		newProduct.ID = newProductID
+		newProduct.CreatedOn = createdOn
 
 		for _, optionAndValues := range productInput.Options {
 			_, err = createProductOptionAndValuesInDBFromInput(tx, optionAndValues, newProduct.ID)

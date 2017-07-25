@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 )
 
@@ -54,6 +56,7 @@ type ProductOptionValueUpdateInput struct {
 // retrieveProductOptionValue retrieves a ProductOptionValue with a given ID from the database
 func retrieveProductOptionValueFromDB(db *sqlx.DB, id uint64) (*ProductOptionValue, error) {
 	v := &ProductOptionValue{}
+	// FIXME: use sqlx instead of generateScanArgs
 	err := db.QueryRow(productOptionValueRetrievalQuery, id).Scan(v.generateScanArgs()...)
 	if err == sql.ErrNoRows {
 		return v, errors.Wrap(err, "Error querying for product option values")
@@ -72,16 +75,18 @@ func retrieveProductOptionValueForOptionFromDB(db *sqlx.DB, optionID uint64) ([]
 	defer rows.Close()
 	for rows.Next() {
 		value := ProductOptionValue{}
+		// FIXME: use sqlx instead of generateScanArgs
 		_ = rows.Scan(value.generateScanArgs()...)
 		values = append(values, value)
 	}
 	return values, nil
 }
 
-func updateProductOptionValueInDB(db *sqlx.DB, v *ProductOptionValue) error {
+func updateProductOptionValueInDB(db *sqlx.DB, v *ProductOptionValue) (time.Time, error) {
+	var updatedOn time.Time
 	valueUpdateQuery, queryArgs := buildProductOptionValueUpdateQuery(v)
-	err := db.QueryRow(valueUpdateQuery, queryArgs...).Scan(v.generateScanArgs()...)
-	return err
+	err := db.QueryRow(valueUpdateQuery, queryArgs...).Scan(&updatedOn)
+	return updatedOn, err
 }
 
 func buildProductOptionValueUpdateHandler(db *sqlx.DB) http.HandlerFunc {
@@ -112,22 +117,24 @@ func buildProductOptionValueUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 		existingOptionValue.Value = updatedValueData.Value
 
-		err = updateProductOptionValueInDB(db, existingOptionValue)
+		updatedOn, err := updateProductOptionValueInDB(db, existingOptionValue)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "update product option value in the database")
 			return
 		}
+		existingOptionValue.UpdatedOn = NullTime{pq.NullTime{Time: updatedOn, Valid: true}}
 
 		json.NewEncoder(res).Encode(existingOptionValue)
 	}
 }
 
 // createProductOptionValueInDB creates a ProductOptionValue tied to a ProductOption
-func createProductOptionValueInDB(tx *sql.Tx, v *ProductOptionValue) (uint64, error) {
+func createProductOptionValueInDB(tx *sql.Tx, v *ProductOptionValue) (uint64, time.Time, error) {
 	var newOptionValueID uint64
+	var createdOn time.Time
 	query, args := buildProductOptionValueCreationQuery(v)
-	err := tx.QueryRow(query, args...).Scan(&newOptionValueID)
-	return newOptionValueID, err
+	err := tx.QueryRow(query, args...).Scan(&newOptionValueID, &createdOn)
+	return newOptionValueID, createdOn, err
 }
 
 func optionValueAlreadyExistsForOption(db *sqlx.DB, optionID int64, value string) (bool, error) {
@@ -177,13 +184,14 @@ func buildProductOptionValueCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		newProductOptionValueID, err := createProductOptionValueInDB(tx, newProductOptionValue)
+		newProductOptionValueID, createdOn, err := createProductOptionValueInDB(tx, newProductOptionValue)
 		if err != nil {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "insert product in database")
 			return
 		}
 		newProductOptionValue.ID = newProductOptionValueID
+		newProductOptionValue.CreatedOn = createdOn
 
 		err = tx.Commit()
 		if err != nil {

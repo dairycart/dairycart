@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/imdario/mergo"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 )
 
 const (
@@ -49,26 +50,6 @@ type Discount struct {
 	LimitedUse    bool      `json:"limited_use"`
 	NumberOfUses  int64     `json:"number_of_uses,omitempty"`
 	LoginRequired bool      `json:"login_required"`
-}
-
-// generateScanArgs generates an array of pointers to struct fields for sql.Scan to populate
-func (d *Discount) generateScanArgs() []interface{} {
-	return []interface{}{
-		&d.ID,
-		&d.Name,
-		&d.Type,
-		&d.Amount,
-		&d.StartsOn,
-		&d.ExpiresOn,
-		&d.RequiresCode,
-		&d.Code,
-		&d.LimitedUse,
-		&d.NumberOfUses,
-		&d.LoginRequired,
-		&d.CreatedOn,
-		&d.UpdatedOn,
-		&d.ArchivedOn,
-	}
 }
 
 // DiscountCreationInput represents user input for creating new discounts
@@ -153,11 +134,12 @@ func buildDiscountListRetrievalHandler(db *sqlx.DB) http.HandlerFunc {
 	}
 }
 
-func createDiscountInDB(db *sqlx.DB, in *Discount) (*Discount, error) {
+func createDiscountInDB(db *sqlx.DB, in *Discount) (uint64, time.Time, error) {
+	var createdID uint64
+	var createdOn time.Time
 	discountCreationQuery, queryArgs := buildDiscountCreationQuery(in)
-	scanArgs := in.generateScanArgs()
-	err := db.QueryRow(discountCreationQuery, queryArgs...).Scan(scanArgs...)
-	return in, err
+	err := db.QueryRow(discountCreationQuery, queryArgs...).Scan(&createdID, &createdOn)
+	return createdID, createdOn, err
 }
 
 func buildDiscountCreationHandler(db *sqlx.DB) http.HandlerFunc {
@@ -170,11 +152,13 @@ func buildDiscountCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		newDiscount, err = createDiscountInDB(db, newDiscount)
+		id, createdOn, err := createDiscountInDB(db, newDiscount)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "insert discount into database")
 			return
 		}
+		newDiscount.ID = id
+		newDiscount.CreatedOn = createdOn
 
 		res.WriteHeader(http.StatusCreated)
 		json.NewEncoder(res).Encode(newDiscount)
@@ -203,11 +187,11 @@ func buildDiscountDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 	}
 }
 
-func updateDiscountInDatabase(db *sqlx.DB, up *Discount) error {
+func updateDiscountInDatabase(db *sqlx.DB, up *Discount) (time.Time, error) {
+	var updatedTime time.Time
 	discountUpdateQuery, queryArgs := buildDiscountUpdateQuery(up)
-	scanArgs := up.generateScanArgs()
-	err := db.QueryRow(discountUpdateQuery, queryArgs...).Scan(scanArgs...)
-	return err
+	err := db.QueryRow(discountUpdateQuery, queryArgs...).Scan(&updatedTime)
+	return updatedTime, err
 }
 
 func buildDiscountUpdateHandler(db *sqlx.DB) http.HandlerFunc {
@@ -234,11 +218,12 @@ func buildDiscountUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 		// eating the error here because we've already validated input
 		mergo.Merge(updatedDiscount, &existingDiscount)
 
-		err = updateDiscountInDatabase(db, updatedDiscount)
+		updatedOn, err := updateDiscountInDatabase(db, updatedDiscount)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "update product in database")
 			return
 		}
+		updatedDiscount.UpdatedOn = NullTime{pq.NullTime{Time: updatedOn, Valid: true}}
 
 		json.NewEncoder(res).Encode(updatedDiscount)
 	}

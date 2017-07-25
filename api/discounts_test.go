@@ -37,11 +37,11 @@ const (
 )
 
 var (
-	discountHeaders              []string
-	exampleDiscountData          []driver.Value
-	discountHeadersWithCount     []string
-	exampleDiscountDataWithCount []driver.Value
-	exampleDiscount              *Discount
+	discountHeaders             []string
+	exampleDiscountReadData     []driver.Value
+	discountCreationHeaders     []string
+	exampleDiscountCreationData []driver.Value
+	exampleDiscount             *Discount
 )
 
 func init() {
@@ -51,13 +51,14 @@ func init() {
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:      "Example Discount",
-		Type:      "flat_discount",
+		Type:      "flat_amount",
 		Amount:    12.34,
 		StartsOn:  generateExampleTimeForTests(),
 		ExpiresOn: NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
 	}
 
-	exampleDiscountData = []driver.Value{
+	discountHeaders = strings.Split(strings.TrimSpace(discountsTableColumns), ",\n\t\t")
+	exampleDiscountReadData = []driver.Value{
 		exampleDiscount.ID,
 		exampleDiscount.Name,
 		exampleDiscount.Type,
@@ -74,13 +75,18 @@ func init() {
 		nil,
 	}
 
-	discountHeaders = strings.Split(strings.TrimSpace(discountsTableColumns), ",\n\t\t")
-	discountHeadersWithCount = append([]string{"count"}, discountHeaders...)
-	exampleDiscountDataWithCount = append([]driver.Value{3}, exampleDiscountData...)
+	discountCreationHeaders = []string{
+		"id",
+		"created_on",
+	}
+	exampleDiscountCreationData = []driver.Value{
+		exampleDiscount.ID,
+		exampleDiscount.CreatedOn,
+	}
 }
 
 func setExpectationsForDiscountRetrievalByID(mock sqlmock.Sqlmock, id string, err error) {
-	exampleRows := sqlmock.NewRows(discountHeaders).AddRow(exampleDiscountData...)
+	exampleRows := sqlmock.NewRows(discountHeaders).AddRow(exampleDiscountReadData...)
 	query := formatQueryForSQLMock(discountRetrievalQuery)
 	mock.ExpectQuery(query).
 		WithArgs(id).
@@ -98,24 +104,11 @@ func setExpectationsForDiscountCountQuery(mock sqlmock.Sqlmock, queryFilter *Que
 		WillReturnError(err)
 }
 
-func setExpectationsForDiscountListQueryWithCount(mock sqlmock.Sqlmock, err error) {
-	exampleRows := sqlmock.NewRows(discountHeadersWithCount).
-		AddRow(exampleDiscountDataWithCount...).
-		AddRow(exampleDiscountDataWithCount...).
-		AddRow(exampleDiscountDataWithCount...)
-
-	discountListRetrievalQuery, _ := buildDiscountListQuery(defaultQueryFilter)
-	query := formatQueryForSQLMock(discountListRetrievalQuery)
-	mock.ExpectQuery(query).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
-}
-
 func setExpectationsForDiscountListQuery(mock sqlmock.Sqlmock, err error) {
 	exampleRows := sqlmock.NewRows(discountHeaders).
-		AddRow(exampleDiscountData...).
-		AddRow(exampleDiscountData...).
-		AddRow(exampleDiscountData...)
+		AddRow(exampleDiscountReadData...).
+		AddRow(exampleDiscountReadData...).
+		AddRow(exampleDiscountReadData...)
 
 	discountListRetrievalQuery, _ := buildDiscountListQuery(defaultQueryFilter)
 	query := formatQueryForSQLMock(discountListRetrievalQuery)
@@ -125,7 +118,7 @@ func setExpectationsForDiscountListQuery(mock sqlmock.Sqlmock, err error) {
 }
 
 func setExpectationsForDiscountCreation(mock sqlmock.Sqlmock, d *Discount, err error) {
-	exampleRows := sqlmock.NewRows(discountHeaders).AddRow(exampleDiscountData...)
+	exampleRows := sqlmock.NewRows(discountCreationHeaders).AddRow(exampleDiscountCreationData...)
 	discountCreationQuery, args := buildDiscountCreationQuery(d)
 	queryArgs := argsToDriverValues(args)
 	mock.ExpectQuery(formatQueryForSQLMock(discountCreationQuery)).
@@ -149,7 +142,7 @@ func setExpectationsForDiscountExistence(mock sqlmock.Sqlmock, discountID string
 }
 
 func setExpectationsForDiscountUpdate(mock sqlmock.Sqlmock, d *Discount, err error) {
-	exampleRows := sqlmock.NewRows(discountHeaders).AddRow(exampleDiscountData...)
+	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests())
 	query, rawArgs := buildDiscountUpdateQuery(d)
 	args := argsToDriverValues(rawArgs)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
@@ -160,7 +153,7 @@ func setExpectationsForDiscountUpdate(mock sqlmock.Sqlmock, d *Discount, err err
 
 func TestDiscountTypeIsValidWithValidInput(t *testing.T) {
 	t.Parallel()
-	d := &Discount{Type: "flat_discount"}
+	d := &Discount{Type: "invalid_type"}
 	assert.False(t, d.discountTypeIsValid())
 }
 
@@ -183,7 +176,7 @@ func TestRetrieveDiscountFromDB(t *testing.T) {
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:      "Example Discount",
-		Type:      "flat_discount",
+		Type:      "flat_amount",
 		Amount:    12.34,
 		StartsOn:  generateExampleTimeForTests(),
 		ExpiresOn: NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
@@ -225,9 +218,10 @@ func TestCreateDiscountInDB(t *testing.T) {
 
 	setExpectationsForDiscountCreation(testUtil.Mock, exampleDiscount, nil)
 
-	actualDiscount, err := createDiscountInDB(testUtil.DB, exampleDiscount)
+	discountID, createdOn, err := createDiscountInDB(testUtil.DB, exampleDiscount)
 	assert.Nil(t, err)
-	assert.Equal(t, exampleDiscount, actualDiscount, "createProductInDB should return the created Discount")
+	assert.Equal(t, uint64(1), discountID, "createDiscountInDB should return the created discount's ID")
+	assert.Equal(t, generateExampleTimeForTests(), createdOn, "createDiscountInDB should return the created discount's creation time")
 
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
@@ -250,8 +244,10 @@ func TestUpdateDiscountInDB(t *testing.T) {
 
 	setExpectationsForDiscountUpdate(testUtil.Mock, exampleDiscount, nil)
 
-	err := updateDiscountInDatabase(testUtil.DB, exampleDiscount)
+	updatedTime, err := updateDiscountInDatabase(testUtil.DB, exampleDiscount)
 	assert.Nil(t, err)
+
+	assert.Equal(t, updatedTime, generateExampleTimeForTests(), "updateDiscountInDatabase should return the appropriate time")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -393,13 +389,14 @@ func TestDiscountCreationHandler(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, testUtil.Response.Code, "status code should be 201")
 
 	actual := &Discount{}
-	err = json.NewDecoder(strings.NewReader(testUtil.Response.Body.String())).Decode(actual)
+	bodyStr := testUtil.Response.Body.String()
+	err = json.NewDecoder(strings.NewReader(bodyStr)).Decode(actual)
 	assert.Nil(t, err)
 
-	expected := exampleDiscount
-	expected.UpdatedOn.Valid = true
-	expected.ArchivedOn.Valid = true
-	assert.Equal(t, expected, actual, "discount creation endpoint should return created discount")
+	actual.UpdatedOn.Valid = false
+	actual.ArchivedOn.Valid = false
+	actual.ExpiresOn.Valid = false
+	assert.Equal(t, exampleCreatedDiscount, actual, "discount creation endpoint should return created discount")
 
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
@@ -469,7 +466,7 @@ func TestDiscountUpdateHandler(t *testing.T) {
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "New Name",
-		Type:         "flat_discount",
+		Type:         "flat_amount",
 		Amount:       12.34,
 		RequiresCode: true,
 		Code:         "TEST",
@@ -524,7 +521,7 @@ func TestDiscountUpdateHandlerWithErrorRetrievingDiscount(t *testing.T) {
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "New Name",
-		Type:         "flat_discount",
+		Type:         "flat_amount",
 		Amount:       12.34,
 		RequiresCode: true,
 		Code:         "TEST",
@@ -551,7 +548,7 @@ func TestDiscountUpdateHandlerWithErrorUpdatingDiscount(t *testing.T) {
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "New Name",
-		Type:         "flat_discount",
+		Type:         "flat_amount",
 		Amount:       12.34,
 		RequiresCode: true,
 		Code:         "TEST",

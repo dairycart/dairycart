@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 	"unicode"
 
 	"golang.org/x/crypto/bcrypt"
@@ -15,6 +16,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/imdario/mergo"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 )
 
@@ -56,24 +58,6 @@ type User struct {
 	Salt                  []byte   `json:"salt"`
 	IsAdmin               bool     `json:"is_admin"`
 	PasswordLastChangedOn NullTime `json:"password_last_changed_on,omitempty"`
-}
-
-// generateScanArgs generates an array of pointers to struct fields for sql.Scan to populate
-func (u *User) generateScanArgs() []interface{} {
-	return []interface{}{
-		&u.ID,
-		&u.FirstName,
-		&u.LastName,
-		&u.Username,
-		&u.Email,
-		&u.Password,
-		&u.Salt,
-		&u.IsAdmin,
-		&u.PasswordLastChangedOn,
-		&u.CreatedOn,
-		&u.UpdatedOn,
-		&u.ArchivedOn,
-	}
 }
 
 // DisplayUser represents a Dairycart user we can return in responses
@@ -191,11 +175,12 @@ func saltAndHashPassword(password string, salt []byte) (string, error) {
 	return string(saltedAndHashedPassword), err
 }
 
-func createUserInDB(db *sqlx.DB, u *User) (uint64, error) {
+func createUserInDB(db *sqlx.DB, u *User) (uint64, time.Time, error) {
 	var newUserID uint64
+	var createdOn time.Time
 	query, args := buildUserCreationQuery(u)
-	err := db.QueryRow(query, args...).Scan(&newUserID)
-	return newUserID, err
+	err := db.QueryRow(query, args...).Scan(&newUserID, &createdOn)
+	return newUserID, createdOn, err
 }
 
 func retrieveUserFromDB(db *sqlx.DB, username string) (User, error) {
@@ -218,11 +203,11 @@ func passwordMatches(password string, u User) bool {
 	return err == nil
 }
 
-func updateUserInDatabase(db *sqlx.DB, u *User, passwordChanged bool) error {
+func updateUserInDatabase(db *sqlx.DB, u *User, passwordChanged bool) (time.Time, error) {
+	var updatedOn time.Time
 	userUpdateQuery, queryArgs := buildUserUpdateQuery(u, passwordChanged)
-	scanArgs := u.generateScanArgs()
-	err := db.QueryRow(userUpdateQuery, queryArgs...).Scan(scanArgs...)
-	return err
+	err := db.QueryRow(userUpdateQuery, queryArgs...).Scan(&updatedOn)
+	return updatedOn, err
 }
 
 func archiveUser(db *sqlx.DB, id uint64) error {
@@ -305,7 +290,7 @@ func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 			return
 		}
 
-		createdUserID, err := createUserInDB(db, newUser)
+		createdUserID, createdOn, err := createUserInDB(db, newUser)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "insert user in database")
 			return
@@ -313,9 +298,8 @@ func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 
 		responseUser := &DisplayUser{
 			DBRow: DBRow{
-				ID: createdUserID,
-				// FIXME: use real created_on value
-				// CreatedOn: time.Now(),
+				ID:        createdUserID,
+				CreatedOn: createdOn,
 			},
 			FirstName: newUser.FirstName,
 			LastName:  newUser.LastName,
@@ -546,11 +530,12 @@ func buildUserInfoUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 		// eating the error here because we've already validated input
 		mergo.Merge(updatedUser, existingUser)
 
-		err = updateUserInDatabase(db, updatedUser, passwordChanged)
+		updatedOn, err := updateUserInDatabase(db, updatedUser, passwordChanged)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "update user")
 			return
 		}
+		updatedUser.UpdatedOn = NullTime{pq.NullTime{Time: updatedOn, Valid: true}}
 
 		json.NewEncoder(res).Encode(updatedUser)
 	}

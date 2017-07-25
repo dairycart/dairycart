@@ -86,6 +86,7 @@ func buildProductUpdateQuery(p *Product) (string, []interface{}) {
 		SetMap(productUpdateSetMap).
 		Where(squirrel.Eq{"id": p.ID}).
 		Suffix(`RETURNING *`)
+		// Suffix(`RETURNING updated_on`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
@@ -154,7 +155,7 @@ func buildProductCreationQuery(p *Product) (string, []interface{}) {
 		Insert("products").
 		Columns(columns...).
 		Values(values...).
-		Suffix(`RETURNING "id"`)
+		Suffix(`RETURNING id, created_on`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
@@ -187,7 +188,7 @@ func buildProductOptionUpdateQuery(a *ProductOption) (string, []interface{}) {
 		Update("product_options").
 		SetMap(productOptionUpdateSetMap).
 		Where(squirrel.Eq{"id": a.ID}).
-		Suffix(`RETURNING *`)
+		Suffix(`RETURNING updated_on`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
@@ -198,7 +199,7 @@ func buildProductOptionCreationQuery(a *ProductOption, productID uint64) (string
 		Insert("product_options").
 		Columns("name", "product_id").
 		Values(a.Name, productID).
-		Suffix(`RETURNING "id"`)
+		Suffix(`RETURNING id, created_on`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
@@ -219,7 +220,7 @@ func buildProductOptionValueUpdateQuery(v *ProductOptionValue) (string, []interf
 		Update("product_option_values").
 		SetMap(productOptionUpdateSetMap).
 		Where(squirrel.Eq{"id": v.ID}).
-		Suffix(`RETURNING *`)
+		Suffix(`RETURNING updated_on`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
@@ -230,7 +231,7 @@ func buildProductOptionValueCreationQuery(v *ProductOptionValue) (string, []inte
 		Insert("product_option_values").
 		Columns("product_option_id", "value").
 		Values(v.ProductOptionID, v.Value).
-		Suffix(`RETURNING "id"`)
+		Suffix(`RETURNING id, created_on`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
@@ -261,7 +262,7 @@ func buildDiscountCreationQuery(d *Discount) (string, []interface{}) {
 		Insert("discounts").
 		Columns("name", "type", "amount", "starts_on", "expires_on", "requires_code", "code", "limited_use", "number_of_uses", "login_required").
 		Values(d.Name, d.Type, d.Amount, d.StartsOn, d.ExpiresOn, d.RequiresCode, d.Code, d.LimitedUse, d.NumberOfUses, d.LoginRequired).
-		Suffix(fmt.Sprintf("RETURNING%s", discountsTableColumns))
+		Suffix("RETURNING id, created_on")
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
@@ -285,7 +286,7 @@ func buildDiscountUpdateQuery(d *Discount) (string, []interface{}) {
 		Update("discounts").
 		SetMap(updateSetMap).
 		Where(squirrel.Eq{"id": d.ID}).
-		Suffix(fmt.Sprintf("RETURNING%s", discountsTableColumns))
+		Suffix("RETURNING updated_on")
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
@@ -342,7 +343,7 @@ func buildUserCreationQuery(u *User) (string, []interface{}) {
 			u.Salt,
 			u.IsAdmin,
 		).
-		Suffix(`RETURNING "id"`)
+		Suffix(`RETURNING id, created_on`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
@@ -382,7 +383,7 @@ func buildUserUpdateQuery(u *User, passwordChanged bool) (string, []interface{})
 		Update("users").
 		SetMap(updateSetMap).
 		Where(squirrel.Eq{"username": u.Username}).
-		Suffix(fmt.Sprintf("RETURNING %s", usersTableHeaders))
+		Suffix("RETURNING updated_on")
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }

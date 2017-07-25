@@ -25,7 +25,7 @@ const (
 	idReplacementPattern                = `(?U)(,?)"(id)":\s?\d+,`
 	productTimeReplacementPattern       = `(?U)(,?)"(available_on)":"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z)?"(,?)`
 	timeFieldReplacementPattern         = `(?U)(,?)"(created_on|updated_on|archived_on)":"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z)?"(,?)`
-	discountTimeFieldReplacementPattern = `(?U)(,?)"(starts_on|expires_on)":"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z)?"(,?)`
+	discountTimeFieldReplacementPattern = `(?U)(,?)"(starts_on|expires_on)":"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?(Z|\+\d{2}:\d{2}))?"(,?)`
 
 	existentID     = "1"
 	nonexistentID  = "999999999"

@@ -162,7 +162,7 @@ func setExpectationsForProductUpdate(mock sqlmock.Sqlmock, p *Product, err error
 }
 
 func setExpectationsForProductCreation(mock sqlmock.Sqlmock, p *Product, err error) {
-	exampleRows := sqlmock.NewRows([]string{"id"}).AddRow(p.ID)
+	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(p.ID, generateExampleTimeForTests())
 	productCreationQuery, args := buildProductCreationQuery(p)
 	queryArgs := argsToDriverValues(args)
 	mock.ExpectQuery(formatQueryForSQLMock(productCreationQuery)).
@@ -249,9 +249,10 @@ func TestCreateProductInDB(t *testing.T) {
 	tx, err := testUtil.DB.Begin()
 	assert.Nil(t, err)
 
-	newID, err := createProductInDB(tx, exampleProduct)
+	newID, createdOn, err := createProductInDB(tx, exampleProduct)
 	assert.Nil(t, err)
 	assert.Equal(t, exampleProduct.ID, newID, "createProductInDB should return the created ID")
+	assert.Equal(t, generateExampleTimeForTests(), createdOn, "createProductInDB should return the created ID")
 
 	err = tx.Commit()
 	assert.Nil(t, err)
