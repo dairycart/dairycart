@@ -47,11 +47,11 @@ func TestUserCreation(t *testing.T) {
 	}
 
 	subtests := []subtest{
-		subtest{
+		{
 			Message: "create user",
 			Test:    testCreateUser,
 		},
-		subtest{
+		{
 			Message: "delete created user",
 			Test:    testDeleteUser,
 		},
@@ -112,11 +112,11 @@ func TestAdminUserCreation(t *testing.T) {
 	}
 
 	subtests := []subtest{
-		subtest{
+		{
 			Message: "create admin user",
 			Test:    testCreateUser,
 		},
-		subtest{
+		{
 			Message: "delete created admin user",
 			Test:    testDeleteUser,
 		},
@@ -163,15 +163,15 @@ func TestUserCreationForAlreadyExistentUsername(t *testing.T) {
 	}
 
 	subtests := []subtest{
-		subtest{
+		{
 			Message: "create user",
 			Test:    testCreateUser,
 		},
-		subtest{
+		{
 			Message: "create user again",
 			Test:    testCreateUserAgain,
 		},
-		subtest{
+		{
 			Message: "delete created user",
 			Test:    testDeleteUser,
 		},
@@ -201,11 +201,11 @@ func TestUserDeletion(t *testing.T) {
 	}
 
 	subtests := []subtest{
-		subtest{
+		{
 			Message: "create user",
 			Test:    testCreateUser,
 		},
-		subtest{
+		{
 			Message: "delete created user",
 			Test:    testDeleteUser,
 		},
@@ -249,11 +249,11 @@ func TestUserDeletionAsRegularUser(t *testing.T) {
 	}
 
 	subtests := []subtest{
-		subtest{
+		{
 			Message: "create user",
 			Test:    testCreateUser,
 		},
-		subtest{
+		{
 			Message: "delete created user",
 			Test:    testDeleteUser,
 		},
@@ -283,11 +283,11 @@ func TestAdminUserDeletion(t *testing.T) {
 	}
 
 	subtests := []subtest{
-		subtest{
+		{
 			Message: "create admin user",
 			Test:    testCreateUser,
 		},
-		subtest{
+		{
 			Message: "delete created admin user",
 			Test:    testDeleteUser,
 		},
@@ -319,11 +319,11 @@ func TestAdminUserDeletionAsRegularUser(t *testing.T) {
 	}
 
 	subtests := []subtest{
-		subtest{
+		{
 			Message: "create admin user",
 			Test:    testCreateUser,
 		},
-		subtest{
+		{
 			Message: "delete created admin user",
 			Test:    testDeleteUser,
 		},
@@ -370,19 +370,19 @@ func TestUserLogin(t *testing.T) {
 	}
 
 	subtests := []subtest{
-		subtest{
+		{
 			Message: "create user",
 			Test:    testCreateUser,
 		},
-		subtest{
+		{
 			Message: "logout user before logging in again",
 			Test:    testLogoutUser,
 		},
-		subtest{
+		{
 			Message: "login user",
 			Test:    testLoginUser,
 		},
-		subtest{
+		{
 			Message: "delete created user",
 			Test:    testDeleteUser,
 		},
@@ -429,19 +429,19 @@ func TestUserLoginWithInvalidPassword(t *testing.T) {
 	}
 
 	subtests := []subtest{
-		subtest{
+		{
 			Message: "create user",
 			Test:    testCreateUser,
 		},
-		subtest{
+		{
 			Message: "logout user before logging in again",
 			Test:    testLogoutUser,
 		},
-		subtest{
+		{
 			Message: "login user",
 			Test:    testLoginUser,
 		},
-		subtest{
+		{
 			Message: "delete created user",
 			Test:    testDeleteUser,
 		},
@@ -504,15 +504,15 @@ func TestUserLogout(t *testing.T) {
 	}
 
 	subtests := []subtest{
-		subtest{
+		{
 			Message: "create user",
 			Test:    testCreateUser,
 		},
-		subtest{
+		{
 			Message: "logout user",
 			Test:    testLogoutUser,
 		},
-		subtest{
+		{
 			Message: "delete created user",
 			Test:    testDeleteUser,
 		},

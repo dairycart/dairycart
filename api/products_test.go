@@ -187,10 +187,11 @@ func setExpectationsForProductUpdateHandler(mock sqlmock.Sqlmock, p *Product, er
 		WillReturnError(err)
 }
 
-func setExpectationsForProductDeletion(mock sqlmock.Sqlmock, sku string) {
+func setExpectationsForProductDeletion(mock sqlmock.Sqlmock, sku string, err error) {
 	mock.ExpectExec(formatQueryForSQLMock(productDeletionQuery)).
 		WithArgs(sku).
-		WillReturnResult(sqlmock.NewResult(1, 1))
+		WillReturnResult(sqlmock.NewResult(1, 1)).
+		WillReturnError(err)
 }
 
 func TestRetrieveProductFromDB(t *testing.T) {
@@ -220,10 +221,21 @@ func TestDeleteProductBySKU(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU)
+	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU, nil)
 
 	err := deleteProductBySKU(testUtil.DB, exampleSKU)
 	assert.Nil(t, err)
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestDeleteProductBySKUReturnsError(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU, arbitraryError)
+
+	err := deleteProductBySKU(testUtil.DB, exampleSKU)
+	assert.Equal(t, err, arbitraryError, "deleteProductBySKU should return errors when it encounters them")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -495,12 +507,12 @@ func TestProductUpdateHandlerWithDBErrorUpdatingProduct(t *testing.T) {
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
-func TestProductDeletionHandlerWithExistentProduct(t *testing.T) {
+func TestProductDeletionHandler(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
 	setExpectationsForProductExistence(testUtil.Mock, exampleSKU, true, nil)
-	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU)
+	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU, nil)
 
 	req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 	assert.Nil(t, err)
@@ -521,6 +533,21 @@ func TestProductDeletionHandlerWithNonexistentProduct(t *testing.T) {
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 	assert.Equal(t, http.StatusNotFound, testUtil.Response.Code, "status code should be 404")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestProductDeletionHandlerWithErrorEncounteredDeletingProduct(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	setExpectationsForProductExistence(testUtil.Mock, exampleSKU, true, nil)
+	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU, arbitraryError)
+
+	req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 

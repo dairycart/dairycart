@@ -183,6 +183,11 @@ func buildDiscountDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 
 		err = archiveDiscount(db, discountID)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "archive discount in database")
+			return
+		}
+
 		io.WriteString(res, fmt.Sprintf("Successfully archived discount `%s`", discountID))
 	}
 }
