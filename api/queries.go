@@ -86,6 +86,7 @@ func buildProductUpdateQuery(p *Product) (string, []interface{}) {
 		SetMap(productUpdateSetMap).
 		Where(squirrel.Eq{"id": p.ID}).
 		Suffix(`RETURNING *`)
+		// Suffix(`RETURNING updated_on`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
@@ -154,7 +155,7 @@ func buildProductCreationQuery(p *Product) (string, []interface{}) {
 		Insert("products").
 		Columns(columns...).
 		Values(values...).
-		Suffix(`RETURNING id`)
+		Suffix(`RETURNING id, created_on`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
