@@ -51,6 +51,7 @@ func (a *ProductOption) generateScanArgs() []interface{} {
 
 func (a *ProductOption) generateScanArgsWithCount(count *uint64) []interface{} {
 	scanArgs := []interface{}{count}
+	// FIXME: use sqlx instead of generateScanArgs
 	optionScanArgs := a.generateScanArgs()
 	return append(scanArgs, optionScanArgs...)
 }
@@ -87,6 +88,7 @@ func productOptionAlreadyExistsForProduct(db *sqlx.DB, in *ProductOptionCreation
 // retrieveProductOptionFromDB retrieves a ProductOption with a given ID from the database
 func retrieveProductOptionFromDB(db *sqlx.DB, id uint64) (*ProductOption, error) {
 	option := &ProductOption{}
+	// FIXME: use sqlx instead of generateScanArgs
 	scanArgs := option.generateScanArgs()
 	err := db.QueryRow(productOptionRetrievalQuery, id).Scan(scanArgs...)
 	if err == sql.ErrNoRows {
@@ -110,6 +112,7 @@ func getProductOptionsForProduct(db *sqlx.DB, productID uint64, queryFilter *Que
 		var option ProductOption
 		var queryCount uint64
 
+		// FIXME: use sqlx instead of generateScanArgs
 		scanArgs := option.generateScanArgsWithCount(&queryCount)
 		_ = rows.Scan(scanArgs...)
 

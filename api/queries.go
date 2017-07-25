@@ -343,7 +343,7 @@ func buildUserCreationQuery(u *User) (string, []interface{}) {
 			u.Salt,
 			u.IsAdmin,
 		).
-		Suffix(`RETURNING id`)
+		Suffix(`RETURNING id, created_on`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
@@ -383,7 +383,7 @@ func buildUserUpdateQuery(u *User, passwordChanged bool) (string, []interface{})
 		Update("users").
 		SetMap(updateSetMap).
 		Where(squirrel.Eq{"username": u.Username}).
-		Suffix(fmt.Sprintf("RETURNING %s", usersTableHeaders))
+		Suffix("RETURNING updated_on")
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }

@@ -259,7 +259,7 @@ func TestBuildUserCreationQuery(t *testing.T) {
 		IsAdmin:   true,
 	}
 
-	expectedQuery := `INSERT INTO users (first_name,last_name,email,username,password,salt,is_admin) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`
+	expectedQuery := `INSERT INTO users (first_name,last_name,email,username,password,salt,is_admin) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id, created_on`
 	actualQuery, actualArgs := buildUserCreationQuery(user)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 7, len(actualArgs), argsEqualityErrorMessage)
@@ -286,7 +286,7 @@ func TestBuildUserUpdateQueryWithoutPasswordChange(t *testing.T) {
 		Salt:      []byte("Salt"),
 		IsAdmin:   true,
 	}
-	expectedQuery := `UPDATE users SET email = $1, first_name = $2, is_admin = $3, last_name = $4, updated_on = NOW(), username = $5 WHERE username = $6 RETURNING id, first_name, last_name, username, email, password, salt, is_admin, password_last_changed_on, created_on, updated_on, archived_on`
+	expectedQuery := `UPDATE users SET email = $1, first_name = $2, is_admin = $3, last_name = $4, updated_on = NOW(), username = $5 WHERE username = $6 RETURNING updated_on`
 	actualQuery, actualArgs := buildUserUpdateQuery(user, false)
 
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
@@ -304,7 +304,7 @@ func TestBuildUserUpdateQueryWithPasswordChange(t *testing.T) {
 		Salt:      []byte("Salt"),
 		IsAdmin:   true,
 	}
-	expectedQuery := `UPDATE users SET email = $1, first_name = $2, is_admin = $3, last_name = $4, password = $5, password_last_changed_on = NOW(), updated_on = NOW(), username = $6 WHERE username = $7 RETURNING id, first_name, last_name, username, email, password, salt, is_admin, password_last_changed_on, created_on, updated_on, archived_on`
+	expectedQuery := `UPDATE users SET email = $1, first_name = $2, is_admin = $3, last_name = $4, password = $5, password_last_changed_on = NOW(), updated_on = NOW(), username = $6 WHERE username = $7 RETURNING updated_on`
 	actualQuery, actualArgs := buildUserUpdateQuery(user, true)
 
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)

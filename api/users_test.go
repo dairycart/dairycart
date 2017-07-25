@@ -52,7 +52,7 @@ func setExpectationsForUserExistenceByID(mock sqlmock.Sqlmock, id string, exists
 
 func setExpectationsForUserCreation(mock sqlmock.Sqlmock, u *User, err error) {
 	// can't expect args here because we can't predict the salt/hash
-	exampleRows := sqlmock.NewRows([]string{"id"}).AddRow(u.ID)
+	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(u.ID, generateExampleTimeForTests())
 	query, _ := buildUserCreationQuery(u)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
 		WillReturnRows(exampleRows).
@@ -108,7 +108,7 @@ func setExpectationsForUserRetrievalByID(mock sqlmock.Sqlmock, userID uint64, er
 }
 
 func setExpectationsForUserUpdate(mock sqlmock.Sqlmock, u *User, passwordChanged bool, err error) {
-	exampleRows := sqlmock.NewRows(userTableHeaders).AddRow(exampleUserData...)
+	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests())
 	rawQuery, rawArgs := buildUserUpdateQuery(u, passwordChanged)
 	query := formatQueryForSQLMock(rawQuery)
 	args := argsToDriverValues(rawArgs)
@@ -119,7 +119,7 @@ func setExpectationsForUserUpdate(mock sqlmock.Sqlmock, u *User, passwordChanged
 }
 
 func setExpectationsForUserUpdateWithoutSpecifyingPassword(mock sqlmock.Sqlmock, u *User, passwordChanged bool, err error) {
-	exampleRows := sqlmock.NewRows(userTableHeaders).AddRow(exampleUserData...)
+	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests())
 	rawQuery, _ := buildUserUpdateQuery(u, passwordChanged)
 	query := formatQueryForSQLMock(rawQuery)
 	mock.ExpectQuery(query).
@@ -331,10 +331,11 @@ func TestCreateUserInDB(t *testing.T) {
 	}
 
 	setExpectationsForUserCreation(testUtil.Mock, exampleUser, nil)
-	newID, err := createUserInDB(testUtil.DB, exampleUser)
+	newID, createdOn, err := createUserInDB(testUtil.DB, exampleUser)
 
 	assert.Nil(t, err)
 	assert.Equal(t, exampleUser.ID, newID, "createProductInDB should return the created ID")
+	assert.Equal(t, exampleUser.CreatedOn, createdOn, "createProductInDB should return the created ID")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -354,7 +355,7 @@ func TestCreateUserInDBWhenErrorOccurs(t *testing.T) {
 	}
 
 	setExpectationsForUserCreation(testUtil.Mock, exampleUser, arbitraryError)
-	_, err := createUserInDB(testUtil.DB, exampleUser)
+	_, _, err := createUserInDB(testUtil.DB, exampleUser)
 
 	assert.NotNil(t, err)
 	ensureExpectationsWereMet(t, testUtil.Mock)
@@ -474,8 +475,10 @@ func TestUpdateUserInDatabase(t *testing.T) {
 	}
 	setExpectationsForUserUpdate(testUtil.Mock, exampleUser, examplePasswordChanged, nil)
 
-	err := updateUserInDatabase(testUtil.DB, exampleUser, examplePasswordChanged)
+	updatedOn, err := updateUserInDatabase(testUtil.DB, exampleUser, examplePasswordChanged)
 	assert.Nil(t, err)
+	assert.Equal(t, generateExampleTimeForTests(), updatedOn, "updateUserInDatabase should return valid updated_on time")
+
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 

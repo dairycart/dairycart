@@ -56,6 +56,7 @@ type ProductOptionValueUpdateInput struct {
 // retrieveProductOptionValue retrieves a ProductOptionValue with a given ID from the database
 func retrieveProductOptionValueFromDB(db *sqlx.DB, id uint64) (*ProductOptionValue, error) {
 	v := &ProductOptionValue{}
+	// FIXME: use sqlx instead of generateScanArgs
 	err := db.QueryRow(productOptionValueRetrievalQuery, id).Scan(v.generateScanArgs()...)
 	if err == sql.ErrNoRows {
 		return v, errors.Wrap(err, "Error querying for product option values")
@@ -74,6 +75,7 @@ func retrieveProductOptionValueForOptionFromDB(db *sqlx.DB, optionID uint64) ([]
 	defer rows.Close()
 	for rows.Next() {
 		value := ProductOptionValue{}
+		// FIXME: use sqlx instead of generateScanArgs
 		_ = rows.Scan(value.generateScanArgs()...)
 		values = append(values, value)
 	}
