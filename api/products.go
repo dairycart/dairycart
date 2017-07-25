@@ -253,6 +253,11 @@ func buildProductDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 
 		err = deleteProductBySKU(db, sku)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "archive product in database")
+			return
+		}
+
 		io.WriteString(res, fmt.Sprintf("Successfully deleted product `%s`", sku))
 	}
 }

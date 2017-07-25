@@ -130,7 +130,7 @@ func formatQueryForSQLMock(query string) string {
 
 func ensureExpectationsWereMet(t *testing.T, mock sqlmock.Sqlmock) {
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expections: %s", err)
+		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
 }
 
@@ -152,6 +152,7 @@ func buildCookieForRequest(store *sessions.CookieStore, authorized bool, admin b
 	session.Values[sessionAdminKeyName] = admin
 
 	encoded, err := securecookie.EncodeMulti(session.Name(), session.Values, store.Codecs...)
+	assert.Nil(t, err)
 	cookie := sessions.NewCookie(session.Name(), encoded, session.Options)
 
 	return cookie, nil

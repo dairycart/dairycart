@@ -239,15 +239,15 @@ func TestProductUpdateRoute(t *testing.T) {
 	}
 
 	subtests := []subtest{
-		subtest{
+		{
 			Message: "create product",
 			Test:    testProductCreation,
 		},
-		subtest{
+		{
 			Message: "update product",
 			Test:    testUpdateProduct,
 		},
-		subtest{
+		{
 			Message: "delete created product",
 			Test:    testDeleteProduct,
 		},
@@ -339,11 +339,11 @@ func TestProductCreation(t *testing.T) {
 	}
 
 	subtests := []subtest{
-		subtest{
+		{
 			Message: "create product",
 			Test:    testProductCreation,
 		},
-		subtest{
+		{
 			Message: "delete created product",
 			Test:    testDeleteProduct,
 		},
@@ -373,11 +373,11 @@ func TestProductDeletion(t *testing.T) {
 	}
 
 	subtests := []subtest{
-		subtest{
+		{
 			Message: "create product",
 			Test:    testProductCreation,
 		},
-		subtest{
+		{
 			Message: "delete created product",
 			Test:    testDeleteProduct,
 		},
@@ -528,11 +528,11 @@ func TestProductOptionCreation(t *testing.T) {
 	}
 
 	subtests := []subtest{
-		subtest{
+		{
 			Message: "create product option",
 			Test:    testProductOptionCreation,
 		},
-		subtest{
+		{
 			Message: "delete created product option",
 			Test:    testDeleteProductOption,
 		},
@@ -565,11 +565,11 @@ func TestProductOptionDeletion(t *testing.T) {
 	}
 
 	subtests := []subtest{
-		subtest{
+		{
 			Message: "create product option",
 			Test:    testProductOptionCreation,
 		},
-		subtest{
+		{
 			Message: "delete created product option",
 			Test:    testDeleteProductOption,
 		},
@@ -630,15 +630,15 @@ func TestProductOptionCreationWithAlreadyExistentName(t *testing.T) {
 	}
 
 	subtests := []subtest{
-		subtest{
+		{
 			Message: "create product option",
 			Test:    testProductOptionCreation,
 		},
-		subtest{
+		{
 			Message: "create product option again",
 			Test:    testDuplicateProductOptionCreation,
 		},
-		subtest{
+		{
 			Message: "delete created product option",
 			Test:    testDeleteProductOption,
 		},
@@ -690,15 +690,15 @@ func TestProductOptionUpdate(t *testing.T) {
 	}
 
 	subtests := []subtest{
-		subtest{
+		{
 			Message: "create product option",
 			Test:    testProductOptionCreation,
 		},
-		subtest{
+		{
 			Message: "update product option",
 			Test:    testUpdateProductOption,
 		},
-		subtest{
+		{
 			Message: "delete created product option",
 			Test:    testDeleteProductOption,
 		},
@@ -766,11 +766,11 @@ func TestProductOptionValueCreation(t *testing.T) {
 	}
 
 	subtests := []subtest{
-		subtest{
+		{
 			Message: "create product option value",
 			Test:    testCreateProductOptionValue,
 		},
-		subtest{
+		{
 			Message: "delete created product option value",
 			Test:    testDeleteProductOptionValue,
 		},
@@ -818,15 +818,15 @@ func TestProductOptionValueUpdate(t *testing.T) {
 	}
 
 	subtests := []subtest{
-		subtest{
+		{
 			Message: "create product option value",
 			Test:    testCreateProductOptionValue,
 		},
-		subtest{
+		{
 			Message: "update created product option value",
 			Test:    testUpdateProductOptionValue,
 		},
-		subtest{
+		{
 			Message: "delete created product option value",
 			Test:    testDeleteProductOptionValue,
 		},
@@ -858,11 +858,11 @@ func TestProductOptionValueDeletion(t *testing.T) {
 	}
 
 	subtests := []subtest{
-		subtest{
+		{
 			Message: "create product option value",
 			Test:    testCreateProductOptionValue,
 		},
-		subtest{
+		{
 			Message: "delete created product option value",
 			Test:    testDeleteProductOptionValue,
 		},

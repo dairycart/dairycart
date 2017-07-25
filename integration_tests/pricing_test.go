@@ -150,11 +150,11 @@ func TestDiscountCreation(t *testing.T) {
 	}
 
 	subtests := []subtest{
-		subtest{
+		{
 			Message: "create discount",
 			Test:    testCreateDiscount,
 		},
-		subtest{
+		{
 			Message: "delete created discount",
 			Test:    testDeleteDiscount,
 		},
@@ -188,11 +188,11 @@ func TestDiscountDeletion(t *testing.T) {
 	}
 
 	subtests := []subtest{
-		subtest{
+		{
 			Message: "create discount",
 			Test:    testCreateDiscount,
 		},
-		subtest{
+		{
 			Message: "delete created discount",
 			Test:    testDeleteDiscount,
 		},
@@ -272,15 +272,15 @@ func TestDiscountUpdate(t *testing.T) {
 	}
 
 	subtests := []subtest{
-		subtest{
+		{
 			Message: "create discount",
 			Test:    testCreateDiscount,
 		},
-		subtest{
+		{
 			Message: "update discount",
 			Test:    testUpdateDiscount,
 		},
-		subtest{
+		{
 			Message: "delete created discount",
 			Test:    testDeleteDiscount,
 		},

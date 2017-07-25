@@ -17,7 +17,7 @@ import (
 
 const (
 	// we can't reliably predict what the `updated_on` or `archived_on` columns could possibly equal,
-	// so we strip them out of the body becuase we're bad at programming. The (sort of) plus side to
+	// so we strip them out of the body because we're bad at programming. The (sort of) plus side to
 	// this is that we ensure our timestamps have a particular format (because if they didn't, this
 	// function, and as a consequence, the tests, would fail spectacularly).
 	// Note that this pattern needs to be run as ungreedy because of the possiblity of prefix and or
