@@ -9,6 +9,8 @@ go:
   - master
 
 before_install:
+  # install goveralls
+  - go get github.com/mattn/goveralls
   # dump this step once multi-stage builds hit stable docker
   - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
   - sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
@@ -26,4 +28,4 @@ script:
   - go test github.com/dairycart/dairycart/api -coverprofile=coverage.out -tags test
 
 after_success:
-  - bash <(curl -s https://codecov.io/bash)
+  - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
