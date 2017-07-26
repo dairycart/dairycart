@@ -23,6 +23,9 @@ guidance below.
 
 ## Changing the code-base
 
+NOTE: I'm in the process of building the API, so there are lots of features that are missing as of right now.
+I'd greatly prefer if you'd allow me some time to address those shortcomings before issuing contributions. Thank you.
+
 Generally speaking, you should fork this repository, make changes in your
 own fork, and then submit a pull-request. All new code should have associated unit
 tests that validate implemented features and the presence or lack of defects.
