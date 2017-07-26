@@ -8,7 +8,7 @@ Dairycart is currently pre-Alpha, and isn't suitable for production use as of ye
 
 ## Dependencies
 
-To run Dairycart locally, all you need is Docker, and a bash terminal. :simple-smile:
+To run Dairycart locally, all you need is Docker, and a bash terminal. :simple_smile:
 
 ## Running
 
