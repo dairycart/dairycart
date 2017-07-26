@@ -77,24 +77,23 @@ func retrieveProductOptionFromDB(db *sqlx.DB, id uint64) (*ProductOption, error)
 	return option, err
 }
 
-func getProductOptionsForProduct(db *sqlx.DB, productID uint64, queryFilter *QueryFilter) ([]ProductOption, uint64, error) {
+func getProductOptionsForProduct(db *sqlx.DB, productID uint64, queryFilter *QueryFilter) ([]ProductOption, error) {
 	var options []ProductOption
-	var count uint64
 
 	query, args := buildProductOptionListQuery(productID, queryFilter)
 	err := db.Select(&options, query, args...)
 	if err != nil {
-		return nil, 0, errors.Wrap(err, "Error encountered querying for product options")
+		return nil, errors.Wrap(err, "Error encountered querying for product options")
 	}
 
 	for _, option := range options {
 		optionValues, err := retrieveProductOptionValuesForOptionFromDB(db, option.ID)
 		if err != nil {
-			return options, 0, errors.Wrap(err, "Error retrieving product option values for option")
+			return options, errors.Wrap(err, "Error retrieving product option values for option")
 		}
 		option.Values = optionValues
 	}
-	return options, count, nil
+	return options, nil
 }
 
 func buildProductOptionListHandler(db *sqlx.DB) http.HandlerFunc {
@@ -104,7 +103,13 @@ func buildProductOptionListHandler(db *sqlx.DB) http.HandlerFunc {
 		queryFilter := parseRawFilterParams(rawFilterParams)
 		productIDInt, _ := strconv.Atoi(productID)
 
-		options, count, err := getProductOptionsForProduct(db, uint64(productIDInt), queryFilter)
+		count, err := getRowCount(db, "product_options", queryFilter)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "retrieve count of product options from the database")
+			return
+		}
+
+		options, err := getProductOptionsForProduct(db, uint64(productIDInt), queryFilter)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve products from the database")
 			return

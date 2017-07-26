@@ -331,6 +331,7 @@ func TestProductOptionListHandler(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
+	setExpectationsForRowCount(testUtil.Mock, "product_options", defaultQueryFilter, 3, nil)
 	setExpectationsForProductOptionListQuery(testUtil.Mock, exampleProductOption, nil)
 	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
 	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
@@ -347,8 +348,7 @@ func TestProductOptionListHandler(t *testing.T) {
 		ListResponse: ListResponse{
 			Page:  1,
 			Limit: 25,
-			// FIXME: use proper count queries
-			Count: 0,
+			Count: 3,
 		},
 	}
 
@@ -363,10 +363,27 @@ func TestProductOptionListHandler(t *testing.T) {
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
+func TestProductOptionListHandlerWithErrorRetrievingCount(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	setExpectationsForRowCount(testUtil.Mock, "product_options", defaultQueryFilter, 3, arbitraryError)
+
+	productOptionEndpoint := buildRoute("v1", "product", strconv.Itoa(int(exampleProduct.ID)), "options")
+	req, err := http.NewRequest(http.MethodGet, productOptionEndpoint, nil)
+	assert.Nil(t, err)
+
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
 func TestProductOptionListHandlerWithErrorsRetrievingValues(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
+	setExpectationsForRowCount(testUtil.Mock, "product_options", defaultQueryFilter, 3, nil)
 	setExpectationsForProductOptionListQuery(testUtil.Mock, exampleProductOption, nil)
 	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
 	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
@@ -385,6 +402,7 @@ func TestProductOptionListHandlerWithDBErrors(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
+	setExpectationsForRowCount(testUtil.Mock, "product_options", defaultQueryFilter, 3, nil)
 	setExpectationsForProductOptionListQuery(testUtil.Mock, exampleProductOption, arbitraryError)
 
 	productOptionEndpoint := buildRoute("v1", "product", strconv.Itoa(int(exampleProduct.ID)), "options")
