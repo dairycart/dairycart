@@ -48,6 +48,59 @@ func buildCountQuery(table string, queryFilter *QueryFilter) string {
 
 ////////////////////////////////////////////////////////
 //                                                    //
+//                   Product Roots                    //
+//                                                    //
+////////////////////////////////////////////////////////
+
+func buildProductRootCreationQuery(r *ProductRoot) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		Insert("product_roots").
+		Columns(
+			"name",
+			"subtitle",
+			"description",
+			"sku_prefix",
+			"manufacturer",
+			"brand",
+			"available_on",
+			"taxable",
+			"cost",
+			"product_weight",
+			"product_height",
+			"product_width",
+			"product_length",
+			"package_weight",
+			"package_height",
+			"package_width",
+			"package_length",
+		).
+		Values(
+			r.Name,
+			r.Subtitle.String,
+			r.Description,
+			r.SKUPrefix,
+			r.Manufacturer.String,
+			r.Brand.String,
+			r.AvailableOn,
+			r.Taxable,
+			r.Cost,
+			r.ProductWeight,
+			r.ProductHeight,
+			r.ProductWidth,
+			r.ProductLength,
+			r.PackageWeight,
+			r.PackageHeight,
+			r.PackageWidth,
+			r.PackageLength,
+		).
+		Suffix(`RETURNING id, created_on`)
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}
+
+////////////////////////////////////////////////////////
+//                                                    //
 //                     Products                       //
 //                                                    //
 ////////////////////////////////////////////////////////

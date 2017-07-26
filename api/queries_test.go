@@ -142,6 +142,31 @@ func TestBuildProductListQueryAndCompletelyCustomQueryFilter(t *testing.T) {
 	assert.Equal(t, 4, len(actualArgs), argsEqualityErrorMessage)
 }
 
+func TestBuildProductRootCreationQuery(t *testing.T) {
+	t.Parallel()
+	exampleRoot := &ProductRoot{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "Skateboard",
+		Description:   "This is a skateboard. Please wear a helmet.",
+		Cost:          50.00,
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+	}
+	expectedQuery := `INSERT INTO product_roots (name,subtitle,description,sku_prefix,manufacturer,brand,available_on,taxable,cost,product_weight,product_height,product_width,product_length,package_weight,package_height,package_width,package_length) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING id, created_on`
+	actualQuery, actualArgs := buildProductRootCreationQuery(exampleRoot)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 17, len(actualArgs), argsEqualityErrorMessage)
+}
+
 func TestBuildProductUpdateQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `UPDATE products SET cost = $1, name = $2, price = $3, quantity = $4, sku = $5, upc = $6, updated_on = NOW() WHERE id = $7 RETURNING *`

@@ -53,14 +53,15 @@ const (
 type Product struct {
 	DBRow
 	// Basic Info
-	Name         string     `json:"name"`
-	Subtitle     NullString `json:"subtitle"`
-	Description  string     `json:"description"`
-	SKU          string     `json:"sku"`
-	UPC          NullString `json:"upc"`
-	Manufacturer NullString `json:"manufacturer"`
-	Brand        NullString `json:"brand"`
-	Quantity     int        `json:"quantity"`
+	Name               string     `json:"name"`
+	Subtitle           NullString `json:"subtitle"`
+	Description        string     `json:"description"`
+	SKU                string     `json:"sku"`
+	UPC                NullString `json:"upc"`
+	Manufacturer       NullString `json:"manufacturer"`
+	Brand              NullString `json:"brand"`
+	Quantity           uint32     `json:"quantity"`
+	QuantityPerPackage uint32     `json:"quantity_per_package"`
 
 	// Pricing Fields
 	Taxable   bool    `json:"taxable"`
@@ -80,8 +81,6 @@ type Product struct {
 	PackageHeight float32 `json:"package_height"`
 	PackageWidth  float32 `json:"package_width"`
 	PackageLength float32 `json:"package_length"`
-	// TODO: change this and the other quantity field to a uint32
-	QuantityPerPackage int32 `json:"quantity_per_package"`
 
 	AvailableOn time.Time `json:"available_on"`
 }
@@ -125,14 +124,15 @@ type ProductsResponse struct {
 // ProductCreationInput is a struct that represents a product creation body
 type ProductCreationInput struct {
 	// Core Product stuff
-	Name         string `json:"name"`
-	Subtitle     string `json:"subtitle"`
-	Description  string `json:"description"`
-	SKU          string `json:"sku"`
-	UPC          string `json:"upc"`
-	Manufacturer string `json:"manufacturer"`
-	Brand        string `json:"brand"`
-	Quantity     int    `json:"quantity"`
+	ProductRootID uint64 `json:"product_root_id"`
+	Name          string `json:"name"`
+	Subtitle      string `json:"subtitle"`
+	Description   string `json:"description"`
+	SKU           string `json:"sku"`
+	UPC           string `json:"upc"`
+	Manufacturer  string `json:"manufacturer"`
+	Brand         string `json:"brand"`
+	Quantity      uint32 `json:"quantity"`
 
 	// Pricing Fields
 	Taxable   bool    `json:"taxable"`
@@ -152,7 +152,7 @@ type ProductCreationInput struct {
 	PackageHeight      float32 `json:"package_height"`
 	PackageWidth       float32 `json:"package_width"`
 	PackageLength      float32 `json:"package_length"`
-	QuantityPerPackage int32   `json:"quantity_per_package"`
+	QuantityPerPackage uint32  `json:"quantity_per_package"`
 
 	AvailableOn time.Time `json:"available_on"`
 
