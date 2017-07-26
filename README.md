@@ -9,6 +9,8 @@ Dairycart is currently pre-Alpha, and isn't suitable for production use as of ye
 ## Dependencies
 
 To run Dairycart locally, all you need is Docker, and a bash terminal. :simple_smile:
+For development purposes, it is helpful to have the latest version of Golang installed. If this
+becomes a pain point, I may end up dockerizing the tools themselves so that only Docker is required.
 
 ## Running
 
