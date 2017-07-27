@@ -31,6 +31,7 @@ func createProductCreationBody(sku string, upc string) string {
 			"manufacturer": "Manufacturer",
 			"brand": "Brand",
 			"quantity": 123,
+			"quantity_per_package": 3,
 			"taxable": false,
 			"price": 12.34,
 			"on_sale": true,
@@ -43,8 +44,7 @@ func createProductCreationBody(sku string, upc string) string {
 			"package_weight": 9,
 			"package_height": 9,
 			"package_width": 9,
-			"package_length": 9,
-			"quantity_per_package": 3
+			"package_length": 9
 		}
 	`
 	return fmt.Sprintf(bodyTemplate, sku, upcPart)
@@ -126,16 +126,19 @@ func TestProductRetrievalRoute(t *testing.T) {
 
 	body := turnResponseBodyIntoString(t, resp)
 	actual := cleanAPIResponseBody(body)
-	expected := minifyJSON(t, `
+	expected := minifyJSON(t, fmt.Sprintf(`
 		{
+			"product_root_id": 1,
 			"name": "Your Favorite Band's T-Shirt",
 			"subtitle": "A t-shirt you can wear",
 			"description": "Wear this if you'd like. Or don't, I'm not in charge of your actions",
-			"sku": "t-shirt",
+			"option_summary": "Size: Small, Color: Red",
+			"sku": "%s",
 			"upc": "",
 			"manufacturer": "Record Company",
 			"brand": "Your Favorite Band",
 			"quantity": 666,
+			"quantity_per_package": 1,
 			"taxable": true,
 			"price": 20,
 			"on_sale": false,
@@ -148,10 +151,9 @@ func TestProductRetrievalRoute(t *testing.T) {
 			"package_weight": 1,
 			"package_height": 5,
 			"package_width": 5,
-			"package_length": 5,
-			"quantity_per_package": 1
+			"package_length": 5
 		}
-	`)
+	`, existentSKU))
 	assert.Equal(t, expected, actual, "product retrieval response should contain a complete product")
 }
 
@@ -187,12 +189,15 @@ func TestProductListRouteWithCustomFilter(t *testing.T) {
 func TestProductUpdateRoute(t *testing.T) {
 	t.Parallel()
 	testSKU := "test-product-updating"
+	var productRootID uint64
 
 	testProductCreation := func(t *testing.T) {
 		newProductJSON := createProductCreationBody(testSKU, "")
 		resp, err := createProduct(newProductJSON)
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product that doesn't exist should respond 201")
+		body := turnResponseBodyIntoString(t, resp)
+		productRootID = retrieveProductRootIDFromResponseBody(body, t)
 	}
 
 	testUpdateProduct := func(t *testing.T) {
@@ -203,16 +208,19 @@ func TestProductUpdateRoute(t *testing.T) {
 
 		body := turnResponseBodyIntoString(t, resp)
 		actual := cleanAPIResponseBody(body)
-		expected := minifyJSON(t, `
+		expected := minifyJSON(t, fmt.Sprintf(`
 			{
+				"product_root_id": %d,
 				"name": "New Product",
 				"subtitle": "this is a product",
 				"description": "this product is neat or maybe its not who really knows for sure?",
+				"option_summary": "",
 				"sku": "test-product-updating",
 				"upc": "",
 				"manufacturer": "Manufacturer",
 				"brand": "Brand",
 				"quantity": 666,
+				"quantity_per_package": 3,
 				"taxable": false,
 				"price": 12.34,
 				"on_sale": true,
@@ -225,10 +233,9 @@ func TestProductUpdateRoute(t *testing.T) {
 				"package_weight": 9,
 				"package_height": 9,
 				"package_width": 9,
-				"package_length": 9,
-				"quantity_per_package": 3
+				"package_length": 9
 			}
-		`)
+		`, productRootID))
 		assert.Equal(t, expected, actual, "product response upon update should reflect the updated fields")
 	}
 
@@ -301,18 +308,22 @@ func TestProductCreation(t *testing.T) {
 		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product that doesn't exist should respond 201")
 
 		body := turnResponseBodyIntoString(t, resp)
+		productRootID := retrieveProductRootIDFromResponseBody(body, t)
 
 		actual := cleanAPIResponseBody(body)
 		expected := minifyJSON(t, fmt.Sprintf(`
 			{
+				"product_root_id": %d,
 				"name": "New Product",
 				"subtitle": "this is a product",
 				"description": "this product is neat or maybe its not who really knows for sure?",
+				"option_summary": "",
 				"sku": "%s",
 				"upc": "0123456789",
 				"manufacturer": "Manufacturer",
 				"brand": "Brand",
 				"quantity": 123,
+				"quantity_per_package": 3,
 				"taxable": false,
 				"price": 12.34,
 				"on_sale": true,
@@ -325,10 +336,9 @@ func TestProductCreation(t *testing.T) {
 				"package_weight": 9,
 				"package_height": 9,
 				"package_width": 9,
-				"package_length": 9,
-				"quantity_per_package": 3
+				"package_length": 9
 			}
-		`, testSKU))
+		`, productRootID, testSKU))
 		assert.Equal(t, expected, actual, "product creation route should respond with created product body")
 	}
 
@@ -413,6 +423,7 @@ func TestProductCreationWithAlreadyExistentSKU(t *testing.T) {
 			"manufacturer": "Record Company",
 			"brand": "Your Favorite Band",
 			"quantity": 666,
+			"quantity_per_package": 1,
 			"taxable": true,
 			"price": 20,
 			"on_sale": false,
@@ -425,8 +436,7 @@ func TestProductCreationWithAlreadyExistentSKU(t *testing.T) {
 			"package_weight": 1,
 			"package_height": 5,
 			"package_width": 5,
-			"package_length": 5,
-			"quantity_per_package": 1
+			"package_length": 5
 		}
 	`
 	resp, err := createProduct(existentProductJSON)
@@ -503,7 +513,7 @@ func TestProductOptionCreation(t *testing.T) {
 		expected := minifyJSON(t, fmt.Sprintf(`
 			{
 				"name": "%s",
-				"product_id": 1,
+				"product_root_id": 1,
 				"values": [
 					{
 						"product_option_id": %d,
@@ -673,7 +683,7 @@ func TestProductOptionUpdate(t *testing.T) {
 		expected := minifyJSON(t, `
 			{
 				"name": "not_the_same",
-				"product_id": 1,
+				"product_root_id": 1,
 				"values": null
 			}
 		`)

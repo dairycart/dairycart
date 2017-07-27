@@ -413,8 +413,8 @@ func TestRowExistsInDBWhenDBThrowsError(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	setExpectationsForProductExistence(testUtil.Mock, exampleSKU, true, sql.ErrNoRows)
-	exists, err := rowExistsInDB(testUtil.DB, skuExistenceQuery, exampleSKU)
+	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleSKU, true, sql.ErrNoRows)
+	exists, err := rowExistsInDB(testUtil.DB, productRootSkuExistenceQuery, exampleSKU)
 
 	assert.Nil(t, err)
 	assert.False(t, exists)
@@ -425,8 +425,8 @@ func TestRowExistsInDBForExistingRow(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	setExpectationsForProductExistence(testUtil.Mock, exampleSKU, true, nil)
-	exists, err := rowExistsInDB(testUtil.DB, skuExistenceQuery, exampleSKU)
+	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleSKU, true, nil)
+	exists, err := rowExistsInDB(testUtil.DB, productRootSkuExistenceQuery, exampleSKU)
 
 	assert.Nil(t, err)
 	assert.True(t, exists)
@@ -437,8 +437,8 @@ func TestRowExistsInDBForNonexistentRow(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	setExpectationsForProductExistence(testUtil.Mock, exampleSKU, false, nil)
-	exists, err := rowExistsInDB(testUtil.DB, skuExistenceQuery, exampleSKU)
+	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleSKU, false, nil)
+	exists, err := rowExistsInDB(testUtil.DB, productRootSkuExistenceQuery, exampleSKU)
 
 	assert.Nil(t, err)
 	assert.False(t, exists)

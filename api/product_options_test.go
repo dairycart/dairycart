@@ -46,25 +46,25 @@ func init() {
 			ID:        123,
 			CreatedOn: generateExampleTimeForTests(),
 		},
-		Name:      "something",
-		ProductID: 2, // == exampleProductID
+		Name:          "something",
+		ProductRootID: 2,
 	}
 	exampleUpdatedProductOption = &ProductOption{
 		DBRow: DBRow{
 			ID: exampleProductOption.ID,
 		},
-		Name:      "something else",
-		ProductID: exampleProductOption.ProductID,
+		Name:          "something else",
+		ProductRootID: exampleProductOption.ProductRootID,
 	}
-	productOptionHeaders = []string{"id", "name", "product_id", "created_on", "updated_on", "archived_on"}
+	productOptionHeaders = []string{"id", "name", "product_root_id", "created_on", "updated_on", "archived_on"}
 
 	expectedCreatedProductOption = &ProductOption{
 		DBRow: DBRow{
 			ID:        exampleProductOption.ID,
 			CreatedOn: generateExampleTimeForTests(),
 		},
-		Name:      "something",
-		ProductID: exampleProductOption.ProductID,
+		Name:          "something",
+		ProductRootID: exampleProductOption.ProductRootID,
 		Values: []ProductOptionValue{
 			{
 				DBRow: DBRow{
@@ -118,7 +118,7 @@ func setExpectationsForProductOptionExistenceByName(mock sqlmock.Sqlmock, a *Pro
 
 func setExpectationsForProductOptionRetrievalQuery(mock sqlmock.Sqlmock, a *ProductOption, err error) {
 	exampleRows := sqlmock.NewRows(productOptionHeaders).
-		AddRow([]driver.Value{a.ID, a.Name, a.ProductID, generateExampleTimeForTests(), nil, nil}...)
+		AddRow([]driver.Value{a.ID, a.Name, a.ProductRootID, generateExampleTimeForTests(), nil, nil}...)
 	query := formatQueryForSQLMock(productOptionRetrievalQuery)
 	mock.ExpectQuery(query).
 		WithArgs(a.ID).
@@ -127,10 +127,10 @@ func setExpectationsForProductOptionRetrievalQuery(mock sqlmock.Sqlmock, a *Prod
 }
 
 func setExpectationsForProductOptionListQuery(mock sqlmock.Sqlmock, a *ProductOption, err error) {
-	exampleRows := sqlmock.NewRows([]string{"id", "name", "product_id", "created_on", "updated_on", "archived_on"}).
-		AddRow([]driver.Value{a.ID, a.Name, a.ProductID, generateExampleTimeForTests(), nil, nil}...).
-		AddRow([]driver.Value{a.ID, a.Name, a.ProductID, generateExampleTimeForTests(), nil, nil}...).
-		AddRow([]driver.Value{a.ID, a.Name, a.ProductID, generateExampleTimeForTests(), nil, nil}...)
+	exampleRows := sqlmock.NewRows([]string{"id", "name", "product_root_id", "created_on", "updated_on", "archived_on"}).
+		AddRow([]driver.Value{a.ID, a.Name, a.ProductRootID, generateExampleTimeForTests(), nil, nil}...).
+		AddRow([]driver.Value{a.ID, a.Name, a.ProductRootID, generateExampleTimeForTests(), nil, nil}...).
+		AddRow([]driver.Value{a.ID, a.Name, a.ProductRootID, generateExampleTimeForTests(), nil, nil}...)
 	query, _ := buildProductOptionListQuery(exampleProductID, defaultQueryFilter)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
 		WillReturnRows(exampleRows).
@@ -251,7 +251,7 @@ func TestCreateProductOptionAndValuesInDBFromInputWithIssueCreatingOption(t *tes
 	tx, err := testUtil.DB.Begin()
 	assert.Nil(t, err)
 
-	_, err = createProductOptionAndValuesInDBFromInput(tx, exampleProductOptionInput, expectedCreatedProductOption.ProductID)
+	_, err = createProductOptionAndValuesInDBFromInput(tx, exampleProductOptionInput, expectedCreatedProductOption.ProductRootID)
 	assert.NotNil(t, err)
 
 	err = tx.Commit()
@@ -272,7 +272,7 @@ func TestCreateProductOptionAndValuesInDBFromInputWithIssueCreatingOptionValue(t
 	tx, err := testUtil.DB.Begin()
 	assert.Nil(t, err)
 
-	_, err = createProductOptionAndValuesInDBFromInput(tx, exampleProductOptionInput, expectedCreatedProductOption.ProductID)
+	_, err = createProductOptionAndValuesInDBFromInput(tx, exampleProductOptionInput, expectedCreatedProductOption.ProductRootID)
 	assert.NotNil(t, err)
 
 	err = tx.Commit()
@@ -418,8 +418,8 @@ func TestProductOptionCreationHandler(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	productIDString := strconv.Itoa(int(exampleProductOption.ProductID))
-	setExpectationsForProductExistenceByID(testUtil.Mock, productIDString, true, nil)
+	productIDString := strconv.Itoa(int(exampleProductOption.ProductRootID))
+	setExpectationsForProductRootExistence(testUtil.Mock, productIDString, true, nil)
 	setExpectationsForProductOptionExistenceByName(testUtil.Mock, expectedCreatedProductOption, productIDString, false, nil)
 	testUtil.Mock.ExpectBegin()
 	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProductID, nil)
@@ -441,8 +441,8 @@ func TestProductOptionCreationHandlerFailureToSetupTransaction(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	productIDString := strconv.Itoa(int(exampleProductOption.ProductID))
-	setExpectationsForProductExistenceByID(testUtil.Mock, productIDString, true, nil)
+	productIDString := strconv.Itoa(int(exampleProductOption.ProductRootID))
+	setExpectationsForProductRootExistence(testUtil.Mock, productIDString, true, nil)
 	setExpectationsForProductOptionExistenceByName(testUtil.Mock, expectedCreatedProductOption, productIDString, false, nil)
 	testUtil.Mock.ExpectBegin().WillReturnError(arbitraryError)
 
@@ -459,8 +459,8 @@ func TestProductOptionCreationHandlerFailureToCommitTransaction(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	productIDString := strconv.Itoa(int(exampleProductOption.ProductID))
-	setExpectationsForProductExistenceByID(testUtil.Mock, productIDString, true, nil)
+	productIDString := strconv.Itoa(int(exampleProductOption.ProductRootID))
+	setExpectationsForProductRootExistence(testUtil.Mock, productIDString, true, nil)
 	setExpectationsForProductOptionExistenceByName(testUtil.Mock, expectedCreatedProductOption, productIDString, false, nil)
 	testUtil.Mock.ExpectBegin()
 	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProductID, nil)
@@ -482,8 +482,8 @@ func TestProductOptionCreationHandlerWhenOptionWithTheSameNameCheckReturnsNoRows
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	productIDString := strconv.Itoa(int(exampleProductOption.ProductID))
-	setExpectationsForProductExistenceByID(testUtil.Mock, productIDString, true, nil)
+	productIDString := strconv.Itoa(int(exampleProductOption.ProductRootID))
+	setExpectationsForProductRootExistence(testUtil.Mock, productIDString, true, nil)
 	setExpectationsForProductOptionExistenceByName(testUtil.Mock, expectedCreatedProductOption, productIDString, false, sql.ErrNoRows)
 	testUtil.Mock.ExpectBegin()
 	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProductID, nil)
@@ -505,8 +505,8 @@ func TestProductOptionCreationHandlerWithNonExistentProduct(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	productIDString := strconv.Itoa(int(exampleProductOption.ProductID))
-	setExpectationsForProductExistenceByID(testUtil.Mock, productIDString, false, nil)
+	productIDString := strconv.Itoa(int(exampleProductOption.ProductRootID))
+	setExpectationsForProductRootExistence(testUtil.Mock, productIDString, false, nil)
 
 	productOptionEndpoint := buildRoute("v1", "product", productIDString, "options")
 	req, err := http.NewRequest(http.MethodPost, productOptionEndpoint, strings.NewReader(exampleProductOptionCreationBody))
@@ -521,8 +521,8 @@ func TestProductOptionCreationHandlerWithInvalidOptionCreationInput(t *testing.T
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	productIDString := strconv.Itoa(int(exampleProductOption.ProductID))
-	setExpectationsForProductExistenceByID(testUtil.Mock, productIDString, true, nil)
+	productIDString := strconv.Itoa(int(exampleProductOption.ProductRootID))
+	setExpectationsForProductRootExistence(testUtil.Mock, productIDString, true, nil)
 
 	productOptionEndpoint := buildRoute("v1", "product", productIDString, "options")
 	req, err := http.NewRequest(http.MethodPost, productOptionEndpoint, strings.NewReader(exampleGarbageInput))
@@ -537,8 +537,8 @@ func TestProductOptionCreationHandlerWhenOptionWithTheSameNameExists(t *testing.
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	productIDString := strconv.Itoa(int(exampleProductOption.ProductID))
-	setExpectationsForProductExistenceByID(testUtil.Mock, productIDString, true, nil)
+	productIDString := strconv.Itoa(int(exampleProductOption.ProductRootID))
+	setExpectationsForProductRootExistence(testUtil.Mock, productIDString, true, nil)
 	setExpectationsForProductOptionExistenceByName(testUtil.Mock, expectedCreatedProductOption, productIDString, true, nil)
 
 	productOptionEndpoint := buildRoute("v1", "product", productIDString, "options")
@@ -554,8 +554,8 @@ func TestProductOptionCreationHandlerWithProblemsCreatingOption(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	productIDString := strconv.Itoa(int(exampleProductOption.ProductID))
-	setExpectationsForProductExistenceByID(testUtil.Mock, productIDString, true, nil)
+	productIDString := strconv.Itoa(int(exampleProductOption.ProductRootID))
+	setExpectationsForProductRootExistence(testUtil.Mock, productIDString, true, nil)
 	setExpectationsForProductOptionExistenceByName(testUtil.Mock, expectedCreatedProductOption, productIDString, false, nil)
 
 	testUtil.Mock.ExpectBegin()

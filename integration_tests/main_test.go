@@ -29,7 +29,7 @@ const (
 
 	existentID     = "1"
 	nonexistentID  = "999999999"
-	existentSKU    = "t-shirt"
+	existentSKU    = "t-shirt-small-red"
 	nonexistentSKU = "nonexistent"
 
 	exampleGarbageInput           = `{"testing_garbage_input": true}`
@@ -88,6 +88,18 @@ func minifyJSON(t *testing.T, jsonBody string) string {
 func retrieveIDFromResponseBody(body string, t *testing.T) uint64 {
 	idContainer := struct {
 		ID uint64 `json:"id"`
+	}{}
+	err := json.Unmarshal([]byte(body), &idContainer)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, idContainer)
+	assert.NotZero(t, idContainer.ID, fmt.Sprintf("ID should not be zero, body is:\n%s", body))
+
+	return idContainer.ID
+}
+
+func retrieveProductRootIDFromResponseBody(body string, t *testing.T) uint64 {
+	idContainer := struct {
+		ID uint64 `json:"product_root_id"`
 	}{}
 	err := json.Unmarshal([]byte(body), &idContainer)
 	assert.Nil(t, err)

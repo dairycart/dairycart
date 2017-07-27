@@ -57,6 +57,7 @@ type Product struct {
 	Name               string     `json:"name"`
 	Subtitle           NullString `json:"subtitle"`
 	Description        string     `json:"description"`
+	OptionSummary      string     `json:"option_summary"`
 	SKU                string     `json:"sku"`
 	UPC                NullString `json:"upc"`
 	Manufacturer       NullString `json:"manufacturer"`
@@ -125,15 +126,14 @@ type ProductsResponse struct {
 // ProductCreationInput is a struct that represents a product creation body
 type ProductCreationInput struct {
 	// Core Product stuff
-	ProductRootID uint64 `json:"product_root_id"`
-	Name          string `json:"name"`
-	Subtitle      string `json:"subtitle"`
-	Description   string `json:"description"`
-	SKU           string `json:"sku"`
-	UPC           string `json:"upc"`
-	Manufacturer  string `json:"manufacturer"`
-	Brand         string `json:"brand"`
-	Quantity      uint32 `json:"quantity"`
+	Name         string `json:"name"`
+	Subtitle     string `json:"subtitle"`
+	Description  string `json:"description"`
+	SKU          string `json:"sku"`
+	UPC          string `json:"upc"`
+	Manufacturer string `json:"manufacturer"`
+	Brand        string `json:"brand"`
+	Quantity     uint32 `json:"quantity"`
 
 	// Pricing Fields
 	Taxable   bool    `json:"taxable"`
@@ -331,7 +331,7 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 
 		// can't create a product with a sku that already exists!
-		exists, err := rowExistsInDB(db, skuExistenceQuery, productInput.SKU)
+		exists, err := rowExistsInDB(db, productRootSkuExistenceQuery, productInput.SKU)
 		if err != nil || exists {
 			notifyOfInvalidRequestBody(res, fmt.Errorf("product with sku '%s' already exists", productInput.SKU))
 			return
@@ -344,6 +344,19 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 
 		newProduct := newProductFromCreationInput(productInput)
+		productRoot := createProductRootFromProduct(newProduct)
+		newProductRootID, newProductRootCreatedOn, err := createProductRootInDB(tx, productRoot)
+		if err != nil {
+			tx.Rollback()
+			notifyOfInternalIssue(res, err, "insert product options and values in database")
+			return
+		}
+		productRoot.ID = newProductRootID
+		productRoot.CreatedOn = newProductRootCreatedOn
+		newProduct.ProductRootID = newProductRootID
+
+		// FIXME: implement this
+		// if len(productInput.Options) == 0 {
 		newProductID, createdOn, err := createProductInDB(tx, newProduct)
 		if err != nil {
 			tx.Rollback()
@@ -352,6 +365,7 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 		newProduct.ID = newProductID
 		newProduct.CreatedOn = createdOn
+		// }
 
 		for _, optionAndValues := range productInput.Options {
 			_, err = createProductOptionAndValuesInDBFromInput(tx, optionAndValues, newProduct.ID)

@@ -1,14 +1,16 @@
 package main
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 )
 
 const (
-	productRootExistenceQuery = `SELECT EXISTS(SELECT 1 FROM product_roots WHERE id = $1 AND archived_on IS NULL)`
-	productRootRetrievalQuery = `SELECT * FROM product_roots WHERE id = $1`
+	productRootSkuExistenceQuery = `SELECT EXISTS(SELECT 1 FROM product_roots WHERE sku_prefix = $1 AND archived_on IS NULL)`
+	productRootExistenceQuery    = `SELECT EXISTS(SELECT 1 FROM product_roots WHERE id = $1 AND archived_on IS NULL)`
+	productRootRetrievalQuery    = `SELECT * FROM product_roots WHERE id = $1`
 )
 
 // ProductRoot represents the object that products inherit from
@@ -66,7 +68,7 @@ func createProductRootFromProduct(p *Product) *ProductRoot {
 	return r
 }
 
-func createProductRootInDB(tx *sqlx.Tx, r *ProductRoot) (uint64, time.Time, error) {
+func createProductRootInDB(tx *sql.Tx, r *ProductRoot) (uint64, time.Time, error) {
 	var newRootID uint64
 	var createdOn time.Time
 	// using QueryRow instead of Exec because we want it to return the newly created row's ID

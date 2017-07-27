@@ -1063,8 +1063,9 @@ func TestProductCreationHandler(t *testing.T) {
 		Name:          "Skateboard",
 		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
 		Quantity:      123,
-		Price:         99.99,
-		Cost:          50.00,
+		Price:         12.34,
+		Cost:          5,
+		Taxable:       true,
 		Description:   "This is a skateboard. Please wear a helmet.",
 		ProductWeight: 8,
 		ProductHeight: 7,
@@ -1074,8 +1075,8 @@ func TestProductCreationHandler(t *testing.T) {
 		PackageHeight: 3,
 		PackageWidth:  2,
 		PackageLength: 1,
-		AvailableOn:   generateExampleTimeForTests(),
 	}
+	exampleRoot := createProductRootFromProduct(exampleProduct)
 
 	exampleProductCreationInputWithOptions := `
 		{
@@ -1105,32 +1106,11 @@ func TestProductCreationHandler(t *testing.T) {
 			}]
 		}
 	`
-	expectedProduct := &Product{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		Name:          "Skateboard",
-		SKU:           "skateboard",
-		Price:         lolFloats,
-		Cost:          5,
-		Taxable:       true,
-		Description:   "This is a skateboard. Please wear a helmet.",
-		ProductWeight: 8,
-		ProductHeight: 7,
-		ProductWidth:  6,
-		ProductLength: 5,
-		PackageWeight: 4,
-		PackageHeight: 3,
-		PackageWidth:  2,
-		PackageLength: 1,
-		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
-		Quantity:      123,
-	}
 
-	setExpectationsForProductExistence(testUtil.Mock, "skateboard", false, nil)
+	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleProduct.SKU, false, nil)
 	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductCreation(testUtil.Mock, expectedProduct, nil)
+	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, nil)
+	setExpectationsForProductCreation(testUtil.Mock, exampleProduct, nil)
 	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProduct.ID, nil)
 	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[0], nil)
 	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[1], nil)
@@ -1145,7 +1125,7 @@ func TestProductCreationHandler(t *testing.T) {
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
-func TestProductCreationHandlerWithErrorvalidatingInput(t *testing.T) {
+func TestProductCreationHandlerWithErrorValidatingInput(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
@@ -1160,29 +1140,6 @@ func TestProductCreationHandlerWithErrorvalidatingInput(t *testing.T) {
 func TestProductCreationHandlerWhereCommitReturnsAnError(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProduct := &Product{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		SKU:           "skateboard",
-		Name:          "Skateboard",
-		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
-		Quantity:      123,
-		Price:         99.99,
-		Cost:          50.00,
-		Description:   "This is a skateboard. Please wear a helmet.",
-		ProductWeight: 8,
-		ProductHeight: 7,
-		ProductWidth:  6,
-		ProductLength: 5,
-		PackageWeight: 4,
-		PackageHeight: 3,
-		PackageWidth:  2,
-		PackageLength: 1,
-		AvailableOn:   generateExampleTimeForTests(),
-	}
-
 	exampleProductCreationInputWithOptions := `
 		{
 			"sku": "skateboard",
@@ -1211,7 +1168,7 @@ func TestProductCreationHandlerWhereCommitReturnsAnError(t *testing.T) {
 			}]
 		}
 	`
-	expectedProduct := &Product{
+	exampleProduct := &Product{
 		DBRow: DBRow{
 			ID:        2,
 			CreatedOn: generateExampleTimeForTests(),
@@ -1233,10 +1190,12 @@ func TestProductCreationHandlerWhereCommitReturnsAnError(t *testing.T) {
 		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
 		Quantity:      123,
 	}
+	exampleRoot := createProductRootFromProduct(exampleProduct)
 
-	setExpectationsForProductExistence(testUtil.Mock, "skateboard", false, nil)
+	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleProduct.SKU, false, nil)
 	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductCreation(testUtil.Mock, expectedProduct, nil)
+	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, nil)
+	setExpectationsForProductCreation(testUtil.Mock, exampleProduct, nil)
 	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProduct.ID, nil)
 	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[0], nil)
 	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[1], nil)
@@ -1283,10 +1242,71 @@ func TestProductCreationHandlerWhereTransactionFailsToBegin(t *testing.T) {
 			}]
 		}
 	`
-	setExpectationsForProductExistence(testUtil.Mock, "skateboard", false, nil)
+	setExpectationsForProductRootSKUExistence(testUtil.Mock, "skateboard", false, nil)
 	testUtil.Mock.ExpectBegin().WillReturnError(arbitraryError)
 
 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestProductCreationHandlerWithErrorCreatingProductRoot(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:           "skateboard",
+		Name:          "Skateboard",
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
+		Price:         12.34,
+		Cost:          5,
+		Taxable:       true,
+		Description:   "This is a skateboard. Please wear a helmet.",
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+	}
+	exampleRoot := createProductRootFromProduct(exampleProduct)
+
+	exampleProductCreationInput := `
+		{
+			"sku": "skateboard",
+			"name": "Skateboard",
+			"upc": "1234567890",
+			"quantity": 123,
+			"price": 12.34,
+			"cost": 5,
+			"description": "This is a skateboard. Please wear a helmet.",
+			"taxable": true,
+			"product_weight": 8,
+			"product_height": 7,
+			"product_width": 6,
+			"product_length": 5,
+			"package_weight": 4,
+			"package_height": 3,
+			"package_width": 2,
+			"package_length": 1
+		}
+	`
+
+	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleProduct.SKU, false, nil)
+	testUtil.Mock.ExpectBegin()
+	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, arbitraryError)
+	testUtil.Mock.ExpectRollback()
+
+	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInput))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
@@ -1318,7 +1338,7 @@ func TestProductCreationHandlerWithoutOptions(t *testing.T) {
 			"package_length": 1
 		}
 	`
-	expectedProduct := &Product{
+	exampleProduct := &Product{
 		DBRow: DBRow{
 			ID:        2,
 			CreatedOn: generateExampleTimeForTests(),
@@ -1340,11 +1360,12 @@ func TestProductCreationHandlerWithoutOptions(t *testing.T) {
 		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
 		Quantity:      123,
 	}
+	exampleRoot := createProductRootFromProduct(exampleProduct)
 
-	setExpectationsForProductExistence(testUtil.Mock, "skateboard", false, nil)
-
+	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleProduct.SKU, false, nil)
 	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductCreation(testUtil.Mock, expectedProduct, nil)
+	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, nil)
+	setExpectationsForProductCreation(testUtil.Mock, exampleProduct, nil)
 	testUtil.Mock.ExpectCommit()
 
 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInput))
@@ -1391,7 +1412,7 @@ func TestProductCreationHandlerForAlreadyExistentProduct(t *testing.T) {
 			"package_length": 1
 		}
 	`
-	setExpectationsForProductExistence(testUtil.Mock, "skateboard", true, nil)
+	setExpectationsForProductRootSKUExistence(testUtil.Mock, "skateboard", true, nil)
 
 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInput))
 	assert.Nil(t, err)
@@ -1426,6 +1447,7 @@ func TestProductCreationHandlerWithErrorCreatingOptions(t *testing.T) {
 		PackageLength: 1,
 		AvailableOn:   generateExampleTimeForTests(),
 	}
+	exampleRoot := createProductRootFromProduct(exampleProduct)
 
 	exampleProductCreationInputWithOptions := fmt.Sprintf(`
 		{
@@ -1456,8 +1478,9 @@ func TestProductCreationHandlerWithErrorCreatingOptions(t *testing.T) {
 		}
 	`, exampleTimeAvailableString)
 
-	setExpectationsForProductExistence(testUtil.Mock, "skateboard", false, nil)
+	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleProduct.SKU, false, nil)
 	testUtil.Mock.ExpectBegin()
+	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, nil)
 	setExpectationsForProductCreation(testUtil.Mock, exampleProduct, nil)
 	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProductID, arbitraryError)
 	testUtil.Mock.ExpectRollback()
@@ -1473,7 +1496,6 @@ func TestProductCreationHandlerWithErrorCreatingOptions(t *testing.T) {
 func TestProductCreationHandlerWhereProductCreationFails(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-
 	exampleProductCreationInput := `
 		{
 			"sku": "skateboard",
@@ -1494,7 +1516,7 @@ func TestProductCreationHandlerWhereProductCreationFails(t *testing.T) {
 			"package_length": 1
 		}
 	`
-	expectedProduct := &Product{
+	exampleProduct := &Product{
 		DBRow: DBRow{
 			ID:        2,
 			CreatedOn: generateExampleTimeForTests(),
@@ -1516,10 +1538,12 @@ func TestProductCreationHandlerWhereProductCreationFails(t *testing.T) {
 		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
 		Quantity:      123,
 	}
+	exampleRoot := createProductRootFromProduct(exampleProduct)
 
-	setExpectationsForProductExistence(testUtil.Mock, "skateboard", false, nil)
+	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleProduct.SKU, false, nil)
 	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductCreation(testUtil.Mock, expectedProduct, arbitraryError)
+	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, nil)
+	setExpectationsForProductCreation(testUtil.Mock, exampleProduct, arbitraryError)
 	testUtil.Mock.ExpectRollback()
 
 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInput))

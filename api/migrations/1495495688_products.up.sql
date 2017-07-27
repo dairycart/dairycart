@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS products (
     "name" text NOT NULL,
     "subtitle" text,
     "description" text NOT NULL,
+    "option_summary" text NOT NULL,
     "sku" text NOT NULL,
     "upc" text,
     "manufacturer" text,
@@ -68,13 +69,13 @@ CREATE TABLE IF NOT EXISTS products (
 CREATE TABLE IF NOT EXISTS product_options (
     "id" bigserial,
     "name" text NOT NULL,
-    "product_id" bigint NOT NULL,
+    "product_root_id" bigint NOT NULL,
     "created_on" timestamp DEFAULT NOW(),
     "updated_on" timestamp,
     "archived_on" timestamp,
-    UNIQUE ("product_id", "name"),
+    UNIQUE ("product_root_id", "name"),
     PRIMARY KEY ("id"),
-    FOREIGN KEY ("product_id") REFERENCES "products"("id")
+    FOREIGN KEY ("product_root_id") REFERENCES "product_roots"("id")
 );
 
 CREATE TABLE IF NOT EXISTS product_option_values (

@@ -10,6 +10,14 @@ import (
 	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
+func setExpectationsForProductRootSKUExistence(mock sqlmock.Sqlmock, SKU string, exists bool, err error) {
+	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
+	mock.ExpectQuery(formatQueryForSQLMock(productRootSkuExistenceQuery)).
+		WithArgs(SKU).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
 func setExpectationsForProductRootExistence(mock sqlmock.Sqlmock, id string, exists bool, err error) {
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
 	query := formatQueryForSQLMock(productRootExistenceQuery)
@@ -151,7 +159,7 @@ func TestCreateProductRootInDB(t *testing.T) {
 	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, nil)
 	testUtil.Mock.ExpectCommit()
 
-	tx, err := testUtil.DB.Beginx()
+	tx, err := testUtil.DB.Begin()
 	assert.Nil(t, err)
 
 	newRootID, createdOn, err := createProductRootInDB(tx, exampleRoot)

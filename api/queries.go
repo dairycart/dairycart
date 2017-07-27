@@ -146,9 +146,11 @@ func buildProductCreationQuery(p *Product) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 
 	columns := []string{
+		"product_root_id",
 		"name",
 		"subtitle",
 		"description",
+		"option_summary",
 		"sku",
 		"manufacturer",
 		"brand",
@@ -172,9 +174,11 @@ func buildProductCreationQuery(p *Product) (string, []interface{}) {
 	}
 
 	values := []interface{}{
+		p.ProductRootID,
 		p.Name,
 		p.Subtitle.String,
 		p.Description,
+		p.OptionSummary,
 		p.SKU,
 		p.Manufacturer.String,
 		p.Brand.String,
@@ -217,12 +221,12 @@ func buildProductCreationQuery(p *Product) (string, []interface{}) {
 //                                                    //
 ////////////////////////////////////////////////////////
 
-func buildProductOptionListQuery(productID uint64, queryFilter *QueryFilter) (string, []interface{}) {
+func buildProductOptionListQuery(productRootID uint64, queryFilter *QueryFilter) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Select(productOptionsHeaders).
 		From("product_options").
-		Where(squirrel.Eq{"product_id": productID}).
+		Where(squirrel.Eq{"product_root_id": productRootID}).
 		Where(squirrel.Eq{"archived_on": nil})
 	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter, true)
 	query, args, _ := queryBuilder.ToSql()
@@ -244,12 +248,12 @@ func buildProductOptionUpdateQuery(a *ProductOption) (string, []interface{}) {
 	return query, args
 }
 
-func buildProductOptionCreationQuery(a *ProductOption, productID uint64) (string, []interface{}) {
+func buildProductOptionCreationQuery(a *ProductOption, productRootID uint64) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Insert("product_options").
-		Columns("name", "product_id").
-		Values(a.Name, productID).
+		Columns("name", "product_root_id").
+		Values(a.Name, productRootID).
 		Suffix(`RETURNING id, created_on`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
