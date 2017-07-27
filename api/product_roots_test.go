@@ -1,7 +1,7 @@
 package main
 
 import (
-	"database/sql/driver"
+	"database/sql"
 	"strconv"
 	"testing"
 
@@ -9,13 +9,6 @@ import (
 
 	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
-
-var productRootHeaders []string
-var exampleRootData []driver.Value
-
-func init() {
-	productRootHeaders = []string{"id", "name", "description", "taxable", "price", "cost", "product_weight", "product_height", "product_width", "product_length", "package_weight", "package_height", "package_width", "package_length", "created_on", "updated_on", "archived_on"}
-}
 
 func setExpectationsForProductRootExistence(mock sqlmock.Sqlmock, id string, exists bool, err error) {
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
@@ -85,6 +78,52 @@ func setupExpectationsForProductRootRetrieval(mock sqlmock.Sqlmock, r *ProductRo
 		WithArgs(r.ID).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
+}
+
+func TestCreateProductRootFromProduct(t *testing.T) {
+	exampleInput := &Product{
+		Name:               "name",
+		Subtitle:           NullString{sql.NullString{String: "subtitle", Valid: true}},
+		Description:        "description",
+		SKU:                "sku",
+		Manufacturer:       NullString{sql.NullString{String: "mfgr", Valid: true}},
+		Brand:              NullString{sql.NullString{String: "brand", Valid: true}},
+		QuantityPerPackage: 666,
+		Taxable:            true,
+		Cost:               12.34,
+		ProductWeight:      1,
+		ProductHeight:      1,
+		ProductWidth:       1,
+		ProductLength:      1,
+		PackageWeight:      1,
+		PackageHeight:      1,
+		PackageWidth:       1,
+		PackageLength:      1,
+		AvailableOn:        generateExampleTimeForTests(),
+	}
+	expected := &ProductRoot{
+		Name:               "name",
+		Subtitle:           NullString{sql.NullString{String: "subtitle", Valid: true}},
+		Description:        "description",
+		SKUPrefix:          "sku",
+		Manufacturer:       NullString{sql.NullString{String: "mfgr", Valid: true}},
+		Brand:              NullString{sql.NullString{String: "brand", Valid: true}},
+		QuantityPerPackage: 666,
+		Taxable:            true,
+		Cost:               12.34,
+		ProductWeight:      1,
+		ProductHeight:      1,
+		ProductWidth:       1,
+		ProductLength:      1,
+		PackageWeight:      1,
+		PackageHeight:      1,
+		PackageWidth:       1,
+		PackageLength:      1,
+		AvailableOn:        generateExampleTimeForTests(),
+	}
+	actual := createProductRootFromProduct(exampleInput)
+
+	assert.Equal(t, expected, actual, "expected output should match actual output")
 }
 
 func TestCreateProductRootInDB(t *testing.T) {

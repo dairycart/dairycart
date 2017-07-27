@@ -53,6 +53,7 @@ const (
 type Product struct {
 	DBRow
 	// Basic Info
+	ProductRootID      uint64     `json:"product_root_id"`
 	Name               string     `json:"name"`
 	Subtitle           NullString `json:"subtitle"`
 	Description        string     `json:"description"`
@@ -96,6 +97,7 @@ func newProductFromCreationInput(in *ProductCreationInput) *Product {
 		Manufacturer:       NullString{sql.NullString{String: in.Manufacturer, Valid: true}},
 		Brand:              NullString{sql.NullString{String: in.Brand, Valid: true}},
 		Quantity:           in.Quantity,
+		QuantityPerPackage: in.QuantityPerPackage,
 		Taxable:            in.Taxable,
 		Price:              in.Price,
 		OnSale:             in.OnSale,
@@ -109,7 +111,6 @@ func newProductFromCreationInput(in *ProductCreationInput) *Product {
 		PackageHeight:      in.PackageHeight,
 		PackageWidth:       in.PackageWidth,
 		PackageLength:      in.PackageLength,
-		QuantityPerPackage: in.QuantityPerPackage,
 		AvailableOn:        in.AvailableOn,
 	}
 	return np

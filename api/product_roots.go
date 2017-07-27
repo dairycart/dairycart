@@ -16,13 +16,14 @@ type ProductRoot struct {
 	DBRow
 
 	// Basic Info
-	Name         string     `json:"name"`
-	Subtitle     NullString `json:"subtitle"`
-	Description  string     `json:"description"`
-	SKUPrefix    string     `json:"sku_prefix"`
-	Manufacturer NullString `json:"manufacturer"`
-	Brand        NullString `json:"brand"`
-	AvailableOn  time.Time  `json:"available_on"`
+	Name               string     `json:"name"`
+	Subtitle           NullString `json:"subtitle"`
+	Description        string     `json:"description"`
+	SKUPrefix          string     `json:"sku_prefix"`
+	Manufacturer       NullString `json:"manufacturer"`
+	Brand              NullString `json:"brand"`
+	AvailableOn        time.Time  `json:"available_on"`
+	QuantityPerPackage uint32     `json:"quantity_per_package"`
 
 	// Pricing Fields
 	Taxable bool    `json:"taxable"`
@@ -39,6 +40,30 @@ type ProductRoot struct {
 	PackageHeight float32 `json:"package_height"`
 	PackageWidth  float32 `json:"package_width"`
 	PackageLength float32 `json:"package_length"`
+}
+
+func createProductRootFromProduct(p *Product) *ProductRoot {
+	r := &ProductRoot{
+		Name:               p.Name,
+		Subtitle:           p.Subtitle,
+		Description:        p.Description,
+		SKUPrefix:          p.SKU,
+		Manufacturer:       p.Manufacturer,
+		Brand:              p.Brand,
+		QuantityPerPackage: p.QuantityPerPackage,
+		Taxable:            p.Taxable,
+		Cost:               p.Cost,
+		ProductWeight:      p.ProductWeight,
+		ProductHeight:      p.ProductHeight,
+		ProductWidth:       p.ProductWidth,
+		ProductLength:      p.ProductLength,
+		PackageWeight:      p.PackageWeight,
+		PackageHeight:      p.PackageHeight,
+		PackageWidth:       p.PackageWidth,
+		PackageLength:      p.PackageLength,
+		AvailableOn:        p.AvailableOn,
+	}
+	return r
 }
 
 func createProductRootInDB(tx *sqlx.Tx, r *ProductRoot) (uint64, time.Time, error) {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"testing"
 	"time"
 
@@ -161,14 +162,37 @@ func TestBuildProductRootCreationQuery(t *testing.T) {
 		PackageWidth:  2,
 		PackageLength: 1,
 	}
-	expectedQuery := `INSERT INTO product_roots (name,subtitle,description,sku_prefix,manufacturer,brand,available_on,taxable,cost,product_weight,product_height,product_width,product_length,package_weight,package_height,package_width,package_length) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING id, created_on`
+	expectedQuery := `INSERT INTO product_roots (name,subtitle,description,sku_prefix,manufacturer,brand,available_on,quantity_per_package,taxable,cost,product_weight,product_height,product_width,product_length,package_weight,package_height,package_width,package_length) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING id, created_on`
 	actualQuery, actualArgs := buildProductRootCreationQuery(exampleRoot)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
-	assert.Equal(t, 17, len(actualArgs), argsEqualityErrorMessage)
+	assert.Equal(t, 18, len(actualArgs), argsEqualityErrorMessage)
 }
 
 func TestBuildProductUpdateQuery(t *testing.T) {
 	t.Parallel()
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:           "skateboard",
+		Name:          "Skateboard",
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
+		Price:         99.99,
+		Cost:          50.00,
+		Description:   "This is a skateboard. Please wear a helmet.",
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+		AvailableOn:   generateExampleTimeForTests(),
+	}
+
 	expectedQuery := `UPDATE products SET cost = $1, name = $2, price = $3, quantity = $4, sku = $5, upc = $6, updated_on = NOW() WHERE id = $7 RETURNING *`
 	actualQuery, actualArgs := buildProductUpdateQuery(exampleProduct)
 
@@ -178,6 +202,29 @@ func TestBuildProductUpdateQuery(t *testing.T) {
 
 func TestBuildProductCreationQuery(t *testing.T) {
 	t.Parallel()
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:           "skateboard",
+		Name:          "Skateboard",
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
+		Price:         99.99,
+		Cost:          50.00,
+		Description:   "This is a skateboard. Please wear a helmet.",
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+		AvailableOn:   generateExampleTimeForTests(),
+	}
+
 	expectedQuery := `INSERT INTO products (name,subtitle,description,sku,manufacturer,brand,quantity,taxable,price,on_sale,sale_price,cost,product_weight,product_height,product_width,product_length,package_weight,package_height,package_width,package_length,quantity_per_package,available_on,updated_on,upc) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,NOW(),$23) RETURNING id, created_on`
 	actualQuery, actualArgs := buildProductCreationQuery(exampleProduct)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
@@ -210,7 +257,7 @@ func TestBuildProductOptionUpdateQuery(t *testing.T) {
 func TestBuildProductOptionCreationQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `INSERT INTO product_options (name,product_id) VALUES ($1,$2) RETURNING id, created_on`
-	actualQuery, actualArgs := buildProductOptionCreationQuery(&ProductOption{}, exampleProduct.ID)
+	actualQuery, actualArgs := buildProductOptionCreationQuery(&ProductOption{}, exampleProductID)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
 }
