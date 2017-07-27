@@ -137,9 +137,9 @@ func setExpectationsForProductOptionListQuery(mock sqlmock.Sqlmock, a *ProductOp
 		WillReturnError(err)
 }
 
-func setExpectationsForProductOptionCreation(mock sqlmock.Sqlmock, a *ProductOption, productID uint64, err error) {
+func setExpectationsForProductOptionCreation(mock sqlmock.Sqlmock, a *ProductOption, productRootID uint64, err error) {
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(exampleProductOption.ID, generateExampleTimeForTests())
-	query, args := buildProductOptionCreationQuery(a, productID)
+	query, args := buildProductOptionCreationQuery(a, productRootID)
 	queryArgs := argsToDriverValues(args)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
 		WithArgs(queryArgs...).

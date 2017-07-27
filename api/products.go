@@ -353,7 +353,16 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 		productRoot.ID = newProductRootID
 		productRoot.CreatedOn = newProductRootCreatedOn
-		newProduct.ProductRootID = newProductRootID
+		newProduct.ProductRootID = productRoot.ID
+
+		for _, optionAndValues := range productInput.Options {
+			_, err = createProductOptionAndValuesInDBFromInput(tx, optionAndValues, productRoot.ID)
+			if err != nil {
+				tx.Rollback()
+				notifyOfInternalIssue(res, err, "insert product options and values in database")
+				return
+			}
+		}
 
 		// FIXME: implement this
 		// if len(productInput.Options) == 0 {
@@ -366,15 +375,6 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 		newProduct.ID = newProductID
 		newProduct.CreatedOn = createdOn
 		// }
-
-		for _, optionAndValues := range productInput.Options {
-			_, err = createProductOptionAndValuesInDBFromInput(tx, optionAndValues, newProduct.ID)
-			if err != nil {
-				tx.Rollback()
-				notifyOfInternalIssue(res, err, "insert product options and values in database")
-				return
-			}
-		}
 
 		err = tx.Commit()
 		if err != nil {
