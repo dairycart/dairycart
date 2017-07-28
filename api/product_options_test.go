@@ -271,7 +271,7 @@ func TestGenerateCartesianProductForOptions(t *testing.T) {
 
 	for _, tc := range tt {
 		actual := generateCartesianProductForOptions(tc.in)
-		assert.Equal(t, tc.len, len(actual), "there should be 9 simpleProductOptions when there are 2*3 input values")
+		assert.Equal(t, tc.len, len(actual), fmt.Sprintf("there should be %d simpleProductOptions, but we generated %d", tc.len, len(actual)))
 		assert.Equal(t, tc.expected, actual, "expected output should match actual output")
 	}
 }

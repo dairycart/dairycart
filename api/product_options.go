@@ -64,20 +64,19 @@ type simpleProductOption struct {
 func generateCartesianProductForOptions(inputOptions []ProductOptionCreationInput) []simpleProductOption {
 	/*
 		Some notes about this function:
-			It's probably hilariously expensive to run, like O(n^(log(n)³)) or some other equally absurd thing
-			I based this off a stackoverflow post and didn't go to college. I've tried to use anonymous structs where
-			I could so I don't have data structures floating around that exist solely for this function, and
-			also tried to name things as clearly as possible. But it still kind of just _feels_ messy, so forgive me,
-			Rob Pike. I have taken your beautiful language and violated it with my garbage brain
+
+		It's probably hilariously expensive to run, like O(n^(log(n)³)) or some other equally absurd thing
+		I based this off a stackoverflow post and didn't go to college. I've tried to use anonymous structs where
+		I could so I don't have data structures floating around that exist solely for this function, and
+		also tried to name things as clearly as possible. But it still kind of just _feels_ messy, so forgive me,
+		Rob Pike. I have taken your beautiful language and violated it with my garbage brain
 	*/
 
-	output := []simpleProductOption{}
-
+	// lovingly borrowed from:
+	//     https://stackoverflow.com/questions/29002724/implement-ruby-style-cartesian-product-in-go
 	// NextIndex sets ix to the lexicographically next value,
 	// such that for each i>0, 0 <= ix[i] < lens(i).
-	// lovingly borrowed from:
-	// 		https://stackoverflow.com/questions/29002724/implement-ruby-style-cartesian-product-in-go
-	nextIndex := func(ix []int, sl [][]struct{ Name, Value string }) {
+	nextIndex := func(ix []int, sl [][]struct{ Summary, Value string }) {
 		for j := len(ix) - 1; j >= 0; j-- {
 			ix[j]++
 			if j == 0 || ix[j] < len(sl[j]) {
@@ -87,27 +86,28 @@ func generateCartesianProductForOptions(inputOptions []ProductOptionCreationInpu
 		}
 	}
 
-	optionStrings := [][]struct{ Name, Value string }{}
+	// meat & potatoes starts here
+	optionStrings := [][]struct{ Summary, Value string }{}
 	for _, o := range inputOptions {
-		newOptions := []struct{ Name, Value string }{}
+		newOptions := []struct{ Summary, Value string }{}
 		for _, value := range o.Values {
-			newOptions = append(newOptions, struct{ Name, Value string }{Name: o.Name, Value: value})
+			newOptions = append(newOptions, struct{ Summary, Value string }{Summary: fmt.Sprintf("%s: %s", o.Name, value), Value: value})
 		}
 		optionStrings = append(optionStrings, newOptions)
 	}
 
+	output := []simpleProductOption{}
 	for ix := make([]int, len(optionStrings)); ix[0] < len(optionStrings[0]); nextIndex(ix, optionStrings) {
-		thing := simpleProductOption{}
 		var skuPrefixParts []string
 		var optionSummaryParts []string
 		for j, k := range ix {
-			optionSummaryPart := fmt.Sprintf("%s: %s", optionStrings[j][k].Name, optionStrings[j][k].Value)
-			optionSummaryParts = append(optionSummaryParts, optionSummaryPart)
+			optionSummaryParts = append(optionSummaryParts, optionStrings[j][k].Summary)
 			skuPrefixParts = append(skuPrefixParts, strings.ToLower(optionStrings[j][k].Value))
 		}
-		thing.OptionSummary = strings.Join(optionSummaryParts, ", ")
-		thing.SKUPostfix = strings.Join(skuPrefixParts, "_")
-		output = append(output, thing)
+		output = append(output, simpleProductOption{
+			OptionSummary: strings.Join(optionSummaryParts, ", "),
+			SKUPostfix:    strings.Join(skuPrefixParts, "_"),
+		})
 	}
 
 	return output
