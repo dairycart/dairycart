@@ -171,6 +171,111 @@ func setExpectationsForProductOptionValuesDeletionByOptionID(mock sqlmock.Sqlmoc
 		WillReturnError(err)
 }
 
+func TestGenerateCartesianProductForOptions(t *testing.T) {
+	t.Parallel()
+
+	tt := []struct {
+		in       []ProductOptionCreationInput
+		expected []simpleProductOption
+		len      int
+	}{
+		{
+			in: []ProductOptionCreationInput{
+				{
+					Name: "Size",
+					Values: []string{
+						"small",
+						"medium",
+						"large",
+					},
+				},
+				{
+					Name: "Color",
+					Values: []string{
+						"red",
+						"green",
+						"blue",
+					},
+				},
+			},
+			expected: []simpleProductOption{
+				{OptionSummary: "Size: small, Color: red", SKUPostfix: "small_red"},
+				{OptionSummary: "Size: small, Color: green", SKUPostfix: "small_green"},
+				{OptionSummary: "Size: small, Color: blue", SKUPostfix: "small_blue"},
+				{OptionSummary: "Size: medium, Color: red", SKUPostfix: "medium_red"},
+				{OptionSummary: "Size: medium, Color: green", SKUPostfix: "medium_green"},
+				{OptionSummary: "Size: medium, Color: blue", SKUPostfix: "medium_blue"},
+				{OptionSummary: "Size: large, Color: red", SKUPostfix: "large_red"},
+				{OptionSummary: "Size: large, Color: green", SKUPostfix: "large_green"},
+				{OptionSummary: "Size: large, Color: blue", SKUPostfix: "large_blue"},
+			},
+			len: 9,
+		},
+		{
+			// test that name: value pairs can be completely different sizes
+			in: []ProductOptionCreationInput{
+				{
+					Name: "Size",
+					Values: []string{
+						"small",
+						"medium",
+						"large",
+						"xtra-large",
+					},
+				},
+				{
+					Name: "Color",
+					Values: []string{
+						"red",
+						"green",
+						"blue",
+					},
+				},
+				{
+					Name: "Fabric",
+					Values: []string{
+						"polyester",
+						"cotton",
+					},
+				},
+			},
+			expected: []simpleProductOption{
+				{OptionSummary: "Size: small, Color: red, Fabric: polyester", SKUPostfix: "small_red_polyester"},
+				{OptionSummary: "Size: small, Color: red, Fabric: cotton", SKUPostfix: "small_red_cotton"},
+				{OptionSummary: "Size: small, Color: green, Fabric: polyester", SKUPostfix: "small_green_polyester"},
+				{OptionSummary: "Size: small, Color: green, Fabric: cotton", SKUPostfix: "small_green_cotton"},
+				{OptionSummary: "Size: small, Color: blue, Fabric: polyester", SKUPostfix: "small_blue_polyester"},
+				{OptionSummary: "Size: small, Color: blue, Fabric: cotton", SKUPostfix: "small_blue_cotton"},
+				{OptionSummary: "Size: medium, Color: red, Fabric: polyester", SKUPostfix: "medium_red_polyester"},
+				{OptionSummary: "Size: medium, Color: red, Fabric: cotton", SKUPostfix: "medium_red_cotton"},
+				{OptionSummary: "Size: medium, Color: green, Fabric: polyester", SKUPostfix: "medium_green_polyester"},
+				{OptionSummary: "Size: medium, Color: green, Fabric: cotton", SKUPostfix: "medium_green_cotton"},
+				{OptionSummary: "Size: medium, Color: blue, Fabric: polyester", SKUPostfix: "medium_blue_polyester"},
+				{OptionSummary: "Size: medium, Color: blue, Fabric: cotton", SKUPostfix: "medium_blue_cotton"},
+				{OptionSummary: "Size: large, Color: red, Fabric: polyester", SKUPostfix: "large_red_polyester"},
+				{OptionSummary: "Size: large, Color: red, Fabric: cotton", SKUPostfix: "large_red_cotton"},
+				{OptionSummary: "Size: large, Color: green, Fabric: polyester", SKUPostfix: "large_green_polyester"},
+				{OptionSummary: "Size: large, Color: green, Fabric: cotton", SKUPostfix: "large_green_cotton"},
+				{OptionSummary: "Size: large, Color: blue, Fabric: polyester", SKUPostfix: "large_blue_polyester"},
+				{OptionSummary: "Size: large, Color: blue, Fabric: cotton", SKUPostfix: "large_blue_cotton"},
+				{OptionSummary: "Size: xtra-large, Color: red, Fabric: polyester", SKUPostfix: "xtra-large_red_polyester"},
+				{OptionSummary: "Size: xtra-large, Color: red, Fabric: cotton", SKUPostfix: "xtra-large_red_cotton"},
+				{OptionSummary: "Size: xtra-large, Color: green, Fabric: polyester", SKUPostfix: "xtra-large_green_polyester"},
+				{OptionSummary: "Size: xtra-large, Color: green, Fabric: cotton", SKUPostfix: "xtra-large_green_cotton"},
+				{OptionSummary: "Size: xtra-large, Color: blue, Fabric: polyester", SKUPostfix: "xtra-large_blue_polyester"},
+				{OptionSummary: "Size: xtra-large, Color: blue, Fabric: cotton", SKUPostfix: "xtra-large_blue_cotton"},
+			},
+			len: 24,
+		},
+	}
+
+	for _, tc := range tt {
+		actual := generateCartesianProductForOptions(tc.in)
+		assert.Equal(t, tc.len, len(actual), "there should be 9 simpleProductOptions when there are 2*3 input values")
+		assert.Equal(t, tc.expected, actual, "expected output should match actual output")
+	}
+}
+
 func TestRetrieveProductOptionFromDB(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)

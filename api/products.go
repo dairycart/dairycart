@@ -374,6 +374,8 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 		newProduct.ID = newProductID
 		newProduct.CreatedOn = createdOn
+		// } else {
+		// 	productOptionData := generateCartesianProductForOptions(productInput.Options)
 		// }
 
 		err = tx.Commit()

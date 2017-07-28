@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi"
@@ -53,6 +54,63 @@ type ProductOptionUpdateInput struct {
 type ProductOptionCreationInput struct {
 	Name   string   `json:"name"`
 	Values []string `json:"values"`
+}
+
+type simpleProductOption struct {
+	OptionSummary string
+	SKUPostfix    string
+}
+
+func generateCartesianProductForOptions(inputOptions []ProductOptionCreationInput) []simpleProductOption {
+	/*
+		Some notes about this function:
+			It's probably hilariously expensive to run, like O(n^(log(n)³)) or some other equally absurd thing
+			I based this off a stackoverflow post and didn't go to college. I've tried to use anonymous structs where
+			I could so I don't have data structures floating around that exist solely for this function, and
+			also tried to name things as clearly as possible. But it still kind of just _feels_ messy, so forgive me,
+			Rob Pike. I have taken your beautiful language and violated it with my garbage brain
+	*/
+
+	output := []simpleProductOption{}
+
+	// NextIndex sets ix to the lexicographically next value,
+	// such that for each i>0, 0 <= ix[i] < lens(i).
+	// lovingly borrowed from:
+	// 		https://stackoverflow.com/questions/29002724/implement-ruby-style-cartesian-product-in-go
+	nextIndex := func(ix []int, sl [][]struct{ Name, Value string }) {
+		for j := len(ix) - 1; j >= 0; j-- {
+			ix[j]++
+			if j == 0 || ix[j] < len(sl[j]) {
+				return
+			}
+			ix[j] = 0
+		}
+	}
+
+	optionStrings := [][]struct{ Name, Value string }{}
+	for _, o := range inputOptions {
+		newOptions := []struct{ Name, Value string }{}
+		for _, value := range o.Values {
+			newOptions = append(newOptions, struct{ Name, Value string }{Name: o.Name, Value: value})
+		}
+		optionStrings = append(optionStrings, newOptions)
+	}
+
+	for ix := make([]int, len(optionStrings)); ix[0] < len(optionStrings[0]); nextIndex(ix, optionStrings) {
+		thing := simpleProductOption{}
+		var skuPrefixParts []string
+		var optionSummaryParts []string
+		for j, k := range ix {
+			optionSummaryPart := fmt.Sprintf("%s: %s", optionStrings[j][k].Name, optionStrings[j][k].Value)
+			optionSummaryParts = append(optionSummaryParts, optionSummaryPart)
+			skuPrefixParts = append(skuPrefixParts, strings.ToLower(optionStrings[j][k].Value))
+		}
+		thing.OptionSummary = strings.Join(optionSummaryParts, ", ")
+		thing.SKUPostfix = strings.Join(skuPrefixParts, "_")
+		output = append(output, thing)
+	}
+
+	return output
 }
 
 // FIXME: this function should be abstracted
