@@ -18,14 +18,15 @@ type ProductRoot struct {
 	DBRow
 
 	// Basic Info
-	Name               string     `json:"name"`
-	Subtitle           NullString `json:"subtitle"`
-	Description        string     `json:"description"`
-	SKUPrefix          string     `json:"sku_prefix"`
-	Manufacturer       NullString `json:"manufacturer"`
-	Brand              NullString `json:"brand"`
-	AvailableOn        time.Time  `json:"available_on"`
-	QuantityPerPackage uint32     `json:"quantity_per_package"`
+	Name                string     `json:"name"`
+	Subtitle            NullString `json:"subtitle"`
+	Description         string     `json:"description"`
+	SKUPrefix           string     `json:"sku_prefix"`
+	Manufacturer        NullString `json:"manufacturer"`
+	Brand               NullString `json:"brand"`
+	AvailableOn         time.Time  `json:"available_on"`
+	QuantityPerPackage  uint32     `json:"quantity_per_package"`
+	AllOptionsPopulated bool       `json:"all_options_populated"`
 
 	// Pricing Fields
 	Taxable bool    `json:"taxable"`

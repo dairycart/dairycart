@@ -172,16 +172,82 @@ func setExpectationsForProductOptionValuesDeletionByOptionID(mock sqlmock.Sqlmoc
 		WillReturnError(err)
 }
 
+func TestCalculateTotalProductsForOptions(t *testing.T) {
+	t.Parallel()
+
+	tt := []struct {
+		in       []*ProductOptionCreationInput
+		expected int
+	}{
+		{
+			in: []*ProductOptionCreationInput{
+				{
+					Name: "Size",
+					Values: []string{
+						"small",
+						"medium",
+						"large",
+					},
+				},
+				{
+					Name: "Color",
+					Values: []string{
+						"red",
+						"green",
+						"blue",
+					},
+				},
+			},
+			expected: 9,
+		},
+		{
+			// test that name: value pairs can be completely different sizes
+			in: []*ProductOptionCreationInput{
+				{
+					Name: "Size",
+					Values: []string{
+						"small",
+						"medium",
+						"large",
+						"xtra-large",
+					},
+				},
+				{
+					Name: "Color",
+					Values: []string{
+						"red",
+						"green",
+						"blue",
+					},
+				},
+				{
+					Name: "Fabric",
+					Values: []string{
+						"polyester",
+						"cotton",
+					},
+				},
+			},
+			expected: 24,
+		},
+	}
+
+	for _, tc := range tt {
+		actual := calculateTotalProductsForOptions(tc.in)
+		assert.Equal(t, tc.expected, actual, fmt.Sprintf("there should be %d simpleProductOptions, but we generated %d", tc.expected, actual))
+	}
+}
+
 func TestGenerateCartesianProductForOptions(t *testing.T) {
 	t.Parallel()
 
 	tt := []struct {
-		in       []ProductOptionCreationInput
+		in       []*ProductOptionCreationInput
 		expected []simpleProductOption
 		len      int
 	}{
 		{
-			in: []ProductOptionCreationInput{
+			in: []*ProductOptionCreationInput{
 				{
 					Name: "Size",
 					Values: []string{
@@ -214,7 +280,7 @@ func TestGenerateCartesianProductForOptions(t *testing.T) {
 		},
 		{
 			// test that name: value pairs can be completely different sizes
-			in: []ProductOptionCreationInput{
+			in: []*ProductOptionCreationInput{
 				{
 					Name: "Size",
 					Values: []string{

@@ -61,7 +61,19 @@ type simpleProductOption struct {
 	SKUPostfix    string
 }
 
-func generateCartesianProductForOptions(inputOptions []ProductOptionCreationInput) []simpleProductOption {
+func calculateTotalProductsForOptions(inputOptions []*ProductOptionCreationInput) int {
+	var counts []int
+	for _, o := range inputOptions {
+		counts = append(counts, len(o.Values))
+	}
+	total := counts[0]
+	for _, c := range counts[1:] {
+		total *= c
+	}
+	return total
+}
+
+func generateCartesianProductForOptions(inputOptions []*ProductOptionCreationInput) []simpleProductOption {
 	/*
 		Some notes about this function:
 

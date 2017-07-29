@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS product_roots (
     "manufacturer" text,
     "brand" text,
     "taxable" boolean DEFAULT 'false',
+    "all_options_populated" boolean default 'false',
     "cost" numeric(15, 2) NOT NULL,
     "product_weight" numeric(15, 2),
     "product_height" numeric(15, 2),

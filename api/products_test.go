@@ -1114,7 +1114,6 @@ func TestProductCreationHandler(t *testing.T) {
 	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[0], nil)
 	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[1], nil)
 	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[2], nil)
-	setExpectationsForProductCreation(testUtil.Mock, exampleProduct, nil)
 	testUtil.Mock.ExpectCommit()
 
 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
@@ -1158,14 +1157,7 @@ func TestProductCreationHandlerWhereCommitReturnsAnError(t *testing.T) {
 			"package_height": 3,
 			"package_width": 2,
 			"package_length": 1,
-			"options": [{
-				"name": "something",
-				"values": [
-					"one",
-					"two",
-					"three"
-				]
-			}]
+			"options": []
 		}
 	`
 	exampleProduct := &Product{
@@ -1195,10 +1187,6 @@ func TestProductCreationHandlerWhereCommitReturnsAnError(t *testing.T) {
 	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleProduct.SKU, false, nil)
 	testUtil.Mock.ExpectBegin()
 	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, nil)
-	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleRoot.ID, nil)
-	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[0], nil)
-	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[1], nil)
-	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[2], nil)
 	setExpectationsForProductCreation(testUtil.Mock, exampleProduct, nil)
 	testUtil.Mock.ExpectCommit().WillReturnError(arbitraryError)
 
@@ -1232,14 +1220,7 @@ func TestProductCreationHandlerWhereTransactionFailsToBegin(t *testing.T) {
 			"package_height": 3,
 			"package_width": 2,
 			"package_length": 1,
-			"options": [{
-				"name": "something",
-				"values": [
-					"one",
-					"two",
-					"three"
-				]
-			}]
+			"options": []
 		}
 	`
 	setExpectationsForProductRootSKUExistence(testUtil.Mock, "skateboard", false, nil)

@@ -353,7 +353,6 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 		productRoot.ID = newProductRootID
 		productRoot.CreatedOn = newProductRootCreatedOn
-		newProduct.ProductRootID = productRoot.ID
 
 		for _, optionAndValues := range productInput.Options {
 			_, err = createProductOptionAndValuesInDBFromInput(tx, optionAndValues, productRoot.ID)
@@ -364,19 +363,37 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			}
 		}
 
-		// FIXME: implement this
-		// if len(productInput.Options) == 0 {
-		newProductID, createdOn, err := createProductInDB(tx, newProduct)
-		if err != nil {
-			tx.Rollback()
-			notifyOfInternalIssue(res, err, "insert product in database")
-			return
+		createdProducts := []*Product{}
+		if len(productInput.Options) == 0 {
+			newProduct.ProductRootID = productRoot.ID
+			newProductID, createdOn, err := createProductInDB(tx, newProduct)
+			if err != nil {
+				tx.Rollback()
+				notifyOfInternalIssue(res, err, "insert product in database")
+				return
+			}
+			newProduct.ID = newProductID
+			newProduct.CreatedOn = createdOn
+			createdProducts = append(createdProducts, newProduct)
+		} else {
+			//productOptionData := generateCartesianProductForOptions(productInput.Options)
+			//for _, option := range productOptionData {
+			//	np := &Product{}
+			//	*np = *newProduct
+			//	np.OptionSummary = option.OptionSummary
+			//	np.SKU = fmt.Sprintf("%s_%s", productRoot.SKUPrefix, option.SKUPostfix)
+			//
+			//	newProductID, createdOn, err := createProductInDB(tx, np)
+			//	if err != nil {
+			//		tx.Rollback()
+			//		notifyOfInternalIssue(res, err, "insert product in database")
+			//		return
+			//	}
+			//	newProduct.ID = newProductID
+			//	newProduct.CreatedOn = createdOn
+			//	createdProducts = append(createdProducts, newProduct)
+			//}
 		}
-		newProduct.ID = newProductID
-		newProduct.CreatedOn = createdOn
-		// } else {
-		// 	productOptionData := generateCartesianProductForOptions(productInput.Options)
-		// }
 
 		err = tx.Commit()
 		if err != nil {
