@@ -23,33 +23,33 @@ const (
 func TestBuildProductListQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `SELECT id,
-		name,
-		subtitle,
-		description,
-		sku,
-		upc,
-		manufacturer,
-		brand,
-		quantity,
-		taxable,
-		price,
-		on_sale,
-		sale_price,
-		cost,
-		product_weight,
-		product_height,
-		product_width,
-		product_length,
-		package_weight,
-		package_height,
-		package_width,
-		package_length,
-		quantity_per_package,
-		available_on,
-		created_on,
-		updated_on,
-		archived_on
-	 FROM products WHERE archived_on IS NULL LIMIT 25`
+			name,
+			subtitle,
+			description,
+			sku,
+			upc,
+			manufacturer,
+			brand,
+			quantity,
+			taxable,
+			price,
+			on_sale,
+			sale_price,
+			cost,
+			product_weight,
+			product_height,
+			product_width,
+			product_length,
+			package_weight,
+			package_height,
+			package_width,
+			package_length,
+			quantity_per_package,
+			available_on,
+			created_on,
+			updated_on,
+			archived_on
+		 FROM products WHERE archived_on IS NULL LIMIT 25`
 	actualQuery, actualArgs := buildProductListQuery(defaultQueryFilter)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 0, len(actualArgs), argsEqualityErrorMessage)
@@ -65,33 +65,33 @@ func TestBuildProductListQueryAndPartiallyCustomQueryFilter(t *testing.T) {
 	}
 
 	expectedQuery := `SELECT id,
-		name,
-		subtitle,
-		description,
-		sku,
-		upc,
-		manufacturer,
-		brand,
-		quantity,
-		taxable,
-		price,
-		on_sale,
-		sale_price,
-		cost,
-		product_weight,
-		product_height,
-		product_width,
-		product_length,
-		package_weight,
-		package_height,
-		package_width,
-		package_length,
-		quantity_per_package,
-		available_on,
-		created_on,
-		updated_on,
-		archived_on
-	 FROM products WHERE archived_on IS NULL AND updated_on > $1 AND updated_on < $2 LIMIT 25 OFFSET 50`
+			name,
+			subtitle,
+			description,
+			sku,
+			upc,
+			manufacturer,
+			brand,
+			quantity,
+			taxable,
+			price,
+			on_sale,
+			sale_price,
+			cost,
+			product_weight,
+			product_height,
+			product_width,
+			product_length,
+			package_weight,
+			package_height,
+			package_width,
+			package_length,
+			quantity_per_package,
+			available_on,
+			created_on,
+			updated_on,
+			archived_on
+		 FROM products WHERE archived_on IS NULL AND updated_on > $1 AND updated_on < $2 LIMIT 25 OFFSET 50`
 
 	actualQuery, actualArgs := buildProductListQuery(queryFilter)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
@@ -110,33 +110,33 @@ func TestBuildProductListQueryAndCompletelyCustomQueryFilter(t *testing.T) {
 	}
 
 	expectedQuery := `SELECT id,
-		name,
-		subtitle,
-		description,
-		sku,
-		upc,
-		manufacturer,
-		brand,
-		quantity,
-		taxable,
-		price,
-		on_sale,
-		sale_price,
-		cost,
-		product_weight,
-		product_height,
-		product_width,
-		product_length,
-		package_weight,
-		package_height,
-		package_width,
-		package_length,
-		quantity_per_package,
-		available_on,
-		created_on,
-		updated_on,
-		archived_on
-	 FROM products WHERE archived_on IS NULL AND created_on > $1 AND created_on < $2 AND updated_on > $3 AND updated_on < $4 LIMIT 46 OFFSET 92`
+			name,
+			subtitle,
+			description,
+			sku,
+			upc,
+			manufacturer,
+			brand,
+			quantity,
+			taxable,
+			price,
+			on_sale,
+			sale_price,
+			cost,
+			product_weight,
+			product_height,
+			product_width,
+			product_length,
+			package_weight,
+			package_height,
+			package_width,
+			package_length,
+			quantity_per_package,
+			available_on,
+			created_on,
+			updated_on,
+			archived_on
+		 FROM products WHERE archived_on IS NULL AND created_on > $1 AND created_on < $2 AND updated_on > $3 AND updated_on < $4 LIMIT 46 OFFSET 92`
 
 	actualQuery, actualArgs := buildProductListQuery(queryFilter)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
@@ -229,6 +229,61 @@ func TestBuildProductCreationQuery(t *testing.T) {
 	actualQuery, actualArgs := buildProductCreationQuery(exampleProduct)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 25, len(actualArgs), argsEqualityErrorMessage)
+}
+
+func TestBuildMultipleProductCreationQuery(t *testing.T) {
+	t.Parallel()
+	exampleProducts := []*Product{
+		{
+			DBRow: DBRow{
+				ID:        2,
+				CreatedOn: generateExampleTimeForTests(),
+			},
+			SKU:           "skateboard",
+			Name:          "SKU ONE",
+			UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+			Quantity:      123,
+			Price:         99.99,
+			Cost:          50.00,
+			Description:   "This is a skateboard. Please wear a helmet.",
+			ProductWeight: 8,
+			ProductHeight: 7,
+			ProductWidth:  6,
+			ProductLength: 5,
+			PackageWeight: 4,
+			PackageHeight: 3,
+			PackageWidth:  2,
+			PackageLength: 1,
+			AvailableOn:   generateExampleTimeForTests(),
+		},
+		{
+			DBRow: DBRow{
+				ID:        2,
+				CreatedOn: generateExampleTimeForTests(),
+			},
+			SKU:           "skateboard",
+			Name:          "SKU TWO",
+			UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+			Quantity:      123,
+			Price:         99.99,
+			Cost:          50.00,
+			Description:   "This is a skateboard. Please wear a helmet.",
+			ProductWeight: 8,
+			ProductHeight: 7,
+			ProductWidth:  6,
+			ProductLength: 5,
+			PackageWeight: 4,
+			PackageHeight: 3,
+			PackageWidth:  2,
+			PackageLength: 1,
+			AvailableOn:   generateExampleTimeForTests(),
+		},
+	}
+
+	expectedQuery := `INSERT INTO products (product_root_id,name,subtitle,description,option_summary,sku,manufacturer,brand,quantity,taxable,price,on_sale,sale_price,cost,product_weight,product_height,product_width,product_length,package_weight,package_height,package_width,package_length,quantity_per_package,available_on,updated_on) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,NOW()),($25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,NOW()) RETURNING id, created_on`
+	actualQuery, actualArgs := buildMultipleProductCreationQuery(exampleProducts)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 24*len(exampleProducts), len(actualArgs), argsEqualityErrorMessage)
 }
 
 func TestBuildProductOptionListQuery(t *testing.T) {

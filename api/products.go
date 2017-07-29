@@ -14,35 +14,6 @@ import (
 )
 
 const (
-	productTableHeaders = `id,
-		name,
-		subtitle,
-		description,
-		sku,
-		upc,
-		manufacturer,
-		brand,
-		quantity,
-		taxable,
-		price,
-		on_sale,
-		sale_price,
-		cost,
-		product_weight,
-		product_height,
-		product_width,
-		product_length,
-		package_weight,
-		package_height,
-		package_width,
-		package_length,
-		quantity_per_package,
-		available_on,
-		created_on,
-		updated_on,
-		archived_on
-	`
-
 	skuExistenceQuery             = `SELECT EXISTS(SELECT 1 FROM products WHERE sku = $1 AND archived_on IS NULL)`
 	productExistenceQuery         = `SELECT EXISTS(SELECT 1 FROM products WHERE id = $1 AND archived_on IS NULL)`
 	productDeletionQuery          = `UPDATE products SET archived_on = NOW() WHERE sku = $1 AND archived_on IS NULL`
