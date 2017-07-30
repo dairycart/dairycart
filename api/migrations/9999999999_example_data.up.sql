@@ -770,7 +770,7 @@ INSERT INTO product_options
 )
 VALUES
 ('color', 1),
-('size', 1);
+('size',  1 );
 
 INSERT INTO product_option_values
 (
@@ -778,12 +778,38 @@ INSERT INTO product_option_values
     "value"
 )
 VALUES
-(1, 'red'),
-(1, 'green'),
-(1, 'blue'),
-(2, 'small'),
+(1, 'red'   ),
+(1, 'green' ),
+(1, 'blue'  ),
+(2, 'small' ),
 (2, 'medium'),
-(2, 'large');
+(2, 'large' );
+
+INSERT INTO product_variant_bridge
+(
+    "id",
+    "product_id",
+    "product_option_value_id"
+)
+VALUES
+(1,  1, 1),
+(2,  1, 4),
+(3,  2, 1),
+(4,  2, 5),
+(5,  3, 1),
+(6,  3, 6),
+(7,  4, 3),
+(8,  4, 4),
+(9,  5, 3),
+(10, 5, 5),
+(11, 6, 3),
+(12, 6, 6),
+(13, 7, 2),
+(14, 7, 4),
+(15, 8, 2),
+(16, 8, 5),
+(17, 9, 2),
+(18, 9, 6);
 
 INSERT INTO discounts
 (

@@ -288,6 +288,26 @@ func createProductInDB(tx *sql.Tx, np *Product) (uint64, time.Time, error) {
 	return newProductID, createdOn, err
 }
 
+func createProductsInDBFromOptionRows(tx *sql.Tx, r *ProductRoot, np *Product, ops []*ProductOption) error {
+	productOptionData := generateCartesianProductForOptions(ops)
+	for _, option := range productOptionData {
+		p := &Product{}
+		*p = *np // solved: http://www.claymath.org/millennium-problems/p-vs-np-problem
+		p.OptionSummary = option.OptionSummary
+		p.SKU = fmt.Sprintf("%s_%s", r.SKUPrefix, option.SKUPostfix)
+		id, _, err := createProductInDB(tx, p)
+		if err != nil {
+			return err
+		}
+
+		err = createBridgeEntryForProductValues(tx, id, option.IDs)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		productInput := &ProductCreationInput{}
@@ -325,16 +345,17 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 		productRoot.ID = newProductRootID
 		productRoot.CreatedOn = newProductRootCreatedOn
 
+		var createdOptions []*ProductOption
 		for _, optionAndValues := range productInput.Options {
-			_, err = createProductOptionAndValuesInDBFromInput(tx, optionAndValues, productRoot.ID)
+			o, err := createProductOptionAndValuesInDBFromInput(tx, optionAndValues, productRoot.ID)
 			if err != nil {
 				tx.Rollback()
 				notifyOfInternalIssue(res, err, "insert product options and values in database")
 				return
 			}
+			createdOptions = append(createdOptions, o)
 		}
 
-		createdProducts := []*Product{}
 		if len(productInput.Options) == 0 {
 			newProduct.ProductRootID = productRoot.ID
 			newProductID, createdOn, err := createProductInDB(tx, newProduct)
@@ -345,25 +366,13 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			}
 			newProduct.ID = newProductID
 			newProduct.CreatedOn = createdOn
-			createdProducts = append(createdProducts, newProduct)
 		} else {
-			//productOptionData := generateCartesianProductForOptions(productInput.Options)
-			//for _, option := range productOptionData {
-			//	np := &Product{}
-			//	*np = *newProduct
-			//	np.OptionSummary = option.OptionSummary
-			//	np.SKU = fmt.Sprintf("%s_%s", productRoot.SKUPrefix, option.SKUPostfix)
-			//
-			//	newProductID, createdOn, err := createProductInDB(tx, np)
-			//	if err != nil {
-			//		tx.Rollback()
-			//		notifyOfInternalIssue(res, err, "insert product in database")
-			//		return
-			//	}
-			//	newProduct.ID = newProductID
-			//	newProduct.CreatedOn = createdOn
-			//	createdProducts = append(createdProducts, newProduct)
-			//}
+			err = createProductsInDBFromOptionRows(tx, productRoot, newProduct, createdOptions)
+			if err != nil {
+				tx.Rollback()
+				notifyOfInternalIssue(res, err, "insert products in database")
+				return
+			}
 		}
 
 		err = tx.Commit()

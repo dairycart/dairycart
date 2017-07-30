@@ -1,6 +1,11 @@
 package main
 
-import "github.com/Masterminds/squirrel"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/Masterminds/squirrel"
+)
 
 func applyQueryFilterToQueryBuilder(queryBuilder squirrel.SelectBuilder, queryFilter *QueryFilter, includeOffset bool) squirrel.SelectBuilder {
 	if queryFilter.Limit > 0 {
@@ -367,6 +372,44 @@ func buildProductOptionValueCreationQuery(v *ProductOptionValue) (string, []inte
 	return query, args
 }
 
+func buildProductOptionCombinationExistenceQuery(optionValueIDs []uint64) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder
+	var subqueries []string
+	var subargs []interface{}
+	for _, id := range optionValueIDs {
+		q, a, _ := sqlBuilder.
+		Select("id").
+			From("product_variant_bridge").
+			Where(squirrel.Eq{"product_option_value_id": id}).
+			ToSql()
+		subqueries = append(subqueries, fmt.Sprintf("(%s)", q))
+		subargs = append(subargs, a)
+	}
+	prequery := strings.Join(subqueries, " AND EXISTS")
+
+	queryBuilder := sqlBuilder.Select(fmt.Sprintf("EXISTS%s", prequery))
+	query, _, _ := queryBuilder.PlaceholderFormat(squirrel.Dollar).ToSql()
+	return query, subargs
+}
+
+func buildProductVariantBridgeCreationQuery(productID uint64, optionValueIDs []uint64) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+	Insert("product_variant_bridge").
+		Columns("product_id", "product_option_value_id")
+
+	for _, id := range optionValueIDs {
+		values := []interface{}{
+			productID,
+			id,
+		}
+		queryBuilder = queryBuilder.Values(values...)
+	}
+	queryBuilder = queryBuilder.Suffix(`RETURNING id, created_on`)
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}
+
 ////////////////////////////////////////////////////////
 //                                                    //
 //                     Discounts                      //
@@ -376,7 +419,20 @@ func buildProductOptionValueCreationQuery(v *ProductOptionValue) (string, []inte
 func buildDiscountListQuery(queryFilter *QueryFilter) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
-		Select(discountsTableColumns).
+		Select(`id,
+			name,
+			type,
+			amount,
+			starts_on,
+			expires_on,
+			requires_code,
+			code,
+			limited_use,
+			number_of_uses,
+			login_required,
+			created_on,
+			updated_on,
+			archived_on`).
 		From("discounts").
 		Where(squirrel.Or{squirrel.Eq{"expires_on": nil}, squirrel.Gt{"expires_on": "NOW()"}}).
 		Where(squirrel.Eq{"archived_on": nil})

@@ -57,11 +57,19 @@ type ProductOptionCreationInput struct {
 }
 
 type simpleProductOption struct {
+	IDs []uint64
 	OptionSummary string
 	SKUPostfix    string
 }
 
-func generateCartesianProductForOptions(inputOptions []*ProductOptionCreationInput) []simpleProductOption {
+type optionPlaceholder struct {
+	ID uint64
+	Summary string
+	Value string
+}
+
+
+func generateCartesianProductForOptions(inputOptions []*ProductOption) []simpleProductOption {
 	/*
 		Some notes about this function:
 
@@ -76,7 +84,7 @@ func generateCartesianProductForOptions(inputOptions []*ProductOptionCreationInp
 	//     https://stackoverflow.com/questions/29002724/implement-ruby-style-cartesian-product-in-go
 	// NextIndex sets ix to the lexicographically next value,
 	// such that for each i>0, 0 <= ix[i] < lens(i).
-	nextIndex := func(ix []int, sl [][]struct{ Summary, Value string }) {
+	nextIndex := func(ix []int, sl [][]optionPlaceholder) {
 		for j := len(ix) - 1; j >= 0; j-- {
 			ix[j]++
 			if j == 0 || ix[j] < len(sl[j]) {
@@ -87,24 +95,32 @@ func generateCartesianProductForOptions(inputOptions []*ProductOptionCreationInp
 	}
 
 	// meat & potatoes starts here
-	optionStrings := [][]struct{ Summary, Value string }{}
+	optionData := [][]optionPlaceholder{}
 	for _, o := range inputOptions {
-		newOptions := []struct{ Summary, Value string }{}
-		for _, value := range o.Values {
-			newOptions = append(newOptions, struct{ Summary, Value string }{Summary: fmt.Sprintf("%s: %s", o.Name, value), Value: value})
+		newOptions := []optionPlaceholder{}
+		for _, v := range o.Values {
+			ph := optionPlaceholder{
+				ID: v.ID,
+				Summary: fmt.Sprintf("%s: %s", o.Name, v.Value),
+				Value: v.Value,
+			}
+			newOptions = append(newOptions, ph)
 		}
-		optionStrings = append(optionStrings, newOptions)
+		optionData = append(optionData, newOptions)
 	}
 
 	output := []simpleProductOption{}
-	for ix := make([]int, len(optionStrings)); ix[0] < len(optionStrings[0]); nextIndex(ix, optionStrings) {
+	for ix := make([]int, len(optionData)); ix[0] < len(optionData[0]); nextIndex(ix, optionData) {
+		var ids []uint64
 		var skuPrefixParts []string
 		var optionSummaryParts []string
 		for j, k := range ix {
-			optionSummaryParts = append(optionSummaryParts, optionStrings[j][k].Summary)
-			skuPrefixParts = append(skuPrefixParts, strings.ToLower(optionStrings[j][k].Value))
+			ids = append(ids, optionData[j][k].ID)
+			optionSummaryParts = append(optionSummaryParts, optionData[j][k].Summary)
+			skuPrefixParts = append(skuPrefixParts, strings.ToLower(optionData[j][k].Value))
 		}
 		output = append(output, simpleProductOption{
+			IDs: ids,
 			OptionSummary: strings.Join(optionSummaryParts, ", "),
 			SKUPostfix:    strings.Join(skuPrefixParts, "_"),
 		})
@@ -112,6 +128,8 @@ func generateCartesianProductForOptions(inputOptions []*ProductOptionCreationInp
 
 	return output
 }
+
+
 
 // FIXME: this function should be abstracted
 func productOptionAlreadyExistsForProduct(db *sqlx.DB, in *ProductOptionCreationInput, productRootID string) (bool, error) {

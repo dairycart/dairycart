@@ -90,3 +90,13 @@ CREATE TABLE IF NOT EXISTS product_option_values (
     PRIMARY KEY ("id"),
     FOREIGN KEY ("product_option_id") REFERENCES "product_options"("id")
 );
+
+CREATE TABLE IF NOT EXISTS product_variant_bridge (
+    "id" bigserial,
+    "product_id" bigint NOT NULL,
+    "product_option_value_id" bigint NOT NULL,
+    "created_on" timestamp DEFAULT NOW(),
+    "archived_on" timestamp,
+    FOREIGN KEY ("product_id") REFERENCES "products"("id"),
+    FOREIGN KEY ("product_option_value_id") REFERENCES "product_option_values"("id")
+);

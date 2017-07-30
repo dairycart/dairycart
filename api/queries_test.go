@@ -12,7 +12,7 @@ const (
 	aTimestamp                = 232747200
 	anOlderTimestamp          = aTimestamp + 10000
 	existingID                = 1
-	existingIDString          = "1"
+
 	queryEqualityErrorMessage = "Generated SQL query should match expected SQL query"
 	argsEqualityErrorMessage  = "Generated SQL arguments should match expected arguments"
 )
@@ -333,9 +333,32 @@ func TestBuildProductOptionValueCreationQuery(t *testing.T) {
 	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
 }
 
+func TestBuildProductOptionCombinationExistenceQuery(t *testing.T) {
+	t.Parallel()
+	exampleData := []uint64{1, 4}
+	expectedQuery := `SELECT EXISTS(SELECT id FROM product_variant_bridge WHERE product_option_value_id = $1) AND EXISTS(SELECT id FROM product_variant_bridge WHERE product_option_value_id = $2)`
+
+	actualQuery, actualArgs := buildProductOptionCombinationExistenceQuery(exampleData)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
+}
+
 func TestBuildDiscountListQuery(t *testing.T) {
 	t.Parallel()
-	expectedQuery := "SELECT \n\t\tid,\n\t\tname,\n\t\ttype,\n\t\tamount,\n\t\tstarts_on,\n\t\texpires_on,\n\t\trequires_code,\n\t\tcode,\n\t\tlimited_use,\n\t\tnumber_of_uses,\n\t\tlogin_required,\n\t\tcreated_on,\n\t\tupdated_on,\n\t\tarchived_on\n\t FROM discounts WHERE (expires_on IS NULL OR expires_on > $1) AND archived_on IS NULL LIMIT 25"
+	expectedQuery := `SELECT id,
+			name,
+			type,
+			amount,
+			starts_on,
+			expires_on,
+			requires_code,
+			code,
+			limited_use,
+			number_of_uses,
+			login_required,
+			created_on,
+			updated_on,
+			archived_on FROM discounts WHERE (expires_on IS NULL OR expires_on > $1) AND archived_on IS NULL LIMIT 25`
 	actualQuery, actualArgs := buildDiscountListQuery(defaultQueryFilter)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 1, len(actualArgs), argsEqualityErrorMessage)
