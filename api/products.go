@@ -288,7 +288,8 @@ func createProductInDB(tx *sql.Tx, np *Product) (uint64, time.Time, error) {
 	return newProductID, createdOn, err
 }
 
-func createProductsInDBFromOptionRows(tx *sql.Tx, r *ProductRoot, np *Product, ops []*ProductOption) error {
+func createProductsInDBFromOptionRows(tx *sql.Tx, r *ProductRoot, np *Product, ops []*ProductOption) ([]*Product, error) {
+	createdProducts := []*Product{}
 	productOptionData := generateCartesianProductForOptions(ops)
 	for _, option := range productOptionData {
 		p := &Product{}
@@ -297,15 +298,16 @@ func createProductsInDBFromOptionRows(tx *sql.Tx, r *ProductRoot, np *Product, o
 		p.SKU = fmt.Sprintf("%s_%s", r.SKUPrefix, option.SKUPostfix)
 		id, _, err := createProductInDB(tx, p)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		err = createBridgeEntryForProductValues(tx, id, option.IDs)
 		if err != nil {
-			return err
+			return nil, err
 		}
+		createdProducts = append(createdProducts, p)
 	}
-	return nil
+	return createdProducts, nil
 }
 
 func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
@@ -356,6 +358,7 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			createdOptions = append(createdOptions, o)
 		}
 
+		var createdProducts []*Product
 		if len(productInput.Options) == 0 {
 			newProduct.ProductRootID = productRoot.ID
 			newProductID, createdOn, err := createProductInDB(tx, newProduct)
@@ -367,7 +370,7 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			newProduct.ID = newProductID
 			newProduct.CreatedOn = createdOn
 		} else {
-			err = createProductsInDBFromOptionRows(tx, productRoot, newProduct, createdOptions)
+			createdProducts, err = createProductsInDBFromOptionRows(tx, productRoot, newProduct, createdOptions)
 			if err != nil {
 				tx.Rollback()
 				notifyOfInternalIssue(res, err, "insert products in database")
@@ -382,6 +385,10 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 
 		res.WriteHeader(http.StatusCreated)
-		json.NewEncoder(res).Encode(newProduct)
+		if len(productInput.Options) == 0 {
+			json.NewEncoder(res).Encode(newProduct)
+		} else {
+			json.NewEncoder(res).Encode(createdProducts)
+		}
 	}
 }
