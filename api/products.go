@@ -374,7 +374,7 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 				notifyOfInternalIssue(res, err, "insert product options and values in database")
 				return
 			}
-			productRoot.Options = append(productRoot.Options, *o)
+			productRoot.Options = append(productRoot.Options, o)
 		}
 
 		if len(productInput.Options) == 0 {

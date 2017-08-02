@@ -53,8 +53,8 @@ type ProductRoot struct {
 	PackageWidth  float32 `json:"package_width"`
 	PackageLength float32 `json:"package_length"`
 
-	Options  []ProductOption `json:"options"`
-	Products []Product       `json:"products"`
+	Options  []*ProductOption `json:"options"`
+	Products []Product        `json:"products"`
 }
 
 func createProductRootFromProduct(p *Product) *ProductRoot {
@@ -150,6 +150,19 @@ func buildSingleProductRootHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		} else if err != nil {
 			notifyOfInternalIssue(res, err, "retrieving product root from database")
+			return
+		}
+
+		query, args := buildProductAssociatedWithRootListQuery(productRoot.ID)
+		err = retrieveListOfRowsFromDB(db, query, args, &productRoot.Products)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "retrieve products from the database")
+			return
+		}
+
+		productRoot.Options, err = getProductOptionsForProductRoot(db, productRoot.ID, nil)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "retrieve product options from the database")
 			return
 		}
 

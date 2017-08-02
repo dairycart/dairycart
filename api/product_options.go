@@ -64,7 +64,7 @@ type optionPlaceholder struct {
 	OriginalValue ProductOptionValue
 }
 
-func generateCartesianProductForOptions(inputOptions []ProductOption) []simpleProductOption {
+func generateCartesianProductForOptions(inputOptions []*ProductOption) []simpleProductOption {
 	/*
 		Some notes about this function:
 
@@ -150,8 +150,8 @@ func retrieveProductOptionFromDB(db *sqlx.DB, id uint64) (*ProductOption, error)
 	return option, err
 }
 
-func getProductOptionsForProduct(db *sqlx.DB, productRootID uint64, queryFilter *QueryFilter) ([]ProductOption, error) {
-	var options []ProductOption
+func getProductOptionsForProductRoot(db *sqlx.DB, productRootID uint64, queryFilter *QueryFilter) ([]*ProductOption, error) {
+	var options []*ProductOption
 
 	query, args := buildProductOptionListQuery(productRootID, queryFilter)
 	err := db.Select(&options, query, args...)
@@ -160,11 +160,10 @@ func getProductOptionsForProduct(db *sqlx.DB, productRootID uint64, queryFilter 
 	}
 
 	for _, option := range options {
-		optionValues, err := retrieveProductOptionValuesForOptionFromDB(db, option.ID)
+		option.Values, err = retrieveProductOptionValuesForOptionFromDB(db, option.ID)
 		if err != nil {
 			return options, errors.Wrap(err, "Error retrieving product option values for option")
 		}
-		option.Values = optionValues
 	}
 	return options, nil
 }
@@ -183,7 +182,7 @@ func buildProductOptionListHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		options, err := getProductOptionsForProduct(db, uint64(productRootIDInt), queryFilter)
+		options, err := getProductOptionsForProductRoot(db, uint64(productRootIDInt), queryFilter)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve products from the database")
 			return
@@ -227,14 +226,8 @@ func buildProductOptionUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		noop := func(...interface{}) {
-			return
-		}
-
 		existingOption, err := retrieveProductOptionFromDB(db, uint64(optionIDInt))
 		if err != nil {
-			errStr := err.Error()
-			noop(errStr)
 			notifyOfInternalIssue(res, err, "retrieve product option from the database")
 			return
 		}
@@ -246,6 +239,12 @@ func buildProductOptionUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 		existingOption.UpdatedOn = NullTime{pq.NullTime{Time: optionUpdatedOn, Valid: true}}
+
+		existingOption.Values, err = retrieveProductOptionValuesForOptionFromDB(db, existingOption.ID)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "retrieve product option from the database")
+			return
+		}
 
 		json.NewEncoder(res).Encode(existingOption)
 	}

@@ -880,8 +880,242 @@ func TestProductRootRetrievalRoute(t *testing.T) {
 			"package_height": 5,
 			"package_width": 5,
 			"package_length": 5,
-			"options": null,
-			"products": null
+			"options": [{
+				"name": "color",
+				"values": [{
+					"value": "red"
+				}, {
+					"value": "green"
+				}, {
+					"value": "blue"
+				}]
+			}, {
+				"name": "size",
+				"values": [{
+					"value": "small"
+				}, {
+					"value": "medium"
+				}, {
+					"value": "large"
+				}]
+			}],
+			"products": [{
+				"name": "Your Favorite Band's T-Shirt",
+				"subtitle": "A t-shirt you can wear",
+				"description": "Wear this if you'd like. Or don't, I'm not in charge of your actions",
+				"option_summary": "Size: Small, Color: Red",
+				"sku": "t-shirt-small-red",
+				"upc": "",
+				"manufacturer": "Record Company",
+				"brand": "Your Favorite Band",
+				"quantity": 666,
+				"quantity_per_package": 1,
+				"taxable": true,
+				"price": 20,
+				"on_sale": false,
+				"sale_price": 0,
+				"cost": 10,
+				"product_weight": 1,
+				"product_height": 5,
+				"product_width": 5,
+				"product_length": 5,
+				"package_weight": 1,
+				"package_height": 5,
+				"package_width": 5,
+				"package_length": 5
+			}, {
+				"name": "Your Favorite Band's T-Shirt",
+				"subtitle": "A t-shirt you can wear",
+				"description": "Wear this if you'd like. Or don't, I'm not in charge of your actions",
+				"option_summary": "Size: Medium, Color: Red",
+				"sku": "t-shirt-medium-red",
+				"upc": "",
+				"manufacturer": "Record Company",
+				"brand": "Your Favorite Band",
+				"quantity": 666,
+				"quantity_per_package": 1,
+				"taxable": true,
+				"price": 20,
+				"on_sale": false,
+				"sale_price": 0,
+				"cost": 10,
+				"product_weight": 1,
+				"product_height": 5,
+				"product_width": 5,
+				"product_length": 5,
+				"package_weight": 1,
+				"package_height": 5,
+				"package_width": 5,
+				"package_length": 5
+			}, {
+				"name": "Your Favorite Band's T-Shirt",
+				"subtitle": "A t-shirt you can wear",
+				"description": "Wear this if you'd like. Or don't, I'm not in charge of your actions",
+				"option_summary": "Size: Large, Color: Red",
+				"sku": "t-shirt-large-red",
+				"upc": "",
+				"manufacturer": "Record Company",
+				"brand": "Your Favorite Band",
+				"quantity": 666,
+				"quantity_per_package": 1,
+				"taxable": true,
+				"price": 20,
+				"on_sale": false,
+				"sale_price": 0,
+				"cost": 10,
+				"product_weight": 1,
+				"product_height": 5,
+				"product_width": 5,
+				"product_length": 5,
+				"package_weight": 1,
+				"package_height": 5,
+				"package_width": 5,
+				"package_length": 5
+			}, {
+				"name": "Your Favorite Band's T-Shirt",
+				"subtitle": "A t-shirt you can wear",
+				"description": "Wear this if you'd like. Or don't, I'm not in charge of your actions",
+				"option_summary": "Size: Small, Color: Blue",
+				"sku": "t-shirt-small-blue",
+				"upc": "",
+				"manufacturer": "Record Company",
+				"brand": "Your Favorite Band",
+				"quantity": 666,
+				"quantity_per_package": 1,
+				"taxable": true,
+				"price": 20,
+				"on_sale": false,
+				"sale_price": 0,
+				"cost": 10,
+				"product_weight": 1,
+				"product_height": 5,
+				"product_width": 5,
+				"product_length": 5,
+				"package_weight": 1,
+				"package_height": 5,
+				"package_width": 5,
+				"package_length": 5
+			}, {
+				"name": "Your Favorite Band's T-Shirt",
+				"subtitle": "A t-shirt you can wear",
+				"description": "Wear this if you'd like. Or don't, I'm not in charge of your actions",
+				"option_summary": "Size: Medium, Color: Blue",
+				"sku": "t-shirt-medium-blue",
+				"upc": "",
+				"manufacturer": "Record Company",
+				"brand": "Your Favorite Band",
+				"quantity": 666,
+				"quantity_per_package": 1,
+				"taxable": true,
+				"price": 20,
+				"on_sale": false,
+				"sale_price": 0,
+				"cost": 10,
+				"product_weight": 1,
+				"product_height": 5,
+				"product_width": 5,
+				"product_length": 5,
+				"package_weight": 1,
+				"package_height": 5,
+				"package_width": 5,
+				"package_length": 5
+			}, {
+				"name": "Your Favorite Band's T-Shirt",
+				"subtitle": "A t-shirt you can wear",
+				"description": "Wear this if you'd like. Or don't, I'm not in charge of your actions",
+				"option_summary": "Size: Large, Color: Blue",
+				"sku": "t-shirt-large-blue",
+				"upc": "",
+				"manufacturer": "Record Company",
+				"brand": "Your Favorite Band",
+				"quantity": 666,
+				"quantity_per_package": 1,
+				"taxable": true,
+				"price": 20,
+				"on_sale": false,
+				"sale_price": 0,
+				"cost": 10,
+				"product_weight": 1,
+				"product_height": 5,
+				"product_width": 5,
+				"product_length": 5,
+				"package_weight": 1,
+				"package_height": 5,
+				"package_width": 5,
+				"package_length": 5
+			}, {
+				"name": "Your Favorite Band's T-Shirt",
+				"subtitle": "A t-shirt you can wear",
+				"description": "Wear this if you'd like. Or don't, I'm not in charge of your actions",
+				"option_summary": "Size: Small, Color: Green",
+				"sku": "t-shirt-small-green",
+				"upc": "",
+				"manufacturer": "Record Company",
+				"brand": "Your Favorite Band",
+				"quantity": 666,
+				"quantity_per_package": 1,
+				"taxable": true,
+				"price": 20,
+				"on_sale": false,
+				"sale_price": 0,
+				"cost": 10,
+				"product_weight": 1,
+				"product_height": 5,
+				"product_width": 5,
+				"product_length": 5,
+				"package_weight": 1,
+				"package_height": 5,
+				"package_width": 5,
+				"package_length": 5
+			}, {
+				"name": "Your Favorite Band's T-Shirt",
+				"subtitle": "A t-shirt you can wear",
+				"description": "Wear this if you'd like. Or don't, I'm not in charge of your actions",
+				"option_summary": "Size: Medium, Color: Green",
+				"sku": "t-shirt-medium-green",
+				"upc": "",
+				"manufacturer": "Record Company",
+				"brand": "Your Favorite Band",
+				"quantity": 666,
+				"quantity_per_package": 1,
+				"taxable": true,
+				"price": 20,
+				"on_sale": false,
+				"sale_price": 0,
+				"cost": 10,
+				"product_weight": 1,
+				"product_height": 5,
+				"product_width": 5,
+				"product_length": 5,
+				"package_weight": 1,
+				"package_height": 5,
+				"package_width": 5,
+				"package_length": 5
+			}, {
+				"name": "Your Favorite Band's T-Shirt",
+				"subtitle": "A t-shirt you can wear",
+				"description": "Wear this if you'd like. Or don't, I'm not in charge of your actions",
+				"option_summary": "Size: Large, Color: Green",
+				"sku": "t-shirt-large-green",
+				"upc": "",
+				"manufacturer": "Record Company",
+				"brand": "Your Favorite Band",
+				"quantity": 666,
+				"quantity_per_package": 1,
+				"taxable": true,
+				"price": 20,
+				"on_sale": false,
+				"sale_price": 0,
+				"cost": 10,
+				"product_weight": 1,
+				"product_height": 5,
+				"product_width": 5,
+				"product_length": 5,
+				"package_weight": 1,
+				"package_height": 5,
+				"package_width": 5,
+				"package_length": 5
+			}]
 		}
 	`)
 	assert.Equal(t, expected, actual, "product retrieval response should contain a complete product")
@@ -1192,13 +1426,25 @@ func TestProductOptionCreationWithAlreadyExistentName(t *testing.T) {
 
 func TestProductOptionUpdate(t *testing.T) {
 	t.Parallel()
+	testSKU := "testing_product_options"
 	testOptionName := "example_option_to_update"
 	var createdOptionID uint64
+	var createdRootID uint64
 
 	updatedOptionName := "not_the_same"
+
+	testProductCreation := func(t *testing.T) {
+		newProductJSON := createProductCreationBody(testSKU, "")
+		resp, err := createProduct(newProductJSON)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product that doesn't exist should respond 201")
+		body := turnResponseBodyIntoString(t, resp)
+		createdRootID = retrieveIDFromResponseBody(body, t)
+	}
+
 	testProductOptionCreation := func(t *testing.T) {
 		newOptionJSON := createProductOptionCreationBody(testOptionName)
-		resp, err := createProductOptionForProduct(existentID, newOptionJSON)
+		resp, err := createProductOptionForProduct(strconv.Itoa(int(createdRootID)), newOptionJSON)
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product option that doesn't exist should respond 201")
 
@@ -1217,7 +1463,13 @@ func TestProductOptionUpdate(t *testing.T) {
 		expected := minifyJSON(t, `
 			{
 				"name": "not_the_same",
-				"values": null
+				"values": [{
+					"value": "one"
+				}, {
+					"value": "two"
+				}, {
+					"value": "three"
+				}]
 			}
 		`)
 		assert.Equal(t, expected, actual, "product option update response should reflect the updated fields")
@@ -1232,7 +1484,17 @@ func TestProductOptionUpdate(t *testing.T) {
 		assert.Equal(t, "", actual, "product option deletion route should respond with affirmative message upon successful deletion")
 	}
 
+	testDeleteProduct := func(t *testing.T) {
+		resp, err := deleteProductRoot(strconv.Itoa(int(createdRootID)))
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a product that exists should respond 200")
+	}
+
 	subtests := []subtest{
+		{
+			Message: "create product to add option to",
+			Test:    testProductCreation,
+		},
 		{
 			Message: "create product option",
 			Test:    testProductOptionCreation,
@@ -1244,6 +1506,10 @@ func TestProductOptionUpdate(t *testing.T) {
 		{
 			Message: "delete created product option",
 			Test:    testDeleteProductOption,
+		},
+		{
+			Message: "delete created product root",
+			Test:    testDeleteProduct,
 		},
 	}
 	runSubtestSuite(t, subtests)
