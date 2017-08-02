@@ -89,7 +89,7 @@ func TestDiscountListRetrievalWithDefaultFilter(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "requesting a list of products should respond 200")
 
 	body := turnResponseBodyIntoString(t, resp)
-	lr := parseResponseIntoStruct(body, t)
+	lr := parseResponseIntoStruct(t, body)
 	assert.True(t, len(lr.Data) <= int(lr.Limit), "discount list route should not return more data than the limit")
 	assert.Equal(t, uint8(25), lr.Limit, "discount list route should respond with the default limit when a ilmit is not specified")
 	assert.Equal(t, uint64(1), lr.Page, "discount list route should respond with the first page when a page is not specified")
@@ -106,7 +106,7 @@ func TestDiscountListRouteWithCustomFilter(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "requesting a list of products should respond 200")
 
 	body := turnResponseBodyIntoString(t, resp)
-	lr := parseResponseIntoStruct(body, t)
+	lr := parseResponseIntoStruct(t, body)
 	assert.Equal(t, uint8(2), lr.Limit, "discount list route should respond with the specified limit")
 	assert.Equal(t, uint64(2), lr.Page, "discount list route should respond with the specified page")
 }

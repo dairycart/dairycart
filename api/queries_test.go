@@ -68,7 +68,7 @@ func TestBuildProductRootListQuery(t *testing.T) {
 			available_on,
 			created_on,
 			updated_on,
-			archived_on,
+			archived_on
 		 FROM product_roots WHERE archived_on IS NULL LIMIT 25`
 	actualQuery, _ := buildProductRootListQuery(defaultQueryFilter)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
@@ -104,7 +104,7 @@ func TestBuildProductListQuery(t *testing.T) {
 			available_on,
 			created_on,
 			updated_on,
-			archived_on,
+			archived_on
 		 FROM products WHERE archived_on IS NULL LIMIT 25`
 	actualQuery, actualArgs := buildProductListQuery(defaultQueryFilter)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
@@ -148,7 +148,7 @@ func TestBuildProductListQueryAndPartiallyCustomQueryFilter(t *testing.T) {
 			available_on,
 			created_on,
 			updated_on,
-			archived_on,
+			archived_on
 		 FROM products WHERE archived_on IS NULL AND updated_on > $1 AND updated_on < $2 LIMIT 25 OFFSET 50`
 
 	actualQuery, actualArgs := buildProductListQuery(queryFilter)
@@ -195,7 +195,7 @@ func TestBuildProductListQueryAndCompletelyCustomQueryFilter(t *testing.T) {
 			available_on,
 			created_on,
 			updated_on,
-			archived_on,
+			archived_on
 		 FROM products WHERE archived_on IS NULL AND created_on > $1 AND created_on < $2 AND updated_on > $3 AND updated_on < $4 LIMIT 46 OFFSET 92`
 
 	actualQuery, actualArgs := buildProductListQuery(queryFilter)
@@ -234,7 +234,7 @@ func TestBuildProductAssociatedWithRootListQuery(t *testing.T) {
 			available_on,
 			created_on,
 			updated_on,
-			archived_on,
+			archived_on
 		 FROM products WHERE archived_on IS NULL AND product_root_id = $1`
 	actualQuery, actualArgs := buildProductAssociatedWithRootListQuery(123)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)

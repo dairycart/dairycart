@@ -305,13 +305,14 @@ func createProductInDB(tx *sql.Tx, np *Product) (uint64, time.Time, time.Time, e
 	return newProductID, availableOn, createdOn, err
 }
 
-func createProductsInDBFromOptionRows(tx *sql.Tx, r *ProductRoot, np *Product, ops []ProductOption) ([]Product, error) {
+func createProductsInDBFromOptionRows(tx *sql.Tx, r *ProductRoot, np *Product) ([]Product, error) {
 	createdProducts := []Product{}
-	productOptionData := generateCartesianProductForOptions(ops)
+	productOptionData := generateCartesianProductForOptions(r.Options)
 	for _, option := range productOptionData {
 		p := &Product{}
 		*p = *np // solved: http://www.claymath.org/millennium-problems/p-vs-np-problem
 
+		p.ProductRootID = r.ID
 		p.ApplicableOptionValues = option.OriginalValues
 		p.OptionSummary = option.OptionSummary
 		p.SKU = fmt.Sprintf("%s_%s", r.SKUPrefix, option.SKUPostfix)
@@ -376,7 +377,6 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			productRoot.Options = append(productRoot.Options, *o)
 		}
 
-		var createdProducts []Product
 		if len(productInput.Options) == 0 {
 			newProduct.ProductRootID = productRoot.ID
 			newProduct.ID, newProduct.AvailableOn, newProduct.CreatedOn, err = createProductInDB(tx, newProduct)
@@ -387,8 +387,7 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			}
 			productRoot.Products = []Product{*newProduct}
 		} else {
-			createdProducts, err = createProductsInDBFromOptionRows(tx, productRoot, newProduct, productRoot.Options)
-			productRoot.Products = createdProducts
+			productRoot.Products, err = createProductsInDBFromOptionRows(tx, productRoot, newProduct)
 			if err != nil {
 				tx.Rollback()
 				notifyOfInternalIssue(res, err, "insert products in database")

@@ -34,8 +34,8 @@ const (
 // and three sizes, then there are two ProductOptions for that base_product, color and size.
 type ProductOption struct {
 	DBRow
-	Name          string               `json:"name"`
 	ProductRootID uint64               `json:"product_root_id"`
+	Name          string               `json:"name"`
 	Values        []ProductOptionValue `json:"values"`
 }
 
@@ -264,13 +264,12 @@ func createProductOptionInDB(tx *sql.Tx, o *ProductOption, productRootID uint64)
 }
 
 func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in *ProductOptionCreationInput, productRootID uint64) (*ProductOption, error) {
+	var err error
 	newProductOption := &ProductOption{Name: in.Name, ProductRootID: productRootID}
-	newProductOptionID, newProductOptionCreatedOn, err := createProductOptionInDB(tx, newProductOption, productRootID)
+	newProductOption.ID, newProductOption.CreatedOn, err = createProductOptionInDB(tx, newProductOption, productRootID)
 	if err != nil {
 		return nil, err
 	}
-	newProductOption.ID = newProductOptionID
-	newProductOption.CreatedOn = newProductOptionCreatedOn
 
 	for _, value := range in.Values {
 		newOptionValue := ProductOptionValue{

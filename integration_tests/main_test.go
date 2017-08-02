@@ -22,7 +22,7 @@ const (
 	// function, and as a consequence, the tests, would fail spectacularly).
 	// Note that this pattern needs to be run as ungreedy because of the possiblity of prefix and or
 	// suffixed commas
-	idReplacementPattern                = `(?U)(,?)"(id)":\s?\d+,`
+	idReplacementPattern                = `(?U)(,?)"(id|product_option_id|product_root_id)":\s?\d+,`
 	productTimeReplacementPattern       = `(?U)(,?)"(available_on)":"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z)?"(,?)`
 	timeFieldReplacementPattern         = `(?U)(,?)"(created_on|updated_on|archived_on)":"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z)?"(,?)`
 	discountTimeFieldReplacementPattern = `(?U)(,?)"(starts_on|expires_on)":"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?(Z|\+\d{2}:\d{2}))?"(,?)`
@@ -99,7 +99,6 @@ func retrieveIDFromResponseBody(body string, t *testing.T) uint64 {
 
 func retrieveProductRootIDFromResponseBody(body string, t *testing.T) uint64 {
 	idContainer := struct {
-
 		ID uint64 `json:"product_root_id"`
 	}{}
 	err := json.Unmarshal([]byte(body), &idContainer)
@@ -110,7 +109,7 @@ func retrieveProductRootIDFromResponseBody(body string, t *testing.T) uint64 {
 	return idContainer.ID
 }
 
-func parseResponseIntoStruct(body string, t *testing.T) listResponse {
+func parseResponseIntoStruct(t *testing.T, body string) listResponse {
 	lr := listResponse{}
 	err := json.Unmarshal([]byte(body), &lr)
 	assert.Nil(t, err)

@@ -1,12 +1,14 @@
 package dairytest
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 	"testing"
+	"text/template"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -128,7 +130,6 @@ func TestProductRetrievalRoute(t *testing.T) {
 	actual := cleanAPIResponseBody(body)
 	expected := minifyJSON(t, fmt.Sprintf(`
 		{
-			"product_root_id": 1,
 			"name": "Your Favorite Band's T-Shirt",
 			"subtitle": "A t-shirt you can wear",
 			"description": "Wear this if you'd like. Or don't, I'm not in charge of your actions",
@@ -164,7 +165,7 @@ func TestProductListRouteWithDefaultFilter(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "requesting a list of products should respond 200")
 
 	body := turnResponseBodyIntoString(t, resp)
-	lr := parseResponseIntoStruct(body, t)
+	lr := parseResponseIntoStruct(t, body)
 	assert.True(t, len(lr.Data) <= int(lr.Limit), "product list route should not return more data than the limit")
 	assert.Equal(t, uint8(25), lr.Limit, "product list route should respond with the default limit when a ilmit is not specified")
 	assert.Equal(t, uint64(1), lr.Page, "product list route should respond with the first page when a page is not specified")
@@ -181,7 +182,7 @@ func TestProductListRouteWithCustomFilter(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "requesting a list of products should respond 200")
 
 	body := turnResponseBodyIntoString(t, resp)
-	lr := parseResponseIntoStruct(body, t)
+	lr := parseResponseIntoStruct(t, body)
 	assert.Equal(t, uint8(5), lr.Limit, "product list route should respond with the specified limit")
 	assert.Equal(t, uint64(2), lr.Page, "product list route should respond with the specified page")
 }
@@ -208,9 +209,8 @@ func TestProductUpdateRoute(t *testing.T) {
 
 		body := turnResponseBodyIntoString(t, resp)
 		actual := cleanAPIResponseBody(body)
-		expected := minifyJSON(t, fmt.Sprintf(`
+		expected := minifyJSON(t, `
 			{
-				"product_root_id": %d,
 				"name": "New Product",
 				"subtitle": "this is a product",
 				"description": "this product is neat or maybe its not who really knows for sure?",
@@ -235,7 +235,7 @@ func TestProductUpdateRoute(t *testing.T) {
 				"package_width": 9,
 				"package_length": 9
 			}
-		`, productRootID))
+		`)
 		assert.Equal(t, expected, actual, "product response upon update should reflect the updated fields")
 	}
 
@@ -297,9 +297,10 @@ func TestProductUpdateRouteForNonexistentProduct(t *testing.T) {
 	assert.Equal(t, expected, actual, "trying to update a product that doesn't exist should respond 404")
 }
 
-func TestProductCreation(t *testing.T) {
+func TestProductCreationRoute(t *testing.T) {
 	t.Parallel()
 
+	var productRootID uint64
 	testSKU := "test-product-creation"
 	testProductCreation := func(t *testing.T) {
 		newProductJSON := createProductCreationBody(testSKU, "0123456789")
@@ -308,7 +309,7 @@ func TestProductCreation(t *testing.T) {
 		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product that doesn't exist should respond 201")
 
 		body := turnResponseBodyIntoString(t, resp)
-		productRootID := retrieveIDFromResponseBody(body, t)
+		productRootID = retrieveIDFromResponseBody(body, t)
 
 		actual := cleanAPIResponseBody(body)
 		expected := minifyJSON(t, fmt.Sprintf(`
@@ -332,7 +333,6 @@ func TestProductCreation(t *testing.T) {
 				"package_length": 9,
 				"options": null,
 				"products": [{
-					"product_root_id": %d,
 					"name": "New Product",
 					"subtitle": "this is a product",
 					"description": "this product is neat or maybe its not who really knows for sure?",
@@ -358,12 +358,12 @@ func TestProductCreation(t *testing.T) {
 					"package_length": 9
 				}]
 			}
-		`, testSKU, productRootID, testSKU))
+		`, testSKU, testSKU))
 		assert.Equal(t, expected, actual, "product creation route should respond with created product body")
 	}
 
 	testDeleteProduct := func(t *testing.T) {
-		resp, err := deleteProduct(testSKU)
+		resp, err := deleteProductRoot(strconv.Itoa(int(productRootID)))
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a product that exists should respond 200")
 	}
@@ -376,6 +376,399 @@ func TestProductCreation(t *testing.T) {
 		{
 			Message: "delete created product",
 			Test:    testDeleteProduct,
+		},
+	}
+	runSubtestSuite(t, subtests)
+}
+
+func TestProductCreationRouteWithOptions(t *testing.T) {
+	t.Parallel()
+
+	var productRootID uint64
+	testSKU := "test-product-creation-with-options"
+	testProductCreation := func(t *testing.T) {
+		newProductJSON := fmt.Sprintf(`
+			{
+				"name": "New Product",
+				"subtitle": "this is a product",
+				"description": "this product is neat or maybe its not who really knows for sure?",
+				"sku": "%s",
+				"manufacturer": "Manufacturer",
+				"brand": "Brand",
+				"quantity": 123,
+				"quantity_per_package": 3,
+				"taxable": false,
+				"price": 12.34,
+				"on_sale": true,
+				"sale_price": 10.00,
+				"cost": 5,
+				"product_weight": 9,
+				"product_height": 9,
+				"product_width": 9,
+				"product_length": 9,
+				"package_weight": 9,
+				"package_height": 9,
+				"package_width": 9,
+				"package_length": 9,
+				"options": [
+					{
+						"name": "color",
+						"values": [
+							"red",
+							"green",
+							"blue"
+						]
+					},
+					{
+						"name": "size",
+						"values": [
+							"small",
+							"medium",
+							"large"
+						]
+					}
+				]
+			}
+		`, testSKU)
+		resp, err := createProduct(newProductJSON)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product that doesn't exist should respond 201")
+
+		body := turnResponseBodyIntoString(t, resp)
+		productRootID = retrieveIDFromResponseBody(body, t)
+		actual := cleanAPIResponseBody(body)
+
+		tmpl, err := template.New("resp").Parse(`
+			{
+				"name": "New Product",
+				"subtitle": "this is a product",
+				"description": "this product is neat or maybe its not who really knows for sure?",
+				"sku_prefix": "{{.SKU}}",
+				"manufacturer": "Manufacturer",
+				"brand": "Brand",
+				"quantity_per_package": 3,
+				"taxable": false,
+				"cost": 5,
+				"product_weight": 9,
+				"product_height": 9,
+				"product_width": 9,
+				"product_length": 9,
+				"package_weight": 9,
+				"package_height": 9,
+				"package_width": 9,
+				"package_length": 9,
+				"options": [{
+					"name": "color",
+					"values": [{
+						"value": "red"
+					}, {
+						"value": "green"
+					}, {
+						"value": "blue"
+					}]
+				}, {
+					"name": "size",
+					"values": [{
+						"value": "small"
+					}, {
+						"value": "medium"
+					}, {
+						"value": "large"
+					}]
+				}],
+				"products": [{
+					"name": "New Product",
+					"subtitle": "this is a product",
+					"description": "this product is neat or maybe its not who really knows for sure?",
+					"option_summary": "color: red, size: small",
+					"sku": "{{.SKU}}_red_small",
+					"upc": "",
+					"manufacturer": "Manufacturer",
+					"brand": "Brand",
+					"quantity": 123,
+					"quantity_per_package": 3,
+					"taxable": false,
+					"price": 12.34,
+					"on_sale": true,
+					"sale_price": 10,
+					"cost": 5,
+					"product_weight": 9,
+					"product_height": 9,
+					"product_width": 9,
+					"product_length": 9,
+					"package_weight": 9,
+					"package_height": 9,
+					"package_width": 9,
+					"package_length": 9,
+					"applicable_options": [{
+						"value": "red"
+					}, {
+						"value": "small"
+					}]
+				}, {
+					"name": "New Product",
+					"subtitle": "this is a product",
+					"description": "this product is neat or maybe its not who really knows for sure?",
+					"option_summary": "color: red, size: medium",
+					"sku": "{{.SKU}}_red_medium",
+					"upc": "",
+					"manufacturer": "Manufacturer",
+					"brand": "Brand",
+					"quantity": 123,
+					"quantity_per_package": 3,
+					"taxable": false,
+					"price": 12.34,
+					"on_sale": true,
+					"sale_price": 10,
+					"cost": 5,
+					"product_weight": 9,
+					"product_height": 9,
+					"product_width": 9,
+					"product_length": 9,
+					"package_weight": 9,
+					"package_height": 9,
+					"package_width": 9,
+					"package_length": 9,
+					"applicable_options": [{
+						"value": "red"
+					}, {
+						"value": "medium"
+					}]
+				}, {
+					"name": "New Product",
+					"subtitle": "this is a product",
+					"description": "this product is neat or maybe its not who really knows for sure?",
+					"option_summary": "color: red, size: large",
+					"sku": "{{.SKU}}_red_large",
+					"upc": "",
+					"manufacturer": "Manufacturer",
+					"brand": "Brand",
+					"quantity": 123,
+					"quantity_per_package": 3,
+					"taxable": false,
+					"price": 12.34,
+					"on_sale": true,
+					"sale_price": 10,
+					"cost": 5,
+					"product_weight": 9,
+					"product_height": 9,
+					"product_width": 9,
+					"product_length": 9,
+					"package_weight": 9,
+					"package_height": 9,
+					"package_width": 9,
+					"package_length": 9,
+					"applicable_options": [{
+						"value": "red"
+					}, {
+						"value": "large"
+					}]
+				}, {
+					"name": "New Product",
+					"subtitle": "this is a product",
+					"description": "this product is neat or maybe its not who really knows for sure?",
+					"option_summary": "color: green, size: small",
+					"sku": "{{.SKU}}_green_small",
+					"upc": "",
+					"manufacturer": "Manufacturer",
+					"brand": "Brand",
+					"quantity": 123,
+					"quantity_per_package": 3,
+					"taxable": false,
+					"price": 12.34,
+					"on_sale": true,
+					"sale_price": 10,
+					"cost": 5,
+					"product_weight": 9,
+					"product_height": 9,
+					"product_width": 9,
+					"product_length": 9,
+					"package_weight": 9,
+					"package_height": 9,
+					"package_width": 9,
+					"package_length": 9,
+					"applicable_options": [{
+						"value": "green"
+					}, {
+						"value": "small"
+					}]
+				}, {
+					"name": "New Product",
+					"subtitle": "this is a product",
+					"description": "this product is neat or maybe its not who really knows for sure?",
+					"option_summary": "color: green, size: medium",
+					"sku": "{{.SKU}}_green_medium",
+					"upc": "",
+					"manufacturer": "Manufacturer",
+					"brand": "Brand",
+					"quantity": 123,
+					"quantity_per_package": 3,
+					"taxable": false,
+					"price": 12.34,
+					"on_sale": true,
+					"sale_price": 10,
+					"cost": 5,
+					"product_weight": 9,
+					"product_height": 9,
+					"product_width": 9,
+					"product_length": 9,
+					"package_weight": 9,
+					"package_height": 9,
+					"package_width": 9,
+					"package_length": 9,
+					"applicable_options": [{
+						"value": "green"
+					}, {
+						"value": "medium"
+					}]
+				}, {
+					"name": "New Product",
+					"subtitle": "this is a product",
+					"description": "this product is neat or maybe its not who really knows for sure?",
+					"option_summary": "color: green, size: large",
+					"sku": "{{.SKU}}_green_large",
+					"upc": "",
+					"manufacturer": "Manufacturer",
+					"brand": "Brand",
+					"quantity": 123,
+					"quantity_per_package": 3,
+					"taxable": false,
+					"price": 12.34,
+					"on_sale": true,
+					"sale_price": 10,
+					"cost": 5,
+					"product_weight": 9,
+					"product_height": 9,
+					"product_width": 9,
+					"product_length": 9,
+					"package_weight": 9,
+					"package_height": 9,
+					"package_width": 9,
+					"package_length": 9,
+					"applicable_options": [{
+						"value": "green"
+					}, {
+						"value": "large"
+					}]
+				}, {
+					"name": "New Product",
+					"subtitle": "this is a product",
+					"description": "this product is neat or maybe its not who really knows for sure?",
+					"option_summary": "color: blue, size: small",
+					"sku": "{{.SKU}}_blue_small",
+					"upc": "",
+					"manufacturer": "Manufacturer",
+					"brand": "Brand",
+					"quantity": 123,
+					"quantity_per_package": 3,
+					"taxable": false,
+					"price": 12.34,
+					"on_sale": true,
+					"sale_price": 10,
+					"cost": 5,
+					"product_weight": 9,
+					"product_height": 9,
+					"product_width": 9,
+					"product_length": 9,
+					"package_weight": 9,
+					"package_height": 9,
+					"package_width": 9,
+					"package_length": 9,
+					"applicable_options": [{
+						"value": "blue"
+					}, {
+						"value": "small"
+					}]
+				}, {
+					"name": "New Product",
+					"subtitle": "this is a product",
+					"description": "this product is neat or maybe its not who really knows for sure?",
+					"option_summary": "color: blue, size: medium",
+					"sku": "{{.SKU}}_blue_medium",
+					"upc": "",
+					"manufacturer": "Manufacturer",
+					"brand": "Brand",
+					"quantity": 123,
+					"quantity_per_package": 3,
+					"taxable": false,
+					"price": 12.34,
+					"on_sale": true,
+					"sale_price": 10,
+					"cost": 5,
+					"product_weight": 9,
+					"product_height": 9,
+					"product_width": 9,
+					"product_length": 9,
+					"package_weight": 9,
+					"package_height": 9,
+					"package_width": 9,
+					"package_length": 9,
+					"applicable_options": [{
+						"value": "blue"
+					}, {
+						"value": "medium"
+					}]
+				}, {
+					"name": "New Product",
+					"subtitle": "this is a product",
+					"description": "this product is neat or maybe its not who really knows for sure?",
+					"option_summary": "color: blue, size: large",
+					"sku": "{{.SKU}}_blue_large",
+					"upc": "",
+					"manufacturer": "Manufacturer",
+					"brand": "Brand",
+					"quantity": 123,
+					"quantity_per_package": 3,
+					"taxable": false,
+					"price": 12.34,
+					"on_sale": true,
+					"sale_price": 10,
+					"cost": 5,
+					"product_weight": 9,
+					"product_height": 9,
+					"product_width": 9,
+					"product_length": 9,
+					"package_weight": 9,
+					"package_height": 9,
+					"package_width": 9,
+					"package_length": 9,
+					"applicable_options": [{
+						"value": "blue"
+					}, {
+						"value": "large"
+					}]
+				}]
+			}
+		`)
+		assert.Nil(t, err)
+
+		b := new(bytes.Buffer)
+		x := struct {
+			SKU string
+		}{
+			SKU: testSKU,
+		}
+		err = tmpl.Execute(b, x)
+		assert.Nil(t, err)
+
+		expected := minifyJSON(t, b.String())
+		assert.Equal(t, expected, actual, "product creation route should respond with created product body")
+	}
+
+	testDeleteProductRoot := func(t *testing.T) {
+		resp, err := deleteProductRoot(strconv.Itoa(int(productRootID)))
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a product that exists should respond 200")
+	}
+
+	subtests := []subtest{
+		{
+			Message: "create product",
+			Test:    testProductCreation,
+		},
+		{
+			Message: "delete created product",
+			Test:    testDeleteProductRoot,
 		},
 	}
 	runSubtestSuite(t, subtests)
@@ -398,8 +791,7 @@ func TestProductDeletion(t *testing.T) {
 		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a product that exists should respond 200")
 
 		actual := turnResponseBodyIntoString(t, resp)
-		expected := fmt.Sprintf("Successfully deleted product `%s`", testSKU)
-		assert.Equal(t, expected, actual, "product deletion route should respond with affirmative message upon successful deletion")
+		assert.Empty(t, actual)
 	}
 
 	subtests := []subtest{
@@ -429,6 +821,130 @@ func TestProductDeletionRouteForNonexistentProduct(t *testing.T) {
 		}
 	`)
 	assert.Equal(t, expected, actual, "product deletion route should respond with 404 message when you try to delete a product that doesn't exist")
+}
+
+func TestProductRootListRetrievalRouteWithDefaultPagination(t *testing.T) {
+	t.Parallel()
+	resp, err := retrieveProductRoots(nil)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "requesting a product should respond 200")
+	body := turnResponseBodyIntoString(t, resp)
+
+	lr := parseResponseIntoStruct(t, body)
+	assert.True(t, len(lr.Data) <= int(lr.Limit), "product option list route should not return more data than the limit")
+	assert.Equal(t, uint8(25), lr.Limit, "product option list route should respond with the default limit when a ilmit is not specified")
+	assert.Equal(t, uint64(1), lr.Page, "product option list route should respond with the first page when a page is not specified")
+}
+
+func TestProductRootListRetrievalRouteWithCustomPagination(t *testing.T) {
+	t.Parallel()
+	customFilter := map[string]string{
+		"page":  "2",
+		"limit": "1",
+	}
+	resp, err := retrieveProductRoots(customFilter)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "requesting a product should respond 200")
+	body := turnResponseBodyIntoString(t, resp)
+
+	lr := parseResponseIntoStruct(t, body)
+	assert.True(t, len(lr.Data) <= int(lr.Limit), "product option list route should not return more data than the limit")
+	assert.Equal(t, uint8(1), lr.Limit, "product option list route should respond with the default limit when a ilmit is not specified")
+	assert.Equal(t, uint64(2), lr.Page, "product option list route should respond with the first page when a page is not specified")
+}
+
+func TestProductRootRetrievalRoute(t *testing.T) {
+	t.Parallel()
+	resp, err := retrieveProductRoot(existentID)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "requesting a product should respond 200")
+
+	body := turnResponseBodyIntoString(t, resp)
+	actual := cleanAPIResponseBody(body)
+	expected := minifyJSON(t, `
+		{
+			"name": "Your Favorite Band's T-Shirt",
+			"subtitle": "A t-shirt you can wear",
+			"description": "Wear this if you'd like. Or don't, I'm not in charge of your actions",
+			"sku_prefix": "t-shirt",
+			"manufacturer": "Record Company",
+			"brand": "Your Favorite Band",
+			"quantity_per_package": 1,
+			"taxable": true,
+			"cost": 20,
+			"product_weight": 1,
+			"product_height": 5,
+			"product_width": 5,
+			"product_length": 5,
+			"package_weight": 1,
+			"package_height": 5,
+			"package_width": 5,
+			"package_length": 5,
+			"options": null,
+			"products": null
+		}
+	`)
+	assert.Equal(t, expected, actual, "product retrieval response should contain a complete product")
+}
+
+func TestProductRootRetrievalRouteForNonexistentRoot(t *testing.T) {
+	t.Parallel()
+	resp, err := retrieveProductRoot(nonexistentID)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "requesting a product should respond 404")
+
+	actual := turnResponseBodyIntoString(t, resp)
+	expected := `{"status":404,"message":"The product_root you were looking for (identified by '999999999') does not exist"}`
+	assert.Equal(t, expected, actual, "expected and actual bodies should match")
+}
+
+func TestProductRootDeletionRoute(t *testing.T) {
+	t.Parallel()
+
+	var productRootID uint64
+	testSKU := "test-product-root-deletion"
+	testProductCreation := func(t *testing.T) {
+		newProductJSON := createProductCreationBody(testSKU, "")
+		resp, err := createProduct(newProductJSON)
+		assert.Nil(t, err)
+
+		body := turnResponseBodyIntoString(t, resp)
+		productRootID = retrieveIDFromResponseBody(body, t)
+		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product that doesn't exist should respond 201")
+	}
+
+	testDeleteProductRoot := func(t *testing.T) {
+		resp, err := deleteProductRoot(strconv.Itoa(int(productRootID)))
+		assert.Nil(t, err)
+
+		body := turnResponseBodyIntoString(t, resp)
+
+		assert.Empty(t, body)
+		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a product that exists should respond 200")
+	}
+
+	subtests := []subtest{
+		{
+			Message: "create product",
+			Test:    testProductCreation,
+		},
+		{
+			Message: "delete created product root",
+			Test:    testDeleteProductRoot,
+		},
+	}
+	runSubtestSuite(t, subtests)
+}
+
+func TestProductRootDeletionRouteForNonexistentRoot(t *testing.T) {
+	t.Parallel()
+	resp, err := deleteProductRoot(nonexistentID)
+	assert.Nil(t, err)
+
+	actual := turnResponseBodyIntoString(t, resp)
+	expected := `{"status":404,"message":"The product_root you were looking for (identified by '999999999') does not exist"}`
+	assert.Equal(t, expected, actual, "expected and actual bodies should match")
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "trying to delete a product that exists should respond 404")
 }
 
 func TestProductCreationWithAlreadyExistentSKU(t *testing.T) {
@@ -491,7 +1007,7 @@ func TestProductOptionListRetrievalWithDefaultFilter(t *testing.T) {
 
 	body := turnResponseBodyIntoString(t, resp)
 
-	lr := parseResponseIntoStruct(body, t)
+	lr := parseResponseIntoStruct(t, body)
 	assert.True(t, len(lr.Data) <= int(lr.Limit), "product option list route should not return more data than the limit")
 	assert.Equal(t, uint8(25), lr.Limit, "product option list route should respond with the default limit when a ilmit is not specified")
 	assert.Equal(t, uint64(1), lr.Page, "product option list route should respond with the first page when a page is not specified")
@@ -509,7 +1025,7 @@ func TestProductOptionListRetrievalWithCustomFilter(t *testing.T) {
 
 	body := turnResponseBodyIntoString(t, resp)
 
-	lr := parseResponseIntoStruct(body, t)
+	lr := parseResponseIntoStruct(t, body)
 	assert.True(t, len(lr.Data) <= int(lr.Limit), "product option list route should not return more data than the limit")
 	assert.Equal(t, uint8(1), lr.Limit, "product option list route should respond with the default limit when a ilmit is not specified")
 	assert.Equal(t, uint64(2), lr.Page, "product option list route should respond with the first page when a page is not specified")
@@ -530,24 +1046,22 @@ func TestProductOptionCreation(t *testing.T) {
 		createdOptionID = retrieveIDFromResponseBody(body, t)
 		actual := cleanAPIResponseBody(body)
 
-		expected := minifyJSON(t, fmt.Sprintf(`
+		expected := minifyJSON(t, `
 			{
-				"name": "%s",
-				"product_root_id": 1,
+				"name": "example_option_to_create",
 				"values": [
 					{
-						"product_option_id": %d,
 						"value": "one"
-					},{
-						"product_option_id": %d,
+					},
+					{
 						"value": "two"
-					},{
-						"product_option_id": %d,
+					},
+					{
 						"value": "three"
 					}
 				]
 			}
-		`, testOptionName, createdOptionID, createdOptionID, createdOptionID))
+		`)
 		assert.Equal(t, expected, actual, "product option creation route should respond with created product option body")
 	}
 
@@ -703,7 +1217,6 @@ func TestProductOptionUpdate(t *testing.T) {
 		expected := minifyJSON(t, `
 			{
 				"name": "not_the_same",
-				"product_root_id": 1,
 				"values": null
 			}
 		`)
@@ -782,7 +1295,6 @@ func TestProductOptionValueCreation(t *testing.T) {
 		actual := cleanAPIResponseBody(body)
 		expected := minifyJSON(t, fmt.Sprintf(`
 			{
-				"product_option_id": 1,
 				"value": "%s"
 			}
 		`, testValue))
@@ -834,7 +1346,6 @@ func TestProductOptionValueUpdate(t *testing.T) {
 		actual := cleanAPIResponseBody(body)
 		expected := minifyJSON(t, fmt.Sprintf(`
 			{
-				"product_option_id": 1,
 				"value": "%s"
 			}
 		`, testUpdatedValue))

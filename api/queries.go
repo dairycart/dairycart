@@ -83,7 +83,7 @@ func buildProductRootListQuery(queryFilter *QueryFilter) (string, []interface{})
 			available_on,
 			created_on,
 			updated_on,
-			archived_on,
+			archived_on
 		`).
 		From("product_roots").
 		Where(squirrel.Eq{"archived_on": nil}).
@@ -214,7 +214,7 @@ func buildProductListQuery(queryFilter *QueryFilter) (string, []interface{}) {
 			available_on,
 			created_on,
 			updated_on,
-			archived_on,
+			archived_on
 		`).
 		From("products").
 		Where(squirrel.Eq{"archived_on": nil})
@@ -258,7 +258,7 @@ func buildProductAssociatedWithRootListQuery(rootID uint64) (string, []interface
 			available_on,
 			created_on,
 			updated_on,
-			archived_on,
+			archived_on
 		`).
 		From("products").
 		Where(squirrel.Eq{"archived_on": nil}).
