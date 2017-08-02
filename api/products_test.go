@@ -253,7 +253,7 @@ func setExpectationsForProductUpdate(mock sqlmock.Sqlmock, p *Product, err error
 }
 
 func setExpectationsForProductCreation(mock sqlmock.Sqlmock, p *Product, err error) {
-	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(p.ID, generateExampleTimeForTests())
+	exampleRows := sqlmock.NewRows([]string{"id", "available_on", "created_on"}).AddRow(p.ID, generateExampleTimeForTests(), generateExampleTimeForTests())
 	productCreationQuery, args := buildProductCreationQuery(p)
 	queryArgs := argsToDriverValues(args)
 	mock.ExpectQuery(formatQueryForSQLMock(productCreationQuery)).
@@ -723,22 +723,19 @@ func TestProductListHandler(t *testing.T) {
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
 
-	expected := &ProductsResponse{
-		ListResponse: ListResponse{
-			Page:  1,
-			Limit: 25,
-			Count: 3,
-		},
+	expected := &ListResponse{
+		Page:  1,
+		Limit: 25,
+		Count: 3,
 	}
 
-	actual := &ProductsResponse{}
+	actual := &ListResponse{}
 	err = json.NewDecoder(strings.NewReader(testUtil.Response.Body.String())).Decode(actual)
 	assert.Nil(t, err)
 
 	assert.Equal(t, expected.Page, actual.Page, "expected and actual product pages should be equal")
 	assert.Equal(t, expected.Limit, actual.Limit, "expected and actual product limits should be equal")
 	assert.Equal(t, expected.Count, actual.Count, "expected and actual product counts should be equal")
-	assert.Equal(t, uint64(len(actual.Data)), actual.Count, "actual product counts and product response count field should be equal")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 

@@ -9,9 +9,9 @@ import (
 )
 
 const (
-	aTimestamp                = 232747200
-	anOlderTimestamp          = aTimestamp + 10000
-	existingID                = 1
+	aTimestamp       = 232747200
+	anOlderTimestamp = aTimestamp + 10000
+	existingID       = 1
 
 	queryEqualityErrorMessage = "Generated SQL query should match expected SQL query"
 	argsEqualityErrorMessage  = "Generated SQL arguments should match expected arguments"
@@ -225,7 +225,7 @@ func TestBuildProductCreationQuery(t *testing.T) {
 		AvailableOn:   generateExampleTimeForTests(),
 	}
 
-	expectedQuery := `INSERT INTO products (product_root_id,name,subtitle,description,option_summary,sku,manufacturer,brand,quantity,taxable,price,on_sale,sale_price,cost,product_weight,product_height,product_width,product_length,package_weight,package_height,package_width,package_length,quantity_per_package,available_on,updated_on,upc) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,NOW(),$25) RETURNING id, created_on`
+	expectedQuery := `INSERT INTO products (product_root_id,name,subtitle,description,option_summary,sku,manufacturer,brand,quantity,taxable,price,on_sale,sale_price,cost,product_weight,product_height,product_width,product_length,package_weight,package_height,package_width,package_length,quantity_per_package,available_on,updated_on,upc) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,NOW(),$25) RETURNING id, available_on, created_on`
 	actualQuery, actualArgs := buildProductCreationQuery(exampleProduct)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 25, len(actualArgs), argsEqualityErrorMessage)

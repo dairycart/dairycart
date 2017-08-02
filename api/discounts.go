@@ -66,12 +66,6 @@ type DiscountCreationInput struct {
 	LoginRequired bool      `json:"login_required"`
 }
 
-// DiscountsResponse is a discount response struct
-type DiscountsResponse struct {
-	ListResponse
-	Data []Discount `json:"data"`
-}
-
 func (d *Discount) discountTypeIsValid() bool {
 	// Because Go doesn't have typed enums (https://github.com/golang/go/issues/19814),
 	// this is my only real line of defense against a user attempting to load an invalid
@@ -122,13 +116,11 @@ func buildDiscountListRetrievalHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		discountsResponse := &DiscountsResponse{
-			ListResponse: ListResponse{
-				Page:  queryFilter.Page,
-				Limit: queryFilter.Limit,
-				Count: count,
-			},
-			Data: discounts,
+		discountsResponse := &ListResponse{
+			Page:  queryFilter.Page,
+			Limit: queryFilter.Limit,
+			Count: count,
+			Data:  discounts,
 		}
 		json.NewEncoder(res).Encode(discountsResponse)
 	}

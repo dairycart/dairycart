@@ -39,12 +39,6 @@ type ProductOption struct {
 	Values        []ProductOptionValue `json:"values"`
 }
 
-// ProductOptionsResponse is a product option response struct
-type ProductOptionsResponse struct {
-	ListResponse
-	Data []ProductOption `json:"data"`
-}
-
 // ProductOptionUpdateInput is a struct to use for updating product options
 type ProductOptionUpdateInput struct {
 	Name string `json:"name"`
@@ -195,13 +189,11 @@ func buildProductOptionListHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		optionsResponse := &ProductOptionsResponse{
-			ListResponse: ListResponse{
-				Page:  queryFilter.Page,
-				Limit: queryFilter.Limit,
-				Count: count,
-			},
-			Data: options,
+		optionsResponse := &ListResponse{
+			Page:  queryFilter.Page,
+			Limit: queryFilter.Limit,
+			Count: count,
+			Data:  options,
 		}
 		json.NewEncoder(res).Encode(optionsResponse)
 	}

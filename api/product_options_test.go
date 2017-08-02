@@ -544,15 +544,13 @@ func TestProductOptionListHandler(t *testing.T) {
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
 
-	expected := &ProductOptionsResponse{
-		ListResponse: ListResponse{
-			Page:  1,
-			Limit: 25,
-			Count: 3,
-		},
+	expected := &ListResponse{
+		Page:  1,
+		Limit: 25,
+		Count: 3,
 	}
 
-	actual := &ProductOptionsResponse{}
+	actual := &ListResponse{}
 	bodyString := testUtil.Response.Body.String()
 	err = json.NewDecoder(strings.NewReader(bodyString)).Decode(actual)
 	assert.Nil(t, err)

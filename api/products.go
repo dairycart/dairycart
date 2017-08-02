@@ -90,12 +90,6 @@ func newProductFromCreationInput(in *ProductCreationInput) *Product {
 	return np
 }
 
-// ProductsResponse is a product response struct
-type ProductsResponse struct {
-	ListResponse
-	Data []Product `json:"data"`
-}
-
 // ProductCreationInput is a struct that represents a product creation body
 type ProductCreationInput struct {
 	// Core Product stuff
@@ -197,13 +191,11 @@ func buildProductListHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		productsResponse := &ProductsResponse{
-			ListResponse: ListResponse{
-				Page:  queryFilter.Page,
-				Limit: queryFilter.Limit,
-				Count: count,
-			},
-			Data: products,
+		productsResponse := &ListResponse{
+			Page:  queryFilter.Page,
+			Limit: queryFilter.Limit,
+			Count: count,
+			Data:  products,
 		}
 		json.NewEncoder(res).Encode(productsResponse)
 	}
@@ -284,9 +276,10 @@ func buildProductUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 // createProductInDB takes a marshaled Product object and creates an entry for it and a base_product in the database
 func createProductInDB(tx *sql.Tx, np *Product) (uint64, time.Time, error) {
 	var newProductID uint64
+	var availableOn time.Time
 	var createdOn time.Time
 	productCreationQuery, queryArgs := buildProductCreationQuery(np)
-	err := tx.QueryRow(productCreationQuery, queryArgs...).Scan(&newProductID, &createdOn)
+	err := tx.QueryRow(productCreationQuery, queryArgs...).Scan(&newProductID, &availableOn, &createdOn)
 	return newProductID, createdOn, err
 }
 

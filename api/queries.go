@@ -249,7 +249,7 @@ func buildProductCreationQuery(p *Product) (string, []interface{}) {
 		Insert("products").
 		Columns(columns...).
 		Values(values...).
-		Suffix(`RETURNING id, created_on`)
+		Suffix(`RETURNING id, available_on, created_on`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
@@ -378,7 +378,7 @@ func buildProductOptionCombinationExistenceQuery(optionValueIDs []uint64) (strin
 	var subargs []interface{}
 	for _, id := range optionValueIDs {
 		q, a, _ := sqlBuilder.
-		Select("id").
+			Select("id").
 			From("product_variant_bridge").
 			Where(squirrel.Eq{"product_option_value_id": id}).
 			ToSql()
@@ -395,7 +395,7 @@ func buildProductOptionCombinationExistenceQuery(optionValueIDs []uint64) (strin
 func buildProductVariantBridgeCreationQuery(productID uint64, optionValueIDs []uint64) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
-	Insert("product_variant_bridge").
+		Insert("product_variant_bridge").
 		Columns("product_id", "product_option_value_id")
 
 	for _, id := range optionValueIDs {
