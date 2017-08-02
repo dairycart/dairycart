@@ -336,7 +336,7 @@ func TestBuildProductOptionValueCreationQuery(t *testing.T) {
 func TestBuildProductOptionCombinationExistenceQuery(t *testing.T) {
 	t.Parallel()
 	exampleData := []uint64{1, 4}
-	expectedQuery := `SELECT EXISTS(SELECT id FROM product_variant_bridge WHERE product_option_value_id = $1) AND EXISTS(SELECT id FROM product_variant_bridge WHERE product_option_value_id = $2)`
+	expectedQuery := `SELECT EXISTS(SELECT id FROM product_variant_bridge WHERE product_option_value_id = $1 AND archived_on IS NULL) AND EXISTS(SELECT id FROM product_variant_bridge WHERE product_option_value_id = $2 AND archived_on IS NULL)`
 
 	actualQuery, actualArgs := buildProductOptionCombinationExistenceQuery(exampleData)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)

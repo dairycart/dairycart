@@ -15,11 +15,13 @@ import (
 )
 
 const (
-	productOptionValueExistenceQuery            = `SELECT EXISTS(SELECT 1 FROM product_option_values WHERE id = $1 AND archived_on IS NULL)`
-	productOptionValueExistenceForOptionIDQuery = `SELECT EXISTS(SELECT 1 FROM product_option_values WHERE product_option_id = $1 AND value = $2 AND archived_on IS NULL)`
-	productOptionValueRetrievalQuery            = `SELECT * FROM product_option_values WHERE id = $1`
-	productOptionValueRetrievalForOptionIDQuery = `SELECT * FROM product_option_values WHERE product_option_id = $1 AND archived_on IS NULL`
-	productOptionValueDeletionQuery             = `UPDATE product_option_values SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
+	productOptionValueExistenceQuery                 = `SELECT EXISTS(SELECT 1 FROM product_option_values WHERE id = $1 AND archived_on IS NULL)`
+	productOptionValueExistenceForOptionIDQuery      = `SELECT EXISTS(SELECT 1 FROM product_option_values WHERE product_option_id = $1 AND value = $2 AND archived_on IS NULL)`
+	productOptionValueRetrievalQuery                 = `SELECT * FROM product_option_values WHERE id = $1`
+	productOptionValueRetrievalForOptionIDQuery      = `SELECT * FROM product_option_values WHERE product_option_id = $1 AND archived_on IS NULL`
+	productOptionValueDeletionQuery                  = `UPDATE product_option_values SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
+	productVariantBridgeDeletionQueryByProductID     = `UPDATE product_variant_bridge SET archived_on = NOW() WHERE product_id = $1 AND archived_on IS NULL`
+	productVariantBridgeDeletionQueryByOptionValueID = `UPDATE product_variant_bridge SET archived_on = NOW() WHERE product_option_value_id = $1 AND archived_on IS NULL`
 )
 
 // ProductOptionValue represents a product's option values. If you have a t-shirt that comes in three colors
@@ -45,6 +47,11 @@ type ProductOptionValueUpdateInput struct {
 func createBridgeEntryForProductValues(tx *sql.Tx, productID uint64, ids []uint64) error {
 	query, queryArgs := buildProductVariantBridgeCreationQuery(productID, ids)
 	_, err := tx.Exec(query, queryArgs...)
+	return err
+}
+
+func deleteProductVariantBridgeEntriesByProductID(tx *sql.Tx, id uint64) error {
+	_, err := tx.Exec(productVariantBridgeDeletionQueryByProductID, id)
 	return err
 }
 

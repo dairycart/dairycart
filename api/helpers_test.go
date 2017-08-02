@@ -77,6 +77,7 @@ func init() {
 type TestUtil struct {
 	Response *httptest.ResponseRecorder
 	Router   *chi.Mux
+	PlainDB  *sql.DB
 	DB       *sqlx.DB
 	Mock     sqlmock.Sqlmock
 	Store    *sessions.CookieStore
@@ -99,8 +100,8 @@ func setExpectationsForRowCount(mock sqlmock.Sqlmock, table string, queryFilter 
 
 func setupTestVariables(t *testing.T) *TestUtil {
 	mockDB, mock, err := sqlmock.New()
-	db := sqlx.NewDb(mockDB, "postgres")
-	db.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
+	dbx := sqlx.NewDb(mockDB, "postgres")
+	dbx.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
 	assert.Nil(t, err)
 
 	secret := os.Getenv("DAIRYSECRET")
@@ -110,12 +111,13 @@ func setupTestVariables(t *testing.T) *TestUtil {
 	store := sessions.NewCookieStore([]byte(secret))
 
 	router := chi.NewRouter()
-	SetupAPIRoutes(router, db, store)
+	SetupAPIRoutes(router, dbx, store)
 
 	return &TestUtil{
 		Response: httptest.NewRecorder(),
 		Router:   router,
-		DB:       db,
+		PlainDB:  mockDB,
+		DB:       dbx,
 		Mock:     mock,
 		Store:    store,
 	}

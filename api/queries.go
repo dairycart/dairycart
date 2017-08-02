@@ -381,6 +381,7 @@ func buildProductOptionCombinationExistenceQuery(optionValueIDs []uint64) (strin
 			Select("id").
 			From("product_variant_bridge").
 			Where(squirrel.Eq{"product_option_value_id": id}).
+			Where(squirrel.Eq{"archived_on": nil}).
 			ToSql()
 		subqueries = append(subqueries, fmt.Sprintf("(%s)", q))
 		subargs = append(subargs, a)

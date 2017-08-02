@@ -100,6 +100,13 @@ func setExpectationsForProductValueBridgeEntryCreation(mock sqlmock.Sqlmock, pro
 		WillReturnError(err)
 }
 
+func setExpectationsForProductValueBridgeEntryDeletion(mock sqlmock.Sqlmock, productID uint64, err error) {
+	mock.ExpectExec(formatQueryForSQLMock(productVariantBridgeDeletionQueryByProductID)).
+		WithArgs(productID).
+		WillReturnResult(sqlmock.NewResult(1, 1)).
+		WillReturnError(err)
+}
+
 func setExpectationsForProductOptionValueCreation(mock sqlmock.Sqlmock, v *ProductOptionValue, err error) {
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(v.ID, generateExampleTimeForTests())
 	query, _ := buildProductOptionValueCreationQuery(v)

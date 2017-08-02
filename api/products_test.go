@@ -438,9 +438,12 @@ func TestDeleteProductBySKU(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
+	testUtil.Mock.ExpectBegin()
+	tx, err := testUtil.PlainDB.Begin()
+	assert.Nil(t, err)
 	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU, nil)
 
-	err := deleteProductBySKU(testUtil.DB, exampleSKU)
+	err = deleteProductBySKU(tx, exampleSKU)
 	assert.Nil(t, err)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
@@ -449,9 +452,12 @@ func TestDeleteProductBySKUReturnsError(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
+	testUtil.Mock.ExpectBegin()
+	tx, err := testUtil.PlainDB.Begin()
+	assert.Nil(t, err)
 	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU, arbitraryError)
 
-	err := deleteProductBySKU(testUtil.DB, exampleSKU)
+	err = deleteProductBySKU(tx, exampleSKU)
 	assert.Equal(t, err, arbitraryError, "deleteProductBySKU should return errors when it encounters them")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
@@ -1015,9 +1021,20 @@ func TestProductUpdateHandlerWithDBErrorUpdatingProduct(t *testing.T) {
 func TestProductDeletionHandler(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:  exampleSKU,
+		Name: "Skateboard",
+	}
 
-	setExpectationsForProductExistence(testUtil.Mock, exampleSKU, true, nil)
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, nil)
+	testUtil.Mock.ExpectBegin()
 	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU, nil)
+	setExpectationsForProductValueBridgeEntryDeletion(testUtil.Mock, exampleProduct.ID, nil)
+	testUtil.Mock.ExpectCommit()
 
 	req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 	assert.Nil(t, err)
@@ -1030,8 +1047,16 @@ func TestProductDeletionHandler(t *testing.T) {
 func TestProductDeletionHandlerWithNonexistentProduct(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:  exampleSKU,
+		Name: "Skateboard",
+	}
 
-	setExpectationsForProductExistence(testUtil.Mock, exampleSKU, false, nil)
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, sql.ErrNoRows)
 
 	req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 	assert.Nil(t, err)
@@ -1041,12 +1066,119 @@ func TestProductDeletionHandlerWithNonexistentProduct(t *testing.T) {
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
+func TestProductDeletionHandlerWithErrorRetrievingProduct(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:  exampleSKU,
+		Name: "Skateboard",
+	}
+
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, arbitraryError)
+
+	req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestProductDeletionHandlerWithErrorBeginningTransaction(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:  exampleSKU,
+		Name: "Skateboard",
+	}
+
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, nil)
+	testUtil.Mock.ExpectBegin().WillReturnError(arbitraryError)
+	testUtil.Mock.ExpectRollback()
+
+	req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
 func TestProductDeletionHandlerWithErrorEncounteredDeletingProduct(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:  exampleSKU,
+		Name: "Skateboard",
+	}
 
-	setExpectationsForProductExistence(testUtil.Mock, exampleSKU, true, nil)
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, nil)
+	testUtil.Mock.ExpectBegin()
 	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU, arbitraryError)
+	testUtil.Mock.ExpectRollback()
+
+	req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestProductDeletionHandlerWithErrorDeletingBridgeEntries(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:  exampleSKU,
+		Name: "Skateboard",
+	}
+
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, nil)
+	testUtil.Mock.ExpectBegin()
+	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU, nil)
+	setExpectationsForProductValueBridgeEntryDeletion(testUtil.Mock, exampleProduct.ID, arbitraryError)
+
+	req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestProductDeletionHandlerWithErrorCommittingTransaction(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:  exampleSKU,
+		Name: "Skateboard",
+	}
+
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, nil)
+	testUtil.Mock.ExpectBegin()
+	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU, nil)
+	setExpectationsForProductValueBridgeEntryDeletion(testUtil.Mock, exampleProduct.ID, nil)
+	testUtil.Mock.ExpectCommit().WillReturnError(arbitraryError)
 
 	req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 	assert.Nil(t, err)

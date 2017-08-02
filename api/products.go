@@ -201,8 +201,8 @@ func buildProductListHandler(db *sqlx.DB) http.HandlerFunc {
 	}
 }
 
-func deleteProductBySKU(db *sqlx.DB, sku string) error {
-	_, err := db.Exec(productDeletionQuery, sku)
+func deleteProductBySKU(tx *sql.Tx, sku string) error {
+	_, err := tx.Exec(productDeletionQuery, sku)
 	return err
 }
 
@@ -212,15 +212,38 @@ func buildProductDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 		sku := chi.URLParam(req, "sku")
 
 		// can't delete a product that doesn't exist!
-		exists, err := rowExistsInDB(db, skuExistenceQuery, sku)
-		if err != nil || !exists {
+		existingProduct, err := retrieveProductFromDB(db, sku)
+		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "product", sku)
+			return
+		} else if err != nil {
+			notifyOfInternalIssue(res, err, "retrieving discount from database")
 			return
 		}
 
-		err = deleteProductBySKU(db, sku)
+		tx, err := db.Begin()
 		if err != nil {
+			notifyOfInternalIssue(res, err, "create new database transaction")
+			return
+		}
+
+		err = deleteProductBySKU(tx, sku)
+		if err != nil {
+			tx.Rollback()
 			notifyOfInternalIssue(res, err, "archive product in database")
+			return
+		}
+
+		err = deleteProductVariantBridgeEntriesByProductID(tx, existingProduct.ID)
+		if err != nil {
+			tx.Rollback()
+			notifyOfInternalIssue(res, err, "archive product in database")
+			return
+		}
+
+		err = tx.Commit()
+		if err != nil {
+			notifyOfInternalIssue(res, err, "closing out transaction")
 			return
 		}
 
