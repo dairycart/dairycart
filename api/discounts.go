@@ -152,13 +152,11 @@ func buildDiscountCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		id, createdOn, err := createDiscountInDB(db, newDiscount)
+		newDiscount.ID, newDiscount.CreatedOn, err = createDiscountInDB(db, newDiscount)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "insert discount into database")
 			return
 		}
-		newDiscount.ID = id
-		newDiscount.CreatedOn = createdOn
 
 		res.WriteHeader(http.StatusCreated)
 		json.NewEncoder(res).Encode(newDiscount)

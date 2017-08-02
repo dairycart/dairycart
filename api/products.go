@@ -55,6 +55,8 @@ type Product struct {
 	PackageWidth  float32 `json:"package_width"`
 	PackageLength float32 `json:"package_length"`
 
+	ApplicableOptionValues []ProductOptionValue `json:"applicable_options,omitempty"`
+
 	AvailableOn time.Time `json:"available_on"`
 }
 
@@ -288,14 +290,17 @@ func createProductInDB(tx *sql.Tx, np *Product) (uint64, time.Time, error) {
 	return newProductID, createdOn, err
 }
 
-func createProductsInDBFromOptionRows(tx *sql.Tx, r *ProductRoot, np *Product, ops []*ProductOption) ([]*Product, error) {
-	createdProducts := []*Product{}
+func createProductsInDBFromOptionRows(tx *sql.Tx, r *ProductRoot, np *Product, ops []ProductOption) ([]Product, error) {
+	createdProducts := []Product{}
 	productOptionData := generateCartesianProductForOptions(ops)
 	for _, option := range productOptionData {
 		p := &Product{}
 		*p = *np // solved: http://www.claymath.org/millennium-problems/p-vs-np-problem
+
+		p.ApplicableOptionValues = option.OriginalValues
 		p.OptionSummary = option.OptionSummary
 		p.SKU = fmt.Sprintf("%s_%s", r.SKUPrefix, option.SKUPostfix)
+
 		id, _, err := createProductInDB(tx, p)
 		if err != nil {
 			return nil, err
@@ -305,7 +310,7 @@ func createProductsInDBFromOptionRows(tx *sql.Tx, r *ProductRoot, np *Product, o
 		if err != nil {
 			return nil, err
 		}
-		createdProducts = append(createdProducts, p)
+		createdProducts = append(createdProducts, *p)
 	}
 	return createdProducts, nil
 }
@@ -338,16 +343,13 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 
 		newProduct := newProductFromCreationInput(productInput)
 		productRoot := createProductRootFromProduct(newProduct)
-		newProductRootID, newProductRootCreatedOn, err := createProductRootInDB(tx, productRoot)
+		productRoot.ID, productRoot.CreatedOn, err = createProductRootInDB(tx, productRoot)
 		if err != nil {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "insert product options and values in database")
 			return
 		}
-		productRoot.ID = newProductRootID
-		productRoot.CreatedOn = newProductRootCreatedOn
 
-		var createdOptions []*ProductOption
 		for _, optionAndValues := range productInput.Options {
 			o, err := createProductOptionAndValuesInDBFromInput(tx, optionAndValues, productRoot.ID)
 			if err != nil {
@@ -355,22 +357,22 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 				notifyOfInternalIssue(res, err, "insert product options and values in database")
 				return
 			}
-			createdOptions = append(createdOptions, o)
+			productRoot.Options = append(productRoot.Options, *o)
 		}
 
-		var createdProducts []*Product
+		var createdProducts []Product
 		if len(productInput.Options) == 0 {
 			newProduct.ProductRootID = productRoot.ID
-			newProductID, createdOn, err := createProductInDB(tx, newProduct)
+			newProduct.ID, newProduct.CreatedOn, err = createProductInDB(tx, newProduct)
 			if err != nil {
 				tx.Rollback()
 				notifyOfInternalIssue(res, err, "insert product in database")
 				return
 			}
-			newProduct.ID = newProductID
-			newProduct.CreatedOn = createdOn
+			productRoot.Products = []Product{*newProduct}
 		} else {
-			createdProducts, err = createProductsInDBFromOptionRows(tx, productRoot, newProduct, createdOptions)
+			createdProducts, err = createProductsInDBFromOptionRows(tx, productRoot, newProduct, productRoot.Options)
+			productRoot.Products = createdProducts
 			if err != nil {
 				tx.Rollback()
 				notifyOfInternalIssue(res, err, "insert products in database")
@@ -385,10 +387,6 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 
 		res.WriteHeader(http.StatusCreated)
-		if len(productInput.Options) == 0 {
-			json.NewEncoder(res).Encode(newProduct)
-		} else {
-			json.NewEncoder(res).Encode(createdProducts)
-		}
+		json.NewEncoder(res).Encode(productRoot)
 	}
 }

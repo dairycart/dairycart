@@ -197,7 +197,7 @@ func TestProductUpdateRoute(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product that doesn't exist should respond 201")
 		body := turnResponseBodyIntoString(t, resp)
-		productRootID = retrieveProductRootIDFromResponseBody(body, t)
+		productRootID = retrieveIDFromResponseBody(body, t)
 	}
 
 	testUpdateProduct := func(t *testing.T) {
@@ -308,26 +308,19 @@ func TestProductCreation(t *testing.T) {
 		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product that doesn't exist should respond 201")
 
 		body := turnResponseBodyIntoString(t, resp)
-		productRootID := retrieveProductRootIDFromResponseBody(body, t)
+		productRootID := retrieveIDFromResponseBody(body, t)
 
 		actual := cleanAPIResponseBody(body)
 		expected := minifyJSON(t, fmt.Sprintf(`
 			{
-				"product_root_id": %d,
 				"name": "New Product",
 				"subtitle": "this is a product",
 				"description": "this product is neat or maybe its not who really knows for sure?",
-				"option_summary": "",
-				"sku": "%s",
-				"upc": "0123456789",
+				"sku_prefix": "%s",
 				"manufacturer": "Manufacturer",
 				"brand": "Brand",
-				"quantity": 123,
 				"quantity_per_package": 3,
 				"taxable": false,
-				"price": 12.34,
-				"on_sale": true,
-				"sale_price": 10,
 				"cost": 5,
 				"product_weight": 9,
 				"product_height": 9,
@@ -336,9 +329,36 @@ func TestProductCreation(t *testing.T) {
 				"package_weight": 9,
 				"package_height": 9,
 				"package_width": 9,
-				"package_length": 9
+				"package_length": 9,
+				"options": null,
+				"products": [{
+					"product_root_id": %d,
+					"name": "New Product",
+					"subtitle": "this is a product",
+					"description": "this product is neat or maybe its not who really knows for sure?",
+					"option_summary": "",
+					"sku": "%s",
+					"upc": "0123456789",
+					"manufacturer": "Manufacturer",
+					"brand": "Brand",
+					"quantity": 123,
+					"quantity_per_package": 3,
+					"taxable": false,
+					"price": 12.34,
+					"on_sale": true,
+					"sale_price": 10,
+					"cost": 5,
+					"product_weight": 9,
+					"product_height": 9,
+					"product_width": 9,
+					"product_length": 9,
+					"package_weight": 9,
+					"package_height": 9,
+					"package_width": 9,
+					"package_length": 9
+				}]
 			}
-		`, productRootID, testSKU))
+		`, testSKU, productRootID, testSKU))
 		assert.Equal(t, expected, actual, "product creation route should respond with created product body")
 	}
 

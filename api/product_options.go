@@ -57,19 +57,20 @@ type ProductOptionCreationInput struct {
 }
 
 type simpleProductOption struct {
-	IDs []uint64
-	OptionSummary string
-	SKUPostfix    string
+	IDs            []uint64
+	OptionSummary  string
+	SKUPostfix     string
+	OriginalValues []ProductOptionValue
 }
 
 type optionPlaceholder struct {
-	ID uint64
-	Summary string
-	Value string
+	ID            uint64
+	Summary       string
+	Value         string
+	OriginalValue ProductOptionValue
 }
 
-
-func generateCartesianProductForOptions(inputOptions []*ProductOption) []simpleProductOption {
+func generateCartesianProductForOptions(inputOptions []ProductOption) []simpleProductOption {
 	/*
 		Some notes about this function:
 
@@ -84,7 +85,7 @@ func generateCartesianProductForOptions(inputOptions []*ProductOption) []simpleP
 	//     https://stackoverflow.com/questions/29002724/implement-ruby-style-cartesian-product-in-go
 	// NextIndex sets ix to the lexicographically next value,
 	// such that for each i>0, 0 <= ix[i] < lens(i).
-	nextIndex := func(ix []int, sl [][]optionPlaceholder) {
+	next := func(ix []int, sl [][]optionPlaceholder) {
 		for j := len(ix) - 1; j >= 0; j-- {
 			ix[j]++
 			if j == 0 || ix[j] < len(sl[j]) {
@@ -100,9 +101,10 @@ func generateCartesianProductForOptions(inputOptions []*ProductOption) []simpleP
 		newOptions := []optionPlaceholder{}
 		for _, v := range o.Values {
 			ph := optionPlaceholder{
-				ID: v.ID,
-				Summary: fmt.Sprintf("%s: %s", o.Name, v.Value),
-				Value: v.Value,
+				ID:            v.ID,
+				Summary:       fmt.Sprintf("%s: %s", o.Name, v.Value),
+				Value:         v.Value,
+				OriginalValue: v,
 			}
 			newOptions = append(newOptions, ph)
 		}
@@ -110,26 +112,27 @@ func generateCartesianProductForOptions(inputOptions []*ProductOption) []simpleP
 	}
 
 	output := []simpleProductOption{}
-	for ix := make([]int, len(optionData)); ix[0] < len(optionData[0]); nextIndex(ix, optionData) {
+	for ix := make([]int, len(optionData)); ix[0] < len(optionData[0]); next(ix, optionData) {
 		var ids []uint64
 		var skuPrefixParts []string
 		var optionSummaryParts []string
+		var originalValues []ProductOptionValue
 		for j, k := range ix {
 			ids = append(ids, optionData[j][k].ID)
 			optionSummaryParts = append(optionSummaryParts, optionData[j][k].Summary)
 			skuPrefixParts = append(skuPrefixParts, strings.ToLower(optionData[j][k].Value))
+			originalValues = append(originalValues, optionData[j][k].OriginalValue)
 		}
 		output = append(output, simpleProductOption{
-			IDs: ids,
-			OptionSummary: strings.Join(optionSummaryParts, ", "),
-			SKUPostfix:    strings.Join(skuPrefixParts, "_"),
+			IDs:            ids,
+			OptionSummary:  strings.Join(optionSummaryParts, ", "),
+			SKUPostfix:     strings.Join(skuPrefixParts, "_"),
+			OriginalValues: originalValues,
 		})
 	}
 
 	return output
 }
-
-
 
 // FIXME: this function should be abstracted
 func productOptionAlreadyExistsForProduct(db *sqlx.DB, in *ProductOptionCreationInput, productRootID string) (bool, error) {

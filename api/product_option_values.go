@@ -170,14 +170,12 @@ func buildProductOptionValueCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		newProductOptionValueID, createdOn, err := createProductOptionValueInDB(tx, newProductOptionValue)
+		newProductOptionValue.ID, newProductOptionValue.CreatedOn, err = createProductOptionValueInDB(tx, newProductOptionValue)
 		if err != nil {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "insert product in database")
 			return
 		}
-		newProductOptionValue.ID = newProductOptionValueID
-		newProductOptionValue.CreatedOn = createdOn
 
 		err = tx.Commit()
 		if err != nil {

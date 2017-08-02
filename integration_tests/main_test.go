@@ -99,6 +99,7 @@ func retrieveIDFromResponseBody(body string, t *testing.T) uint64 {
 
 func retrieveProductRootIDFromResponseBody(body string, t *testing.T) uint64 {
 	idContainer := struct {
+
 		ID uint64 `json:"product_root_id"`
 	}{}
 	err := json.Unmarshal([]byte(body), &idContainer)

@@ -18,15 +18,14 @@ type ProductRoot struct {
 	DBRow
 
 	// Basic Info
-	Name                string     `json:"name"`
-	Subtitle            NullString `json:"subtitle"`
-	Description         string     `json:"description"`
-	SKUPrefix           string     `json:"sku_prefix"`
-	Manufacturer        NullString `json:"manufacturer"`
-	Brand               NullString `json:"brand"`
-	AvailableOn         time.Time  `json:"available_on"`
-	QuantityPerPackage  uint32     `json:"quantity_per_package"`
-	AllOptionsPopulated bool       `json:"all_options_populated"`
+	Name               string     `json:"name"`
+	Subtitle           NullString `json:"subtitle"`
+	Description        string     `json:"description"`
+	SKUPrefix          string     `json:"sku_prefix"`
+	Manufacturer       NullString `json:"manufacturer"`
+	Brand              NullString `json:"brand"`
+	AvailableOn        time.Time  `json:"available_on"`
+	QuantityPerPackage uint32     `json:"quantity_per_package"`
 
 	// Pricing Fields
 	Taxable bool    `json:"taxable"`
@@ -43,6 +42,9 @@ type ProductRoot struct {
 	PackageHeight float32 `json:"package_height"`
 	PackageWidth  float32 `json:"package_width"`
 	PackageLength float32 `json:"package_length"`
+
+	Options  []ProductOption `json:"options"`
+	Products []Product       `json:"products"`
 }
 
 func createProductRootFromProduct(p *Product) *ProductRoot {

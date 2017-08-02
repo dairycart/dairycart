@@ -81,6 +81,9 @@ func buildURL(path string, queryParams map[string]string) string {
 func createUsers() {
 	// Connect to the database
 	dbURL := os.Getenv("DAIRYCART_DB_URL")
+	if dbURL == "" {
+		dbURL = "postgres://dairycart:hunter2@localhost:2345/dairycart?sslmode=disable"
+	}
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatalf("error encountered connecting to database: %v", err)

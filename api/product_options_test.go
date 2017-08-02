@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -175,171 +174,191 @@ func setExpectationsForProductOptionValuesDeletionByOptionID(mock sqlmock.Sqlmoc
 func TestGenerateCartesianProductForOptions(t *testing.T) {
 	t.Parallel()
 
+	small := ProductOptionValue{DBRow: DBRow{ID: 1}, Value: "small"}
+	medium := ProductOptionValue{DBRow: DBRow{ID: 2}, Value: "medium"}
+	large := ProductOptionValue{DBRow: DBRow{ID: 3}, Value: "large"}
+	red := ProductOptionValue{DBRow: DBRow{ID: 4}, Value: "red"}
+	green := ProductOptionValue{DBRow: DBRow{ID: 5}, Value: "green"}
+	blue := ProductOptionValue{DBRow: DBRow{ID: 6}, Value: "blue"}
+	xtraLarge := ProductOptionValue{DBRow: DBRow{ID: 7}, Value: "xtra-large"}
+	polyester := ProductOptionValue{DBRow: DBRow{ID: 8}, Value: "polyester"}
+	cotton := ProductOptionValue{DBRow: DBRow{ID: 9}, Value: "cotton"}
+
 	tt := []struct {
-		in       []*ProductOption
+		in       []ProductOption
 		expected []simpleProductOption
 		len      int
 	}{
 		{
-			in: []*ProductOption{
-				{
-					Name: "Size",
-					Values: []ProductOptionValue{
-						{
-							DBRow: DBRow{
-								ID: 1,
-							},
-							Value: "small",
-						},
-						{
-							DBRow: DBRow{
-								ID: 2,
-							},
-							Value: "medium",
-						},
-						{
-							DBRow: DBRow{
-								ID: 3,
-							},
-							Value: "large",
-						},
-					},
-				},
-				{
-					Name: "Color",
-					Values: []ProductOptionValue{
-						{
-							DBRow: DBRow{
-								ID: 4,
-							},
-							Value: "red",
-						},
-						{
-							DBRow: DBRow{
-								ID: 5,
-							},
-							Value: "green",
-						},
-						{
-							DBRow: DBRow{
-								ID: 6,
-							},
-							Value: "blue",
-						},
-					},
-				},
+			in: []ProductOption{
+				{Name: "Size", Values: []ProductOptionValue{small, medium, large}},
+				{Name: "Color", Values: []ProductOptionValue{red, green, blue}},
 			},
 			expected: []simpleProductOption{
-				{IDs: []uint64{1, 4}, OptionSummary: "Size: small, Color: red", SKUPostfix: "small_red"},
-				{IDs: []uint64{1, 5}, OptionSummary: "Size: small, Color: green", SKUPostfix: "small_green"},
-				{IDs: []uint64{1, 6}, OptionSummary: "Size: small, Color: blue", SKUPostfix: "small_blue"},
-				{IDs: []uint64{2, 4}, OptionSummary: "Size: medium, Color: red", SKUPostfix: "medium_red"},
-				{IDs: []uint64{2, 5}, OptionSummary: "Size: medium, Color: green", SKUPostfix: "medium_green"},
-				{IDs: []uint64{2, 6}, OptionSummary: "Size: medium, Color: blue", SKUPostfix: "medium_blue"},
-				{IDs: []uint64{3, 4}, OptionSummary: "Size: large, Color: red", SKUPostfix: "large_red"},
-				{IDs: []uint64{3, 5}, OptionSummary: "Size: large, Color: green", SKUPostfix: "large_green"},
-				{IDs: []uint64{3, 6}, OptionSummary: "Size: large, Color: blue", SKUPostfix: "large_blue"},
+				{IDs: []uint64{small.ID, red.ID}, OptionSummary: "Size: small, Color: red", SKUPostfix: "small_red", OriginalValues: []ProductOptionValue{small, red}},
+				{IDs: []uint64{small.ID, green.ID}, OptionSummary: "Size: small, Color: green", SKUPostfix: "small_green", OriginalValues: []ProductOptionValue{small, green}},
+				{IDs: []uint64{small.ID, blue.ID}, OptionSummary: "Size: small, Color: blue", SKUPostfix: "small_blue", OriginalValues: []ProductOptionValue{small, blue}},
+				{IDs: []uint64{medium.ID, red.ID}, OptionSummary: "Size: medium, Color: red", SKUPostfix: "medium_red", OriginalValues: []ProductOptionValue{medium, red}},
+				{IDs: []uint64{medium.ID, green.ID}, OptionSummary: "Size: medium, Color: green", SKUPostfix: "medium_green", OriginalValues: []ProductOptionValue{medium, green}},
+				{IDs: []uint64{medium.ID, blue.ID}, OptionSummary: "Size: medium, Color: blue", SKUPostfix: "medium_blue", OriginalValues: []ProductOptionValue{medium, blue}},
+				{IDs: []uint64{large.ID, red.ID}, OptionSummary: "Size: large, Color: red", SKUPostfix: "large_red", OriginalValues: []ProductOptionValue{large, red}},
+				{IDs: []uint64{large.ID, green.ID}, OptionSummary: "Size: large, Color: green", SKUPostfix: "large_green", OriginalValues: []ProductOptionValue{large, green}},
+				{IDs: []uint64{large.ID, blue.ID}, OptionSummary: "Size: large, Color: blue", SKUPostfix: "large_blue", OriginalValues: []ProductOptionValue{large, blue}},
 			},
 			len: 9,
 		},
 		{
 			// test that name: value pairs can be completely different sizes
-			in: []*ProductOption{
-				{
-					Name: "Size",
-					Values: []ProductOptionValue{
-						{
-							DBRow: DBRow{
-								ID: 1,
-							},
-							Value: "small",
-						},
-						{
-							DBRow: DBRow{
-								ID: 2,
-							},
-							Value: "medium",
-						},
-						{
-							DBRow: DBRow{
-								ID: 3,
-							},
-							Value: "large",
-						},
-						{
-							DBRow: DBRow{
-								ID: 4,
-							},
-							Value: "xtra-large",
-						},
-					},
-				},
-				{
-					Name: "Color",
-					Values: []ProductOptionValue{
-						{
-							DBRow: DBRow{
-								ID: 5,
-							},
-							Value: "red",
-						},
-						{
-							DBRow: DBRow{
-								ID: 6,
-							},
-							Value: "green",
-						},
-						{
-							DBRow: DBRow{
-								ID: 7,
-							},
-							Value: "blue",
-						},
-					},
-				},
-				{
-					Name: "Fabric",
-					Values: []ProductOptionValue{
-						{
-							DBRow: DBRow{
-								ID: 8,
-							},
-							Value: "polyester",
-						},
-						{
-							DBRow: DBRow{
-								ID: 9,
-							},
-							Value: "cotton",
-						},
-					},
-				},
+			in: []ProductOption{
+				{Name: "Size", Values: []ProductOptionValue{small, medium, large, xtraLarge}},
+				{Name: "Color", Values: []ProductOptionValue{red, green, blue}},
+				{Name: "Fabric", Values: []ProductOptionValue{polyester, cotton}},
 			},
 			expected: []simpleProductOption{
-				{IDs: []uint64{1, 5, 8}, OptionSummary: "Size: small, Color: red, Fabric: polyester", SKUPostfix: "small_red_polyester"},
-				{IDs: []uint64{1, 5, 9}, OptionSummary: "Size: small, Color: red, Fabric: cotton", SKUPostfix: "small_red_cotton"},
-				{IDs: []uint64{1, 6, 8}, OptionSummary: "Size: small, Color: green, Fabric: polyester", SKUPostfix: "small_green_polyester"},
-				{IDs: []uint64{1, 6, 9}, OptionSummary: "Size: small, Color: green, Fabric: cotton", SKUPostfix: "small_green_cotton"},
-				{IDs: []uint64{1, 7, 8}, OptionSummary: "Size: small, Color: blue, Fabric: polyester", SKUPostfix: "small_blue_polyester"},
-				{IDs: []uint64{1, 7, 9}, OptionSummary: "Size: small, Color: blue, Fabric: cotton", SKUPostfix: "small_blue_cotton"},
-				{IDs: []uint64{2, 5, 8}, OptionSummary: "Size: medium, Color: red, Fabric: polyester", SKUPostfix: "medium_red_polyester"},
-				{IDs: []uint64{2, 5, 9}, OptionSummary: "Size: medium, Color: red, Fabric: cotton", SKUPostfix: "medium_red_cotton"},
-				{IDs: []uint64{2, 6, 8}, OptionSummary: "Size: medium, Color: green, Fabric: polyester", SKUPostfix: "medium_green_polyester"},
-				{IDs: []uint64{2, 6, 9}, OptionSummary: "Size: medium, Color: green, Fabric: cotton", SKUPostfix: "medium_green_cotton"},
-				{IDs: []uint64{2, 7, 8}, OptionSummary: "Size: medium, Color: blue, Fabric: polyester", SKUPostfix: "medium_blue_polyester"},
-				{IDs: []uint64{2, 7, 9}, OptionSummary: "Size: medium, Color: blue, Fabric: cotton", SKUPostfix: "medium_blue_cotton"},
-				{IDs: []uint64{3, 5, 8}, OptionSummary: "Size: large, Color: red, Fabric: polyester", SKUPostfix: "large_red_polyester"},
-				{IDs: []uint64{3, 5, 9}, OptionSummary: "Size: large, Color: red, Fabric: cotton", SKUPostfix: "large_red_cotton"},
-				{IDs: []uint64{3, 6, 8}, OptionSummary: "Size: large, Color: green, Fabric: polyester", SKUPostfix: "large_green_polyester"},
-				{IDs: []uint64{3, 6, 9}, OptionSummary: "Size: large, Color: green, Fabric: cotton", SKUPostfix: "large_green_cotton"},
-				{IDs: []uint64{3, 7, 8}, OptionSummary: "Size: large, Color: blue, Fabric: polyester", SKUPostfix: "large_blue_polyester"},
-				{IDs: []uint64{3, 7, 9}, OptionSummary: "Size: large, Color: blue, Fabric: cotton", SKUPostfix: "large_blue_cotton"},
-				{IDs: []uint64{4, 5, 8}, OptionSummary: "Size: xtra-large, Color: red, Fabric: polyester", SKUPostfix: "xtra-large_red_polyester"},
-				{IDs: []uint64{4, 5, 9}, OptionSummary: "Size: xtra-large, Color: red, Fabric: cotton", SKUPostfix: "xtra-large_red_cotton"},
-				{IDs: []uint64{4, 6, 8}, OptionSummary: "Size: xtra-large, Color: green, Fabric: polyester", SKUPostfix: "xtra-large_green_polyester"},
-				{IDs: []uint64{4, 6, 9}, OptionSummary: "Size: xtra-large, Color: green, Fabric: cotton", SKUPostfix: "xtra-large_green_cotton"},
-				{IDs: []uint64{4, 7, 8}, OptionSummary: "Size: xtra-large, Color: blue, Fabric: polyester", SKUPostfix: "xtra-large_blue_polyester"},
-				{IDs: []uint64{4, 7, 9}, OptionSummary: "Size: xtra-large, Color: blue, Fabric: cotton", SKUPostfix: "xtra-large_blue_cotton"},
+				{
+					IDs:            []uint64{small.ID, red.ID, polyester.ID},
+					OptionSummary:  "Size: small, Color: red, Fabric: polyester",
+					SKUPostfix:     "small_red_polyester",
+					OriginalValues: []ProductOptionValue{small, red, polyester},
+				},
+				{
+					IDs:            []uint64{small.ID, red.ID, cotton.ID},
+					OptionSummary:  "Size: small, Color: red, Fabric: cotton",
+					SKUPostfix:     "small_red_cotton",
+					OriginalValues: []ProductOptionValue{small, red, cotton},
+				},
+				{
+					IDs:            []uint64{small.ID, green.ID, polyester.ID},
+					OptionSummary:  "Size: small, Color: green, Fabric: polyester",
+					SKUPostfix:     "small_green_polyester",
+					OriginalValues: []ProductOptionValue{small, green, polyester},
+				},
+				{
+					IDs:            []uint64{small.ID, green.ID, cotton.ID},
+					OptionSummary:  "Size: small, Color: green, Fabric: cotton",
+					SKUPostfix:     "small_green_cotton",
+					OriginalValues: []ProductOptionValue{small, green, cotton},
+				},
+				{
+					IDs:            []uint64{small.ID, blue.ID, polyester.ID},
+					OptionSummary:  "Size: small, Color: blue, Fabric: polyester",
+					SKUPostfix:     "small_blue_polyester",
+					OriginalValues: []ProductOptionValue{small, blue, polyester},
+				},
+				{
+					IDs:            []uint64{small.ID, blue.ID, cotton.ID},
+					OptionSummary:  "Size: small, Color: blue, Fabric: cotton",
+					SKUPostfix:     "small_blue_cotton",
+					OriginalValues: []ProductOptionValue{small, blue, cotton},
+				},
+				{
+					IDs:            []uint64{medium.ID, red.ID, polyester.ID},
+					OptionSummary:  "Size: medium, Color: red, Fabric: polyester",
+					SKUPostfix:     "medium_red_polyester",
+					OriginalValues: []ProductOptionValue{medium, red, polyester},
+				},
+				{
+					IDs:            []uint64{medium.ID, red.ID, cotton.ID},
+					OptionSummary:  "Size: medium, Color: red, Fabric: cotton",
+					SKUPostfix:     "medium_red_cotton",
+					OriginalValues: []ProductOptionValue{medium, red, cotton},
+				},
+				{
+					IDs:            []uint64{medium.ID, green.ID, polyester.ID},
+					OptionSummary:  "Size: medium, Color: green, Fabric: polyester",
+					SKUPostfix:     "medium_green_polyester",
+					OriginalValues: []ProductOptionValue{medium, green, polyester},
+				},
+				{
+					IDs:            []uint64{medium.ID, green.ID, cotton.ID},
+					OptionSummary:  "Size: medium, Color: green, Fabric: cotton",
+					SKUPostfix:     "medium_green_cotton",
+					OriginalValues: []ProductOptionValue{medium, green, cotton},
+				},
+				{
+					IDs:            []uint64{medium.ID, blue.ID, polyester.ID},
+					OptionSummary:  "Size: medium, Color: blue, Fabric: polyester",
+					SKUPostfix:     "medium_blue_polyester",
+					OriginalValues: []ProductOptionValue{medium, blue, polyester},
+				},
+				{
+					IDs:            []uint64{medium.ID, blue.ID, cotton.ID},
+					OptionSummary:  "Size: medium, Color: blue, Fabric: cotton",
+					SKUPostfix:     "medium_blue_cotton",
+					OriginalValues: []ProductOptionValue{medium, blue, cotton},
+				},
+				{
+					IDs:            []uint64{large.ID, red.ID, polyester.ID},
+					OptionSummary:  "Size: large, Color: red, Fabric: polyester",
+					SKUPostfix:     "large_red_polyester",
+					OriginalValues: []ProductOptionValue{large, red, polyester},
+				},
+				{
+					IDs:            []uint64{large.ID, red.ID, cotton.ID},
+					OptionSummary:  "Size: large, Color: red, Fabric: cotton",
+					SKUPostfix:     "large_red_cotton",
+					OriginalValues: []ProductOptionValue{large, red, cotton},
+				},
+				{
+					IDs:            []uint64{large.ID, green.ID, polyester.ID},
+					OptionSummary:  "Size: large, Color: green, Fabric: polyester",
+					SKUPostfix:     "large_green_polyester",
+					OriginalValues: []ProductOptionValue{large, green, polyester},
+				},
+				{
+					IDs:            []uint64{large.ID, green.ID, cotton.ID},
+					OptionSummary:  "Size: large, Color: green, Fabric: cotton",
+					SKUPostfix:     "large_green_cotton",
+					OriginalValues: []ProductOptionValue{large, green, cotton},
+				},
+				{
+					IDs:            []uint64{large.ID, blue.ID, polyester.ID},
+					OptionSummary:  "Size: large, Color: blue, Fabric: polyester",
+					SKUPostfix:     "large_blue_polyester",
+					OriginalValues: []ProductOptionValue{large, blue, polyester},
+				},
+				{
+					IDs:            []uint64{large.ID, blue.ID, cotton.ID},
+					OptionSummary:  "Size: large, Color: blue, Fabric: cotton",
+					SKUPostfix:     "large_blue_cotton",
+					OriginalValues: []ProductOptionValue{large, blue, cotton},
+				},
+				{
+					IDs:            []uint64{xtraLarge.ID, red.ID, polyester.ID},
+					OptionSummary:  "Size: xtra-large, Color: red, Fabric: polyester",
+					SKUPostfix:     "xtra-large_red_polyester",
+					OriginalValues: []ProductOptionValue{xtraLarge, red, polyester},
+				},
+				{
+					IDs:            []uint64{xtraLarge.ID, red.ID, cotton.ID},
+					OptionSummary:  "Size: xtra-large, Color: red, Fabric: cotton",
+					SKUPostfix:     "xtra-large_red_cotton",
+					OriginalValues: []ProductOptionValue{xtraLarge, red, cotton},
+				},
+				{
+					IDs:            []uint64{xtraLarge.ID, green.ID, polyester.ID},
+					OptionSummary:  "Size: xtra-large, Color: green, Fabric: polyester",
+					SKUPostfix:     "xtra-large_green_polyester",
+					OriginalValues: []ProductOptionValue{xtraLarge, green, polyester},
+				},
+				{
+					IDs:            []uint64{xtraLarge.ID, green.ID, cotton.ID},
+					OptionSummary:  "Size: xtra-large, Color: green, Fabric: cotton",
+					SKUPostfix:     "xtra-large_green_cotton",
+					OriginalValues: []ProductOptionValue{xtraLarge, green, cotton},
+				},
+				{
+					IDs:            []uint64{xtraLarge.ID, blue.ID, polyester.ID},
+					OptionSummary:  "Size: xtra-large, Color: blue, Fabric: polyester",
+					SKUPostfix:     "xtra-large_blue_polyester",
+					OriginalValues: []ProductOptionValue{xtraLarge, blue, polyester},
+				},
+				{
+					IDs:            []uint64{xtraLarge.ID, blue.ID, cotton.ID},
+					OptionSummary:  "Size: xtra-large, Color: blue, Fabric: cotton",
+					SKUPostfix:     "xtra-large_blue_cotton",
+					OriginalValues: []ProductOptionValue{xtraLarge, blue, cotton},
+				},
 			},
 			len: 24,
 		},
@@ -347,7 +366,7 @@ func TestGenerateCartesianProductForOptions(t *testing.T) {
 
 	for _, tc := range tt {
 		actual := generateCartesianProductForOptions(tc.in)
-		assert.Equal(t, tc.len, len(actual), fmt.Sprintf("there should be %d simpleProductOptions, but we generated %d", tc.len, len(actual)))
+		assert.Equal(t, tc.len, len(actual), "there should be %d simpleProductOptions, but we generated %d", tc.len, len(actual))
 		assert.Equal(t, tc.expected, actual, "expected output should match actual output")
 	}
 }
