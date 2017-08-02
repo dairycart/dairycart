@@ -522,10 +522,11 @@ func TestCreateProductInDB(t *testing.T) {
 	tx, err := testUtil.DB.Begin()
 	assert.Nil(t, err)
 
-	newID, createdOn, err := createProductInDB(tx, exampleProduct)
+	newID, availableOn, createdOn, err := createProductInDB(tx, exampleProduct)
 	assert.Nil(t, err)
 	assert.Equal(t, exampleProductID, newID, "createProductInDB should return the created ID")
-	assert.Equal(t, generateExampleTimeForTests(), createdOn, "createProductInDB should return the created ID")
+	assert.Equal(t, generateExampleTimeForTests(), createdOn, "createProductInDB should return the created_on ID")
+	assert.Equal(t, generateExampleTimeForTests(), availableOn, "createProductInDB should return the available_on ID")
 
 	err = tx.Commit()
 	assert.Nil(t, err)

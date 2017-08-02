@@ -73,7 +73,8 @@ CREATE TABLE IF NOT EXISTS product_options (
     "created_on" timestamp DEFAULT NOW(),
     "updated_on" timestamp,
     "archived_on" timestamp,
-    UNIQUE ("product_root_id", "name", "archived_on"),
+    UNIQUE ("product_root_id", "name"),
+    UNIQUE ("name", "archived_on"),
     PRIMARY KEY ("id"),
     FOREIGN KEY ("product_root_id") REFERENCES "product_roots"("id")
 );
@@ -85,7 +86,8 @@ CREATE TABLE IF NOT EXISTS product_option_values (
     "created_on" timestamp DEFAULT NOW(),
     "updated_on" timestamp,
     "archived_on" timestamp,
-    UNIQUE ("product_option_id", "value", "archived_on"),
+    UNIQUE ("product_option_id", "value"),
+    UNIQUE ("value", "archived_on"),
     PRIMARY KEY ("id"),
     FOREIGN KEY ("product_option_id") REFERENCES "product_options"("id")
 );

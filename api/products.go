@@ -274,13 +274,13 @@ func buildProductUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 }
 
 // createProductInDB takes a marshaled Product object and creates an entry for it and a base_product in the database
-func createProductInDB(tx *sql.Tx, np *Product) (uint64, time.Time, error) {
+func createProductInDB(tx *sql.Tx, np *Product) (uint64, time.Time, time.Time, error) {
 	var newProductID uint64
 	var availableOn time.Time
 	var createdOn time.Time
 	productCreationQuery, queryArgs := buildProductCreationQuery(np)
 	err := tx.QueryRow(productCreationQuery, queryArgs...).Scan(&newProductID, &availableOn, &createdOn)
-	return newProductID, createdOn, err
+	return newProductID, availableOn, createdOn, err
 }
 
 func createProductsInDBFromOptionRows(tx *sql.Tx, r *ProductRoot, np *Product, ops []ProductOption) ([]Product, error) {
@@ -294,12 +294,13 @@ func createProductsInDBFromOptionRows(tx *sql.Tx, r *ProductRoot, np *Product, o
 		p.OptionSummary = option.OptionSummary
 		p.SKU = fmt.Sprintf("%s_%s", r.SKUPrefix, option.SKUPostfix)
 
-		id, _, err := createProductInDB(tx, p)
+		var err error
+		p.ID, p.AvailableOn, p.CreatedOn, err = createProductInDB(tx, p)
 		if err != nil {
 			return nil, err
 		}
 
-		err = createBridgeEntryForProductValues(tx, id, option.IDs)
+		err = createBridgeEntryForProductValues(tx, p.ID, option.IDs)
 		if err != nil {
 			return nil, err
 		}
@@ -356,7 +357,7 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 		var createdProducts []Product
 		if len(productInput.Options) == 0 {
 			newProduct.ProductRootID = productRoot.ID
-			newProduct.ID, newProduct.CreatedOn, err = createProductInDB(tx, newProduct)
+			newProduct.ID, newProduct.AvailableOn, newProduct.CreatedOn, err = createProductInDB(tx, newProduct)
 			if err != nil {
 				tx.Rollback()
 				notifyOfInternalIssue(res, err, "insert product in database")

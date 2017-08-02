@@ -975,10 +975,7 @@ func TestProductOptionValueUpdateForNonexistentOption(t *testing.T) {
 func TestProductOptionValueUpdateForAlreadyExistentValue(t *testing.T) {
 	// Say you have a product option called `color`, and it has three values (`red`, `green`, and `blue`).
 	// Let's say you try to change `red` to `blue` for whatever reason. That will fail at the database level,
-	// because the schema ensures a unique combination of value and option ID. Should I prevent users from
-	// being able to do this? On the one hand, it adds yet another query to a route that should presumably never
-	// experience that issue at all. On the other hand it does provide a convenient and clear explanation
-	// for why a given problem occurred.
+	// because the schema ensures a unique combination of value and option ID and archived date.
 	t.Parallel()
 
 	duplicatedOptionValueJSON := createProductOptionValueBody("medium")
