@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi"
@@ -17,14 +18,14 @@ import (
 const (
 	productOptionsHeaders = `id,
 		name,
-		product_id,
+		product_root_id,
 		created_on,
 		updated_on,
 		archived_on
 	`
 	productOptionExistenceQuery                 = `SELECT EXISTS(SELECT 1 FROM product_options WHERE id = $1 AND archived_on IS NULL)`
 	productOptionRetrievalQuery                 = `SELECT * FROM product_options WHERE id = $1`
-	productOptionExistenceQueryForProductByName = `SELECT EXISTS(SELECT 1 FROM product_options WHERE name = $1 AND product_id = $2 and archived_on IS NULL)`
+	productOptionExistenceQueryForProductByName = `SELECT EXISTS(SELECT 1 FROM product_options WHERE name = $1 AND product_root_id = $2 and archived_on IS NULL)`
 	productOptionDeletionQuery                  = `UPDATE product_options SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
 	productOptionValuesDeletionQueryByOptionID  = `UPDATE product_option_values SET archived_on = NOW() WHERE product_option_id = $1 AND archived_on IS NULL`
 )
@@ -33,15 +34,9 @@ const (
 // and three sizes, then there are two ProductOptions for that base_product, color and size.
 type ProductOption struct {
 	DBRow
-	Name      string               `json:"name"`
-	ProductID uint64               `json:"product_id"`
-	Values    []ProductOptionValue `json:"values"`
-}
-
-// ProductOptionsResponse is a product option response struct
-type ProductOptionsResponse struct {
-	ListResponse
-	Data []ProductOption `json:"data"`
+	ProductRootID uint64               `json:"product_root_id"`
+	Name          string               `json:"name"`
+	Values        []ProductOptionValue `json:"values"`
 }
 
 // ProductOptionUpdateInput is a struct to use for updating product options
@@ -55,11 +50,89 @@ type ProductOptionCreationInput struct {
 	Values []string `json:"values"`
 }
 
+type simpleProductOption struct {
+	IDs            []uint64
+	OptionSummary  string
+	SKUPostfix     string
+	OriginalValues []ProductOptionValue
+}
+
+type optionPlaceholder struct {
+	ID            uint64
+	Summary       string
+	Value         string
+	OriginalValue ProductOptionValue
+}
+
+func generateCartesianProductForOptions(inputOptions []ProductOption) []simpleProductOption {
+	/*
+		Some notes about this function:
+
+		It's probably hilariously expensive to run, like O(n^(log(n)³)) or some other equally absurd thing
+		I based this off a stackoverflow post and didn't go to college. I've tried to use anonymous structs where
+		I could so I don't have data structures floating around that exist solely for this function, and
+		also tried to name things as clearly as possible. But it still kind of just _feels_ messy, so forgive me,
+		Rob Pike. I have taken your beautiful language and violated it with my garbage brain
+	*/
+
+	// lovingly borrowed from:
+	//     https://stackoverflow.com/questions/29002724/implement-ruby-style-cartesian-product-in-go
+	// NextIndex sets ix to the lexicographically next value,
+	// such that for each i>0, 0 <= ix[i] < lens(i).
+	next := func(ix []int, sl [][]optionPlaceholder) {
+		for j := len(ix) - 1; j >= 0; j-- {
+			ix[j]++
+			if j == 0 || ix[j] < len(sl[j]) {
+				return
+			}
+			ix[j] = 0
+		}
+	}
+
+	// meat & potatoes starts here
+	optionData := [][]optionPlaceholder{}
+	for _, o := range inputOptions {
+		newOptions := []optionPlaceholder{}
+		for _, v := range o.Values {
+			ph := optionPlaceholder{
+				ID:            v.ID,
+				Summary:       fmt.Sprintf("%s: %s", o.Name, v.Value),
+				Value:         v.Value,
+				OriginalValue: v,
+			}
+			newOptions = append(newOptions, ph)
+		}
+		optionData = append(optionData, newOptions)
+	}
+
+	output := []simpleProductOption{}
+	for ix := make([]int, len(optionData)); ix[0] < len(optionData[0]); next(ix, optionData) {
+		var ids []uint64
+		var skuPrefixParts []string
+		var optionSummaryParts []string
+		var originalValues []ProductOptionValue
+		for j, k := range ix {
+			ids = append(ids, optionData[j][k].ID)
+			optionSummaryParts = append(optionSummaryParts, optionData[j][k].Summary)
+			skuPrefixParts = append(skuPrefixParts, strings.ToLower(optionData[j][k].Value))
+			originalValues = append(originalValues, optionData[j][k].OriginalValue)
+		}
+		output = append(output, simpleProductOption{
+			IDs:            ids,
+			OptionSummary:  strings.Join(optionSummaryParts, ", "),
+			SKUPostfix:     strings.Join(skuPrefixParts, "_"),
+			OriginalValues: originalValues,
+		})
+	}
+
+	return output
+}
+
 // FIXME: this function should be abstracted
-func productOptionAlreadyExistsForProduct(db *sqlx.DB, in *ProductOptionCreationInput, productID string) (bool, error) {
+func productOptionAlreadyExistsForProduct(db *sqlx.DB, in *ProductOptionCreationInput, productRootID string) (bool, error) {
 	var exists string
 
-	err := db.QueryRow(productOptionExistenceQueryForProductByName, in.Name, productID).Scan(&exists)
+	err := db.QueryRow(productOptionExistenceQueryForProductByName, in.Name, productRootID).Scan(&exists)
 	if err == sql.ErrNoRows {
 		return false, nil
 	}
@@ -77,10 +150,10 @@ func retrieveProductOptionFromDB(db *sqlx.DB, id uint64) (*ProductOption, error)
 	return option, err
 }
 
-func getProductOptionsForProduct(db *sqlx.DB, productID uint64, queryFilter *QueryFilter) ([]ProductOption, error) {
+func getProductOptionsForProduct(db *sqlx.DB, productRootID uint64, queryFilter *QueryFilter) ([]ProductOption, error) {
 	var options []ProductOption
 
-	query, args := buildProductOptionListQuery(productID, queryFilter)
+	query, args := buildProductOptionListQuery(productRootID, queryFilter)
 	err := db.Select(&options, query, args...)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error encountered querying for product options")
@@ -98,30 +171,29 @@ func getProductOptionsForProduct(db *sqlx.DB, productID uint64, queryFilter *Que
 
 func buildProductOptionListHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		productID := chi.URLParam(req, "product_id")
+		productRootID := chi.URLParam(req, "product_root_id")
 		rawFilterParams := req.URL.Query()
 		queryFilter := parseRawFilterParams(rawFilterParams)
-		productIDInt, _ := strconv.Atoi(productID)
+		productRootIDInt, _ := strconv.Atoi(productRootID)
 
+		// FIXME: this will return the count of all options, not the options for a given product root
 		count, err := getRowCount(db, "product_options", queryFilter)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve count of product options from the database")
 			return
 		}
 
-		options, err := getProductOptionsForProduct(db, uint64(productIDInt), queryFilter)
+		options, err := getProductOptionsForProduct(db, uint64(productRootIDInt), queryFilter)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve products from the database")
 			return
 		}
 
-		optionsResponse := &ProductOptionsResponse{
-			ListResponse: ListResponse{
-				Page:  queryFilter.Page,
-				Limit: queryFilter.Limit,
-				Count: count,
-			},
-			Data: options,
+		optionsResponse := &ListResponse{
+			Page:  queryFilter.Page,
+			Limit: queryFilter.Limit,
+			Count: count,
+			Data:  options,
 		}
 		json.NewEncoder(res).Encode(optionsResponse)
 	}
@@ -155,8 +227,14 @@ func buildProductOptionUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
+		noop := func(...interface{}) {
+			return
+		}
+
 		existingOption, err := retrieveProductOptionFromDB(db, uint64(optionIDInt))
 		if err != nil {
+			errStr := err.Error()
+			noop(errStr)
 			notifyOfInternalIssue(res, err, "retrieve product option from the database")
 			return
 		}
@@ -173,26 +251,25 @@ func buildProductOptionUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 	}
 }
 
-func createProductOptionInDB(tx *sql.Tx, o *ProductOption, productID uint64) (uint64, time.Time, error) {
+func createProductOptionInDB(tx *sql.Tx, o *ProductOption, productRootID uint64) (uint64, time.Time, error) {
 	var newOptionID uint64
 	var createdOn time.Time
 	// using QueryRow instead of Exec because we want it to return the newly created row's ID
 	// Exec normally returns a sql.Result, which has a LastInsertedID() method, but when I tested
 	// this locally, it never worked. ¯\_(ツ)_/¯
-	query, queryArgs := buildProductOptionCreationQuery(o, productID)
+	query, queryArgs := buildProductOptionCreationQuery(o, productRootID)
 	err := tx.QueryRow(query, queryArgs...).Scan(&newOptionID, &createdOn)
 
 	return newOptionID, createdOn, err
 }
 
-func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in *ProductOptionCreationInput, productID uint64) (*ProductOption, error) {
-	newProductOption := &ProductOption{Name: in.Name, ProductID: productID}
-	newProductOptionID, newProductOptionCreatedOn, err := createProductOptionInDB(tx, newProductOption, productID)
+func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in *ProductOptionCreationInput, productRootID uint64) (*ProductOption, error) {
+	var err error
+	newProductOption := &ProductOption{Name: in.Name, ProductRootID: productRootID}
+	newProductOption.ID, newProductOption.CreatedOn, err = createProductOptionInDB(tx, newProductOption, productRootID)
 	if err != nil {
 		return nil, err
 	}
-	newProductOption.ID = newProductOptionID
-	newProductOption.CreatedOn = newProductOptionCreatedOn
 
 	for _, value := range in.Values {
 		newOptionValue := ProductOptionValue{
@@ -214,15 +291,15 @@ func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in *ProductOptionCrea
 func buildProductOptionCreationHandler(db *sqlx.DB) http.HandlerFunc {
 	// ProductOptionCreationHandler is a request handler that can create product options
 	return func(res http.ResponseWriter, req *http.Request) {
-		productID := chi.URLParam(req, "product_id")
+		productRootID := chi.URLParam(req, "product_root_id")
 		// eating this error because Chi should validate this for us.
-		i, _ := strconv.Atoi(productID)
-		productIDInt := uint64(i)
+		i, _ := strconv.Atoi(productRootID)
+		productRootIDInt := uint64(i)
 
 		// can't create an option for a product that doesn't exist!
-		productExists, err := rowExistsInDB(db, productExistenceQuery, productID)
-		if err != nil || !productExists {
-			respondThatRowDoesNotExist(req, res, "product", productID)
+		productRootExists, err := rowExistsInDB(db, productRootExistenceQuery, productRootID)
+		if err != nil || !productRootExists {
+			respondThatRowDoesNotExist(req, res, "product", productRootID)
 			return
 		}
 
@@ -234,7 +311,7 @@ func buildProductOptionCreationHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 
 		// can't create an option that already exists!
-		optionExists, err := productOptionAlreadyExistsForProduct(db, newOptionData, productID)
+		optionExists, err := productOptionAlreadyExistsForProduct(db, newOptionData, productRootID)
 		if err != nil || optionExists {
 			notifyOfInvalidRequestBody(res, fmt.Errorf("product option with the name '%s' already exists", newOptionData.Name))
 			return
@@ -246,7 +323,7 @@ func buildProductOptionCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		newProductOption, err := createProductOptionAndValuesInDBFromInput(tx, newOptionData, productIDInt)
+		newProductOption, err := createProductOptionAndValuesInDBFromInput(tx, newOptionData, productRootIDInt)
 		if err != nil {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "create product option in the database")
@@ -255,7 +332,7 @@ func buildProductOptionCreationHandler(db *sqlx.DB) http.HandlerFunc {
 
 		err = tx.Commit()
 		if err != nil {
-			notifyOfInternalIssue(res, err, "closing out transaction")
+			notifyOfInternalIssue(res, err, "close out transaction")
 			return
 		}
 
@@ -308,7 +385,7 @@ func buildProductOptionDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 
 		err = tx.Commit()
 		if err != nil {
-			notifyOfInternalIssue(res, err, "closing out transaction")
+			notifyOfInternalIssue(res, err, "close out transaction")
 			return
 		}
 

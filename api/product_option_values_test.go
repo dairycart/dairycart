@@ -10,7 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
+	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
 const (
@@ -81,8 +81,34 @@ func setExpectationsForProductOptionValueRetrieval(mock sqlmock.Sqlmock, v *Prod
 		WillReturnError(err)
 }
 
+func setExpectationsForMultipleProductOptionValuesCreation(mock sqlmock.Sqlmock, vs []ProductOptionValue, err error, errorIndex int) {
+	for i, v := range vs {
+		var errToUse error = nil
+		if i == errorIndex && err != nil {
+			errToUse = err
+		}
+		setExpectationsForProductOptionValueCreation(mock, &v, errToUse)
+	}
+}
+
+func setExpectationsForProductValueBridgeEntryCreation(mock sqlmock.Sqlmock, productID uint64, optionValueIDs []uint64, err error) {
+	query, _ := buildProductVariantBridgeCreationQuery(productID, optionValueIDs)
+	mock.ExpectExec(formatQueryForSQLMock(query)).
+		// I can't think of a sane way to expect a given set of arguments, so we'll just have to count the queries for now
+		//WithArgs(queryArgs...).
+		WillReturnResult(sqlmock.NewResult(1, 1)).
+		WillReturnError(err)
+}
+
+func setExpectationsForProductValueBridgeEntryDeletion(mock sqlmock.Sqlmock, productID uint64, err error) {
+	mock.ExpectExec(formatQueryForSQLMock(productVariantBridgeDeletionQueryByProductID)).
+		WithArgs(productID).
+		WillReturnResult(sqlmock.NewResult(1, 1)).
+		WillReturnError(err)
+}
+
 func setExpectationsForProductOptionValueCreation(mock sqlmock.Sqlmock, v *ProductOptionValue, err error) {
-	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(exampleProductOptionValue.ID, generateExampleTimeForTests())
+	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(v.ID, generateExampleTimeForTests())
 	query, _ := buildProductOptionValueCreationQuery(v)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
 		WithArgs(v.ProductOptionID, v.Value).

@@ -351,7 +351,7 @@ func TestUserLogin(t *testing.T) {
 	}
 
 	testLogoutUser := func(t *testing.T) {
-		resp, err := logoutUser(testUsername, validPassword, testUserCookie)
+		resp, err := logoutUser(testUserCookie)
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusOK, resp.StatusCode, "logging out as a logged in user should respond 200")
 	}
@@ -410,7 +410,7 @@ func TestUserLoginWithInvalidPassword(t *testing.T) {
 	}
 
 	testLogoutUser := func(t *testing.T) {
-		resp, err := logoutUser(testUsername, validPassword, testUserCookie)
+		resp, err := logoutUser(testUserCookie)
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusOK, resp.StatusCode, "creating a user that doesn't exist should respond 200")
 	}
@@ -490,7 +490,7 @@ func TestUserLogout(t *testing.T) {
 	}
 
 	testLogoutUser := func(t *testing.T) {
-		resp, err := logoutUser(testUsername, validPassword, testUserCookie)
+		resp, err := logoutUser(testUserCookie)
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusOK, resp.StatusCode, "logging out as a logged in user should respond 200")
 		body := turnResponseBodyIntoString(t, resp)

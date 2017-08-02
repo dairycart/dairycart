@@ -12,14 +12,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
+	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
 const (
-	badSKUUpdateJSON = `{"sku": "pooƃ ou sᴉ nʞs sᴉɥʇ"}`
-	lolFloats        = 12.34000015258789
-
-	exampleProductUpdateInput = `
+	exampleTimeAvailableString = "2016-12-31T12:00:00Z"
+	badSKUUpdateJSON           = `{"sku": "pooƃ ou sᴉ nʞs sᴉɥʇ"}`
+	exampleProductID           = uint64(2)
+	exampleProductUpdateInput  = `
 		{
 			"sku": "example",
 			"name": "Test",
@@ -28,90 +28,49 @@ const (
 			"price": 12.34
 		}
 	`
-	exampleTimeAvailableString = "2016-12-31T12:00:00Z"
 )
 
-var (
-	productHeaders        []string
-	exampleProductData    []driver.Value
-	exampleProduct        *Product
-	exampleUpdatedProduct *Product
-)
+func createExampleHeadersAndDataFromProduct(p *Product) ([]string, []driver.Value) {
+	var headers []string
+	var values []driver.Value
 
-func init() {
-	exampleProduct = &Product{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		SKU:  "skateboard",
-		Name: "Skateboard",
-		// Subtitle:      NullString{sql.NullString{String: "", Valid: true}},
-		UPC: NullString{sql.NullString{String: "1234567890", Valid: true}},
-		// Manufacturer:  NullString{sql.NullString{String: "", Valid: true}},
-		// Brand:         NullString{sql.NullString{String: "", Valid: true}},
-		Quantity:      123,
-		Price:         99.99,
-		Cost:          50.00,
-		Description:   "This is a skateboard. Please wear a helmet.",
-		ProductWeight: 8,
-		ProductHeight: 7,
-		ProductWidth:  6,
-		ProductLength: 5,
-		PackageWeight: 4,
-		PackageHeight: 3,
-		PackageWidth:  2,
-		PackageLength: 1,
-		AvailableOn:   generateExampleTimeForTests(),
-	}
-	exampleProduct.Subtitle.Valid = true
-	exampleProduct.Manufacturer.Valid = true
-	exampleProduct.Brand.Valid = true
-
-	productHeaders = strings.Split(strings.TrimSpace(productTableHeaders), ",\n\t\t")
-	exampleProductData = []driver.Value{
-		exampleProduct.ID,
-		exampleProduct.Name,
-		exampleProduct.Subtitle.String,
-		exampleProduct.Description,
-		exampleProduct.SKU,
-		exampleProduct.UPC.String,
-		exampleProduct.Manufacturer.String,
-		exampleProduct.Brand.String,
-		exampleProduct.Quantity,
-		exampleProduct.Taxable,
-		exampleProduct.Price,
-		exampleProduct.OnSale,
-		exampleProduct.SalePrice,
-		exampleProduct.Cost,
-		exampleProduct.ProductWeight,
-		exampleProduct.ProductHeight,
-		exampleProduct.ProductWidth,
-		exampleProduct.ProductLength,
-		exampleProduct.PackageWeight,
-		exampleProduct.PackageHeight,
-		exampleProduct.PackageWidth,
-		exampleProduct.PackageLength,
-		exampleProduct.QuantityPerPackage,
-		exampleProduct.AvailableOn,
-		exampleProduct.CreatedOn,
-		nil,
-		nil,
+	productMap := map[string]driver.Value{
+		"id":                   p.ID,
+		"product_root_id":      p.ProductRootID,
+		"name":                 p.Name,
+		"subtitle":             p.Subtitle.String,
+		"description":          p.Description,
+		"sku":                  p.SKU,
+		"upc":                  p.UPC.String,
+		"manufacturer":         p.Manufacturer.String,
+		"brand":                p.Brand.String,
+		"quantity":             p.Quantity,
+		"quantity_per_package": p.QuantityPerPackage,
+		"taxable":              p.Taxable,
+		"price":                p.Price,
+		"on_sale":              p.OnSale,
+		"sale_price":           p.SalePrice,
+		"cost":                 p.Cost,
+		"product_weight":       p.ProductWeight,
+		"product_height":       p.ProductHeight,
+		"product_width":        p.ProductWidth,
+		"product_length":       p.ProductLength,
+		"package_weight":       p.PackageWeight,
+		"package_height":       p.PackageHeight,
+		"package_width":        p.PackageWidth,
+		"package_length":       p.PackageLength,
+		"available_on":         p.AvailableOn,
+		"created_on":           p.CreatedOn,
+		"updated_on":           p.UpdatedOn,
+		"archived_on":          p.ArchivedOn,
 	}
 
-	exampleUpdatedProduct = &Product{
-		DBRow: DBRow{
-			ID:        exampleProduct.ID,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		SKU:      "example",
-		Name:     "Test",
-		UPC:      NullString{sql.NullString{String: "1234567890", Valid: true}},
-		Quantity: 666,
-		Cost:     50.00,
-		Price:    lolFloats,
+	for header, value := range productMap {
+		headers = append(headers, header)
+		values = append(values, value)
 	}
 
+	return headers, values
 }
 
 func setExpectationsForProductExistence(mock sqlmock.Sqlmock, SKU string, exists bool, err error) {
@@ -122,15 +81,9 @@ func setExpectationsForProductExistence(mock sqlmock.Sqlmock, SKU string, exists
 		WillReturnError(err)
 }
 
-func setExpectationsForProductExistenceByID(mock sqlmock.Sqlmock, productID string, exists bool, err error) {
-	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
-	mock.ExpectQuery(formatQueryForSQLMock(productExistenceQuery)).
-		WithArgs(productID).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
-}
+func setExpectationsForProductListQuery(mock sqlmock.Sqlmock, p *Product, err error) {
+	productHeaders, exampleProductData := createExampleHeadersAndDataFromProduct(p)
 
-func setExpectationsForProductListQuery(mock sqlmock.Sqlmock, err error) {
 	exampleRows := sqlmock.NewRows(productHeaders).
 		AddRow(exampleProductData...).
 		AddRow(exampleProductData...).
@@ -142,7 +95,9 @@ func setExpectationsForProductListQuery(mock sqlmock.Sqlmock, err error) {
 		WillReturnError(err)
 }
 
-func setExpectationsForProductRetrieval(mock sqlmock.Sqlmock, sku string, err error) {
+// FIXME: dump SKU from the argument list here, just use whatever sku p has
+func setExpectationsForProductRetrieval(mock sqlmock.Sqlmock, sku string, p *Product, err error) {
+	productHeaders, exampleProductData := createExampleHeadersAndDataFromProduct(p)
 	exampleRows := sqlmock.NewRows(productHeaders).AddRow(exampleProductData...)
 	skuRetrievalQuery := formatQueryForSQLMock(completeProductRetrievalQuery)
 	mock.ExpectQuery(skuRetrievalQuery).
@@ -152,6 +107,67 @@ func setExpectationsForProductRetrieval(mock sqlmock.Sqlmock, sku string, err er
 }
 
 func setExpectationsForProductUpdate(mock sqlmock.Sqlmock, p *Product, err error) {
+	productHeaders := []string{
+		"id",
+		"product_root_id",
+		"name",
+		"subtitle",
+		"description",
+		"sku",
+		"upc",
+		"manufacturer",
+		"brand",
+		"quantity",
+		"quantity_per_package",
+		"taxable",
+		"price",
+		"on_sale",
+		"sale_price",
+		"cost",
+		"product_weight",
+		"product_height",
+		"product_width",
+		"product_length",
+		"package_weight",
+		"package_height",
+		"package_width",
+		"package_length",
+		"available_on",
+		"created_on",
+		"updated_on",
+		"archived_on",
+	}
+	exampleProductData := []driver.Value{
+		p.ID,
+		p.ProductRootID,
+		p.Name,
+		p.Subtitle.String,
+		p.Description,
+		p.SKU,
+		p.UPC.String,
+		p.Manufacturer.String,
+		p.Brand.String,
+		p.Quantity,
+		p.QuantityPerPackage,
+		p.Taxable,
+		p.Price,
+		p.OnSale,
+		p.SalePrice,
+		p.Cost,
+		p.ProductWeight,
+		p.ProductHeight,
+		p.ProductWidth,
+		p.ProductLength,
+		p.PackageWeight,
+		p.PackageHeight,
+		p.PackageWidth,
+		p.PackageLength,
+		p.AvailableOn,
+		p.CreatedOn,
+		p.UpdatedOn,
+		p.ArchivedOn,
+	}
+
 	exampleRows := sqlmock.NewRows(productHeaders).AddRow(exampleProductData...)
 	productUpdateQuery, queryArgs := buildProductUpdateQuery(p)
 	args := argsToDriverValues(queryArgs)
@@ -162,7 +178,7 @@ func setExpectationsForProductUpdate(mock sqlmock.Sqlmock, p *Product, err error
 }
 
 func setExpectationsForProductCreation(mock sqlmock.Sqlmock, p *Product, err error) {
-	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(p.ID, generateExampleTimeForTests())
+	exampleRows := sqlmock.NewRows([]string{"id", "available_on", "created_on"}).AddRow(p.ID, generateExampleTimeForTests(), generateExampleTimeForTests())
 	productCreationQuery, args := buildProductCreationQuery(p)
 	queryArgs := argsToDriverValues(args)
 	mock.ExpectQuery(formatQueryForSQLMock(productCreationQuery)).
@@ -171,9 +187,87 @@ func setExpectationsForProductCreation(mock sqlmock.Sqlmock, p *Product, err err
 		WillReturnError(err)
 }
 
+func setExpectationsForProductCreationFromOptions(mock sqlmock.Sqlmock, ps []*Product, optionCount uint, err error, errorOnBridgeEntries bool, errorIndex int) {
+	for i, p := range ps {
+		p.ID = uint64(i + 1)
+		if i == errorIndex && err != nil {
+			if errorOnBridgeEntries {
+				setExpectationsForProductCreation(mock, p, nil)
+				setExpectationsForProductValueBridgeEntryCreation(mock, p.ID, make([]uint64, optionCount), err)
+			} else {
+				setExpectationsForProductCreation(mock, p, err)
+			}
+			return
+		}
+		setExpectationsForProductCreation(mock, p, nil)
+		setExpectationsForProductValueBridgeEntryCreation(mock, p.ID, make([]uint64, optionCount), nil)
+	}
+}
+
 func setExpectationsForProductUpdateHandler(mock sqlmock.Sqlmock, p *Product, err error) {
+	productHeaders := []string{
+		"id",
+		"product_root_id",
+		"name",
+		"subtitle",
+		"description",
+		"sku",
+		"upc",
+		"manufacturer",
+		"brand",
+		"quantity",
+		"quantity_per_package",
+		"taxable",
+		"price",
+		"on_sale",
+		"sale_price",
+		"cost",
+		"product_weight",
+		"product_height",
+		"product_width",
+		"product_length",
+		"package_weight",
+		"package_height",
+		"package_width",
+		"package_length",
+		"available_on",
+		"created_on",
+		"updated_on",
+		"archived_on",
+	}
+	exampleProductData := []driver.Value{
+		p.ID,
+		p.ProductRootID,
+		p.Name,
+		p.Subtitle.String,
+		p.Description,
+		p.SKU,
+		p.UPC.String,
+		p.Manufacturer.String,
+		p.Brand.String,
+		p.Quantity,
+		p.QuantityPerPackage,
+		p.Taxable,
+		p.Price,
+		p.OnSale,
+		p.SalePrice,
+		p.Cost,
+		p.ProductWeight,
+		p.ProductHeight,
+		p.ProductWidth,
+		p.ProductLength,
+		p.PackageWeight,
+		p.PackageHeight,
+		p.PackageWidth,
+		p.PackageLength,
+		p.AvailableOn,
+		p.CreatedOn,
+		p.UpdatedOn,
+		p.ArchivedOn,
+	}
+
 	exampleRows := sqlmock.NewRows(productHeaders).AddRow(exampleProductData...)
-	productUpdateQuery, _ := buildProductUpdateQuery(exampleProduct)
+	productUpdateQuery, _ := buildProductUpdateQuery(p)
 	mock.ExpectQuery(formatQueryForSQLMock(productUpdateQuery)).
 		WithArgs(
 			p.Cost,
@@ -198,7 +292,31 @@ func TestRetrieveProductFromDB(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	setExpectationsForProductRetrieval(testUtil.Mock, exampleSKU, nil)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:           "skateboard",
+		Name:          "Skateboard",
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
+		Price:         99.99,
+		Cost:          50.00,
+		Description:   "This is a skateboard. Please wear a helmet.",
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+		AvailableOn:   generateExampleTimeForTests(),
+	}
+	exampleProduct.Manufacturer.Valid, exampleProduct.Brand.Valid, exampleProduct.Subtitle.Valid = true, true, true
+
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleSKU, exampleProduct, nil)
 
 	actual, err := retrieveProductFromDB(testUtil.DB, exampleSKU)
 	assert.Nil(t, err)
@@ -209,8 +327,30 @@ func TestRetrieveProductFromDB(t *testing.T) {
 func TestRetrieveProductFromDBWhenDBReturnsError(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:           "skateboard",
+		Name:          "Skateboard",
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
+		Price:         99.99,
+		Cost:          50.00,
+		Description:   "This is a skateboard. Please wear a helmet.",
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+		AvailableOn:   generateExampleTimeForTests(),
+	}
 
-	setExpectationsForProductRetrieval(testUtil.Mock, exampleSKU, sql.ErrNoRows)
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleSKU, exampleProduct, sql.ErrNoRows)
 
 	_, err := retrieveProductFromDB(testUtil.DB, exampleSKU)
 	assert.NotNil(t, err)
@@ -221,9 +361,12 @@ func TestDeleteProductBySKU(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
+	testUtil.Mock.ExpectBegin()
+	tx, err := testUtil.PlainDB.Begin()
+	assert.Nil(t, err)
 	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU, nil)
 
-	err := deleteProductBySKU(testUtil.DB, exampleSKU)
+	err = deleteProductBySKU(tx, exampleSKU)
 	assert.Nil(t, err)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
@@ -232,9 +375,12 @@ func TestDeleteProductBySKUReturnsError(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
+	testUtil.Mock.ExpectBegin()
+	tx, err := testUtil.PlainDB.Begin()
+	assert.Nil(t, err)
 	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU, arbitraryError)
 
-	err := deleteProductBySKU(testUtil.DB, exampleSKU)
+	err = deleteProductBySKU(tx, exampleSKU)
 	assert.Equal(t, err, arbitraryError, "deleteProductBySKU should return errors when it encounters them")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
@@ -242,6 +388,28 @@ func TestDeleteProductBySKUReturnsError(t *testing.T) {
 func TestUpdateProductInDatabase(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:           "skateboard",
+		Name:          "Skateboard",
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
+		Price:         99.99,
+		Cost:          50.00,
+		Description:   "This is a skateboard. Please wear a helmet.",
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+		AvailableOn:   generateExampleTimeForTests(),
+	}
 
 	setExpectationsForProductUpdate(testUtil.Mock, exampleProduct, nil)
 
@@ -253,6 +421,28 @@ func TestUpdateProductInDatabase(t *testing.T) {
 func TestCreateProductInDB(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:           "skateboard",
+		Name:          "Skateboard",
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
+		Price:         99.99,
+		Cost:          50.00,
+		Description:   "This is a skateboard. Please wear a helmet.",
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+		AvailableOn:   generateExampleTimeForTests(),
+	}
 
 	testUtil.Mock.ExpectBegin()
 	setExpectationsForProductCreation(testUtil.Mock, exampleProduct, nil)
@@ -261,10 +451,11 @@ func TestCreateProductInDB(t *testing.T) {
 	tx, err := testUtil.DB.Begin()
 	assert.Nil(t, err)
 
-	newID, createdOn, err := createProductInDB(tx, exampleProduct)
+	newID, availableOn, createdOn, err := createProductInDB(tx, exampleProduct)
 	assert.Nil(t, err)
-	assert.Equal(t, exampleProduct.ID, newID, "createProductInDB should return the created ID")
-	assert.Equal(t, generateExampleTimeForTests(), createdOn, "createProductInDB should return the created ID")
+	assert.Equal(t, exampleProductID, newID, "createProductInDB should return the created ID")
+	assert.Equal(t, generateExampleTimeForTests(), createdOn, "createProductInDB should return the created_on ID")
+	assert.Equal(t, generateExampleTimeForTests(), availableOn, "createProductInDB should return the available_on ID")
 
 	err = tx.Commit()
 	assert.Nil(t, err)
@@ -322,8 +513,30 @@ func TestProductExistenceHandlerWithExistenceCheckerError(t *testing.T) {
 func TestProductRetrievalHandlerWithExistingProduct(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:           "skateboard",
+		Name:          "Skateboard",
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
+		Price:         99.99,
+		Cost:          50.00,
+		Description:   "This is a skateboard. Please wear a helmet.",
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+		AvailableOn:   generateExampleTimeForTests(),
+	}
 
-	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, nil)
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, nil)
 
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), nil)
 	assert.Nil(t, err)
@@ -336,8 +549,30 @@ func TestProductRetrievalHandlerWithExistingProduct(t *testing.T) {
 func TestProductRetrievalHandlerWithDBError(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:           "skateboard",
+		Name:          "Skateboard",
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
+		Price:         99.99,
+		Cost:          50.00,
+		Description:   "This is a skateboard. Please wear a helmet.",
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+		AvailableOn:   generateExampleTimeForTests(),
+	}
 
-	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, arbitraryError)
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, arbitraryError)
 
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), nil)
 	assert.Nil(t, err)
@@ -350,8 +585,30 @@ func TestProductRetrievalHandlerWithDBError(t *testing.T) {
 func TestProductRetrievalHandlerWithNonexistentProduct(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:           "skateboard",
+		Name:          "Skateboard",
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
+		Price:         99.99,
+		Cost:          50.00,
+		Description:   "This is a skateboard. Please wear a helmet.",
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+		AvailableOn:   generateExampleTimeForTests(),
+	}
 
-	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, sql.ErrNoRows)
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, sql.ErrNoRows)
 
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), nil)
 	assert.Nil(t, err)
@@ -364,9 +621,31 @@ func TestProductRetrievalHandlerWithNonexistentProduct(t *testing.T) {
 func TestProductListHandler(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:           "skateboard",
+		Name:          "Skateboard",
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
+		Price:         99.99,
+		Cost:          50.00,
+		Description:   "This is a skateboard. Please wear a helmet.",
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+		AvailableOn:   generateExampleTimeForTests(),
+	}
 
 	setExpectationsForRowCount(testUtil.Mock, "products", defaultQueryFilter, 3, nil)
-	setExpectationsForProductListQuery(testUtil.Mock, nil)
+	setExpectationsForProductListQuery(testUtil.Mock, exampleProduct, nil)
 
 	req, err := http.NewRequest(http.MethodGet, "/v1/products", nil)
 	assert.Nil(t, err)
@@ -374,22 +653,19 @@ func TestProductListHandler(t *testing.T) {
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
 
-	expected := &ProductsResponse{
-		ListResponse: ListResponse{
-			Page:  1,
-			Limit: 25,
-			Count: 3,
-		},
+	expected := &ListResponse{
+		Page:  1,
+		Limit: 25,
+		Count: 3,
 	}
 
-	actual := &ProductsResponse{}
+	actual := &ListResponse{}
 	err = json.NewDecoder(strings.NewReader(testUtil.Response.Body.String())).Decode(actual)
 	assert.Nil(t, err)
 
 	assert.Equal(t, expected.Page, actual.Page, "expected and actual product pages should be equal")
 	assert.Equal(t, expected.Limit, actual.Limit, "expected and actual product limits should be equal")
 	assert.Equal(t, expected.Count, actual.Count, "expected and actual product counts should be equal")
-	assert.Equal(t, uint64(len(actual.Data)), actual.Count, "actual product counts and product response count field should be equal")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -411,9 +687,31 @@ func TestProductListHandlerWithErrorRetrievingCount(t *testing.T) {
 func TestProductListHandlerWithDBError(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:           "skateboard",
+		Name:          "Skateboard",
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
+		Price:         99.99,
+		Cost:          50.00,
+		Description:   "This is a skateboard. Please wear a helmet.",
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+		AvailableOn:   generateExampleTimeForTests(),
+	}
 
 	setExpectationsForRowCount(testUtil.Mock, "products", defaultQueryFilter, 3, nil)
-	setExpectationsForProductListQuery(testUtil.Mock, arbitraryError)
+	setExpectationsForProductListQuery(testUtil.Mock, exampleProduct, arbitraryError)
 
 	req, err := http.NewRequest(http.MethodGet, "/v1/products", nil)
 	assert.Nil(t, err)
@@ -426,8 +724,43 @@ func TestProductListHandlerWithDBError(t *testing.T) {
 func TestProductUpdateHandler(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:           "skateboard",
+		Name:          "Skateboard",
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
+		Price:         99.99,
+		Cost:          50.00,
+		Description:   "This is a skateboard. Please wear a helmet.",
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+		AvailableOn:   generateExampleTimeForTests(),
+	}
 
-	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, nil)
+	exampleUpdatedProduct := &Product{
+		DBRow: DBRow{
+			ID:        exampleProduct.ID,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:      "example",
+		Name:     "Test",
+		UPC:      NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity: 666,
+		Cost:     50.00,
+		Price:    12.34,
+	}
+
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, nil)
 	setExpectationsForProductUpdateHandler(testUtil.Mock, exampleUpdatedProduct, nil)
 
 	req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), strings.NewReader(exampleProductUpdateInput))
@@ -441,8 +774,30 @@ func TestProductUpdateHandler(t *testing.T) {
 func TestProductUpdateHandlerWithNonexistentProduct(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:           "skateboard",
+		Name:          "Skateboard",
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
+		Price:         99.99,
+		Cost:          50.00,
+		Description:   "This is a skateboard. Please wear a helmet.",
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+		AvailableOn:   generateExampleTimeForTests(),
+	}
 
-	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, sql.ErrNoRows)
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, sql.ErrNoRows)
 
 	req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), strings.NewReader(exampleProductUpdateInput))
 	assert.Nil(t, err)
@@ -467,8 +822,30 @@ func TestProductUpdateHandlerWithInputValidationError(t *testing.T) {
 func TestProductUpdateHandlerWithSKUValidationError(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:           "skateboard",
+		Name:          "Skateboard",
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
+		Price:         99.99,
+		Cost:          50.00,
+		Description:   "This is a skateboard. Please wear a helmet.",
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+		AvailableOn:   generateExampleTimeForTests(),
+	}
 
-	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, nil)
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, nil)
 
 	req, err := http.NewRequest(http.MethodPatch, "/v1/product/skateboard", strings.NewReader(badSKUUpdateJSON))
 	assert.Nil(t, err)
@@ -481,8 +858,30 @@ func TestProductUpdateHandlerWithSKUValidationError(t *testing.T) {
 func TestProductUpdateHandlerWithDBErrorRetrievingProduct(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:           "skateboard",
+		Name:          "Skateboard",
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
+		Price:         99.99,
+		Cost:          50.00,
+		Description:   "This is a skateboard. Please wear a helmet.",
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+		AvailableOn:   generateExampleTimeForTests(),
+	}
 
-	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, arbitraryError)
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, arbitraryError)
 
 	req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), strings.NewReader(exampleProductUpdateInput))
 	assert.Nil(t, err)
@@ -495,8 +894,43 @@ func TestProductUpdateHandlerWithDBErrorRetrievingProduct(t *testing.T) {
 func TestProductUpdateHandlerWithDBErrorUpdatingProduct(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:           "skateboard",
+		Name:          "Skateboard",
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
+		Price:         99.99,
+		Cost:          50.00,
+		Description:   "This is a skateboard. Please wear a helmet.",
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+		AvailableOn:   generateExampleTimeForTests(),
+	}
 
-	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, nil)
+	exampleUpdatedProduct := &Product{
+		DBRow: DBRow{
+			ID:        exampleProduct.ID,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:      "example",
+		Name:     "Test",
+		UPC:      NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity: 666,
+		Cost:     50.00,
+		Price:    12.34,
+	}
+
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, nil)
 	setExpectationsForProductUpdateHandler(testUtil.Mock, exampleUpdatedProduct, arbitraryError)
 
 	req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), strings.NewReader(exampleProductUpdateInput))
@@ -510,9 +944,20 @@ func TestProductUpdateHandlerWithDBErrorUpdatingProduct(t *testing.T) {
 func TestProductDeletionHandler(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:  exampleSKU,
+		Name: "Skateboard",
+	}
 
-	setExpectationsForProductExistence(testUtil.Mock, exampleSKU, true, nil)
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, nil)
+	testUtil.Mock.ExpectBegin()
+	setExpectationsForProductValueBridgeEntryDeletion(testUtil.Mock, exampleProduct.ID, nil)
 	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU, nil)
+	testUtil.Mock.ExpectCommit()
 
 	req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 	assert.Nil(t, err)
@@ -525,8 +970,16 @@ func TestProductDeletionHandler(t *testing.T) {
 func TestProductDeletionHandlerWithNonexistentProduct(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:  exampleSKU,
+		Name: "Skateboard",
+	}
 
-	setExpectationsForProductExistence(testUtil.Mock, exampleSKU, false, nil)
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, sql.ErrNoRows)
 
 	req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 	assert.Nil(t, err)
@@ -536,12 +989,118 @@ func TestProductDeletionHandlerWithNonexistentProduct(t *testing.T) {
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
+func TestProductDeletionHandlerWithErrorRetrievingProduct(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:  exampleSKU,
+		Name: "Skateboard",
+	}
+
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, arbitraryError)
+
+	req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestProductDeletionHandlerWithErrorBeginningTransaction(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:  exampleSKU,
+		Name: "Skateboard",
+	}
+
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, nil)
+	testUtil.Mock.ExpectBegin().WillReturnError(arbitraryError)
+
+	req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
 func TestProductDeletionHandlerWithErrorEncounteredDeletingProduct(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:  exampleSKU,
+		Name: "Skateboard",
+	}
 
-	setExpectationsForProductExistence(testUtil.Mock, exampleSKU, true, nil)
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, nil)
+	testUtil.Mock.ExpectBegin()
+	setExpectationsForProductValueBridgeEntryDeletion(testUtil.Mock, exampleProduct.ID, nil)
 	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU, arbitraryError)
+	testUtil.Mock.ExpectRollback()
+
+	req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestProductDeletionHandlerWithErrorDeletingBridgeEntries(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:  exampleSKU,
+		Name: "Skateboard",
+	}
+
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, nil)
+	testUtil.Mock.ExpectBegin()
+	setExpectationsForProductValueBridgeEntryDeletion(testUtil.Mock, exampleProduct.ID, arbitraryError)
+
+	req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestProductDeletionHandlerWithErrorCommittingTransaction(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:  exampleSKU,
+		Name: "Skateboard",
+	}
+
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, nil)
+	testUtil.Mock.ExpectBegin()
+	setExpectationsForProductValueBridgeEntryDeletion(testUtil.Mock, exampleProduct.ID, nil)
+	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU, nil)
+	testUtil.Mock.ExpectCommit().WillReturnError(arbitraryError)
 
 	req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 	assert.Nil(t, err)
@@ -554,6 +1113,46 @@ func TestProductDeletionHandlerWithErrorEncounteredDeletingProduct(t *testing.T)
 func TestProductCreationHandler(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:           "skateboard",
+		Name:          "Skateboard",
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
+		Price:         12.34,
+		Cost:          5,
+		Taxable:       true,
+		Description:   "This is a skateboard. Please wear a helmet.",
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+	}
+	exampleRoot := createProductRootFromProduct(exampleProduct)
+
+	expectedFirstOption := &Product{}
+	expectedSecondOption := &Product{}
+	expectedThirdOption := &Product{}
+
+	*expectedFirstOption = *exampleProduct
+	*expectedSecondOption = *exampleProduct
+	*expectedThirdOption = *exampleProduct
+
+	expectedFirstOption.OptionSummary = "something: one"
+	expectedFirstOption.SKU = "skateboard_one"
+	expectedSecondOption.OptionSummary = "something: two"
+	expectedSecondOption.SKU = "skateboard_two"
+	expectedThirdOption.OptionSummary = "something: three"
+	expectedThirdOption.SKU = "skateboard_three"
+
+	expectedCreatedProducts := []*Product{expectedFirstOption, expectedSecondOption, expectedThirdOption}
 
 	exampleProductCreationInputWithOptions := `
 		{
@@ -583,36 +1182,13 @@ func TestProductCreationHandler(t *testing.T) {
 			}]
 		}
 	`
-	expectedProduct := &Product{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		Name:          "Skateboard",
-		SKU:           "skateboard",
-		Price:         lolFloats,
-		Cost:          5,
-		Taxable:       true,
-		Description:   "This is a skateboard. Please wear a helmet.",
-		ProductWeight: 8,
-		ProductHeight: 7,
-		ProductWidth:  6,
-		ProductLength: 5,
-		PackageWeight: 4,
-		PackageHeight: 3,
-		PackageWidth:  2,
-		PackageLength: 1,
-		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
-		Quantity:      123,
-	}
 
-	setExpectationsForProductExistence(testUtil.Mock, "skateboard", false, nil)
+	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleProduct.SKU, false, nil)
 	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductCreation(testUtil.Mock, expectedProduct, nil)
-	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProduct.ID, nil)
-	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[0], nil)
-	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[1], nil)
-	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[2], nil)
+	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, nil)
+	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleRoot.ID, nil)
+	setExpectationsForMultipleProductOptionValuesCreation(testUtil.Mock, expectedCreatedProductOption.Values, nil, -1)
+	setExpectationsForProductCreationFromOptions(testUtil.Mock, expectedCreatedProducts, 1, nil, false, -1)
 	testUtil.Mock.ExpectCommit()
 
 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
@@ -623,7 +1199,7 @@ func TestProductCreationHandler(t *testing.T) {
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
-func TestProductCreationHandlerWithErrorvalidatingInput(t *testing.T) {
+func TestProductCreationHandlerWithErrorValidatingInput(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
@@ -638,7 +1214,6 @@ func TestProductCreationHandlerWithErrorvalidatingInput(t *testing.T) {
 func TestProductCreationHandlerWhereCommitReturnsAnError(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-
 	exampleProductCreationInputWithOptions := `
 		{
 			"sku": "skateboard",
@@ -657,24 +1232,17 @@ func TestProductCreationHandlerWhereCommitReturnsAnError(t *testing.T) {
 			"package_height": 3,
 			"package_width": 2,
 			"package_length": 1,
-			"options": [{
-				"name": "something",
-				"values": [
-					"one",
-					"two",
-					"three"
-				]
-			}]
+			"options": []
 		}
 	`
-	expectedProduct := &Product{
+	exampleProduct := &Product{
 		DBRow: DBRow{
 			ID:        2,
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:          "Skateboard",
 		SKU:           "skateboard",
-		Price:         lolFloats,
+		Price:         12.34,
 		Cost:          5,
 		Taxable:       true,
 		Description:   "This is a skateboard. Please wear a helmet.",
@@ -689,14 +1257,12 @@ func TestProductCreationHandlerWhereCommitReturnsAnError(t *testing.T) {
 		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
 		Quantity:      123,
 	}
+	exampleRoot := createProductRootFromProduct(exampleProduct)
 
-	setExpectationsForProductExistence(testUtil.Mock, "skateboard", false, nil)
+	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleProduct.SKU, false, nil)
 	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductCreation(testUtil.Mock, expectedProduct, nil)
-	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProduct.ID, nil)
-	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[0], nil)
-	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[1], nil)
-	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[2], nil)
+	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, nil)
+	setExpectationsForProductCreation(testUtil.Mock, exampleProduct, nil)
 	testUtil.Mock.ExpectCommit().WillReturnError(arbitraryError)
 
 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
@@ -729,20 +1295,74 @@ func TestProductCreationHandlerWhereTransactionFailsToBegin(t *testing.T) {
 			"package_height": 3,
 			"package_width": 2,
 			"package_length": 1,
-			"options": [{
-				"name": "something",
-				"values": [
-					"one",
-					"two",
-					"three"
-				]
-			}]
+			"options": []
 		}
 	`
-	setExpectationsForProductExistence(testUtil.Mock, "skateboard", false, nil)
+	setExpectationsForProductRootSKUExistence(testUtil.Mock, "skateboard", false, nil)
 	testUtil.Mock.ExpectBegin().WillReturnError(arbitraryError)
 
 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestProductCreationHandlerWithErrorCreatingProductRoot(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:           "skateboard",
+		Name:          "Skateboard",
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
+		Price:         12.34,
+		Cost:          5,
+		Taxable:       true,
+		Description:   "This is a skateboard. Please wear a helmet.",
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+	}
+	exampleRoot := createProductRootFromProduct(exampleProduct)
+
+	exampleProductCreationInput := `
+		{
+			"sku": "skateboard",
+			"name": "Skateboard",
+			"upc": "1234567890",
+			"quantity": 123,
+			"price": 12.34,
+			"cost": 5,
+			"description": "This is a skateboard. Please wear a helmet.",
+			"taxable": true,
+			"product_weight": 8,
+			"product_height": 7,
+			"product_width": 6,
+			"product_length": 5,
+			"package_weight": 4,
+			"package_height": 3,
+			"package_width": 2,
+			"package_length": 1
+		}
+	`
+
+	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleProduct.SKU, false, nil)
+	testUtil.Mock.ExpectBegin()
+	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, arbitraryError)
+	testUtil.Mock.ExpectRollback()
+
+	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInput))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
@@ -774,14 +1394,14 @@ func TestProductCreationHandlerWithoutOptions(t *testing.T) {
 			"package_length": 1
 		}
 	`
-	expectedProduct := &Product{
+	exampleProduct := &Product{
 		DBRow: DBRow{
 			ID:        2,
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:          "Skateboard",
 		SKU:           "skateboard",
-		Price:         lolFloats,
+		Price:         12.34,
 		Cost:          5,
 		Taxable:       true,
 		Description:   "This is a skateboard. Please wear a helmet.",
@@ -796,11 +1416,12 @@ func TestProductCreationHandlerWithoutOptions(t *testing.T) {
 		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
 		Quantity:      123,
 	}
+	exampleRoot := createProductRootFromProduct(exampleProduct)
 
-	setExpectationsForProductExistence(testUtil.Mock, "skateboard", false, nil)
-
+	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleProduct.SKU, false, nil)
 	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductCreation(testUtil.Mock, expectedProduct, nil)
+	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, nil)
+	setExpectationsForProductCreation(testUtil.Mock, exampleProduct, nil)
 	testUtil.Mock.ExpectCommit()
 
 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInput))
@@ -847,7 +1468,7 @@ func TestProductCreationHandlerForAlreadyExistentProduct(t *testing.T) {
 			"package_length": 1
 		}
 	`
-	setExpectationsForProductExistence(testUtil.Mock, "skateboard", true, nil)
+	setExpectationsForProductRootSKUExistence(testUtil.Mock, "skateboard", true, nil)
 
 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInput))
 	assert.Nil(t, err)
@@ -860,6 +1481,29 @@ func TestProductCreationHandlerForAlreadyExistentProduct(t *testing.T) {
 func TestProductCreationHandlerWithErrorCreatingOptions(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:           "skateboard",
+		Name:          "Skateboard",
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
+		Price:         99.99,
+		Cost:          50.00,
+		Description:   "This is a skateboard. Please wear a helmet.",
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+		AvailableOn:   generateExampleTimeForTests(),
+	}
+	exampleRoot := createProductRootFromProduct(exampleProduct)
 
 	exampleProductCreationInputWithOptions := fmt.Sprintf(`
 		{
@@ -890,10 +1534,10 @@ func TestProductCreationHandlerWithErrorCreatingOptions(t *testing.T) {
 		}
 	`, exampleTimeAvailableString)
 
-	setExpectationsForProductExistence(testUtil.Mock, "skateboard", false, nil)
+	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleProduct.SKU, false, nil)
 	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductCreation(testUtil.Mock, exampleProduct, nil)
-	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProduct.ID, arbitraryError)
+	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, nil)
+	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleRoot.ID, arbitraryError)
 	testUtil.Mock.ExpectRollback()
 
 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
@@ -907,7 +1551,6 @@ func TestProductCreationHandlerWithErrorCreatingOptions(t *testing.T) {
 func TestProductCreationHandlerWhereProductCreationFails(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-
 	exampleProductCreationInput := `
 		{
 			"sku": "skateboard",
@@ -928,14 +1571,14 @@ func TestProductCreationHandlerWhereProductCreationFails(t *testing.T) {
 			"package_length": 1
 		}
 	`
-	expectedProduct := &Product{
+	exampleProduct := &Product{
 		DBRow: DBRow{
 			ID:        2,
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:          "Skateboard",
 		SKU:           "skateboard",
-		Price:         lolFloats,
+		Price:         12.34,
 		Cost:          5,
 		Description:   "This is a skateboard. Please wear a helmet.",
 		Taxable:       true,
@@ -950,13 +1593,193 @@ func TestProductCreationHandlerWhereProductCreationFails(t *testing.T) {
 		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
 		Quantity:      123,
 	}
+	exampleRoot := createProductRootFromProduct(exampleProduct)
 
-	setExpectationsForProductExistence(testUtil.Mock, "skateboard", false, nil)
+	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleProduct.SKU, false, nil)
 	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductCreation(testUtil.Mock, expectedProduct, arbitraryError)
+	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, nil)
+	setExpectationsForProductCreation(testUtil.Mock, exampleProduct, arbitraryError)
 	testUtil.Mock.ExpectRollback()
 
 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInput))
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestProductCreationHandlerWithErrorCreatingOptionProducts(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:           "skateboard",
+		Name:          "Skateboard",
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
+		Price:         12.34,
+		Cost:          5,
+		Taxable:       true,
+		Description:   "This is a skateboard. Please wear a helmet.",
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+	}
+	exampleRoot := createProductRootFromProduct(exampleProduct)
+
+	expectedFirstOption := &Product{}
+	expectedSecondOption := &Product{}
+	expectedThirdOption := &Product{}
+
+	*expectedFirstOption = *exampleProduct
+	*expectedSecondOption = *exampleProduct
+	*expectedThirdOption = *exampleProduct
+
+	expectedFirstOption.OptionSummary = "something: one"
+	expectedFirstOption.SKU = "skateboard_one"
+	expectedSecondOption.OptionSummary = "something: two"
+	expectedSecondOption.SKU = "skateboard_two"
+	expectedThirdOption.OptionSummary = "something: three"
+	expectedThirdOption.SKU = "skateboard_three"
+
+	expectedCreatedProducts := []*Product{expectedFirstOption, expectedSecondOption, expectedThirdOption}
+
+	exampleProductCreationInputWithOptions := `
+		{
+			"sku": "skateboard",
+			"name": "Skateboard",
+			"upc": "1234567890",
+			"quantity": 123,
+			"price": 12.34,
+			"cost": 5,
+			"description": "This is a skateboard. Please wear a helmet.",
+			"taxable": true,
+			"product_weight": 8,
+			"product_height": 7,
+			"product_width": 6,
+			"product_length": 5,
+			"package_weight": 4,
+			"package_height": 3,
+			"package_width": 2,
+			"package_length": 1,
+			"options": [{
+				"name": "something",
+				"values": [
+					"one",
+					"two",
+					"three"
+				]
+			}]
+		}
+	`
+
+	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleProduct.SKU, false, nil)
+	testUtil.Mock.ExpectBegin()
+	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, nil)
+	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleRoot.ID, nil)
+	setExpectationsForMultipleProductOptionValuesCreation(testUtil.Mock, expectedCreatedProductOption.Values, nil, -1)
+	setExpectationsForProductCreationFromOptions(testUtil.Mock, expectedCreatedProducts, 1, arbitraryError, false, 0)
+	testUtil.Mock.ExpectRollback()
+
+	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestProductCreationHandlerWithErrorCreatingBridgeEntries(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		SKU:           "skateboard",
+		Name:          "Skateboard",
+		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		Quantity:      123,
+		Price:         12.34,
+		Cost:          5,
+		Taxable:       true,
+		Description:   "This is a skateboard. Please wear a helmet.",
+		ProductWeight: 8,
+		ProductHeight: 7,
+		ProductWidth:  6,
+		ProductLength: 5,
+		PackageWeight: 4,
+		PackageHeight: 3,
+		PackageWidth:  2,
+		PackageLength: 1,
+	}
+	exampleRoot := createProductRootFromProduct(exampleProduct)
+
+	expectedFirstOption := &Product{}
+	expectedSecondOption := &Product{}
+	expectedThirdOption := &Product{}
+
+	*expectedFirstOption = *exampleProduct
+	*expectedSecondOption = *exampleProduct
+	*expectedThirdOption = *exampleProduct
+
+	expectedFirstOption.OptionSummary = "something: one"
+	expectedFirstOption.SKU = "skateboard_one"
+	expectedSecondOption.OptionSummary = "something: two"
+	expectedSecondOption.SKU = "skateboard_two"
+	expectedThirdOption.OptionSummary = "something: three"
+	expectedThirdOption.SKU = "skateboard_three"
+
+	expectedCreatedProducts := []*Product{expectedFirstOption, expectedSecondOption, expectedThirdOption}
+
+	exampleProductCreationInputWithOptions := `
+		{
+			"sku": "skateboard",
+			"name": "Skateboard",
+			"upc": "1234567890",
+			"quantity": 123,
+			"price": 12.34,
+			"cost": 5,
+			"description": "This is a skateboard. Please wear a helmet.",
+			"taxable": true,
+			"product_weight": 8,
+			"product_height": 7,
+			"product_width": 6,
+			"product_length": 5,
+			"package_weight": 4,
+			"package_height": 3,
+			"package_width": 2,
+			"package_length": 1,
+			"options": [{
+				"name": "something",
+				"values": [
+					"one",
+					"two",
+					"three"
+				]
+			}]
+		}
+	`
+
+	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleProduct.SKU, false, nil)
+	testUtil.Mock.ExpectBegin()
+	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, nil)
+	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleRoot.ID, nil)
+	setExpectationsForMultipleProductOptionValuesCreation(testUtil.Mock, expectedCreatedProductOption.Values, nil, -1)
+	setExpectationsForProductCreationFromOptions(testUtil.Mock, expectedCreatedProducts, 1, arbitraryError, true, 0)
+	testUtil.Mock.ExpectRollback()
+
+	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 

@@ -1,6 +1,11 @@
 package main
 
-import "github.com/Masterminds/squirrel"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/Masterminds/squirrel"
+)
 
 func applyQueryFilterToQueryBuilder(queryBuilder squirrel.SelectBuilder, queryFilter *QueryFilter, includeOffset bool) squirrel.SelectBuilder {
 	if queryFilter.Limit > 0 {
@@ -48,19 +53,216 @@ func buildCountQuery(table string, queryFilter *QueryFilter) string {
 
 ////////////////////////////////////////////////////////
 //                                                    //
-//                     Products                       //
+//                   Product Roots                    //
 //                                                    //
 ////////////////////////////////////////////////////////
 
-func buildProductListQuery(queryFilter *QueryFilter) (string, []interface{}) {
+func buildProductRootListQuery(queryFilter *QueryFilter) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
-		Select(productTableHeaders).
-		From("products").
+		// note, this has to look ugly and disjointed because otherwise my editor
+		// will delete the trailing space and the tests will fail. Womp womp.
+		Select(`id,
+			name,
+			subtitle,
+			description,
+			sku_prefix,
+			manufacturer,
+			brand,
+			taxable,
+			cost,
+			product_weight,
+			product_height,
+			product_width,
+			product_length,
+			package_weight,
+			package_height,
+			package_width,
+			package_length,
+			quantity_per_package,
+			available_on,
+			created_on,
+			updated_on,
+			archived_on
+		`).
+		From("product_roots").
 		Where(squirrel.Eq{"archived_on": nil}).
 		Limit(uint64(queryFilter.Limit))
 
 	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter, true)
+
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}
+
+func buildProductRootCreationQuery(r *ProductRoot) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		Insert("product_roots").
+		Columns(
+			"name",
+			"subtitle",
+			"description",
+			"sku_prefix",
+			"manufacturer",
+			"brand",
+			"available_on",
+			"quantity_per_package",
+			"taxable",
+			"cost",
+			"product_weight",
+			"product_height",
+			"product_width",
+			"product_length",
+			"package_weight",
+			"package_height",
+			"package_width",
+			"package_length",
+		).
+		Values(
+			r.Name,
+			r.Subtitle.String,
+			r.Description,
+			r.SKUPrefix,
+			r.Manufacturer.String,
+			r.Brand.String,
+			r.AvailableOn,
+			r.QuantityPerPackage,
+			r.Taxable,
+			r.Cost,
+			r.ProductWeight,
+			r.ProductHeight,
+			r.ProductWidth,
+			r.ProductLength,
+			r.PackageWeight,
+			r.PackageHeight,
+			r.PackageWidth,
+			r.PackageLength,
+		).
+		Suffix(`RETURNING id, created_on`)
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}
+
+////////////////////////////////////////////////////////
+//                                                    //
+//                     Products                       //
+//                                                    //
+////////////////////////////////////////////////////////
+
+func getProductCreationColumns() []string {
+	c := []string{
+		"product_root_id",
+		"name",
+		"subtitle",
+		"description",
+		"option_summary",
+		"sku",
+		"manufacturer",
+		"brand",
+		"quantity",
+		"taxable",
+		"price",
+		"on_sale",
+		"sale_price",
+		"cost",
+		"product_weight",
+		"product_height",
+		"product_width",
+		"product_length",
+		"package_weight",
+		"package_height",
+		"package_width",
+		"package_length",
+		"quantity_per_package",
+		"available_on",
+		"updated_on",
+	}
+	return c
+}
+
+func buildProductListQuery(queryFilter *QueryFilter) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		// note, this has to look ugly and disjointed because otherwise my editor
+		// will delete the trailing space and the tests will fail. Womp womp.
+		Select(`id,
+			product_root_id,
+			name,
+			subtitle,
+			description,
+			option_summary,
+			sku,
+			upc,
+			manufacturer,
+			brand,
+			quantity,
+			taxable,
+			price,
+			on_sale,
+			sale_price,
+			cost,
+			product_weight,
+			product_height,
+			product_width,
+			product_length,
+			package_weight,
+			package_height,
+			package_width,
+			package_length,
+			quantity_per_package,
+			available_on,
+			created_on,
+			updated_on,
+			archived_on
+		`).
+		From("products").
+		Where(squirrel.Eq{"archived_on": nil})
+
+	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter, true)
+
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}
+
+func buildProductAssociatedWithRootListQuery(rootID uint64) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		// note, this has to look ugly and disjointed because otherwise my editor
+		// will delete the trailing space and the tests will fail. Womp womp.
+		Select(`id,
+			product_root_id,
+			name,
+			subtitle,
+			description,
+			option_summary,
+			sku,
+			upc,
+			manufacturer,
+			brand,
+			quantity,
+			taxable,
+			price,
+			on_sale,
+			sale_price,
+			cost,
+			product_weight,
+			product_height,
+			product_width,
+			product_length,
+			package_weight,
+			package_height,
+			package_width,
+			package_length,
+			quantity_per_package,
+			available_on,
+			created_on,
+			updated_on,
+			archived_on
+		`).
+		From("products").
+		Where(squirrel.Eq{"archived_on": nil}).
+		Where(squirrel.Eq{"product_root_id": rootID})
 
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
@@ -90,36 +292,14 @@ func buildProductUpdateQuery(p *Product) (string, []interface{}) {
 func buildProductCreationQuery(p *Product) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 
-	columns := []string{
-		"name",
-		"subtitle",
-		"description",
-		"sku",
-		"manufacturer",
-		"brand",
-		"quantity",
-		"taxable",
-		"price",
-		"on_sale",
-		"sale_price",
-		"cost",
-		"product_weight",
-		"product_height",
-		"product_width",
-		"product_length",
-		"package_weight",
-		"package_height",
-		"package_width",
-		"package_length",
-		"quantity_per_package",
-		"available_on",
-		"updated_on",
-	}
+	columns := getProductCreationColumns()
 
 	values := []interface{}{
+		p.ProductRootID,
 		p.Name,
 		p.Subtitle.String,
 		p.Description,
+		p.OptionSummary,
 		p.SKU,
 		p.Manufacturer.String,
 		p.Brand.String,
@@ -151,7 +331,49 @@ func buildProductCreationQuery(p *Product) (string, []interface{}) {
 		Insert("products").
 		Columns(columns...).
 		Values(values...).
-		Suffix(`RETURNING id, created_on`)
+		Suffix(`RETURNING id, available_on, created_on`)
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}
+
+func buildMultipleProductCreationQuery(ps []*Product) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		Insert("products").
+		Columns(getProductCreationColumns()...)
+
+	for _, p := range ps {
+		values := []interface{}{
+			p.ProductRootID,
+			p.Name,
+			p.Subtitle.String,
+			p.Description,
+			p.OptionSummary,
+			p.SKU,
+			p.Manufacturer.String,
+			p.Brand.String,
+			p.Quantity,
+			p.Taxable,
+			p.Price,
+			p.OnSale,
+			p.SalePrice,
+			p.Cost,
+			p.ProductWeight,
+			p.ProductHeight,
+			p.ProductWidth,
+			p.ProductLength,
+			p.PackageWeight,
+			p.PackageHeight,
+			p.PackageWidth,
+			p.PackageLength,
+			p.QuantityPerPackage,
+			p.AvailableOn,
+			squirrel.Expr("NOW()"),
+		}
+
+		queryBuilder = queryBuilder.Values(values...)
+	}
+	queryBuilder = queryBuilder.Suffix(`RETURNING id, created_on`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
@@ -162,12 +384,12 @@ func buildProductCreationQuery(p *Product) (string, []interface{}) {
 //                                                    //
 ////////////////////////////////////////////////////////
 
-func buildProductOptionListQuery(productID uint64, queryFilter *QueryFilter) (string, []interface{}) {
+func buildProductOptionListQuery(productRootID uint64, queryFilter *QueryFilter) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Select(productOptionsHeaders).
 		From("product_options").
-		Where(squirrel.Eq{"product_id": productID}).
+		Where(squirrel.Eq{"product_root_id": productRootID}).
 		Where(squirrel.Eq{"archived_on": nil})
 	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter, true)
 	query, args, _ := queryBuilder.ToSql()
@@ -189,12 +411,12 @@ func buildProductOptionUpdateQuery(a *ProductOption) (string, []interface{}) {
 	return query, args
 }
 
-func buildProductOptionCreationQuery(a *ProductOption, productID uint64) (string, []interface{}) {
+func buildProductOptionCreationQuery(a *ProductOption, productRootID uint64) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Insert("product_options").
-		Columns("name", "product_id").
-		Values(a.Name, productID).
+		Columns("name", "product_root_id").
+		Values(a.Name, productRootID).
 		Suffix(`RETURNING id, created_on`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
@@ -232,6 +454,45 @@ func buildProductOptionValueCreationQuery(v *ProductOptionValue) (string, []inte
 	return query, args
 }
 
+func buildProductOptionCombinationExistenceQuery(optionValueIDs []uint64) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder
+	var subqueries []string
+	var subargs []interface{}
+	for _, id := range optionValueIDs {
+		q, a, _ := sqlBuilder.
+			Select("id").
+			From("product_variant_bridge").
+			Where(squirrel.Eq{"product_option_value_id": id}).
+			Where(squirrel.Eq{"archived_on": nil}).
+			ToSql()
+		subqueries = append(subqueries, fmt.Sprintf("(%s)", q))
+		subargs = append(subargs, a)
+	}
+	prequery := strings.Join(subqueries, " AND EXISTS")
+
+	queryBuilder := sqlBuilder.Select(fmt.Sprintf("EXISTS%s", prequery))
+	query, _, _ := queryBuilder.PlaceholderFormat(squirrel.Dollar).ToSql()
+	return query, subargs
+}
+
+func buildProductVariantBridgeCreationQuery(productID uint64, optionValueIDs []uint64) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		Insert("product_variant_bridge").
+		Columns("product_id", "product_option_value_id")
+
+	for _, id := range optionValueIDs {
+		values := []interface{}{
+			productID,
+			id,
+		}
+		queryBuilder = queryBuilder.Values(values...)
+	}
+	queryBuilder = queryBuilder.Suffix(`RETURNING id, created_on`)
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}
+
 ////////////////////////////////////////////////////////
 //                                                    //
 //                     Discounts                      //
@@ -241,7 +502,20 @@ func buildProductOptionValueCreationQuery(v *ProductOptionValue) (string, []inte
 func buildDiscountListQuery(queryFilter *QueryFilter) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
-		Select(discountsTableColumns).
+		Select(`id,
+			name,
+			type,
+			amount,
+			starts_on,
+			expires_on,
+			requires_code,
+			code,
+			limited_use,
+			number_of_uses,
+			login_required,
+			created_on,
+			updated_on,
+			archived_on`).
 		From("discounts").
 		Where(squirrel.Or{squirrel.Eq{"expires_on": nil}, squirrel.Gt{"expires_on": "NOW()"}}).
 		Where(squirrel.Eq{"archived_on": nil})

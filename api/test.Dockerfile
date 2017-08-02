@@ -1,4 +1,3 @@
-# final stage
 FROM golang:alpine
 WORKDIR /go/src/github.com/dairycart/dairycart
 

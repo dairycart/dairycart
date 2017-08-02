@@ -11,7 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
+	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
 const (
@@ -46,29 +46,29 @@ func init() {
 			ID:        123,
 			CreatedOn: generateExampleTimeForTests(),
 		},
-		Name:      "something",
-		ProductID: 2, // == exampleProduct.ID
+		Name:          "something",
+		ProductRootID: 2,
 	}
 	exampleUpdatedProductOption = &ProductOption{
 		DBRow: DBRow{
 			ID: exampleProductOption.ID,
 		},
-		Name:      "something else",
-		ProductID: exampleProductOption.ProductID,
+		Name:          "something else",
+		ProductRootID: exampleProductOption.ProductRootID,
 	}
-	productOptionHeaders = []string{"id", "name", "product_id", "created_on", "updated_on", "archived_on"}
+	productOptionHeaders = []string{"id", "name", "product_root_id", "created_on", "updated_on", "archived_on"}
 
 	expectedCreatedProductOption = &ProductOption{
 		DBRow: DBRow{
 			ID:        exampleProductOption.ID,
 			CreatedOn: generateExampleTimeForTests(),
 		},
-		Name:      "something",
-		ProductID: exampleProductOption.ProductID,
+		Name:          "something",
+		ProductRootID: exampleProductOption.ProductRootID,
 		Values: []ProductOptionValue{
 			{
 				DBRow: DBRow{
-					ID:        256, // == exampleProductOptionValue.ID,
+					ID:        128, // == exampleProductOptionValue.ID,
 					CreatedOn: generateExampleTimeForTests(),
 				},
 				ProductOptionID: exampleProductOption.ID,
@@ -82,7 +82,7 @@ func init() {
 				Value:           "two",
 			}, {
 				DBRow: DBRow{
-					ID:        256, // == exampleProductOptionValue.ID,
+					ID:        512, // == exampleProductOptionValue.ID,
 					CreatedOn: generateExampleTimeForTests(),
 				},
 				ProductOptionID: exampleProductOption.ID,
@@ -118,7 +118,7 @@ func setExpectationsForProductOptionExistenceByName(mock sqlmock.Sqlmock, a *Pro
 
 func setExpectationsForProductOptionRetrievalQuery(mock sqlmock.Sqlmock, a *ProductOption, err error) {
 	exampleRows := sqlmock.NewRows(productOptionHeaders).
-		AddRow([]driver.Value{a.ID, a.Name, a.ProductID, generateExampleTimeForTests(), nil, nil}...)
+		AddRow([]driver.Value{a.ID, a.Name, a.ProductRootID, generateExampleTimeForTests(), nil, nil}...)
 	query := formatQueryForSQLMock(productOptionRetrievalQuery)
 	mock.ExpectQuery(query).
 		WithArgs(a.ID).
@@ -127,19 +127,19 @@ func setExpectationsForProductOptionRetrievalQuery(mock sqlmock.Sqlmock, a *Prod
 }
 
 func setExpectationsForProductOptionListQuery(mock sqlmock.Sqlmock, a *ProductOption, err error) {
-	exampleRows := sqlmock.NewRows([]string{"id", "name", "product_id", "created_on", "updated_on", "archived_on"}).
-		AddRow([]driver.Value{a.ID, a.Name, a.ProductID, generateExampleTimeForTests(), nil, nil}...).
-		AddRow([]driver.Value{a.ID, a.Name, a.ProductID, generateExampleTimeForTests(), nil, nil}...).
-		AddRow([]driver.Value{a.ID, a.Name, a.ProductID, generateExampleTimeForTests(), nil, nil}...)
-	query, _ := buildProductOptionListQuery(exampleProduct.ID, defaultQueryFilter)
+	exampleRows := sqlmock.NewRows([]string{"id", "name", "product_root_id", "created_on", "updated_on", "archived_on"}).
+		AddRow([]driver.Value{a.ID, a.Name, a.ProductRootID, generateExampleTimeForTests(), nil, nil}...).
+		AddRow([]driver.Value{a.ID, a.Name, a.ProductRootID, generateExampleTimeForTests(), nil, nil}...).
+		AddRow([]driver.Value{a.ID, a.Name, a.ProductRootID, generateExampleTimeForTests(), nil, nil}...)
+	query, _ := buildProductOptionListQuery(exampleProductID, defaultQueryFilter)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
 }
 
-func setExpectationsForProductOptionCreation(mock sqlmock.Sqlmock, a *ProductOption, productID uint64, err error) {
+func setExpectationsForProductOptionCreation(mock sqlmock.Sqlmock, a *ProductOption, productRootID uint64, err error) {
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(exampleProductOption.ID, generateExampleTimeForTests())
-	query, args := buildProductOptionCreationQuery(a, productID)
+	query, args := buildProductOptionCreationQuery(a, productRootID)
 	queryArgs := argsToDriverValues(args)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
 		WithArgs(queryArgs...).
@@ -171,6 +171,206 @@ func setExpectationsForProductOptionValuesDeletionByOptionID(mock sqlmock.Sqlmoc
 		WillReturnError(err)
 }
 
+func TestGenerateCartesianProductForOptions(t *testing.T) {
+	t.Parallel()
+
+	small := ProductOptionValue{DBRow: DBRow{ID: 1}, Value: "small"}
+	medium := ProductOptionValue{DBRow: DBRow{ID: 2}, Value: "medium"}
+	large := ProductOptionValue{DBRow: DBRow{ID: 3}, Value: "large"}
+	red := ProductOptionValue{DBRow: DBRow{ID: 4}, Value: "red"}
+	green := ProductOptionValue{DBRow: DBRow{ID: 5}, Value: "green"}
+	blue := ProductOptionValue{DBRow: DBRow{ID: 6}, Value: "blue"}
+	xtraLarge := ProductOptionValue{DBRow: DBRow{ID: 7}, Value: "xtra-large"}
+	polyester := ProductOptionValue{DBRow: DBRow{ID: 8}, Value: "polyester"}
+	cotton := ProductOptionValue{DBRow: DBRow{ID: 9}, Value: "cotton"}
+
+	tt := []struct {
+		in       []ProductOption
+		expected []simpleProductOption
+		len      int
+	}{
+		{
+			in: []ProductOption{
+				{Name: "Size", Values: []ProductOptionValue{small, medium, large}},
+				{Name: "Color", Values: []ProductOptionValue{red, green, blue}},
+			},
+			expected: []simpleProductOption{
+				{IDs: []uint64{small.ID, red.ID}, OptionSummary: "Size: small, Color: red", SKUPostfix: "small_red", OriginalValues: []ProductOptionValue{small, red}},
+				{IDs: []uint64{small.ID, green.ID}, OptionSummary: "Size: small, Color: green", SKUPostfix: "small_green", OriginalValues: []ProductOptionValue{small, green}},
+				{IDs: []uint64{small.ID, blue.ID}, OptionSummary: "Size: small, Color: blue", SKUPostfix: "small_blue", OriginalValues: []ProductOptionValue{small, blue}},
+				{IDs: []uint64{medium.ID, red.ID}, OptionSummary: "Size: medium, Color: red", SKUPostfix: "medium_red", OriginalValues: []ProductOptionValue{medium, red}},
+				{IDs: []uint64{medium.ID, green.ID}, OptionSummary: "Size: medium, Color: green", SKUPostfix: "medium_green", OriginalValues: []ProductOptionValue{medium, green}},
+				{IDs: []uint64{medium.ID, blue.ID}, OptionSummary: "Size: medium, Color: blue", SKUPostfix: "medium_blue", OriginalValues: []ProductOptionValue{medium, blue}},
+				{IDs: []uint64{large.ID, red.ID}, OptionSummary: "Size: large, Color: red", SKUPostfix: "large_red", OriginalValues: []ProductOptionValue{large, red}},
+				{IDs: []uint64{large.ID, green.ID}, OptionSummary: "Size: large, Color: green", SKUPostfix: "large_green", OriginalValues: []ProductOptionValue{large, green}},
+				{IDs: []uint64{large.ID, blue.ID}, OptionSummary: "Size: large, Color: blue", SKUPostfix: "large_blue", OriginalValues: []ProductOptionValue{large, blue}},
+			},
+			len: 9,
+		},
+		{
+			// test that name: value pairs can be completely different sizes
+			in: []ProductOption{
+				{Name: "Size", Values: []ProductOptionValue{small, medium, large, xtraLarge}},
+				{Name: "Color", Values: []ProductOptionValue{red, green, blue}},
+				{Name: "Fabric", Values: []ProductOptionValue{polyester, cotton}},
+			},
+			expected: []simpleProductOption{
+				{
+					IDs:            []uint64{small.ID, red.ID, polyester.ID},
+					OptionSummary:  "Size: small, Color: red, Fabric: polyester",
+					SKUPostfix:     "small_red_polyester",
+					OriginalValues: []ProductOptionValue{small, red, polyester},
+				},
+				{
+					IDs:            []uint64{small.ID, red.ID, cotton.ID},
+					OptionSummary:  "Size: small, Color: red, Fabric: cotton",
+					SKUPostfix:     "small_red_cotton",
+					OriginalValues: []ProductOptionValue{small, red, cotton},
+				},
+				{
+					IDs:            []uint64{small.ID, green.ID, polyester.ID},
+					OptionSummary:  "Size: small, Color: green, Fabric: polyester",
+					SKUPostfix:     "small_green_polyester",
+					OriginalValues: []ProductOptionValue{small, green, polyester},
+				},
+				{
+					IDs:            []uint64{small.ID, green.ID, cotton.ID},
+					OptionSummary:  "Size: small, Color: green, Fabric: cotton",
+					SKUPostfix:     "small_green_cotton",
+					OriginalValues: []ProductOptionValue{small, green, cotton},
+				},
+				{
+					IDs:            []uint64{small.ID, blue.ID, polyester.ID},
+					OptionSummary:  "Size: small, Color: blue, Fabric: polyester",
+					SKUPostfix:     "small_blue_polyester",
+					OriginalValues: []ProductOptionValue{small, blue, polyester},
+				},
+				{
+					IDs:            []uint64{small.ID, blue.ID, cotton.ID},
+					OptionSummary:  "Size: small, Color: blue, Fabric: cotton",
+					SKUPostfix:     "small_blue_cotton",
+					OriginalValues: []ProductOptionValue{small, blue, cotton},
+				},
+				{
+					IDs:            []uint64{medium.ID, red.ID, polyester.ID},
+					OptionSummary:  "Size: medium, Color: red, Fabric: polyester",
+					SKUPostfix:     "medium_red_polyester",
+					OriginalValues: []ProductOptionValue{medium, red, polyester},
+				},
+				{
+					IDs:            []uint64{medium.ID, red.ID, cotton.ID},
+					OptionSummary:  "Size: medium, Color: red, Fabric: cotton",
+					SKUPostfix:     "medium_red_cotton",
+					OriginalValues: []ProductOptionValue{medium, red, cotton},
+				},
+				{
+					IDs:            []uint64{medium.ID, green.ID, polyester.ID},
+					OptionSummary:  "Size: medium, Color: green, Fabric: polyester",
+					SKUPostfix:     "medium_green_polyester",
+					OriginalValues: []ProductOptionValue{medium, green, polyester},
+				},
+				{
+					IDs:            []uint64{medium.ID, green.ID, cotton.ID},
+					OptionSummary:  "Size: medium, Color: green, Fabric: cotton",
+					SKUPostfix:     "medium_green_cotton",
+					OriginalValues: []ProductOptionValue{medium, green, cotton},
+				},
+				{
+					IDs:            []uint64{medium.ID, blue.ID, polyester.ID},
+					OptionSummary:  "Size: medium, Color: blue, Fabric: polyester",
+					SKUPostfix:     "medium_blue_polyester",
+					OriginalValues: []ProductOptionValue{medium, blue, polyester},
+				},
+				{
+					IDs:            []uint64{medium.ID, blue.ID, cotton.ID},
+					OptionSummary:  "Size: medium, Color: blue, Fabric: cotton",
+					SKUPostfix:     "medium_blue_cotton",
+					OriginalValues: []ProductOptionValue{medium, blue, cotton},
+				},
+				{
+					IDs:            []uint64{large.ID, red.ID, polyester.ID},
+					OptionSummary:  "Size: large, Color: red, Fabric: polyester",
+					SKUPostfix:     "large_red_polyester",
+					OriginalValues: []ProductOptionValue{large, red, polyester},
+				},
+				{
+					IDs:            []uint64{large.ID, red.ID, cotton.ID},
+					OptionSummary:  "Size: large, Color: red, Fabric: cotton",
+					SKUPostfix:     "large_red_cotton",
+					OriginalValues: []ProductOptionValue{large, red, cotton},
+				},
+				{
+					IDs:            []uint64{large.ID, green.ID, polyester.ID},
+					OptionSummary:  "Size: large, Color: green, Fabric: polyester",
+					SKUPostfix:     "large_green_polyester",
+					OriginalValues: []ProductOptionValue{large, green, polyester},
+				},
+				{
+					IDs:            []uint64{large.ID, green.ID, cotton.ID},
+					OptionSummary:  "Size: large, Color: green, Fabric: cotton",
+					SKUPostfix:     "large_green_cotton",
+					OriginalValues: []ProductOptionValue{large, green, cotton},
+				},
+				{
+					IDs:            []uint64{large.ID, blue.ID, polyester.ID},
+					OptionSummary:  "Size: large, Color: blue, Fabric: polyester",
+					SKUPostfix:     "large_blue_polyester",
+					OriginalValues: []ProductOptionValue{large, blue, polyester},
+				},
+				{
+					IDs:            []uint64{large.ID, blue.ID, cotton.ID},
+					OptionSummary:  "Size: large, Color: blue, Fabric: cotton",
+					SKUPostfix:     "large_blue_cotton",
+					OriginalValues: []ProductOptionValue{large, blue, cotton},
+				},
+				{
+					IDs:            []uint64{xtraLarge.ID, red.ID, polyester.ID},
+					OptionSummary:  "Size: xtra-large, Color: red, Fabric: polyester",
+					SKUPostfix:     "xtra-large_red_polyester",
+					OriginalValues: []ProductOptionValue{xtraLarge, red, polyester},
+				},
+				{
+					IDs:            []uint64{xtraLarge.ID, red.ID, cotton.ID},
+					OptionSummary:  "Size: xtra-large, Color: red, Fabric: cotton",
+					SKUPostfix:     "xtra-large_red_cotton",
+					OriginalValues: []ProductOptionValue{xtraLarge, red, cotton},
+				},
+				{
+					IDs:            []uint64{xtraLarge.ID, green.ID, polyester.ID},
+					OptionSummary:  "Size: xtra-large, Color: green, Fabric: polyester",
+					SKUPostfix:     "xtra-large_green_polyester",
+					OriginalValues: []ProductOptionValue{xtraLarge, green, polyester},
+				},
+				{
+					IDs:            []uint64{xtraLarge.ID, green.ID, cotton.ID},
+					OptionSummary:  "Size: xtra-large, Color: green, Fabric: cotton",
+					SKUPostfix:     "xtra-large_green_cotton",
+					OriginalValues: []ProductOptionValue{xtraLarge, green, cotton},
+				},
+				{
+					IDs:            []uint64{xtraLarge.ID, blue.ID, polyester.ID},
+					OptionSummary:  "Size: xtra-large, Color: blue, Fabric: polyester",
+					SKUPostfix:     "xtra-large_blue_polyester",
+					OriginalValues: []ProductOptionValue{xtraLarge, blue, polyester},
+				},
+				{
+					IDs:            []uint64{xtraLarge.ID, blue.ID, cotton.ID},
+					OptionSummary:  "Size: xtra-large, Color: blue, Fabric: cotton",
+					SKUPostfix:     "xtra-large_blue_cotton",
+					OriginalValues: []ProductOptionValue{xtraLarge, blue, cotton},
+				},
+			},
+			len: 24,
+		},
+	}
+
+	for _, tc := range tt {
+		actual := generateCartesianProductForOptions(tc.in)
+		assert.Equal(t, tc.len, len(actual), "there should be %d simpleProductOptions, but we generated %d", tc.len, len(actual))
+		assert.Equal(t, tc.expected, actual, "expected output should match actual output")
+	}
+}
+
 func TestRetrieveProductOptionFromDB(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
@@ -199,13 +399,13 @@ func TestCreateProductOptionInDB(t *testing.T) {
 	testUtil := setupTestVariables(t)
 
 	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductOptionCreation(testUtil.Mock, exampleProductOption, exampleProduct.ID, nil)
+	setExpectationsForProductOptionCreation(testUtil.Mock, exampleProductOption, exampleProductID, nil)
 	testUtil.Mock.ExpectCommit()
 
 	tx, err := testUtil.DB.Begin()
 	assert.Nil(t, err)
 
-	newOptionID, createdOn, err := createProductOptionInDB(tx, exampleProductOption, exampleProduct.ID)
+	newOptionID, createdOn, err := createProductOptionInDB(tx, exampleProductOption, exampleProductID)
 	assert.Nil(t, err)
 	assert.Equal(t, exampleProductOption.ID, newOptionID, "Creating a product option should return the created product option ID")
 	assert.Equal(t, exampleProductOption.CreatedOn, createdOn, "Creating a product option should return the created product option creation date")
@@ -221,7 +421,7 @@ func TestCreateProductOptionAndValuesInDBFromInput(t *testing.T) {
 	testUtil := setupTestVariables(t)
 
 	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProduct.ID, nil)
+	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProductID, nil)
 	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[0], nil)
 	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[1], nil)
 	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[2], nil)
@@ -230,7 +430,7 @@ func TestCreateProductOptionAndValuesInDBFromInput(t *testing.T) {
 	tx, err := testUtil.DB.Begin()
 	assert.Nil(t, err)
 
-	actual, err := createProductOptionAndValuesInDBFromInput(tx, exampleProductOptionInput, exampleProduct.ID)
+	actual, err := createProductOptionAndValuesInDBFromInput(tx, exampleProductOptionInput, exampleProductID)
 	assert.Nil(t, err)
 	assert.Equal(t, expectedCreatedProductOption, actual, "output from product option creation should match expectation")
 
@@ -245,13 +445,13 @@ func TestCreateProductOptionAndValuesInDBFromInputWithIssueCreatingOption(t *tes
 	testUtil := setupTestVariables(t)
 
 	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProduct.ID, arbitraryError)
+	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProductID, arbitraryError)
 	testUtil.Mock.ExpectCommit()
 
 	tx, err := testUtil.DB.Begin()
 	assert.Nil(t, err)
 
-	_, err = createProductOptionAndValuesInDBFromInput(tx, exampleProductOptionInput, expectedCreatedProductOption.ProductID)
+	_, err = createProductOptionAndValuesInDBFromInput(tx, exampleProductOptionInput, expectedCreatedProductOption.ProductRootID)
 	assert.NotNil(t, err)
 
 	err = tx.Commit()
@@ -265,14 +465,14 @@ func TestCreateProductOptionAndValuesInDBFromInputWithIssueCreatingOptionValue(t
 	testUtil := setupTestVariables(t)
 
 	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProduct.ID, nil)
+	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProductID, nil)
 	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[0], arbitraryError)
 	testUtil.Mock.ExpectCommit()
 
 	tx, err := testUtil.DB.Begin()
 	assert.Nil(t, err)
 
-	_, err = createProductOptionAndValuesInDBFromInput(tx, exampleProductOptionInput, expectedCreatedProductOption.ProductID)
+	_, err = createProductOptionAndValuesInDBFromInput(tx, exampleProductOptionInput, expectedCreatedProductOption.ProductRootID)
 	assert.NotNil(t, err)
 
 	err = tx.Commit()
@@ -337,22 +537,20 @@ func TestProductOptionListHandler(t *testing.T) {
 	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
 	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
 
-	productOptionEndpoint := buildRoute("v1", "product", strconv.Itoa(int(exampleProduct.ID)), "options")
+	productOptionEndpoint := buildRoute("v1", "product", strconv.Itoa(int(exampleProductID)), "options")
 	req, err := http.NewRequest(http.MethodGet, productOptionEndpoint, nil)
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
 
-	expected := &ProductOptionsResponse{
-		ListResponse: ListResponse{
-			Page:  1,
-			Limit: 25,
-			Count: 3,
-		},
+	expected := &ListResponse{
+		Page:  1,
+		Limit: 25,
+		Count: 3,
 	}
 
-	actual := &ProductOptionsResponse{}
+	actual := &ListResponse{}
 	bodyString := testUtil.Response.Body.String()
 	err = json.NewDecoder(strings.NewReader(bodyString)).Decode(actual)
 	assert.Nil(t, err)
@@ -369,7 +567,7 @@ func TestProductOptionListHandlerWithErrorRetrievingCount(t *testing.T) {
 
 	setExpectationsForRowCount(testUtil.Mock, "product_options", defaultQueryFilter, 3, arbitraryError)
 
-	productOptionEndpoint := buildRoute("v1", "product", strconv.Itoa(int(exampleProduct.ID)), "options")
+	productOptionEndpoint := buildRoute("v1", "product", strconv.Itoa(int(exampleProductID)), "options")
 	req, err := http.NewRequest(http.MethodGet, productOptionEndpoint, nil)
 	assert.Nil(t, err)
 
@@ -389,7 +587,7 @@ func TestProductOptionListHandlerWithErrorsRetrievingValues(t *testing.T) {
 	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
 	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, arbitraryError)
 
-	productOptionEndpoint := buildRoute("v1", "product", strconv.Itoa(int(exampleProduct.ID)), "options")
+	productOptionEndpoint := buildRoute("v1", "product", strconv.Itoa(int(exampleProductID)), "options")
 	req, err := http.NewRequest(http.MethodGet, productOptionEndpoint, nil)
 	assert.Nil(t, err)
 
@@ -405,7 +603,7 @@ func TestProductOptionListHandlerWithDBErrors(t *testing.T) {
 	setExpectationsForRowCount(testUtil.Mock, "product_options", defaultQueryFilter, 3, nil)
 	setExpectationsForProductOptionListQuery(testUtil.Mock, exampleProductOption, arbitraryError)
 
-	productOptionEndpoint := buildRoute("v1", "product", strconv.Itoa(int(exampleProduct.ID)), "options")
+	productOptionEndpoint := buildRoute("v1", "product", strconv.Itoa(int(exampleProductID)), "options")
 	req, err := http.NewRequest(http.MethodGet, productOptionEndpoint, nil)
 	assert.Nil(t, err)
 
@@ -418,11 +616,11 @@ func TestProductOptionCreationHandler(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	productIDString := strconv.Itoa(int(exampleProductOption.ProductID))
-	setExpectationsForProductExistenceByID(testUtil.Mock, productIDString, true, nil)
+	productIDString := strconv.Itoa(int(exampleProductOption.ProductRootID))
+	setExpectationsForProductRootExistence(testUtil.Mock, productIDString, true, nil)
 	setExpectationsForProductOptionExistenceByName(testUtil.Mock, expectedCreatedProductOption, productIDString, false, nil)
 	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProduct.ID, nil)
+	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProductID, nil)
 	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[0], nil)
 	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[1], nil)
 	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[2], nil)
@@ -441,8 +639,8 @@ func TestProductOptionCreationHandlerFailureToSetupTransaction(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	productIDString := strconv.Itoa(int(exampleProductOption.ProductID))
-	setExpectationsForProductExistenceByID(testUtil.Mock, productIDString, true, nil)
+	productIDString := strconv.Itoa(int(exampleProductOption.ProductRootID))
+	setExpectationsForProductRootExistence(testUtil.Mock, productIDString, true, nil)
 	setExpectationsForProductOptionExistenceByName(testUtil.Mock, expectedCreatedProductOption, productIDString, false, nil)
 	testUtil.Mock.ExpectBegin().WillReturnError(arbitraryError)
 
@@ -459,11 +657,11 @@ func TestProductOptionCreationHandlerFailureToCommitTransaction(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	productIDString := strconv.Itoa(int(exampleProductOption.ProductID))
-	setExpectationsForProductExistenceByID(testUtil.Mock, productIDString, true, nil)
+	productIDString := strconv.Itoa(int(exampleProductOption.ProductRootID))
+	setExpectationsForProductRootExistence(testUtil.Mock, productIDString, true, nil)
 	setExpectationsForProductOptionExistenceByName(testUtil.Mock, expectedCreatedProductOption, productIDString, false, nil)
 	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProduct.ID, nil)
+	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProductID, nil)
 	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[0], nil)
 	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[1], nil)
 	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[2], nil)
@@ -482,11 +680,11 @@ func TestProductOptionCreationHandlerWhenOptionWithTheSameNameCheckReturnsNoRows
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	productIDString := strconv.Itoa(int(exampleProductOption.ProductID))
-	setExpectationsForProductExistenceByID(testUtil.Mock, productIDString, true, nil)
+	productIDString := strconv.Itoa(int(exampleProductOption.ProductRootID))
+	setExpectationsForProductRootExistence(testUtil.Mock, productIDString, true, nil)
 	setExpectationsForProductOptionExistenceByName(testUtil.Mock, expectedCreatedProductOption, productIDString, false, sql.ErrNoRows)
 	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProduct.ID, nil)
+	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProductID, nil)
 	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[0], nil)
 	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[1], nil)
 	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[2], nil)
@@ -505,8 +703,8 @@ func TestProductOptionCreationHandlerWithNonExistentProduct(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	productIDString := strconv.Itoa(int(exampleProductOption.ProductID))
-	setExpectationsForProductExistenceByID(testUtil.Mock, productIDString, false, nil)
+	productIDString := strconv.Itoa(int(exampleProductOption.ProductRootID))
+	setExpectationsForProductRootExistence(testUtil.Mock, productIDString, false, nil)
 
 	productOptionEndpoint := buildRoute("v1", "product", productIDString, "options")
 	req, err := http.NewRequest(http.MethodPost, productOptionEndpoint, strings.NewReader(exampleProductOptionCreationBody))
@@ -521,8 +719,8 @@ func TestProductOptionCreationHandlerWithInvalidOptionCreationInput(t *testing.T
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	productIDString := strconv.Itoa(int(exampleProductOption.ProductID))
-	setExpectationsForProductExistenceByID(testUtil.Mock, productIDString, true, nil)
+	productIDString := strconv.Itoa(int(exampleProductOption.ProductRootID))
+	setExpectationsForProductRootExistence(testUtil.Mock, productIDString, true, nil)
 
 	productOptionEndpoint := buildRoute("v1", "product", productIDString, "options")
 	req, err := http.NewRequest(http.MethodPost, productOptionEndpoint, strings.NewReader(exampleGarbageInput))
@@ -537,8 +735,8 @@ func TestProductOptionCreationHandlerWhenOptionWithTheSameNameExists(t *testing.
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	productIDString := strconv.Itoa(int(exampleProductOption.ProductID))
-	setExpectationsForProductExistenceByID(testUtil.Mock, productIDString, true, nil)
+	productIDString := strconv.Itoa(int(exampleProductOption.ProductRootID))
+	setExpectationsForProductRootExistence(testUtil.Mock, productIDString, true, nil)
 	setExpectationsForProductOptionExistenceByName(testUtil.Mock, expectedCreatedProductOption, productIDString, true, nil)
 
 	productOptionEndpoint := buildRoute("v1", "product", productIDString, "options")
@@ -554,12 +752,12 @@ func TestProductOptionCreationHandlerWithProblemsCreatingOption(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	productIDString := strconv.Itoa(int(exampleProductOption.ProductID))
-	setExpectationsForProductExistenceByID(testUtil.Mock, productIDString, true, nil)
+	productIDString := strconv.Itoa(int(exampleProductOption.ProductRootID))
+	setExpectationsForProductRootExistence(testUtil.Mock, productIDString, true, nil)
 	setExpectationsForProductOptionExistenceByName(testUtil.Mock, expectedCreatedProductOption, productIDString, false, nil)
 
 	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProduct.ID, arbitraryError)
+	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProductID, arbitraryError)
 	testUtil.Mock.ExpectRollback()
 
 	productOptionEndpoint := buildRoute("v1", "product", productIDString, "options")

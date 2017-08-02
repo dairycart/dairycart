@@ -1,8 +1,37 @@
-CREATE TABLE IF NOT EXISTS products (
+CREATE TABLE IF NOT EXISTS product_roots (
     "id" bigserial,
     "name" text NOT NULL,
     "subtitle" text,
     "description" text NOT NULL,
+    "sku_prefix" text NOT NULL,
+    "manufacturer" text,
+    "brand" text,
+    "taxable" boolean DEFAULT 'false',
+    "cost" numeric(15, 2) NOT NULL,
+    "product_weight" numeric(15, 2),
+    "product_height" numeric(15, 2),
+    "product_width" numeric(15, 2),
+    "product_length" numeric(15, 2),
+    "package_weight" numeric(15, 2),
+    "package_height" numeric(15, 2),
+    "package_width" numeric(15, 2),
+    "package_length" numeric(15, 2),
+    "quantity_per_package" integer DEFAULT 1,
+    "available_on" timestamp NOT NULL DEFAULT NOW(),
+    "created_on" timestamp DEFAULT NOW(),
+    "updated_on" timestamp,
+    "archived_on" timestamp,
+    UNIQUE ("sku_prefix", "archived_on"),
+    PRIMARY KEY ("id")
+);
+
+CREATE TABLE IF NOT EXISTS products (
+    "id" bigserial,
+    "product_root_id" bigint NOT NULL,
+    "name" text NOT NULL,
+    "subtitle" text,
+    "description" text NOT NULL,
+    "option_summary" text NOT NULL,
     "sku" text NOT NULL,
     "upc" text,
     "manufacturer" text,
@@ -30,21 +59,24 @@ CREATE TABLE IF NOT EXISTS products (
     "created_on" timestamp DEFAULT NOW(),
     "updated_on" timestamp,
     "archived_on" timestamp,
-    UNIQUE ("sku"),
+    UNIQUE ("sku", "archived_on"),
     UNIQUE ("upc"),
-    PRIMARY KEY ("id")
+    PRIMARY KEY ("id"),
+    FOREIGN KEY ("product_root_id") REFERENCES "product_roots"("id")
 );
+
 
 CREATE TABLE IF NOT EXISTS product_options (
     "id" bigserial,
     "name" text NOT NULL,
-    "product_id" bigint NOT NULL,
+    "product_root_id" bigint NOT NULL,
     "created_on" timestamp DEFAULT NOW(),
     "updated_on" timestamp,
     "archived_on" timestamp,
-    UNIQUE ("product_id", "name"),
+    UNIQUE ("product_root_id", "name"),
+    UNIQUE ("name", "archived_on"),
     PRIMARY KEY ("id"),
-    FOREIGN KEY ("product_id") REFERENCES "products"("id")
+    FOREIGN KEY ("product_root_id") REFERENCES "product_roots"("id")
 );
 
 CREATE TABLE IF NOT EXISTS product_option_values (
@@ -55,6 +87,17 @@ CREATE TABLE IF NOT EXISTS product_option_values (
     "updated_on" timestamp,
     "archived_on" timestamp,
     UNIQUE ("product_option_id", "value"),
+    UNIQUE ("value", "archived_on"),
     PRIMARY KEY ("id"),
     FOREIGN KEY ("product_option_id") REFERENCES "product_options"("id")
+);
+
+CREATE TABLE IF NOT EXISTS product_variant_bridge (
+    "id" bigserial,
+    "product_id" bigint NOT NULL,
+    "product_option_value_id" bigint NOT NULL,
+    "created_on" timestamp DEFAULT NOW(),
+    "archived_on" timestamp,
+    FOREIGN KEY ("product_id") REFERENCES "products"("id"),
+    FOREIGN KEY ("product_option_value_id") REFERENCES "product_option_values"("id")
 );

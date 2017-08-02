@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"time"
 
@@ -14,35 +13,6 @@ import (
 )
 
 const (
-	productTableHeaders = `id,
-		name,
-		subtitle,
-		description,
-		sku,
-		upc,
-		manufacturer,
-		brand,
-		quantity,
-		taxable,
-		price,
-		on_sale,
-		sale_price,
-		cost,
-		product_weight,
-		product_height,
-		product_width,
-		product_length,
-		package_weight,
-		package_height,
-		package_width,
-		package_length,
-		quantity_per_package,
-		available_on,
-		created_on,
-		updated_on,
-		archived_on
-	`
-
 	skuExistenceQuery             = `SELECT EXISTS(SELECT 1 FROM products WHERE sku = $1 AND archived_on IS NULL)`
 	productExistenceQuery         = `SELECT EXISTS(SELECT 1 FROM products WHERE id = $1 AND archived_on IS NULL)`
 	productDeletionQuery          = `UPDATE products SET archived_on = NOW() WHERE sku = $1 AND archived_on IS NULL`
@@ -53,14 +23,17 @@ const (
 type Product struct {
 	DBRow
 	// Basic Info
-	Name         string     `json:"name"`
-	Subtitle     NullString `json:"subtitle"`
-	Description  string     `json:"description"`
-	SKU          string     `json:"sku"`
-	UPC          NullString `json:"upc"`
-	Manufacturer NullString `json:"manufacturer"`
-	Brand        NullString `json:"brand"`
-	Quantity     int        `json:"quantity"`
+	ProductRootID      uint64     `json:"product_root_id"`
+	Name               string     `json:"name"`
+	Subtitle           NullString `json:"subtitle"`
+	Description        string     `json:"description"`
+	OptionSummary      string     `json:"option_summary"`
+	SKU                string     `json:"sku"`
+	UPC                NullString `json:"upc"`
+	Manufacturer       NullString `json:"manufacturer"`
+	Brand              NullString `json:"brand"`
+	Quantity           uint32     `json:"quantity"`
+	QuantityPerPackage uint32     `json:"quantity_per_package"`
 
 	// Pricing Fields
 	Taxable   bool    `json:"taxable"`
@@ -80,8 +53,8 @@ type Product struct {
 	PackageHeight float32 `json:"package_height"`
 	PackageWidth  float32 `json:"package_width"`
 	PackageLength float32 `json:"package_length"`
-	// TODO: change this and the other quantity field to a uint32
-	QuantityPerPackage int32 `json:"quantity_per_package"`
+
+	ApplicableOptionValues []ProductOptionValue `json:"applicable_options,omitempty"`
 
 	AvailableOn time.Time `json:"available_on"`
 }
@@ -97,6 +70,7 @@ func newProductFromCreationInput(in *ProductCreationInput) *Product {
 		Manufacturer:       NullString{sql.NullString{String: in.Manufacturer, Valid: true}},
 		Brand:              NullString{sql.NullString{String: in.Brand, Valid: true}},
 		Quantity:           in.Quantity,
+		QuantityPerPackage: in.QuantityPerPackage,
 		Taxable:            in.Taxable,
 		Price:              in.Price,
 		OnSale:             in.OnSale,
@@ -110,16 +84,9 @@ func newProductFromCreationInput(in *ProductCreationInput) *Product {
 		PackageHeight:      in.PackageHeight,
 		PackageWidth:       in.PackageWidth,
 		PackageLength:      in.PackageLength,
-		QuantityPerPackage: in.QuantityPerPackage,
 		AvailableOn:        in.AvailableOn,
 	}
 	return np
-}
-
-// ProductsResponse is a product response struct
-type ProductsResponse struct {
-	ListResponse
-	Data []Product `json:"data"`
 }
 
 // ProductCreationInput is a struct that represents a product creation body
@@ -132,7 +99,7 @@ type ProductCreationInput struct {
 	UPC          string `json:"upc"`
 	Manufacturer string `json:"manufacturer"`
 	Brand        string `json:"brand"`
-	Quantity     int    `json:"quantity"`
+	Quantity     uint32 `json:"quantity"`
 
 	// Pricing Fields
 	Taxable   bool    `json:"taxable"`
@@ -152,7 +119,7 @@ type ProductCreationInput struct {
 	PackageHeight      float32 `json:"package_height"`
 	PackageWidth       float32 `json:"package_width"`
 	PackageLength      float32 `json:"package_length"`
-	QuantityPerPackage int32   `json:"quantity_per_package"`
+	QuantityPerPackage uint32  `json:"quantity_per_package"`
 
 	AvailableOn time.Time `json:"available_on"`
 
@@ -223,20 +190,18 @@ func buildProductListHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		productsResponse := &ProductsResponse{
-			ListResponse: ListResponse{
-				Page:  queryFilter.Page,
-				Limit: queryFilter.Limit,
-				Count: count,
-			},
-			Data: products,
+		productsResponse := &ListResponse{
+			Page:  queryFilter.Page,
+			Limit: queryFilter.Limit,
+			Count: count,
+			Data:  products,
 		}
 		json.NewEncoder(res).Encode(productsResponse)
 	}
 }
 
-func deleteProductBySKU(db *sqlx.DB, sku string) error {
-	_, err := db.Exec(productDeletionQuery, sku)
+func deleteProductBySKU(tx *sql.Tx, sku string) error {
+	_, err := tx.Exec(productDeletionQuery, sku)
 	return err
 }
 
@@ -246,19 +211,42 @@ func buildProductDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 		sku := chi.URLParam(req, "sku")
 
 		// can't delete a product that doesn't exist!
-		exists, err := rowExistsInDB(db, skuExistenceQuery, sku)
-		if err != nil || !exists {
+		existingProduct, err := retrieveProductFromDB(db, sku)
+		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "product", sku)
+			return
+		} else if err != nil {
+			notifyOfInternalIssue(res, err, "retrieving discount from database")
 			return
 		}
 
-		err = deleteProductBySKU(db, sku)
+		tx, err := db.Begin()
 		if err != nil {
+			notifyOfInternalIssue(res, err, "create new database transaction")
+			return
+		}
+
+		err = deleteProductVariantBridgeEntriesByProductID(tx, existingProduct.ID)
+		if err != nil {
+			tx.Rollback()
 			notifyOfInternalIssue(res, err, "archive product in database")
 			return
 		}
 
-		io.WriteString(res, fmt.Sprintf("Successfully deleted product `%s`", sku))
+		err = deleteProductBySKU(tx, sku)
+		if err != nil {
+			tx.Rollback()
+			notifyOfInternalIssue(res, err, "archive product in database")
+			return
+		}
+
+		err = tx.Commit()
+		if err != nil {
+			notifyOfInternalIssue(res, err, "close out transaction")
+			return
+		}
+
+		res.WriteHeader(http.StatusOK)
 	}
 }
 
@@ -308,12 +296,40 @@ func buildProductUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 }
 
 // createProductInDB takes a marshaled Product object and creates an entry for it and a base_product in the database
-func createProductInDB(tx *sql.Tx, np *Product) (uint64, time.Time, error) {
+func createProductInDB(tx *sql.Tx, np *Product) (uint64, time.Time, time.Time, error) {
 	var newProductID uint64
+	var availableOn time.Time
 	var createdOn time.Time
 	productCreationQuery, queryArgs := buildProductCreationQuery(np)
-	err := tx.QueryRow(productCreationQuery, queryArgs...).Scan(&newProductID, &createdOn)
-	return newProductID, createdOn, err
+	err := tx.QueryRow(productCreationQuery, queryArgs...).Scan(&newProductID, &availableOn, &createdOn)
+	return newProductID, availableOn, createdOn, err
+}
+
+func createProductsInDBFromOptionRows(tx *sql.Tx, r *ProductRoot, np *Product) ([]Product, error) {
+	createdProducts := []Product{}
+	productOptionData := generateCartesianProductForOptions(r.Options)
+	for _, option := range productOptionData {
+		p := &Product{}
+		*p = *np // solved: http://www.claymath.org/millennium-problems/p-vs-np-problem
+
+		p.ProductRootID = r.ID
+		p.ApplicableOptionValues = option.OriginalValues
+		p.OptionSummary = option.OptionSummary
+		p.SKU = fmt.Sprintf("%s_%s", r.SKUPrefix, option.SKUPostfix)
+
+		var err error
+		p.ID, p.AvailableOn, p.CreatedOn, err = createProductInDB(tx, p)
+		if err != nil {
+			return nil, err
+		}
+
+		err = createBridgeEntryForProductValues(tx, p.ID, option.IDs)
+		if err != nil {
+			return nil, err
+		}
+		createdProducts = append(createdProducts, *p)
+	}
+	return createdProducts, nil
 }
 
 func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
@@ -330,7 +346,7 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 
 		// can't create a product with a sku that already exists!
-		exists, err := rowExistsInDB(db, skuExistenceQuery, productInput.SKU)
+		exists, err := rowExistsInDB(db, productRootSkuExistenceQuery, productInput.SKU)
 		if err != nil || exists {
 			notifyOfInvalidRequestBody(res, fmt.Errorf("product with sku '%s' already exists", productInput.SKU))
 			return
@@ -343,31 +359,49 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 
 		newProduct := newProductFromCreationInput(productInput)
-		newProductID, createdOn, err := createProductInDB(tx, newProduct)
+		productRoot := createProductRootFromProduct(newProduct)
+		productRoot.ID, productRoot.CreatedOn, err = createProductRootInDB(tx, productRoot)
 		if err != nil {
 			tx.Rollback()
-			notifyOfInternalIssue(res, err, "insert product in database")
+			notifyOfInternalIssue(res, err, "insert product options and values in database")
 			return
 		}
-		newProduct.ID = newProductID
-		newProduct.CreatedOn = createdOn
 
 		for _, optionAndValues := range productInput.Options {
-			_, err = createProductOptionAndValuesInDBFromInput(tx, optionAndValues, newProduct.ID)
+			o, err := createProductOptionAndValuesInDBFromInput(tx, optionAndValues, productRoot.ID)
 			if err != nil {
 				tx.Rollback()
 				notifyOfInternalIssue(res, err, "insert product options and values in database")
+				return
+			}
+			productRoot.Options = append(productRoot.Options, *o)
+		}
+
+		if len(productInput.Options) == 0 {
+			newProduct.ProductRootID = productRoot.ID
+			newProduct.ID, newProduct.AvailableOn, newProduct.CreatedOn, err = createProductInDB(tx, newProduct)
+			if err != nil {
+				tx.Rollback()
+				notifyOfInternalIssue(res, err, "insert product in database")
+				return
+			}
+			productRoot.Products = []Product{*newProduct}
+		} else {
+			productRoot.Products, err = createProductsInDBFromOptionRows(tx, productRoot, newProduct)
+			if err != nil {
+				tx.Rollback()
+				notifyOfInternalIssue(res, err, "insert products in database")
 				return
 			}
 		}
 
 		err = tx.Commit()
 		if err != nil {
-			notifyOfInternalIssue(res, err, "closing out transaction")
+			notifyOfInternalIssue(res, err, "close out transaction")
 			return
 		}
 
 		res.WriteHeader(http.StatusCreated)
-		json.NewEncoder(res).Encode(newProduct)
+		json.NewEncoder(res).Encode(productRoot)
 	}
 }

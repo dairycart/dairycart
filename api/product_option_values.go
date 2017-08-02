@@ -15,11 +15,13 @@ import (
 )
 
 const (
-	productOptionValueExistenceQuery            = `SELECT EXISTS(SELECT 1 FROM product_option_values WHERE id = $1 AND archived_on IS NULL)`
-	productOptionValueExistenceForOptionIDQuery = `SELECT EXISTS(SELECT 1 FROM product_option_values WHERE product_option_id = $1 AND value = $2 AND archived_on IS NULL)`
-	productOptionValueRetrievalQuery            = `SELECT * FROM product_option_values WHERE id = $1`
-	productOptionValueRetrievalForOptionIDQuery = `SELECT * FROM product_option_values WHERE product_option_id = $1 AND archived_on IS NULL`
-	productOptionValueDeletionQuery             = `UPDATE product_option_values SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
+	productOptionValueExistenceQuery                 = `SELECT EXISTS(SELECT 1 FROM product_option_values WHERE id = $1 AND archived_on IS NULL)`
+	productOptionValueExistenceForOptionIDQuery      = `SELECT EXISTS(SELECT 1 FROM product_option_values WHERE product_option_id = $1 AND value = $2 AND archived_on IS NULL)`
+	productOptionValueRetrievalQuery                 = `SELECT * FROM product_option_values WHERE id = $1`
+	productOptionValueRetrievalForOptionIDQuery      = `SELECT * FROM product_option_values WHERE product_option_id = $1 AND archived_on IS NULL`
+	productOptionValueDeletionQuery                  = `UPDATE product_option_values SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
+	productVariantBridgeDeletionQueryByProductID     = `UPDATE product_variant_bridge SET archived_on = NOW() WHERE product_id = $1 AND archived_on IS NULL`
+	productVariantBridgeDeletionQueryByOptionValueID = `UPDATE product_variant_bridge SET archived_on = NOW() WHERE product_option_value_id = $1 AND archived_on IS NULL`
 )
 
 // ProductOptionValue represents a product's option values. If you have a t-shirt that comes in three colors
@@ -40,6 +42,17 @@ type ProductOptionValueCreationInput struct {
 // ProductOptionValueUpdateInput is a struct to use for updating product option values
 type ProductOptionValueUpdateInput struct {
 	Value string `json:"value"`
+}
+
+func createBridgeEntryForProductValues(tx *sql.Tx, productID uint64, ids []uint64) error {
+	query, queryArgs := buildProductVariantBridgeCreationQuery(productID, ids)
+	_, err := tx.Exec(query, queryArgs...)
+	return err
+}
+
+func deleteProductVariantBridgeEntriesByProductID(tx *sql.Tx, id uint64) error {
+	_, err := tx.Exec(productVariantBridgeDeletionQueryByProductID, id)
+	return err
 }
 
 // retrieveProductOptionValue retrieves a ProductOptionValue with a given ID from the database
@@ -160,22 +173,20 @@ func buildProductOptionValueCreationHandler(db *sqlx.DB) http.HandlerFunc {
 
 		tx, err := db.Begin()
 		if err != nil {
-			notifyOfInternalIssue(res, err, "starting a transasction")
+			notifyOfInternalIssue(res, err, "starting a transaction")
 			return
 		}
 
-		newProductOptionValueID, createdOn, err := createProductOptionValueInDB(tx, newProductOptionValue)
+		newProductOptionValue.ID, newProductOptionValue.CreatedOn, err = createProductOptionValueInDB(tx, newProductOptionValue)
 		if err != nil {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "insert product in database")
 			return
 		}
-		newProductOptionValue.ID = newProductOptionValueID
-		newProductOptionValue.CreatedOn = createdOn
 
 		err = tx.Commit()
 		if err != nil {
-			notifyOfInternalIssue(res, err, "closing out transaction")
+			notifyOfInternalIssue(res, err, "close out transaction")
 			return
 		}
 
@@ -205,7 +216,7 @@ func buildProductOptionValueDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 
 		err = archiveProductOptionValue(db, uint64(optionValueIDInt))
 		if err != nil {
-			notifyOfInternalIssue(res, err, "closing out transaction")
+			notifyOfInternalIssue(res, err, "close out transaction")
 			return
 		}
 
