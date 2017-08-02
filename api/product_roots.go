@@ -139,7 +139,7 @@ func buildProductRootListHandler(db *sqlx.DB) http.HandlerFunc {
 }
 
 func buildSingleProductRootHandler(db *sqlx.DB) http.HandlerFunc {
-	// SingleProductHandler is a request handler that returns a single Product
+	// SingleProductRootHandler is a request handler that returns a single product root
 	return func(res http.ResponseWriter, req *http.Request) {
 		productRootIDStr := chi.URLParam(req, "product_root_id")
 		productRootID, err := strconv.ParseUint(productRootIDStr, 10, 64)

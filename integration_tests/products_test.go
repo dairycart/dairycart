@@ -331,7 +331,7 @@ func TestProductCreationRoute(t *testing.T) {
 				"package_height": 9,
 				"package_width": 9,
 				"package_length": 9,
-				"options": null,
+				"options": [],
 				"products": [{
 					"name": "New Product",
 					"subtitle": "this is a product",

@@ -366,8 +366,21 @@ func TestSingleProductRootRetrievalHandler(t *testing.T) {
 		Manufacturer: NullString{sql.NullString{String: "manufacturer", Valid: true}},
 		Brand:        NullString{sql.NullString{String: "brand", Valid: true}},
 	}
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:        "Skateboard",
+		Description: "This is a skateboard. Please wear a helmet.",
+	}
 
 	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, nil)
+	setExpectationsForProductAssociatedWithRootListQuery(testUtil.Mock, exampleProductRoot, exampleProduct, nil)
+	setExpectationsForProductOptionListQueryWithoutFilter(testUtil.Mock, exampleProductOption, nil)
+	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
+	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
+	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
 
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
 	assert.Nil(t, err)
@@ -403,7 +416,7 @@ func TestSingleProductRootRetrievalHandlerWhenNoSuchRootExists(t *testing.T) {
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
-func TestSingleProductRootRetrievalHandlerWithErrorQueryingDatabase(t *testing.T) {
+func TestSingleProductRootRetrievalHandlerWithErrorQueryingDatabaseForProductRoot(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 	exampleProductRoot := &ProductRoot{
@@ -420,6 +433,77 @@ func TestSingleProductRootRetrievalHandlerWithErrorQueryingDatabase(t *testing.T
 	}
 
 	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, arbitraryError)
+
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
+	assert.Nil(t, err)
+
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestSingleProductRootRetrievalHandlerWithErrorRetrievingAssociatedProducts(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+	exampleProductRoot := &ProductRoot{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:         "root_name",
+		Subtitle:     NullString{sql.NullString{String: "subtitle", Valid: true}},
+		Description:  "description",
+		SKUPrefix:    "sku_prefix",
+		Manufacturer: NullString{sql.NullString{String: "manufacturer", Valid: true}},
+		Brand:        NullString{sql.NullString{String: "brand", Valid: true}},
+	}
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:        "Skateboard",
+		Description: "This is a skateboard. Please wear a helmet.",
+	}
+
+	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, nil)
+	setExpectationsForProductAssociatedWithRootListQuery(testUtil.Mock, exampleProductRoot, exampleProduct, arbitraryError)
+
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
+	assert.Nil(t, err)
+
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestSingleProductRootRetrievalHandlerWitherrorRetrievingProductOptions(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+	exampleProductRoot := &ProductRoot{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:         "root_name",
+		Subtitle:     NullString{sql.NullString{String: "subtitle", Valid: true}},
+		Description:  "description",
+		SKUPrefix:    "sku_prefix",
+		Manufacturer: NullString{sql.NullString{String: "manufacturer", Valid: true}},
+		Brand:        NullString{sql.NullString{String: "brand", Valid: true}},
+	}
+	exampleProduct := &Product{
+		DBRow: DBRow{
+			ID:        2,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:        "Skateboard",
+		Description: "This is a skateboard. Please wear a helmet.",
+	}
+
+	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, nil)
+	setExpectationsForProductAssociatedWithRootListQuery(testUtil.Mock, exampleProductRoot, exampleProduct, nil)
+	setExpectationsForProductOptionListQueryWithoutFilter(testUtil.Mock, exampleProductOption, arbitraryError)
 
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
 	assert.Nil(t, err)
