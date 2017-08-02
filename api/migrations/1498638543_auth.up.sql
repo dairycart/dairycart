@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
     "created_on" timestamp DEFAULT NOW(),
     "updated_on" timestamp,
     "archived_on" timestamp,
-    UNIQUE ("username"),
+    UNIQUE ("username", "archived_on"),
     PRIMARY KEY ("id")
 );
 

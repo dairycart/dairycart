@@ -22,6 +22,5 @@ CREATE TABLE IF NOT EXISTS discounts (
     "created_on" timestamp DEFAULT NOW(),
     "updated_on" timestamp,
     "archived_on" timestamp,
-
     PRIMARY KEY ("id")
 );
