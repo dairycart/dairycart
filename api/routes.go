@@ -35,35 +35,34 @@ func SetupAPIRoutes(router *chi.Mux, db *sqlx.DB, store *sessions.CookieStore) {
 		// Users
 		r.Delete(fmt.Sprintf("/user/{user_id:%s}", NumericPattern), buildUserDeletionHandler(db, store))
 
+		// Product Roots
+		r.Get("/product_roots", buildProductRootListHandler(db))
+		r.Get(fmt.Sprintf("/product_root/{product_root_id:%s}", NumericPattern), buildSingleProductRootHandler(db))
+		r.Delete(fmt.Sprintf("/product_root/{product_root_id:%s}", NumericPattern), buildProductRootDeletionHandler(db))
+
 		// Products
-		productEndpoint := fmt.Sprintf("/product/{sku:%s}", ValidURLCharactersPattern)
 		r.Post("/product", buildProductCreationHandler(db))
 		r.Get("/products", buildProductListHandler(db))
-		r.Get(productEndpoint, buildSingleProductHandler(db))
-		r.Patch(productEndpoint, buildProductUpdateHandler(db))
-		r.Head(productEndpoint, buildProductExistenceHandler(db))
-		r.Delete(productEndpoint, buildProductDeletionHandler(db))
+		r.Get(fmt.Sprintf("/product/{sku:%s}", ValidURLCharactersPattern), buildSingleProductHandler(db))
+		r.Patch(fmt.Sprintf("/product/{sku:%s}", ValidURLCharactersPattern), buildProductUpdateHandler(db))
+		r.Head(fmt.Sprintf("/product/{sku:%s}", ValidURLCharactersPattern), buildProductExistenceHandler(db))
+		r.Delete(fmt.Sprintf("/product/{sku:%s}", ValidURLCharactersPattern), buildProductDeletionHandler(db))
 
 		// Product Options
-		productOptionEndpoint := fmt.Sprintf("/product/{product_root_id:%s}/options", NumericPattern)
-		specificOptionEndpoint := fmt.Sprintf("/product_options/{option_id:%s}", NumericPattern)
-		r.Get(productOptionEndpoint, buildProductOptionListHandler(db))
-		r.Post(productOptionEndpoint, buildProductOptionCreationHandler(db))
-		r.Patch(specificOptionEndpoint, buildProductOptionUpdateHandler(db))
-		r.Delete(specificOptionEndpoint, buildProductOptionDeletionHandler(db))
+		r.Get(fmt.Sprintf("/product/{product_root_id:%s}/options", NumericPattern), buildProductOptionListHandler(db))
+		r.Post(fmt.Sprintf("/product/{product_root_id:%s}/options", NumericPattern), buildProductOptionCreationHandler(db))
+		r.Patch(fmt.Sprintf("/product_options/{option_id:%s}", NumericPattern), buildProductOptionUpdateHandler(db))
+		r.Delete(fmt.Sprintf("/product_options/{option_id:%s}", NumericPattern), buildProductOptionDeletionHandler(db))
 
 		// Product Option Values
-		optionValueEndpoint := fmt.Sprintf("/product_options/{option_id:%s}/value", NumericPattern)
-		specificOptionValueEndpoint := fmt.Sprintf("/product_option_values/{option_value_id:%s}", NumericPattern)
-		r.Post(optionValueEndpoint, buildProductOptionValueCreationHandler(db))
-		r.Patch(specificOptionValueEndpoint, buildProductOptionValueUpdateHandler(db))
-		r.Delete(specificOptionValueEndpoint, buildProductOptionValueDeletionHandler(db))
+		r.Post(fmt.Sprintf("/product_options/{option_id:%s}/value", NumericPattern), buildProductOptionValueCreationHandler(db))
+		r.Patch(fmt.Sprintf("/product_option_values/{option_value_id:%s}", NumericPattern), buildProductOptionValueUpdateHandler(db))
+		r.Delete(fmt.Sprintf("/product_option_values/{option_value_id:%s}", NumericPattern), buildProductOptionValueDeletionHandler(db))
 
 		// Discounts
-		specificDiscountEndpoint := fmt.Sprintf("/discount/{discount_id:%s}", NumericPattern)
-		r.Get(specificDiscountEndpoint, buildDiscountRetrievalHandler(db))
-		r.Patch(specificDiscountEndpoint, buildDiscountUpdateHandler(db))
-		r.Delete(specificDiscountEndpoint, buildDiscountDeletionHandler(db))
+		r.Get(fmt.Sprintf("/discount/{discount_id:%s}", NumericPattern), buildDiscountRetrievalHandler(db))
+		r.Patch(fmt.Sprintf("/discount/{discount_id:%s}", NumericPattern), buildDiscountUpdateHandler(db))
+		r.Delete(fmt.Sprintf("/discount/{discount_id:%s}", NumericPattern), buildDiscountDeletionHandler(db))
 		r.Get("/discounts", buildDiscountListRetrievalHandler(db))
 		r.Post("/discount", buildDiscountCreationHandler(db))
 		// specificDiscountCodeEndpoint := buildRoute("v1", "discount", fmt.Sprintf("{code:%s}", ValidURLCharactersPattern))

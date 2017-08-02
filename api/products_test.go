@@ -30,6 +30,49 @@ const (
 	`
 )
 
+func createExampleHeadersAndDataFromProduct(p *Product) ([]string, []driver.Value) {
+	var headers []string
+	var values []driver.Value
+
+	productMap := map[string]driver.Value{
+		"id":                   p.ID,
+		"product_root_id":      p.ProductRootID,
+		"name":                 p.Name,
+		"subtitle":             p.Subtitle.String,
+		"description":          p.Description,
+		"sku":                  p.SKU,
+		"upc":                  p.UPC.String,
+		"manufacturer":         p.Manufacturer.String,
+		"brand":                p.Brand.String,
+		"quantity":             p.Quantity,
+		"quantity_per_package": p.QuantityPerPackage,
+		"taxable":              p.Taxable,
+		"price":                p.Price,
+		"on_sale":              p.OnSale,
+		"sale_price":           p.SalePrice,
+		"cost":                 p.Cost,
+		"product_weight":       p.ProductWeight,
+		"product_height":       p.ProductHeight,
+		"product_width":        p.ProductWidth,
+		"product_length":       p.ProductLength,
+		"package_weight":       p.PackageWeight,
+		"package_height":       p.PackageHeight,
+		"package_width":        p.PackageWidth,
+		"package_length":       p.PackageLength,
+		"available_on":         p.AvailableOn,
+		"created_on":           p.CreatedOn,
+		"updated_on":           p.UpdatedOn,
+		"archived_on":          p.ArchivedOn,
+	}
+
+	for header, value := range productMap {
+		headers = append(headers, header)
+		values = append(values, value)
+	}
+
+	return headers, values
+}
+
 func setExpectationsForProductExistence(mock sqlmock.Sqlmock, SKU string, exists bool, err error) {
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
 	mock.ExpectQuery(formatQueryForSQLMock(skuExistenceQuery)).
@@ -39,66 +82,7 @@ func setExpectationsForProductExistence(mock sqlmock.Sqlmock, SKU string, exists
 }
 
 func setExpectationsForProductListQuery(mock sqlmock.Sqlmock, p *Product, err error) {
-	productHeaders := []string{
-		"id",
-		"product_root_id",
-		"name",
-		"subtitle",
-		"description",
-		"sku",
-		"upc",
-		"manufacturer",
-		"brand",
-		"quantity",
-		"quantity_per_package",
-		"taxable",
-		"price",
-		"on_sale",
-		"sale_price",
-		"cost",
-		"product_weight",
-		"product_height",
-		"product_width",
-		"product_length",
-		"package_weight",
-		"package_height",
-		"package_width",
-		"package_length",
-		"available_on",
-		"created_on",
-		"updated_on",
-		"archived_on",
-	}
-	exampleProductData := []driver.Value{
-		p.ID,
-		p.ProductRootID,
-		p.Name,
-		p.Subtitle.String,
-		p.Description,
-		p.SKU,
-		p.UPC.String,
-		p.Manufacturer.String,
-		p.Brand.String,
-		p.Quantity,
-		p.QuantityPerPackage,
-		p.Taxable,
-		p.Price,
-		p.OnSale,
-		p.SalePrice,
-		p.Cost,
-		p.ProductWeight,
-		p.ProductHeight,
-		p.ProductWidth,
-		p.ProductLength,
-		p.PackageWeight,
-		p.PackageHeight,
-		p.PackageWidth,
-		p.PackageLength,
-		p.AvailableOn,
-		p.CreatedOn,
-		p.UpdatedOn,
-		p.ArchivedOn,
-	}
+	productHeaders, exampleProductData := createExampleHeadersAndDataFromProduct(p)
 
 	exampleRows := sqlmock.NewRows(productHeaders).
 		AddRow(exampleProductData...).
@@ -111,68 +95,9 @@ func setExpectationsForProductListQuery(mock sqlmock.Sqlmock, p *Product, err er
 		WillReturnError(err)
 }
 
+// FIXME: dump SKU from the argument list here, just use whatever sku p has
 func setExpectationsForProductRetrieval(mock sqlmock.Sqlmock, sku string, p *Product, err error) {
-	productHeaders := []string{
-		"id",
-		"product_root_id",
-		"name",
-		"subtitle",
-		"description",
-		"sku",
-		"upc",
-		"manufacturer",
-		"brand",
-		"quantity",
-		"quantity_per_package",
-		"taxable",
-		"price",
-		"on_sale",
-		"sale_price",
-		"cost",
-		"product_weight",
-		"product_height",
-		"product_width",
-		"product_length",
-		"package_weight",
-		"package_height",
-		"package_width",
-		"package_length",
-		"available_on",
-		"created_on",
-		"updated_on",
-		"archived_on",
-	}
-	exampleProductData := []driver.Value{
-		p.ID,
-		p.ProductRootID,
-		p.Name,
-		p.Subtitle.String,
-		p.Description,
-		p.SKU,
-		p.UPC.String,
-		p.Manufacturer.String,
-		p.Brand.String,
-		p.Quantity,
-		p.QuantityPerPackage,
-		p.Taxable,
-		p.Price,
-		p.OnSale,
-		p.SalePrice,
-		p.Cost,
-		p.ProductWeight,
-		p.ProductHeight,
-		p.ProductWidth,
-		p.ProductLength,
-		p.PackageWeight,
-		p.PackageHeight,
-		p.PackageWidth,
-		p.PackageLength,
-		p.AvailableOn,
-		p.CreatedOn,
-		p.UpdatedOn,
-		p.ArchivedOn,
-	}
-
+	productHeaders, exampleProductData := createExampleHeadersAndDataFromProduct(p)
 	exampleRows := sqlmock.NewRows(productHeaders).AddRow(exampleProductData...)
 	skuRetrievalQuery := formatQueryForSQLMock(completeProductRetrievalQuery)
 	mock.ExpectQuery(skuRetrievalQuery).
@@ -389,9 +314,7 @@ func TestRetrieveProductFromDB(t *testing.T) {
 		PackageLength: 1,
 		AvailableOn:   generateExampleTimeForTests(),
 	}
-	exampleProduct.Subtitle.Valid = true
-	exampleProduct.Brand.Valid = true
-	exampleProduct.Manufacturer.Valid = true
+	exampleProduct.Manufacturer.Valid, exampleProduct.Brand.Valid, exampleProduct.Subtitle.Valid = true, true, true
 
 	setExpectationsForProductRetrieval(testUtil.Mock, exampleSKU, exampleProduct, nil)
 
@@ -1032,8 +955,8 @@ func TestProductDeletionHandler(t *testing.T) {
 
 	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, nil)
 	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU, nil)
 	setExpectationsForProductValueBridgeEntryDeletion(testUtil.Mock, exampleProduct.ID, nil)
+	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU, nil)
 	testUtil.Mock.ExpectCommit()
 
 	req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
@@ -1102,7 +1025,6 @@ func TestProductDeletionHandlerWithErrorBeginningTransaction(t *testing.T) {
 
 	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, nil)
 	testUtil.Mock.ExpectBegin().WillReturnError(arbitraryError)
-	testUtil.Mock.ExpectRollback()
 
 	req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 	assert.Nil(t, err)
@@ -1126,6 +1048,7 @@ func TestProductDeletionHandlerWithErrorEncounteredDeletingProduct(t *testing.T)
 
 	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, nil)
 	testUtil.Mock.ExpectBegin()
+	setExpectationsForProductValueBridgeEntryDeletion(testUtil.Mock, exampleProduct.ID, nil)
 	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU, arbitraryError)
 	testUtil.Mock.ExpectRollback()
 
@@ -1151,7 +1074,6 @@ func TestProductDeletionHandlerWithErrorDeletingBridgeEntries(t *testing.T) {
 
 	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, nil)
 	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU, nil)
 	setExpectationsForProductValueBridgeEntryDeletion(testUtil.Mock, exampleProduct.ID, arbitraryError)
 
 	req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
@@ -1176,8 +1098,8 @@ func TestProductDeletionHandlerWithErrorCommittingTransaction(t *testing.T) {
 
 	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, nil)
 	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU, nil)
 	setExpectationsForProductValueBridgeEntryDeletion(testUtil.Mock, exampleProduct.ID, nil)
+	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU, nil)
 	testUtil.Mock.ExpectCommit().WillReturnError(arbitraryError)
 
 	req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)

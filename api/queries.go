@@ -57,6 +57,44 @@ func buildCountQuery(table string, queryFilter *QueryFilter) string {
 //                                                    //
 ////////////////////////////////////////////////////////
 
+func buildProductRootListQuery(queryFilter *QueryFilter) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		// note, this has to look ugly and disjointed because otherwise my editor
+		// will delete the trailing space and the tests will fail. Womp womp.
+		Select(`id,
+			name,
+			subtitle,
+			description,
+			sku_prefix,
+			manufacturer,
+			brand,
+			taxable,
+			cost,
+			product_weight,
+			product_height,
+			product_width,
+			product_length,
+			package_weight,
+			package_height,
+			package_width,
+			package_length,
+			quantity_per_package,
+			available_on,
+			created_on,
+			updated_on,
+			archived_on,
+		`).
+		From("product_roots").
+		Where(squirrel.Eq{"archived_on": nil}).
+		Limit(uint64(queryFilter.Limit))
+
+	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter, true)
+
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}
+
 func buildProductRootCreationQuery(r *ProductRoot) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
@@ -149,9 +187,11 @@ func buildProductListQuery(queryFilter *QueryFilter) (string, []interface{}) {
 		// note, this has to look ugly and disjointed because otherwise my editor
 		// will delete the trailing space and the tests will fail. Womp womp.
 		Select(`id,
+			product_root_id,
 			name,
 			subtitle,
 			description,
+			option_summary,
 			sku,
 			upc,
 			manufacturer,
@@ -174,13 +214,55 @@ func buildProductListQuery(queryFilter *QueryFilter) (string, []interface{}) {
 			available_on,
 			created_on,
 			updated_on,
-			archived_on
+			archived_on,
+		`).
+		From("products").
+		Where(squirrel.Eq{"archived_on": nil})
+
+	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter, true)
+
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}
+
+func buildProductAssociatedWithRootListQuery(rootID uint64) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		// note, this has to look ugly and disjointed because otherwise my editor
+		// will delete the trailing space and the tests will fail. Womp womp.
+		Select(`id,
+			product_root_id,
+			name,
+			subtitle,
+			description,
+			option_summary,
+			sku,
+			upc,
+			manufacturer,
+			brand,
+			quantity,
+			taxable,
+			price,
+			on_sale,
+			sale_price,
+			cost,
+			product_weight,
+			product_height,
+			product_width,
+			product_length,
+			package_weight,
+			package_height,
+			package_width,
+			package_length,
+			quantity_per_package,
+			available_on,
+			created_on,
+			updated_on,
+			archived_on,
 		`).
 		From("products").
 		Where(squirrel.Eq{"archived_on": nil}).
-		Limit(uint64(queryFilter.Limit))
-
-	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, queryFilter, true)
+		Where(squirrel.Eq{"product_root_id": rootID})
 
 	query, args, _ := queryBuilder.ToSql()
 	return query, args

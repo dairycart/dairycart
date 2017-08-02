@@ -20,129 +20,6 @@ const (
 // Note: comparing interface equality with assert is impossible as far as I can tell,
 // so generally these tests ensure that the correct number of args are returned.
 
-func TestBuildProductListQuery(t *testing.T) {
-	t.Parallel()
-	expectedQuery := `SELECT id,
-			name,
-			subtitle,
-			description,
-			sku,
-			upc,
-			manufacturer,
-			brand,
-			quantity,
-			taxable,
-			price,
-			on_sale,
-			sale_price,
-			cost,
-			product_weight,
-			product_height,
-			product_width,
-			product_length,
-			package_weight,
-			package_height,
-			package_width,
-			package_length,
-			quantity_per_package,
-			available_on,
-			created_on,
-			updated_on,
-			archived_on
-		 FROM products WHERE archived_on IS NULL LIMIT 25`
-	actualQuery, actualArgs := buildProductListQuery(defaultQueryFilter)
-	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
-	assert.Equal(t, 0, len(actualArgs), argsEqualityErrorMessage)
-}
-
-func TestBuildProductListQueryAndPartiallyCustomQueryFilter(t *testing.T) {
-	t.Parallel()
-	queryFilter := &QueryFilter{
-		Page:          3,
-		Limit:         25,
-		UpdatedBefore: time.Unix(int64(aTimestamp), 0),
-		UpdatedAfter:  time.Unix(int64(anOlderTimestamp), 0),
-	}
-
-	expectedQuery := `SELECT id,
-			name,
-			subtitle,
-			description,
-			sku,
-			upc,
-			manufacturer,
-			brand,
-			quantity,
-			taxable,
-			price,
-			on_sale,
-			sale_price,
-			cost,
-			product_weight,
-			product_height,
-			product_width,
-			product_length,
-			package_weight,
-			package_height,
-			package_width,
-			package_length,
-			quantity_per_package,
-			available_on,
-			created_on,
-			updated_on,
-			archived_on
-		 FROM products WHERE archived_on IS NULL AND updated_on > $1 AND updated_on < $2 LIMIT 25 OFFSET 50`
-
-	actualQuery, actualArgs := buildProductListQuery(queryFilter)
-	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
-	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
-}
-
-func TestBuildProductListQueryAndCompletelyCustomQueryFilter(t *testing.T) {
-	t.Parallel()
-	queryFilter := &QueryFilter{
-		Page:          3,
-		Limit:         46,
-		UpdatedBefore: time.Unix(int64(aTimestamp), 0),
-		UpdatedAfter:  time.Unix(int64(anOlderTimestamp), 0),
-		CreatedBefore: time.Unix(int64(aTimestamp), 0),
-		CreatedAfter:  time.Unix(int64(anOlderTimestamp), 0),
-	}
-
-	expectedQuery := `SELECT id,
-			name,
-			subtitle,
-			description,
-			sku,
-			upc,
-			manufacturer,
-			brand,
-			quantity,
-			taxable,
-			price,
-			on_sale,
-			sale_price,
-			cost,
-			product_weight,
-			product_height,
-			product_width,
-			product_length,
-			package_weight,
-			package_height,
-			package_width,
-			package_length,
-			quantity_per_package,
-			available_on,
-			created_on,
-			updated_on,
-			archived_on
-		 FROM products WHERE archived_on IS NULL AND created_on > $1 AND created_on < $2 AND updated_on > $3 AND updated_on < $4 LIMIT 46 OFFSET 92`
-
-	actualQuery, actualArgs := buildProductListQuery(queryFilter)
-	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
-	assert.Equal(t, 4, len(actualArgs), argsEqualityErrorMessage)
-}
-
 func TestBuildProductRootCreationQuery(t *testing.T) {
 	t.Parallel()
 	exampleRoot := &ProductRoot{
@@ -166,6 +43,202 @@ func TestBuildProductRootCreationQuery(t *testing.T) {
 	actualQuery, actualArgs := buildProductRootCreationQuery(exampleRoot)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 18, len(actualArgs), argsEqualityErrorMessage)
+}
+
+func TestBuildProductRootListQuery(t *testing.T) {
+	t.Parallel()
+	expectedQuery := `SELECT id,
+			name,
+			subtitle,
+			description,
+			sku_prefix,
+			manufacturer,
+			brand,
+			taxable,
+			cost,
+			product_weight,
+			product_height,
+			product_width,
+			product_length,
+			package_weight,
+			package_height,
+			package_width,
+			package_length,
+			quantity_per_package,
+			available_on,
+			created_on,
+			updated_on,
+			archived_on,
+		 FROM product_roots WHERE archived_on IS NULL LIMIT 25`
+	actualQuery, _ := buildProductRootListQuery(defaultQueryFilter)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+}
+
+func TestBuildProductListQuery(t *testing.T) {
+	t.Parallel()
+	expectedQuery := `SELECT id,
+			product_root_id,
+			name,
+			subtitle,
+			description,
+			option_summary,
+			sku,
+			upc,
+			manufacturer,
+			brand,
+			quantity,
+			taxable,
+			price,
+			on_sale,
+			sale_price,
+			cost,
+			product_weight,
+			product_height,
+			product_width,
+			product_length,
+			package_weight,
+			package_height,
+			package_width,
+			package_length,
+			quantity_per_package,
+			available_on,
+			created_on,
+			updated_on,
+			archived_on,
+		 FROM products WHERE archived_on IS NULL LIMIT 25`
+	actualQuery, actualArgs := buildProductListQuery(defaultQueryFilter)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 0, len(actualArgs), argsEqualityErrorMessage)
+}
+
+func TestBuildProductListQueryAndPartiallyCustomQueryFilter(t *testing.T) {
+	t.Parallel()
+	queryFilter := &QueryFilter{
+		Page:          3,
+		Limit:         25,
+		UpdatedBefore: time.Unix(int64(aTimestamp), 0),
+		UpdatedAfter:  time.Unix(int64(anOlderTimestamp), 0),
+	}
+
+	expectedQuery := `SELECT id,
+			product_root_id,
+			name,
+			subtitle,
+			description,
+			option_summary,
+			sku,
+			upc,
+			manufacturer,
+			brand,
+			quantity,
+			taxable,
+			price,
+			on_sale,
+			sale_price,
+			cost,
+			product_weight,
+			product_height,
+			product_width,
+			product_length,
+			package_weight,
+			package_height,
+			package_width,
+			package_length,
+			quantity_per_package,
+			available_on,
+			created_on,
+			updated_on,
+			archived_on,
+		 FROM products WHERE archived_on IS NULL AND updated_on > $1 AND updated_on < $2 LIMIT 25 OFFSET 50`
+
+	actualQuery, actualArgs := buildProductListQuery(queryFilter)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
+}
+
+func TestBuildProductListQueryAndCompletelyCustomQueryFilter(t *testing.T) {
+	t.Parallel()
+	queryFilter := &QueryFilter{
+		Page:          3,
+		Limit:         46,
+		UpdatedBefore: time.Unix(int64(aTimestamp), 0),
+		UpdatedAfter:  time.Unix(int64(anOlderTimestamp), 0),
+		CreatedBefore: time.Unix(int64(aTimestamp), 0),
+		CreatedAfter:  time.Unix(int64(anOlderTimestamp), 0),
+	}
+
+	expectedQuery := `SELECT id,
+			product_root_id,
+			name,
+			subtitle,
+			description,
+			option_summary,
+			sku,
+			upc,
+			manufacturer,
+			brand,
+			quantity,
+			taxable,
+			price,
+			on_sale,
+			sale_price,
+			cost,
+			product_weight,
+			product_height,
+			product_width,
+			product_length,
+			package_weight,
+			package_height,
+			package_width,
+			package_length,
+			quantity_per_package,
+			available_on,
+			created_on,
+			updated_on,
+			archived_on,
+		 FROM products WHERE archived_on IS NULL AND created_on > $1 AND created_on < $2 AND updated_on > $3 AND updated_on < $4 LIMIT 46 OFFSET 92`
+
+	actualQuery, actualArgs := buildProductListQuery(queryFilter)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 4, len(actualArgs), argsEqualityErrorMessage)
+}
+
+func TestBuildProductAssociatedWithRootListQuery(t *testing.T) {
+	t.Parallel()
+
+	expectedQuery := `SELECT id,
+			product_root_id,
+			name,
+			subtitle,
+			description,
+			option_summary,
+			sku,
+			upc,
+			manufacturer,
+			brand,
+			quantity,
+			taxable,
+			price,
+			on_sale,
+			sale_price,
+			cost,
+			product_weight,
+			product_height,
+			product_width,
+			product_length,
+			package_weight,
+			package_height,
+			package_width,
+			package_length,
+			quantity_per_package,
+			available_on,
+			created_on,
+			updated_on,
+			archived_on,
+		 FROM products WHERE archived_on IS NULL AND product_root_id = $1`
+	actualQuery, actualArgs := buildProductAssociatedWithRootListQuery(123)
+	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
+	assert.Equal(t, 1, len(actualArgs), argsEqualityErrorMessage)
 }
 
 func TestBuildProductUpdateQuery(t *testing.T) {

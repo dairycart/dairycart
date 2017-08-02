@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"time"
 
@@ -227,14 +226,14 @@ func buildProductDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		err = deleteProductBySKU(tx, sku)
+		err = deleteProductVariantBridgeEntriesByProductID(tx, existingProduct.ID)
 		if err != nil {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "archive product in database")
 			return
 		}
 
-		err = deleteProductVariantBridgeEntriesByProductID(tx, existingProduct.ID)
+		err = deleteProductBySKU(tx, sku)
 		if err != nil {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "archive product in database")
@@ -243,11 +242,11 @@ func buildProductDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 
 		err = tx.Commit()
 		if err != nil {
-			notifyOfInternalIssue(res, err, "closing out transaction")
+			notifyOfInternalIssue(res, err, "close out transaction")
 			return
 		}
 
-		io.WriteString(res, fmt.Sprintf("Successfully deleted product `%s`", sku))
+		res.WriteHeader(http.StatusOK)
 	}
 }
 
@@ -399,7 +398,7 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 
 		err = tx.Commit()
 		if err != nil {
-			notifyOfInternalIssue(res, err, "closing out transaction")
+			notifyOfInternalIssue(res, err, "close out transaction")
 			return
 		}
 

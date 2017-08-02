@@ -333,7 +333,7 @@ func buildProductOptionCreationHandler(db *sqlx.DB) http.HandlerFunc {
 
 		err = tx.Commit()
 		if err != nil {
-			notifyOfInternalIssue(res, err, "closing out transaction")
+			notifyOfInternalIssue(res, err, "close out transaction")
 			return
 		}
 
@@ -386,7 +386,7 @@ func buildProductOptionDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 
 		err = tx.Commit()
 		if err != nil {
-			notifyOfInternalIssue(res, err, "closing out transaction")
+			notifyOfInternalIssue(res, err, "close out transaction")
 			return
 		}
 
