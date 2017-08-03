@@ -36,4 +36,8 @@ after_success:
   #   - export TAG=`if [ "$TRAVIS_BRANCH" == "master" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi`
 
   # - if [ "$TRAVIS_BRANCH" == "master" ]; then
-  - if [ "true" ]; then (cd api; docker build --no-cache --tag dairycart/api-server:pre-alpha .); docker login -u="$DOCKER_USER" -p="$DOCKER_PASS"; docker push dairycart/api-server:pre-alpha; fi
+  - if [ "true" ]; then
+      (cd api; docker build --no-cache --tag dairycart/api-server:pre-alpha .);
+      docker login -u="$DOCKER_USER" -p="$DOCKER_PASS";
+      docker push dairycart/api-server:pre-alpha;
+    fi
