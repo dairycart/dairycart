@@ -32,8 +32,10 @@ script:
 after_success:
   - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
   # yuge thanks to this blog post: https://sebest.github.io/post/using-travis-ci-to-build-docker-images/
-  - docker login --username="$DOCKER_USER" --password="$DOCKER_PASS"
   # I'm only doing pre-alpha tags for the moment, but if I were doing versioned tags, it might look something like this:
   #   - export TAG=`if [ "$TRAVIS_BRANCH" == "master" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi`
-  - (cd api; docker build --no-cache --tag dairycart/api-server:pre-alpha .)
-  - if [ "$TRAVIS_BRANCH" == "master" ]; then docker push dairycart/api-server:pre-alpha; else echo $TRAVIS_BRANCH ; fi
+  - if [ "true" ]; then # - if [ "$TRAVIS_BRANCH" == "master" ]; then
+    (cd api; docker build --no-cache --tag dairycart/api-server:pre-alpha .);
+    docker login -u="$DOCKER_USER" -p="$DOCKER_PASS";
+    docker push dairycart/api-server:pre-alpha;
+    fi
