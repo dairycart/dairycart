@@ -27,8 +27,8 @@ Update product route:
 Create product route:
 
 - [x] Valid input ([TestProductCreationRoute](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L300-L382))
-- [x] Invalid input ([TestProductCreationWithInvalidInput](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L992-L1000))
-- [x] Existent SKU ([TestProductCreationWithAlreadyExistentSKU](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L950-L990))
+- [x] Invalid input ([TestProductCreationWithInvalidInput](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1226-L1234))
+- [x] Existent SKU ([TestProductCreationWithAlreadyExistentSKU](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1184-L1224))
 - [x] Product with multiple options ([TestProductCreationRouteWithOptions](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L384-L775))
 
 Delete product route:
@@ -45,57 +45,57 @@ Product Root list route:
 
 Single product root route:
 
-- [x] Existent root ([TestProductRootRetrievalRoute](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L856-L888))
-- [x] Nonexistent root ([TestProductRootRetrievalRouteForNonexistentRoot](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L890-L899))
+- [x] Existent root ([TestProductRootRetrievalRoute](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L856-L1122))
+- [x] Nonexistent root ([TestProductRootRetrievalRouteForNonexistentRoot](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1124-L1133))
 
 Delete product root route:
 
-- [x] Existent root ([TestProductRootDeletionRoute](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L901-L937))
-- [x] Nonexistent root ([TestProductRootDeletionRouteForNonexistentRoot](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L939-L948))
+- [x] Existent root ([TestProductRootDeletionRoute](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1135-L1171))
+- [x] Nonexistent root ([TestProductRootDeletionRouteForNonexistentRoot](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1173-L1182))
 
 ## Product Options
 
 Product option list route:
 
-- [x] Default pagination ([TestProductOptionListRetrievalWithDefaultFilter](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1002-L1014))
-- [x] Custom pagination ([TestProductOptionListRetrievalWithCustomFilter](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1016-L1032))
+- [x] Default pagination ([TestProductOptionListRetrievalWithDefaultFilter](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1236-L1248))
+- [x] Custom pagination ([TestProductOptionListRetrievalWithCustomFilter](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1250-L1266))
 
 Create product option route:
 
-- [x] Valid input ([TestProductOptionCreation](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1034-L1085))
-- [x] Invalid input ([TestProductOptionCreationWithInvalidInput](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1136-L1144))
-- [x] Existent option name ([TestProductOptionCreationWithAlreadyExistentName](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1146-L1191))
+- [x] Valid input ([TestProductOptionCreation](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1268-L1319))
+- [x] Invalid input ([TestProductOptionCreationWithInvalidInput](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1370-L1378))
+- [x] Existent option name ([TestProductOptionCreationWithAlreadyExistentName](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1380-L1425))
 
 Update product option route:
 
-- [x] Valid input ([TestProductOptionUpdate](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1193-L1250))
-- [x] Invalid input ([TestProductOptionUpdateWithInvalidInput](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1252-L1261))
-- [x] Nonexistent option ([TestProductOptionUpdateForNonexistentOption](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1263-L1280))
+- [x] Valid input ([TestProductOptionUpdate](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1427-L1516))
+- [x] Invalid input ([TestProductOptionUpdateWithInvalidInput](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1518-L1527))
+- [x] Nonexistent option ([TestProductOptionUpdateForNonexistentOption](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1529-L1546))
 
 Delete product option route:
 
-- [x] Newly created option value ([TestProductOptionDeletion](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1087-L1122))
-- [x] Nonexistent option ([TestProductOptionDeletionForNonexistentOption](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1124-L1134))
+- [x] Newly created option value ([TestProductOptionDeletion](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1321-L1356))
+- [x] Nonexistent option ([TestProductOptionDeletionForNonexistentOption](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1358-L1368))
 
 ## Product Option Values
 
 Create product option values route:
 
-- [x] Valid input ([TestProductOptionValueCreation](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1282-L1321))
-- [x] Invalid input ([TestProductOptionValueCreationWithInvalidInput](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1426-L1434))
-- [x] Existent option value ([TestProductOptionValueCreationWithAlreadyExistentValue](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1436-L1453))
+- [x] Valid input ([TestProductOptionValueCreation](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1548-L1587))
+- [x] Invalid input ([TestProductOptionValueCreationWithInvalidInput](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1692-L1700))
+- [x] Existent option value ([TestProductOptionValueCreationWithAlreadyExistentValue](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1702-L1719))
 
 Update product option value route:
 
-- [x] Valid input ([TestProductOptionValueUpdate](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1323-L1376))
-- [x] Invalid input ([TestProductOptionValueUpdateWithInvalidInput](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1455-L1464))
-- [x] Nonexistent option value ([TestProductOptionValueUpdateForNonexistentOption](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1466-L1484))
-- [x] Duplicate option value ([TestProductOptionValueUpdateForAlreadyExistentValue](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1486-L1500))
+- [x] Valid input ([TestProductOptionValueUpdate](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1589-L1642))
+- [x] Invalid input ([TestProductOptionValueUpdateWithInvalidInput](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1721-L1730))
+- [x] Nonexistent option value ([TestProductOptionValueUpdateForNonexistentOption](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1732-L1750))
+- [x] Duplicate option value ([TestProductOptionValueUpdateForAlreadyExistentValue](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1752-L1766))
 
 Delete product option value route:
 
-- [x] Newly created option value ([TestProductOptionValueDeletion](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1378-L1412))
-- [x] Nonexistent option value ([TestProductOptionValueDeletionForNonexistentOptionValue](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1414-L1424))
+- [x] Newly created option value ([TestProductOptionValueDeletion](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1644-L1678))
+- [x] Nonexistent option value ([TestProductOptionValueDeletionForNonexistentOptionValue](https://github.com/dairycart/dairycart/blob/master/integration_tests/products_test.go#L1680-L1690))
 
 Single discount route:
 
