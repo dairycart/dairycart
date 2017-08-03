@@ -88,7 +88,7 @@ func TestProductExistenceRouteForExistingProduct(t *testing.T) {
 	t.Parallel()
 	resp, err := checkProductExistence(existentSKU)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "requesting a product that exists should respond 200")
+	assertStatusCode(t, resp, http.StatusOK)
 
 	actual := turnResponseBodyIntoString(t, resp)
 	assert.Equal(t, "", actual, "product existence body should be empty")
@@ -98,7 +98,7 @@ func TestProductExistenceRouteForNonexistentProduct(t *testing.T) {
 	t.Parallel()
 	resp, err := checkProductExistence(nonexistentSKU)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "requesting a product that doesn't exist should respond 404")
+	assertStatusCode(t, resp, http.StatusNotFound)
 
 	actual := turnResponseBodyIntoString(t, resp)
 	assert.Equal(t, "", actual, "product existence body for nonexistent product should be empty")
@@ -108,7 +108,7 @@ func TestProductRetrievalRouteForNonexistentProduct(t *testing.T) {
 	t.Parallel()
 	resp, err := retrieveProduct(nonexistentSKU)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "requesting a product that doesn't exist should respond 404")
+	assertStatusCode(t, resp, http.StatusNotFound)
 
 	actual := turnResponseBodyIntoString(t, resp)
 	expected := minifyJSON(t, `
@@ -124,7 +124,7 @@ func TestProductRetrievalRoute(t *testing.T) {
 	t.Parallel()
 	resp, err := retrieveProduct(existentSKU)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "requesting a product should respond 200")
+	assertStatusCode(t, resp, http.StatusOK)
 
 	body := turnResponseBodyIntoString(t, resp)
 	actual := cleanAPIResponseBody(body)
@@ -162,7 +162,7 @@ func TestProductListRouteWithDefaultFilter(t *testing.T) {
 	t.Parallel()
 	resp, err := retrieveListOfProducts(nil)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "requesting a list of products should respond 200")
+	assertStatusCode(t, resp, http.StatusOK)
 
 	body := turnResponseBodyIntoString(t, resp)
 	lr := parseResponseIntoStruct(t, body)
@@ -179,7 +179,7 @@ func TestProductListRouteWithCustomFilter(t *testing.T) {
 	}
 	resp, err := retrieveListOfProducts(customFilter)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "requesting a list of products should respond 200")
+	assertStatusCode(t, resp, http.StatusOK)
 
 	body := turnResponseBodyIntoString(t, resp)
 	lr := parseResponseIntoStruct(t, body)
@@ -196,7 +196,7 @@ func TestProductUpdateRoute(t *testing.T) {
 		newProductJSON := createProductCreationBody(testSKU, "")
 		resp, err := createProduct(newProductJSON)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product that doesn't exist should respond 201")
+		assertStatusCode(t, resp, http.StatusCreated)
 		body := turnResponseBodyIntoString(t, resp)
 		productRootID = retrieveIDFromResponseBody(body, t)
 	}
@@ -205,7 +205,7 @@ func TestProductUpdateRoute(t *testing.T) {
 		JSONBody := `{"quantity":666}`
 		resp, err := updateProduct(testSKU, JSONBody)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "successfully updating a product should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 
 		body := turnResponseBodyIntoString(t, resp)
 		actual := cleanAPIResponseBody(body)
@@ -242,7 +242,7 @@ func TestProductUpdateRoute(t *testing.T) {
 	testDeleteProduct := func(t *testing.T) {
 		resp, err := deleteProduct(testSKU)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a product that exists should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 	}
 
 	subtests := []subtest{
@@ -266,7 +266,7 @@ func TestProductUpdateRouteWithCompletelyInvalidInput(t *testing.T) {
 	t.Parallel()
 	resp, err := updateProduct(existentSKU, exampleGarbageInput)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "trying to update a product with invalid input should respond 400")
+	assertStatusCode(t, resp, http.StatusBadRequest)
 
 	actual := turnResponseBodyIntoString(t, resp)
 	assert.Equal(t, expectedBadRequestResponse, actual, "product update route should respond with failure message when you try to update a product with invalid input")
@@ -277,7 +277,7 @@ func TestProductUpdateRouteWithInvalidSKU(t *testing.T) {
 	JSONBody := `{"sku": "thí% $kü ïs not åny gõôd"}`
 	resp, err := updateProduct(existentSKU, JSONBody)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "trying to update a product with an invalid sku should respond 400")
+	assertStatusCode(t, resp, http.StatusBadRequest)
 }
 
 func TestProductUpdateRouteForNonexistentProduct(t *testing.T) {
@@ -285,7 +285,7 @@ func TestProductUpdateRouteForNonexistentProduct(t *testing.T) {
 	JSONBody := `{"quantity":666}`
 	resp, err := updateProduct(nonexistentSKU, JSONBody)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "requesting a product that doesn't exist should respond 404")
+	assertStatusCode(t, resp, http.StatusNotFound)
 
 	actual := turnResponseBodyIntoString(t, resp)
 	expected := minifyJSON(t, `
@@ -306,7 +306,7 @@ func TestProductCreationRoute(t *testing.T) {
 		newProductJSON := createProductCreationBody(testSKU, "0123456789")
 		resp, err := createProduct(newProductJSON)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product that doesn't exist should respond 201")
+		assertStatusCode(t, resp, http.StatusCreated)
 
 		body := turnResponseBodyIntoString(t, resp)
 		productRootID = retrieveIDFromResponseBody(body, t)
@@ -365,7 +365,7 @@ func TestProductCreationRoute(t *testing.T) {
 	testDeleteProduct := func(t *testing.T) {
 		resp, err := deleteProductRoot(strconv.Itoa(int(productRootID)))
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a product that exists should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 	}
 
 	subtests := []subtest{
@@ -432,7 +432,7 @@ func TestProductCreationRouteWithOptions(t *testing.T) {
 		`, testSKU)
 		resp, err := createProduct(newProductJSON)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product that doesn't exist should respond 201")
+		assertStatusCode(t, resp, http.StatusCreated)
 
 		body := turnResponseBodyIntoString(t, resp)
 		productRootID = retrieveIDFromResponseBody(body, t)
@@ -758,7 +758,7 @@ func TestProductCreationRouteWithOptions(t *testing.T) {
 	testDeleteProductRoot := func(t *testing.T) {
 		resp, err := deleteProductRoot(strconv.Itoa(int(productRootID)))
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a product that exists should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 	}
 
 	subtests := []subtest{
@@ -782,13 +782,13 @@ func TestProductDeletion(t *testing.T) {
 		newProductJSON := createProductCreationBody(testSKU, "")
 		resp, err := createProduct(newProductJSON)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product that doesn't exist should respond 201")
+		assertStatusCode(t, resp, http.StatusCreated)
 	}
 
 	testDeleteProduct := func(t *testing.T) {
 		resp, err := deleteProduct(testSKU)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a product that exists should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 
 		actual := turnResponseBodyIntoString(t, resp)
 		assert.Empty(t, actual)
@@ -811,7 +811,7 @@ func TestProductDeletionRouteForNonexistentProduct(t *testing.T) {
 	t.Parallel()
 	resp, err := deleteProduct(nonexistentSKU)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "trying to delete a product that doesn't exist should respond 404")
+	assertStatusCode(t, resp, http.StatusNotFound)
 
 	actual := turnResponseBodyIntoString(t, resp)
 	expected := minifyJSON(t, `
@@ -827,7 +827,7 @@ func TestProductRootListRetrievalRouteWithDefaultPagination(t *testing.T) {
 	t.Parallel()
 	resp, err := retrieveProductRoots(nil)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "requesting a product should respond 200")
+	assertStatusCode(t, resp, http.StatusOK)
 	body := turnResponseBodyIntoString(t, resp)
 
 	lr := parseResponseIntoStruct(t, body)
@@ -844,7 +844,7 @@ func TestProductRootListRetrievalRouteWithCustomPagination(t *testing.T) {
 	}
 	resp, err := retrieveProductRoots(customFilter)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "requesting a product should respond 200")
+	assertStatusCode(t, resp, http.StatusOK)
 	body := turnResponseBodyIntoString(t, resp)
 
 	lr := parseResponseIntoStruct(t, body)
@@ -857,7 +857,7 @@ func TestProductRootRetrievalRoute(t *testing.T) {
 	t.Parallel()
 	resp, err := retrieveProductRoot(existentID)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "requesting a product should respond 200")
+	assertStatusCode(t, resp, http.StatusOK)
 
 	body := turnResponseBodyIntoString(t, resp)
 	actual := cleanAPIResponseBody(body)
@@ -1125,7 +1125,7 @@ func TestProductRootRetrievalRouteForNonexistentRoot(t *testing.T) {
 	t.Parallel()
 	resp, err := retrieveProductRoot(nonexistentID)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "requesting a product should respond 404")
+	assertStatusCode(t, resp, http.StatusNotFound)
 
 	actual := turnResponseBodyIntoString(t, resp)
 	expected := `{"status":404,"message":"The product_root you were looking for (identified by '999999999') does not exist"}`
@@ -1144,7 +1144,7 @@ func TestProductRootDeletionRoute(t *testing.T) {
 
 		body := turnResponseBodyIntoString(t, resp)
 		productRootID = retrieveIDFromResponseBody(body, t)
-		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product that doesn't exist should respond 201")
+		assertStatusCode(t, resp, http.StatusCreated)
 	}
 
 	testDeleteProductRoot := func(t *testing.T) {
@@ -1154,7 +1154,7 @@ func TestProductRootDeletionRoute(t *testing.T) {
 		body := turnResponseBodyIntoString(t, resp)
 
 		assert.Empty(t, body)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a product that exists should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 	}
 
 	subtests := []subtest{
@@ -1178,7 +1178,7 @@ func TestProductRootDeletionRouteForNonexistentRoot(t *testing.T) {
 	actual := turnResponseBodyIntoString(t, resp)
 	expected := `{"status":404,"message":"The product_root you were looking for (identified by '999999999') does not exist"}`
 	assert.Equal(t, expected, actual, "expected and actual bodies should match")
-	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "trying to delete a product that exists should respond 404")
+	assertStatusCode(t, resp, http.StatusNotFound)
 }
 
 func TestProductCreationWithAlreadyExistentSKU(t *testing.T) {
@@ -1211,7 +1211,7 @@ func TestProductCreationWithAlreadyExistentSKU(t *testing.T) {
 	`
 	resp, err := createProduct(existentProductJSON)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "creating a product that already exists should respond 400")
+	assertStatusCode(t, resp, http.StatusBadRequest)
 
 	actual := turnResponseBodyIntoString(t, resp)
 	expected := minifyJSON(t, `
@@ -1227,7 +1227,7 @@ func TestProductCreationWithInvalidInput(t *testing.T) {
 	t.Parallel()
 	resp, err := createProduct(exampleGarbageInput)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "creating a product that already exists should respond 400")
+	assertStatusCode(t, resp, http.StatusBadRequest)
 
 	actual := turnResponseBodyIntoString(t, resp)
 	assert.Equal(t, expectedBadRequestResponse, actual, "product creation route should respond with failure message when you try to create a product with invalid input")
@@ -1237,7 +1237,7 @@ func TestProductOptionListRetrievalWithDefaultFilter(t *testing.T) {
 	t.Parallel()
 	resp, err := retrieveProductOptions("1", nil)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "requesting a list of products should respond 200")
+	assertStatusCode(t, resp, http.StatusOK)
 
 	body := turnResponseBodyIntoString(t, resp)
 
@@ -1255,7 +1255,7 @@ func TestProductOptionListRetrievalWithCustomFilter(t *testing.T) {
 	}
 	resp, err := retrieveProductOptions("1", customFilter)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "requesting a list of products should respond 200")
+	assertStatusCode(t, resp, http.StatusOK)
 
 	body := turnResponseBodyIntoString(t, resp)
 
@@ -1274,7 +1274,7 @@ func TestProductOptionCreation(t *testing.T) {
 		newOptionJSON := createProductOptionCreationBody(testOptionName)
 		resp, err := createProductOptionForProduct(existentID, newOptionJSON)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product option that doesn't exist should respond 201")
+		assertStatusCode(t, resp, http.StatusCreated)
 
 		body := turnResponseBodyIntoString(t, resp)
 		createdOptionID = retrieveIDFromResponseBody(body, t)
@@ -1302,7 +1302,7 @@ func TestProductOptionCreation(t *testing.T) {
 	testDeleteProductOption := func(t *testing.T) {
 		resp, err := deleteProductOption(strconv.Itoa(int(createdOptionID)))
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a product that exists should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 	}
 
 	subtests := []subtest{
@@ -1327,7 +1327,7 @@ func TestProductOptionDeletion(t *testing.T) {
 		newOptionJSON := createProductOptionCreationBody(testOptionName)
 		resp, err := createProductOptionForProduct(existentID, newOptionJSON)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product option that doesn't exist should respond 201")
+		assertStatusCode(t, resp, http.StatusCreated)
 
 		body := turnResponseBodyIntoString(t, resp)
 		createdOptionID = retrieveIDFromResponseBody(body, t)
@@ -1336,7 +1336,7 @@ func TestProductOptionDeletion(t *testing.T) {
 	testDeleteProductOption := func(t *testing.T) {
 		resp, err := deleteProductOption(strconv.Itoa(int(createdOptionID)))
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a product that exists should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 
 		actual := turnResponseBodyIntoString(t, resp)
 		assert.Equal(t, "", actual, "product option deletion route should respond with affirmative message upon successful deletion")
@@ -1360,7 +1360,7 @@ func TestProductOptionDeletionForNonexistentOption(t *testing.T) {
 
 	resp, err := deleteProductOption(nonexistentID)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "trying to delete a product option that doesn't exist should respond 404")
+	assertStatusCode(t, resp, http.StatusNotFound)
 
 	actual := turnResponseBodyIntoString(t, resp)
 	expected := `{"status":404,"message":"The product option you were looking for (id '999999999') does not exist"}`
@@ -1371,7 +1371,7 @@ func TestProductOptionCreationWithInvalidInput(t *testing.T) {
 	t.Parallel()
 	resp, err := createProductOptionForProduct(existentID, exampleGarbageInput)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "trying to create a new product option with invalid input should respond 400")
+	assertStatusCode(t, resp, http.StatusBadRequest)
 
 	actual := turnResponseBodyIntoString(t, resp)
 	assert.Equal(t, expectedBadRequestResponse, actual, "product option creation route should respond with failure message when you provide it invalid input")
@@ -1385,7 +1385,7 @@ func TestProductOptionCreationWithAlreadyExistentName(t *testing.T) {
 		newOptionJSON := createProductOptionCreationBody(testOptionName)
 		resp, err := createProductOptionForProduct(existentID, newOptionJSON)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product option that doesn't exist should respond 201")
+		assertStatusCode(t, resp, http.StatusCreated)
 
 		body := turnResponseBodyIntoString(t, resp)
 		createdOptionID = retrieveIDFromResponseBody(body, t)
@@ -1395,13 +1395,13 @@ func TestProductOptionCreationWithAlreadyExistentName(t *testing.T) {
 		newOptionJSON := createProductOptionCreationBody(testOptionName)
 		resp, err := createProductOptionForProduct(existentID, newOptionJSON)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "creating a product option that already exists should respond 400")
+		assertStatusCode(t, resp, http.StatusBadRequest)
 	}
 
 	testDeleteProductOption := func(t *testing.T) {
 		resp, err := deleteProductOption(strconv.Itoa(int(createdOptionID)))
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a product that exists should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 
 		actual := turnResponseBodyIntoString(t, resp)
 		assert.Equal(t, "", actual, "product option deletion route should respond with affirmative message upon successful deletion")
@@ -1437,7 +1437,7 @@ func TestProductOptionUpdate(t *testing.T) {
 		newProductJSON := createProductCreationBody(testSKU, "")
 		resp, err := createProduct(newProductJSON)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product that doesn't exist should respond 201")
+		assertStatusCode(t, resp, http.StatusCreated)
 		body := turnResponseBodyIntoString(t, resp)
 		createdRootID = retrieveIDFromResponseBody(body, t)
 	}
@@ -1446,7 +1446,7 @@ func TestProductOptionUpdate(t *testing.T) {
 		newOptionJSON := createProductOptionCreationBody(testOptionName)
 		resp, err := createProductOptionForProduct(strconv.Itoa(int(createdRootID)), newOptionJSON)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product option that doesn't exist should respond 201")
+		assertStatusCode(t, resp, http.StatusCreated)
 
 		body := turnResponseBodyIntoString(t, resp)
 		createdOptionID = retrieveIDFromResponseBody(body, t)
@@ -1456,7 +1456,7 @@ func TestProductOptionUpdate(t *testing.T) {
 		updatedOptionJSON := createProductOptionBody(updatedOptionName)
 		resp, err := updateProductOption(strconv.Itoa(int(createdOptionID)), updatedOptionJSON)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "successfully updating a product should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 
 		body := turnResponseBodyIntoString(t, resp)
 		actual := cleanAPIResponseBody(body)
@@ -1478,7 +1478,7 @@ func TestProductOptionUpdate(t *testing.T) {
 	testDeleteProductOption := func(t *testing.T) {
 		resp, err := deleteProductOption(strconv.Itoa(int(createdOptionID)))
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a product that exists should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 
 		actual := turnResponseBodyIntoString(t, resp)
 		assert.Equal(t, "", actual, "product option deletion route should respond with affirmative message upon successful deletion")
@@ -1487,7 +1487,7 @@ func TestProductOptionUpdate(t *testing.T) {
 	testDeleteProduct := func(t *testing.T) {
 		resp, err := deleteProductRoot(strconv.Itoa(int(createdRootID)))
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a product that exists should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 	}
 
 	subtests := []subtest{
@@ -1519,7 +1519,7 @@ func TestProductOptionUpdateWithInvalidInput(t *testing.T) {
 	t.Parallel()
 	resp, err := updateProductOption(existentID, exampleGarbageInput)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "successfully updating a product should respond 400")
+	assertStatusCode(t, resp, http.StatusBadRequest)
 
 	body := turnResponseBodyIntoString(t, resp)
 	actual := cleanAPIResponseBody(body)
@@ -1532,7 +1532,7 @@ func TestProductOptionUpdateForNonexistentOption(t *testing.T) {
 	updatedOptionJSON := createProductOptionBody(updatedOptionName)
 	resp, err := updateProductOption(nonexistentID, updatedOptionJSON)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "successfully updating a product should respond 404")
+	assertStatusCode(t, resp, http.StatusNotFound)
 
 	body := turnResponseBodyIntoString(t, resp)
 	actual := cleanAPIResponseBody(body)
@@ -1554,7 +1554,7 @@ func TestProductOptionValueCreation(t *testing.T) {
 		newOptionValueJSON := createProductOptionValueBody(testValue)
 		resp, err := createProductOptionValueForOption(existentID, newOptionValueJSON)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product option value that doesn't exist should respond 201")
+		assertStatusCode(t, resp, http.StatusCreated)
 
 		body := turnResponseBodyIntoString(t, resp)
 		createdOptionValueID = retrieveIDFromResponseBody(body, t)
@@ -1570,7 +1570,7 @@ func TestProductOptionValueCreation(t *testing.T) {
 	testDeleteProductOptionValue := func(t *testing.T) {
 		resp, err := deleteProductOptionValueForOption(strconv.Itoa(int(createdOptionValueID)))
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a product that exists should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 	}
 
 	subtests := []subtest{
@@ -1596,7 +1596,7 @@ func TestProductOptionValueUpdate(t *testing.T) {
 		newOptionValueJSON := createProductOptionValueBody(testValue)
 		resp, err := createProductOptionValueForOption(existentID, newOptionValueJSON)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product option value that doesn't exist should respond 201")
+		assertStatusCode(t, resp, http.StatusCreated)
 
 		body := turnResponseBodyIntoString(t, resp)
 		createdOptionValueID = retrieveIDFromResponseBody(body, t)
@@ -1606,7 +1606,7 @@ func TestProductOptionValueUpdate(t *testing.T) {
 		updatedOptionValueJSON := createProductOptionValueBody(testUpdatedValue)
 		resp, err := updateProductOptionValueForOption(strconv.Itoa(int(createdOptionValueID)), updatedOptionValueJSON)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "successfully updating a product should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 
 		body := turnResponseBodyIntoString(t, resp)
 		actual := cleanAPIResponseBody(body)
@@ -1621,7 +1621,7 @@ func TestProductOptionValueUpdate(t *testing.T) {
 	testDeleteProductOptionValue := func(t *testing.T) {
 		resp, err := deleteProductOptionValueForOption(strconv.Itoa(int(createdOptionValueID)))
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a product that exists should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 	}
 
 	subtests := []subtest{
@@ -1650,7 +1650,7 @@ func TestProductOptionValueDeletion(t *testing.T) {
 		newOptionValueJSON := createProductOptionValueBody(testValue)
 		resp, err := createProductOptionValueForOption(existentID, newOptionValueJSON)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a product option value that doesn't exist should respond 201")
+		assertStatusCode(t, resp, http.StatusCreated)
 		body := turnResponseBodyIntoString(t, resp)
 		createdOptionValueID = retrieveIDFromResponseBody(body, t)
 	}
@@ -1658,7 +1658,7 @@ func TestProductOptionValueDeletion(t *testing.T) {
 	testDeleteProductOptionValue := func(t *testing.T) {
 		resp, err := deleteProductOptionValueForOption(strconv.Itoa(int(createdOptionValueID)))
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a product that exists should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 
 		actual := turnResponseBodyIntoString(t, resp)
 		assert.Equal(t, "", actual, "product option deletion route should respond with affirmative message upon successful deletion")
@@ -1682,7 +1682,7 @@ func TestProductOptionValueDeletionForNonexistentOptionValue(t *testing.T) {
 
 	resp, err := deleteProductOptionValueForOption(nonexistentID)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "trying to delete a product that exists should respond 404")
+	assertStatusCode(t, resp, http.StatusNotFound)
 
 	actual := turnResponseBodyIntoString(t, resp)
 	expected := `{"status":404,"message":"The product option value you were looking for (id '999999999') does not exist"}`
@@ -1693,7 +1693,7 @@ func TestProductOptionValueCreationWithInvalidInput(t *testing.T) {
 	t.Parallel()
 	resp, err := createProductOptionValueForOption(existentID, exampleGarbageInput)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "trying to create a new product option value with invalid input should respond 400")
+	assertStatusCode(t, resp, http.StatusBadRequest)
 
 	actual := turnResponseBodyIntoString(t, resp)
 	assert.Equal(t, expectedBadRequestResponse, actual, "product option value creation route should respond with failure message when you provide it invalid input")
@@ -1706,7 +1706,7 @@ func TestProductOptionValueCreationWithAlreadyExistentValue(t *testing.T) {
 	existingOptionJSON := createProductOptionValueBody(alreadyExistentValue)
 	resp, err := createProductOptionValueForOption(existentID, existingOptionJSON)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "creating a product option value that already exists should respond 400")
+	assertStatusCode(t, resp, http.StatusBadRequest)
 
 	actual := turnResponseBodyIntoString(t, resp)
 	expected := minifyJSON(t, `
@@ -1722,7 +1722,7 @@ func TestProductOptionValueUpdateWithInvalidInput(t *testing.T) {
 	t.Parallel()
 	resp, err := updateProductOptionValueForOption(existentID, exampleGarbageInput)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "successfully updating a product should respond 400")
+	assertStatusCode(t, resp, http.StatusBadRequest)
 
 	body := turnResponseBodyIntoString(t, resp)
 	actual := cleanAPIResponseBody(body)
@@ -1736,7 +1736,7 @@ func TestProductOptionValueUpdateForNonexistentOption(t *testing.T) {
 	updatedOptionValueJSON := createProductOptionValueBody(obligatoryValue)
 	resp, err := updateProductOptionValueForOption(nonexistentID, updatedOptionValueJSON)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "successfully updating a product should respond 404")
+	assertStatusCode(t, resp, http.StatusNotFound)
 
 	body := turnResponseBodyIntoString(t, resp)
 	actual := cleanAPIResponseBody(body)
@@ -1758,7 +1758,7 @@ func TestProductOptionValueUpdateForAlreadyExistentValue(t *testing.T) {
 	duplicatedOptionValueJSON := createProductOptionValueBody("medium")
 	resp, err := updateProductOptionValueForOption("4", duplicatedOptionValueJSON)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode, "updating a product option value with an already existent value should respond 500")
+	assertStatusCode(t, resp, http.StatusInternalServerError)
 
 	body := turnResponseBodyIntoString(t, resp)
 	actual := cleanAPIResponseBody(body)

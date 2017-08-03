@@ -386,7 +386,7 @@ func TestSingleProductRootRetrievalHandler(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
+	assertStatusCode(t, testUtil, http.StatusOK)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -412,7 +412,7 @@ func TestSingleProductRootRetrievalHandlerWhenNoSuchRootExists(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusNotFound, testUtil.Response.Code, "status code should be 404")
+	assertStatusCode(t, testUtil, http.StatusNotFound)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -438,7 +438,7 @@ func TestSingleProductRootRetrievalHandlerWithErrorQueryingDatabaseForProductRoo
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -473,7 +473,7 @@ func TestSingleProductRootRetrievalHandlerWithErrorRetrievingAssociatedProducts(
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -509,7 +509,7 @@ func TestSingleProductRootRetrievalHandlerWitherrorRetrievingProductOptions(t *t
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -553,7 +553,7 @@ func TestProductRootListRetrievalHandler(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
+	assertStatusCode(t, testUtil, http.StatusOK)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -567,7 +567,7 @@ func TestProductRootListRetrievalHandlerWithErrorGettingRowCount(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -594,7 +594,7 @@ func TestProductRootListRetrievalHandlerWithErrorRetrievingProductRoots(t *testi
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -636,7 +636,7 @@ func TestProductRootListRetrievalHandlerWithErrorRetrivingAssociatedProducts(t *
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -669,7 +669,7 @@ func TestProductRootDeletionHandler(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
+	assertStatusCode(t, testUtil, http.StatusOK)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -695,7 +695,7 @@ func TestProductRootDeletionHandlerWithNonexistentProductRoot(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusNotFound, testUtil.Response.Code, "status code should be 404")
+	assertStatusCode(t, testUtil, http.StatusNotFound)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -721,7 +721,7 @@ func TestProductRootDeletionHandlerWithErrorRetrievingProductRoot(t *testing.T) 
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -748,7 +748,7 @@ func TestProductRootDeletionHandlerWithErrorBeginningTransaction(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -777,7 +777,7 @@ func TestProductRootDeletionHandlerWithErrorDeletingBridgeEntries(t *testing.T) 
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -807,7 +807,7 @@ func TestProductRootDeletionHandlerWithErrorDeletingOptionValues(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -838,7 +838,7 @@ func TestProductRootDeletionHandlerWithErrorDeletingOptions(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -870,7 +870,7 @@ func TestProductRootDeletionHandlerWithErrorDeletingProducts(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -903,7 +903,7 @@ func TestProductRootDeletionHandlerWithErrorDeletingProductRoot(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -936,6 +936,6 @@ func TestProductRootDeletionHandlerWithErrorCommittingTransaction(t *testing.T) 
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }

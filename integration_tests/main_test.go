@@ -128,3 +128,7 @@ func runSubtestSuite(t *testing.T, tests []subtest) {
 		testPassed = t.Run(test.Message, test.Test)
 	}
 }
+
+func assertStatusCode(t *testing.T, resp *http.Response, statusCode int) {
+	assert.Equal(t, statusCode, resp.StatusCode, "status code should be %d", statusCode)
+}

@@ -164,6 +164,10 @@ func attachBadCookieToRequest(req *http.Request) {
 	req.Header.Set("Cookie", fmt.Sprintf("%s=this is a bad cookie", dairycartCookieName))
 }
 
+func assertStatusCode(t *testing.T, testUtil *TestUtil, statusCode int) {
+	assert.Equal(t, statusCode, testUtil.Response.Code, "status code should be %d", statusCode)
+}
+
 ///////////////////////////////////////////////////////
 //                                                   //
 //        These functions actually test things       //

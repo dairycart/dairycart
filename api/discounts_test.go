@@ -281,7 +281,7 @@ func TestDiscountRetrievalHandlerWithExistingDiscount(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
+	assertStatusCode(t, testUtil, http.StatusOK)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -296,7 +296,7 @@ func TestDiscountRetrievalHandlerWithNoRowsFromDB(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusNotFound, testUtil.Response.Code, "status code should be 404")
+	assertStatusCode(t, testUtil, http.StatusNotFound)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -311,7 +311,7 @@ func TestDiscountRetrievalHandlerWithDBError(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -326,7 +326,7 @@ func TestDiscountListHandler(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
+	assertStatusCode(t, testUtil, http.StatusOK)
 
 	expected := &ListResponse{
 		Page:  1,
@@ -354,7 +354,7 @@ func TestDiscountListHandlerWithDBErrorWithErrorReturnedFromCountQuery(t *testin
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -369,7 +369,7 @@ func TestDiscountListHandlerWithDBErrorWithErrorReturnedFromListQuery(t *testing
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -396,7 +396,7 @@ func TestDiscountCreationHandler(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusCreated, testUtil.Response.Code, "status code should be 201")
+	assertStatusCode(t, testUtil, http.StatusCreated)
 
 	actual := &Discount{}
 	bodyStr := testUtil.Response.Body.String()
@@ -419,7 +419,7 @@ func TestDiscountCreationHandlerWithInvalidInput(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
+	assertStatusCode(t, testUtil, http.StatusBadRequest)
 }
 
 func TestDiscountCreationHandlerWithDatabaseErrorUponCreation(t *testing.T) {
@@ -431,7 +431,7 @@ func TestDiscountCreationHandlerWithDatabaseErrorUponCreation(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	//ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -447,7 +447,7 @@ func TestDiscountDeletionHandler(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
+	assertStatusCode(t, testUtil, http.StatusOK)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -462,7 +462,7 @@ func TestDiscountDeletionHandlerForNonexistentDiscount(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusNotFound, testUtil.Response.Code, "status code should be 404")
+	assertStatusCode(t, testUtil, http.StatusNotFound)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -478,7 +478,7 @@ func TestDiscountDeletionHandlerWithErrorDeletingDiscount(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -506,7 +506,7 @@ func TestDiscountUpdateHandler(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
+	assertStatusCode(t, testUtil, http.StatusOK)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -521,7 +521,7 @@ func TestDiscountUpdateHandlerForNonexistentDiscount(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusNotFound, testUtil.Response.Code, "status code should be 404")
+	assertStatusCode(t, testUtil, http.StatusNotFound)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -533,7 +533,7 @@ func TestDiscountUpdateHandlerWithErrorValidatingInput(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
+	assertStatusCode(t, testUtil, http.StatusBadRequest)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -560,7 +560,7 @@ func TestDiscountUpdateHandlerWithErrorRetrievingDiscount(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -588,6 +588,6 @@ func TestDiscountUpdateHandlerWithErrorUpdatingDiscount(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }

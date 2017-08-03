@@ -580,7 +580,7 @@ func TestUserCreationHandler(t *testing.T) {
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, http.StatusCreated, testUtil.Response.Code, "status code should be 201")
+	assertStatusCode(t, testUtil, http.StatusCreated)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -603,7 +603,7 @@ func TestUserCreationHandlerFailsWhenCreatingAdminUsersAsRegularUser(t *testing.
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, http.StatusForbidden, testUtil.Response.Code, "status code should be 401")
+	assertStatusCode(t, testUtil, http.StatusForbidden)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -615,7 +615,7 @@ func TestUserCreationHandlerWithInvalidInput(t *testing.T) {
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
+	assertStatusCode(t, testUtil, http.StatusBadRequest)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -639,7 +639,7 @@ func TestUserCreationHandlerWithInvalidCookie(t *testing.T) {
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
+	assertStatusCode(t, testUtil, http.StatusBadRequest)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -663,7 +663,7 @@ func TestUserCreationHandlerForAlreadyExistentUsername(t *testing.T) {
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
+	assertStatusCode(t, testUtil, http.StatusBadRequest)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -700,7 +700,7 @@ func TestUserCreationHandlerWithErrorCreatingUser(t *testing.T) {
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, http.StatusCreated, testUtil.Response.Code, "status code should be 201")
+	assertStatusCode(t, testUtil, http.StatusCreated)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -737,7 +737,7 @@ func TestUserCreationHandlerWhenErrorEncounteredInsertingIntoDB(t *testing.T) {
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -773,7 +773,7 @@ func TestUserLoginHandler(t *testing.T) {
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 	assert.Contains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
-	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
+	assertStatusCode(t, testUtil, http.StatusOK)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -786,7 +786,7 @@ func TestUserLoginHandlerWithInvalidLoginInput(t *testing.T) {
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 	assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler shouldn't attach a cookie when request is invalid")
-	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
+	assertStatusCode(t, testUtil, http.StatusBadRequest)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -820,7 +820,7 @@ func TestUserLoginHandlerWhenLoginAttemptsHaveBeenExhausted(t *testing.T) {
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 	assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
-	assert.Equal(t, http.StatusUnauthorized, testUtil.Response.Code, "status code should be 403")
+	assertStatusCode(t, testUtil, http.StatusUnauthorized)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -854,7 +854,7 @@ func TestUserLoginHandlerWhenErrorOccursCheckingLoginAttempts(t *testing.T) {
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 	assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -888,7 +888,7 @@ func TestUserLoginHandlerWithNoMatchingUserInDatabase(t *testing.T) {
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, http.StatusNotFound, testUtil.Response.Code, "status code should be 404")
+	assertStatusCode(t, testUtil, http.StatusNotFound)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -922,7 +922,7 @@ func TestUserLoginHandlerWithErrorRetrievingUserFromDatabase(t *testing.T) {
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -957,7 +957,7 @@ func TestUserLoginHandlerWithErrorCreatingLoginAttemptRow(t *testing.T) {
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -1030,7 +1030,7 @@ func TestUserLoginHandlerWithInvalidCookie(t *testing.T) {
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 	assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should not attach a cookie when request is invalid")
-	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
+	assertStatusCode(t, testUtil, http.StatusBadRequest)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -1043,7 +1043,7 @@ func TestUserLogoutHandler(t *testing.T) {
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 	assert.Contains(t, testUtil.Response.HeaderMap, "Set-Cookie", "logout handler should attach a cookie when request is valid")
-	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
+	assertStatusCode(t, testUtil, http.StatusOK)
 }
 
 func TestUserLogoutHandlerWithInvalidCookie(t *testing.T) {
@@ -1056,7 +1056,7 @@ func TestUserLogoutHandlerWithInvalidCookie(t *testing.T) {
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 	assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "logout handler should not attach a cookie when request is invalid")
-	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
+	assertStatusCode(t, testUtil, http.StatusBadRequest)
 }
 
 func TestUserDeletionHandler(t *testing.T) {
@@ -1076,7 +1076,7 @@ func TestUserDeletionHandler(t *testing.T) {
 	setExpectationsForUserDeletion(testUtil.Mock, exampleID, nil)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
+	assertStatusCode(t, testUtil, http.StatusOK)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -1092,7 +1092,7 @@ func TestUserDeletionHandlerForNonexistentUser(t *testing.T) {
 	setExpectationsForUserExistenceByID(testUtil.Mock, exampleIDString, false, nil)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, http.StatusNotFound, testUtil.Response.Code, "status code should be 404")
+	assertStatusCode(t, testUtil, http.StatusNotFound)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -1110,7 +1110,7 @@ func TestUserDeletionHandlerWithInvalidCookie(t *testing.T) {
 	setExpectationsForUserExistenceByID(testUtil.Mock, exampleIDString, true, nil)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
+	assertStatusCode(t, testUtil, http.StatusBadRequest)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -1130,7 +1130,7 @@ func TestUserDeletionHandlerWhenDeletingAdminUserAsRegularUser(t *testing.T) {
 	setExpectationsForUserExistenceByID(testUtil.Mock, exampleIDString, true, nil)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, http.StatusForbidden, testUtil.Response.Code, "status code should be 403")
+	assertStatusCode(t, testUtil, http.StatusForbidden)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -1151,7 +1151,7 @@ func TestUserDeletionHandlerWithArbitraryErrorWhenDeletingUser(t *testing.T) {
 	setExpectationsForUserDeletion(testUtil.Mock, exampleID, arbitraryError)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -1187,7 +1187,7 @@ func TestUserForgottenPasswordHandler(t *testing.T) {
 	setExpectationsForPasswordResetCreationWithNoSpecificResetToken(testUtil.Mock, exampleUser.ID, nil)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
+	assertStatusCode(t, testUtil, http.StatusOK)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -1199,7 +1199,7 @@ func TestUserForgottenPasswordHandlerWithInvalidInput(t *testing.T) {
 	assert.Nil(t, err)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
+	assertStatusCode(t, testUtil, http.StatusBadRequest)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -1232,7 +1232,7 @@ func TestUserForgottenPasswordHandlerWithNonexistentUser(t *testing.T) {
 	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, sql.ErrNoRows)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, http.StatusNotFound, testUtil.Response.Code, "status code should be 404")
+	assertStatusCode(t, testUtil, http.StatusNotFound)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -1265,7 +1265,7 @@ func TestUserForgottenPasswordHandlerWithErrorRetrievingUserFromDB(t *testing.T)
 	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, arbitraryError)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -1300,7 +1300,7 @@ func TestUserForgottenPasswordHandlerWithAlreadyExistentPasswordResetEntry(t *te
 	setExpectationsForPasswordResetEntryExistenceByUserID(testUtil.Mock, userID, true, nil)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
+	assertStatusCode(t, testUtil, http.StatusBadRequest)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -1336,7 +1336,7 @@ func TestUserForgottenPasswordHandlerWithErrorCreatingResetToken(t *testing.T) {
 	setExpectationsForPasswordResetCreationWithNoSpecificResetToken(testUtil.Mock, exampleUser.ID, arbitraryError)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -1351,7 +1351,7 @@ func TestPasswordResetValidationHandler(t *testing.T) {
 	setExpectationsForPasswordResetEntryExistenceByResetToken(testUtil.Mock, exampleResetToken, true, nil)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
+	assertStatusCode(t, testUtil, http.StatusOK)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -1366,7 +1366,7 @@ func TestPasswordResetValidationHandlerForNonexistentToken(t *testing.T) {
 	setExpectationsForPasswordResetEntryExistenceByResetToken(testUtil.Mock, exampleResetToken, false, nil)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Equal(t, http.StatusNotFound, testUtil.Response.Code, "status code should be 404")
+	assertStatusCode(t, testUtil, http.StatusNotFound)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -1417,7 +1417,7 @@ func TestUserUpdateHandler(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
+	assertStatusCode(t, testUtil, http.StatusOK)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -1429,7 +1429,7 @@ func TestUserUpdateHandlerWithInvalidInput(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
+	assertStatusCode(t, testUtil, http.StatusBadRequest)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -1448,7 +1448,7 @@ func TestUserUpdateHandlerWhileAttemptingToChangePasswordToAnInvalidPassword(t *
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusBadRequest, testUtil.Response.Code, "status code should be 400")
+	assertStatusCode(t, testUtil, http.StatusBadRequest)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -1483,7 +1483,7 @@ func TestUserUpdateHandlerForNonexistentUser(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusNotFound, testUtil.Response.Code, "status code should be 404")
+	assertStatusCode(t, testUtil, http.StatusNotFound)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -1518,7 +1518,7 @@ func TestUserUpdateHandlerWithErrorRetrievingUser(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -1553,7 +1553,7 @@ func TestUserUpdateHandlerWhenPasswordDoesNotMatchExpectation(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusUnauthorized, testUtil.Response.Code, "status code should be 401")
+	assertStatusCode(t, testUtil, http.StatusUnauthorized)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -1606,7 +1606,7 @@ func TestUserUpdateHandlerWithNewPassword(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusOK, testUtil.Response.Code, "status code should be 200")
+	assertStatusCode(t, testUtil, http.StatusOK)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -1657,6 +1657,6 @@ func TestUserUpdateHandlerWithErrorUpdatingUser(t *testing.T) {
 	assert.Nil(t, err)
 
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }

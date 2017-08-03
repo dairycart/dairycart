@@ -45,7 +45,7 @@ func TestDiscountRetrievalForExistingDiscount(t *testing.T) {
 	t.Parallel()
 	resp, err := getDiscountByID(existentID)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "a successfully retrieved discount should respond 200")
+	assertStatusCode(t, resp, http.StatusOK)
 
 	body := turnResponseBodyIntoString(t, resp)
 	removedTimeFields := replaceTimeStringsForTests(body)
@@ -68,7 +68,7 @@ func TestDiscountRetrievalForNonexistentDiscount(t *testing.T) {
 	t.Parallel()
 	resp, err := getDiscountByID(nonexistentID)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "a request for a nonexistent discount should respond 404")
+	assertStatusCode(t, resp, http.StatusNotFound)
 
 	body := turnResponseBodyIntoString(t, resp)
 	actual := replaceTimeStringsForTests(body)
@@ -86,7 +86,7 @@ func TestDiscountListRetrievalWithDefaultFilter(t *testing.T) {
 	t.Parallel()
 	resp, err := getListOfDiscounts(nil)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "requesting a list of products should respond 200")
+	assertStatusCode(t, resp, http.StatusOK)
 
 	body := turnResponseBodyIntoString(t, resp)
 	lr := parseResponseIntoStruct(t, body)
@@ -103,7 +103,7 @@ func TestDiscountListRouteWithCustomFilter(t *testing.T) {
 	}
 	resp, err := getListOfDiscounts(customFilter)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "requesting a list of products should respond 200")
+	assertStatusCode(t, resp, http.StatusOK)
 
 	body := turnResponseBodyIntoString(t, resp)
 	lr := parseResponseIntoStruct(t, body)
@@ -121,7 +121,7 @@ func TestDiscountCreation(t *testing.T) {
 		newDiscountJSON := createDiscountCreationBody(testDiscountCode)
 		resp, err := createDiscount(newDiscountJSON)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a discount that doesn't exist should respond 201")
+		assertStatusCode(t, resp, http.StatusCreated)
 
 		body := turnResponseBodyIntoString(t, resp)
 		createdDiscountID = retrieveIDFromResponseBody(body, t)
@@ -146,7 +146,7 @@ func TestDiscountCreation(t *testing.T) {
 	testDeleteDiscount := func(t *testing.T) {
 		resp, err := deleteDiscount(strconv.Itoa(int(createdDiscountID)))
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a discount that exists should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 	}
 
 	subtests := []subtest{
@@ -172,7 +172,7 @@ func TestDiscountDeletion(t *testing.T) {
 		newDiscountJSON := createDiscountCreationBody(testDiscountCode)
 		resp, err := createDiscount(newDiscountJSON)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a discount that doesn't exist should respond 201")
+		assertStatusCode(t, resp, http.StatusCreated)
 		body := turnResponseBodyIntoString(t, resp)
 		createdDiscountID = retrieveIDFromResponseBody(body, t)
 	}
@@ -180,7 +180,7 @@ func TestDiscountDeletion(t *testing.T) {
 	testDeleteDiscount := func(t *testing.T) {
 		resp, err := deleteDiscount(strconv.Itoa(int(createdDiscountID)))
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a discount that exists should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 
 		actual := turnResponseBodyIntoString(t, resp)
 		expected := fmt.Sprintf("Successfully archived discount `%d`", createdDiscountID)
@@ -205,7 +205,7 @@ func TestDiscountDeletionForNonexistentDiscount(t *testing.T) {
 
 	resp, err := deleteDiscount(nonexistentID)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "trying to delete a discount that doesn't exists should respond 404")
+	assertStatusCode(t, resp, http.StatusNotFound)
 
 	actual := turnResponseBodyIntoString(t, resp)
 	expected := `{"status":404,"message":"The discount you were looking for (id '999999999') does not exist"}`
@@ -216,7 +216,7 @@ func TestDiscountCreationWithInvalidInput(t *testing.T) {
 	t.Parallel()
 	resp, err := createDiscount(exampleGarbageInput)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "creating a discount that doesn't exist should respond 400")
+	assertStatusCode(t, resp, http.StatusBadRequest)
 
 	respBody := turnResponseBodyIntoString(t, resp)
 	actual := replaceTimeStringsForTests(respBody)
@@ -233,7 +233,7 @@ func TestDiscountUpdate(t *testing.T) {
 		newDiscountJSON := createDiscountCreationBody(testDiscountCode)
 		resp, err := createDiscount(newDiscountJSON)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a discount that doesn't exist should respond 201")
+		assertStatusCode(t, resp, http.StatusCreated)
 		body := turnResponseBodyIntoString(t, resp)
 		createdDiscountID = retrieveIDFromResponseBody(body, t)
 	}
@@ -242,7 +242,7 @@ func TestDiscountUpdate(t *testing.T) {
 		updatedDiscountJSON := createDiscountUpdateBody("new name", testDiscountCode)
 		resp, err := updateDiscount(strconv.Itoa(int(createdDiscountID)), updatedDiscountJSON)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "successfully updating a product should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 
 		body := turnResponseBodyIntoString(t, resp)
 		actual := replaceTimeStringsForTests(body)
@@ -264,7 +264,7 @@ func TestDiscountUpdate(t *testing.T) {
 	testDeleteDiscount := func(t *testing.T) {
 		resp, err := deleteDiscount(strconv.Itoa(int(createdDiscountID)))
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a discount that exists should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 
 		actual := turnResponseBodyIntoString(t, resp)
 		expected := fmt.Sprintf("Successfully archived discount `%d`", createdDiscountID)
@@ -293,12 +293,12 @@ func TestDiscountUpdateInvalidDiscount(t *testing.T) {
 	updatedDiscountJSON := createDiscountUpdateBody("new name", "TEST")
 	resp, err := updateDiscount(nonexistentID, updatedDiscountJSON)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "successfully updating a product should respond 404")
+	assertStatusCode(t, resp, http.StatusNotFound)
 }
 
 func TestDiscountUpdateWithInvalidBody(t *testing.T) {
 	t.Parallel()
 	resp, err := updateDiscount(existentID, exampleGarbageInput)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "successfully updating a product should respond 400")
+	assertStatusCode(t, resp, http.StatusBadRequest)
 }

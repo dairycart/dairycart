@@ -34,7 +34,7 @@ func TestUserCreation(t *testing.T) {
 		newUserJSON := createUserCreationBody(testUsername, validPassword, userShouldBeAdmin)
 		resp, err := createNewUser(newUserJSON, userShouldBeAdmin)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a user that doesn't exist should respond 201")
+		assertStatusCode(t, resp, http.StatusCreated)
 
 		body := turnResponseBodyIntoString(t, resp)
 		createdUserID = retrieveIDFromResponseBody(body, t)
@@ -43,7 +43,7 @@ func TestUserCreation(t *testing.T) {
 	testDeleteUser := func(t *testing.T) {
 		resp, err := deleteUser(strconv.Itoa(int(createdUserID)), true)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a user that exists should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 	}
 
 	subtests := []subtest{
@@ -68,7 +68,7 @@ func TestUserCreationWithInvalidPassword(t *testing.T) {
 	newUserJSON := createUserCreationBody(testUsername, testAwfulPassword, userShouldBeAdmin)
 	resp, err := createNewUser(newUserJSON, userShouldBeAdmin)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "creating a user with an invalid password should respond 400")
+	assertStatusCode(t, resp, http.StatusBadRequest)
 
 	// FIXME: this error response isn't super optimal
 	expected := `{"status":400,"message":"Key: 'UserCreationInput.Password' Error:Field validation for 'Password' failed on the 'gte' tag"}`
@@ -82,7 +82,7 @@ func TestUserCreationWithInvalidCreationBody(t *testing.T) {
 	userShouldBeAdmin := false
 	resp, err := createNewUser(exampleGarbageInput, userShouldBeAdmin)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "creating a user with an invalid password should respond 400")
+	assertStatusCode(t, resp, http.StatusBadRequest)
 
 	expected := `{"status":400,"message":"Invalid input provided in request body"}`
 	actual := turnResponseBodyIntoString(t, resp)
@@ -99,7 +99,7 @@ func TestAdminUserCreation(t *testing.T) {
 		newUserJSON := createUserCreationBody(testUsername, validPassword, userShouldBeAdmin)
 		resp, err := createNewUser(newUserJSON, userShouldBeAdmin)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a user that doesn't exist should respond 201")
+		assertStatusCode(t, resp, http.StatusCreated)
 
 		body := turnResponseBodyIntoString(t, resp)
 		createdUserID = retrieveIDFromResponseBody(body, t)
@@ -108,7 +108,7 @@ func TestAdminUserCreation(t *testing.T) {
 	testDeleteUser := func(t *testing.T) {
 		resp, err := deleteUser(strconv.Itoa(int(createdUserID)), true)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a user that exists should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 	}
 
 	subtests := []subtest{
@@ -130,7 +130,7 @@ func TestAdminUserCreationFailsWithoutAdminCredentials(t *testing.T) {
 	newUserJSON := createUserCreationBody(testUsername, validPassword, true)
 	resp, err := createNewUser(newUserJSON, false)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusForbidden, resp.StatusCode, "creating an admin user without valid credentials should respond 403")
+	assertStatusCode(t, resp, http.StatusForbidden)
 }
 
 func TestUserCreationForAlreadyExistentUsername(t *testing.T) {
@@ -143,7 +143,7 @@ func TestUserCreationForAlreadyExistentUsername(t *testing.T) {
 		newUserJSON := createUserCreationBody(testUsername, validPassword, userShouldBeAdmin)
 		resp, err := createNewUser(newUserJSON, userShouldBeAdmin)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a user that doesn't exist should respond 201")
+		assertStatusCode(t, resp, http.StatusCreated)
 
 		body := turnResponseBodyIntoString(t, resp)
 		createdUserID = retrieveIDFromResponseBody(body, t)
@@ -153,13 +153,13 @@ func TestUserCreationForAlreadyExistentUsername(t *testing.T) {
 		newUserJSON := createUserCreationBody(testUsername, validPassword, userShouldBeAdmin)
 		resp, err := createNewUser(newUserJSON, userShouldBeAdmin)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "creating a user that already exists should respond 400")
+		assertStatusCode(t, resp, http.StatusBadRequest)
 	}
 
 	testDeleteUser := func(t *testing.T) {
 		resp, err := deleteUser(strconv.Itoa(int(createdUserID)), true)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a user that exists should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 	}
 
 	subtests := []subtest{
@@ -195,7 +195,7 @@ func TestUserDeletion(t *testing.T) {
 	testDeleteUser := func(t *testing.T) {
 		resp, err := deleteUser(strconv.Itoa(int(createdUserID)), true)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a user that exists should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 		body := turnResponseBodyIntoString(t, resp)
 		assert.Empty(t, body)
 	}
@@ -218,7 +218,7 @@ func TestUserDeletionForNonexistentUser(t *testing.T) {
 
 	resp, err := deleteUser(nonexistentID, true)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "trying to delete a user that doesn't exist should respond 404")
+	assertStatusCode(t, resp, http.StatusNotFound)
 
 	expected := `{"status":404,"message":"The user you were looking for (username '999999999') does not exist"}`
 	actual := turnResponseBodyIntoString(t, resp)
@@ -241,7 +241,7 @@ func TestUserDeletionAsRegularUser(t *testing.T) {
 	testDeleteUser := func(t *testing.T) {
 		resp, err := deleteUser(strconv.Itoa(int(createdUserID)), userShouldBeAdmin)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusForbidden, resp.StatusCode, "trying to delete an admin user as a regular user should respond 403")
+		assertStatusCode(t, resp, http.StatusForbidden)
 
 		expected := `{"status":403,"message":"User is not authorized to delete users"}`
 		actual := turnResponseBodyIntoString(t, resp)
@@ -277,7 +277,7 @@ func TestAdminUserDeletion(t *testing.T) {
 	testDeleteUser := func(t *testing.T) {
 		resp, err := deleteUser(strconv.Itoa(int(createdUserID)), true)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete an admin user that exists should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 		body := turnResponseBodyIntoString(t, resp)
 		assert.Empty(t, body)
 	}
@@ -311,7 +311,7 @@ func TestAdminUserDeletionAsRegularUser(t *testing.T) {
 	testDeleteUser := func(t *testing.T) {
 		resp, err := deleteUser(strconv.Itoa(int(createdUserID)), false)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusForbidden, resp.StatusCode, "trying to delete an admin user as a regular user should respond 403")
+		assertStatusCode(t, resp, http.StatusForbidden)
 
 		expected := `{"status":403,"message":"User is not authorized to delete users"}`
 		actual := turnResponseBodyIntoString(t, resp)
@@ -343,7 +343,7 @@ func TestUserLogin(t *testing.T) {
 		newUserJSON := createUserCreationBody(testUsername, validPassword, userShouldBeAdmin)
 		resp, err := createNewUser(newUserJSON, userShouldBeAdmin)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a user that doesn't exist should respond 201")
+		assertStatusCode(t, resp, http.StatusCreated)
 		testUserCookie = resp.Cookies()[0]
 
 		body := turnResponseBodyIntoString(t, resp)
@@ -353,20 +353,20 @@ func TestUserLogin(t *testing.T) {
 	testLogoutUser := func(t *testing.T) {
 		resp, err := logoutUser(testUserCookie)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "logging out as a logged in user should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 	}
 
 	testLoginUser := func(t *testing.T) {
 		resp, err := loginUser(testUsername, validPassword)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "logging in as a valid user should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 		assert.Contains(t, resp.Header, "Set-Cookie", "login handler should attach a cookie when request is valid")
 	}
 
 	testDeleteUser := func(t *testing.T) {
 		resp, err := deleteUser(strconv.Itoa(int(createdUserID)), true)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a user that exists should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 	}
 
 	subtests := []subtest{
@@ -402,7 +402,7 @@ func TestUserLoginWithInvalidPassword(t *testing.T) {
 		newUserJSON := createUserCreationBody(testUsername, validPassword, userShouldBeAdmin)
 		resp, err := createNewUser(newUserJSON, userShouldBeAdmin)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a user that doesn't exist should respond 201")
+		assertStatusCode(t, resp, http.StatusCreated)
 		testUserCookie = resp.Cookies()[0]
 
 		body := turnResponseBodyIntoString(t, resp)
@@ -412,7 +412,7 @@ func TestUserLoginWithInvalidPassword(t *testing.T) {
 	testLogoutUser := func(t *testing.T) {
 		resp, err := logoutUser(testUserCookie)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "creating a user that doesn't exist should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 	}
 
 	testLoginUser := func(t *testing.T) {
@@ -425,7 +425,7 @@ func TestUserLoginWithInvalidPassword(t *testing.T) {
 	testDeleteUser := func(t *testing.T) {
 		resp, err := deleteUser(strconv.Itoa(int(createdUserID)), true)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a user that exists should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 	}
 
 	subtests := []subtest{
@@ -457,7 +457,7 @@ func TestUserLoginWithInvalidInput(t *testing.T) {
 
 	resp, err := requester.Do(req)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "attempting to log in a user with invalid input should respond 400")
+	assertStatusCode(t, resp, http.StatusBadRequest)
 }
 
 func TestUserLoginForNonexistentUser(t *testing.T) {
@@ -466,7 +466,7 @@ func TestUserLoginForNonexistentUser(t *testing.T) {
 	testUsername := "test_user_login_for_nonexistent_user"
 	resp, err := loginUser(testUsername, validPassword)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "attempting to log in a user that doesn't exist should respond 404")
+	assertStatusCode(t, resp, http.StatusNotFound)
 	assert.NotContains(t, resp.Header, "Set-Cookie", "login handler should not attach a cookie when request is inalid")
 }
 
@@ -482,7 +482,7 @@ func TestUserLogout(t *testing.T) {
 		newUserJSON := createUserCreationBody(testUsername, validPassword, userShouldBeAdmin)
 		resp, err := createNewUser(newUserJSON, userShouldBeAdmin)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusCreated, resp.StatusCode, "creating a user that doesn't exist should respond 201")
+		assertStatusCode(t, resp, http.StatusCreated)
 		testUserCookie = resp.Cookies()[0]
 
 		body := turnResponseBodyIntoString(t, resp)
@@ -492,7 +492,7 @@ func TestUserLogout(t *testing.T) {
 	testLogoutUser := func(t *testing.T) {
 		resp, err := logoutUser(testUserCookie)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "logging out as a logged in user should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 		body := turnResponseBodyIntoString(t, resp)
 		assert.Empty(t, body)
 	}
@@ -500,7 +500,7 @@ func TestUserLogout(t *testing.T) {
 	testDeleteUser := func(t *testing.T) {
 		resp, err := deleteUser(strconv.Itoa(int(createdUserID)), true)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "trying to delete a user that exists should respond 200")
+		assertStatusCode(t, resp, http.StatusOK)
 	}
 
 	subtests := []subtest{
