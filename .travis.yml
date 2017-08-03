@@ -34,8 +34,6 @@ after_success:
   # yuge thanks to this blog post: https://sebest.github.io/post/using-travis-ci-to-build-docker-images/
   # I'm only doing pre-alpha tags for the moment, but if I were doing versioned tags, it might look something like this:
   #   - export TAG=`if [ "$TRAVIS_BRANCH" == "master" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi`
-  - if [ "true" ]; then # - if [ "$TRAVIS_BRANCH" == "master" ]; then
-    (cd api; docker build --no-cache --tag dairycart/api-server:pre-alpha .);
-    docker login -u="$DOCKER_USER" -p="$DOCKER_PASS";
-    docker push dairycart/api-server:pre-alpha;
-    fi
+
+  # - if [ "$TRAVIS_BRANCH" == "master" ]; then
+  - if [ "true" ]; then (cd api; docker build --no-cache --tag dairycart/api-server:pre-alpha .); docker login -u="$DOCKER_USER" -p="$DOCKER_PASS"; docker push dairycart/api-server:pre-alpha; fi
