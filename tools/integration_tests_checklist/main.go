@@ -68,7 +68,8 @@ func generateFunctionToLineNumberMap(file *os.File, filename string, nameValidat
 	return functionNamesToLineNumberMap
 }
 
-func replaceLinksInChecklistFile(old *os.File, new *os.File, nameValidator *regexp.Regexp, functionNamesToLineNumberMap map[string]*result) {
+func replaceLinksInChecklistFile(old *os.File, new *os.File, nameValidator *regexp.Regexp, functionNamesToLineNumberMap map[string]*result) bool {
+	changed := false
 	checklistValidator := regexp.MustCompile(checklistNamePattern)
 
 	lineNumber := 0
@@ -85,6 +86,9 @@ func replaceLinksInChecklistFile(old *os.File, new *os.File, nameValidator *rege
 			link := fmt.Sprintf(`([%s](https://github.com/dairycart/dairycart/blob/master/integration_tests/%s#L%d-L%d))`, functionName, result.Filename, result.DeclarationLine, result.CompletionLine)
 			checklistPart := strings.Split(line, "(")[0]
 			newLine := fmt.Sprintf("%s%s", checklistPart, link)
+			if newLine != line && !changed {
+				changed = true
+			}
 			_, err := new.WriteString(fmt.Sprintf("%s\n", newLine))
 			must(err)
 			result.UseCount++
@@ -97,6 +101,7 @@ func replaceLinksInChecklistFile(old *os.File, new *os.File, nameValidator *rege
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
+	return changed
 }
 
 func main() {
@@ -132,7 +137,12 @@ func main() {
 	must(err)
 	defer newChecklistFile.Close()
 
-	replaceLinksInChecklistFile(checklistFile, newChecklistFile, nameValidator, functionNamesToLineNumberMap)
+	travis := os.Getenv("TRAVIS")
+	changed := replaceLinksInChecklistFile(checklistFile, newChecklistFile, nameValidator, functionNamesToLineNumberMap)
+	if travis == "true" && changed {
+		log.Fatal("Integration Tests README is not up to date")
+	}
+
 	must(os.Remove(checklistFilePath))
 	must(os.Rename(newChecklistFilePath, checklistFilePath))
 

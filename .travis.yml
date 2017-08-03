@@ -26,6 +26,8 @@ script:
   - docker-compose --file docker-compose-test.yml up --abort-on-container-exit --build --remove-orphans --force-recreate
   # coverage output
   - go test github.com/dairycart/dairycart/api -coverprofile=coverage.out -tags test
+  # ensure README is up to date
+  - go run tools/integration_tests_checklist/main.go
 
 after_success:
   - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
