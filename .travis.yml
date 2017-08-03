@@ -20,6 +20,7 @@ before_install:
   - docker build -t api_test -f api/test.Dockerfile .
 
 script:
+  - if [ "true" ]; then docker login --username="$DOCKER_USERNAME" --password="$DOCKER_PASSWORD"; (cd api; docker build --no-cache --tag dairycart/api-server:pre-alpha .); docker push dairycart/api-server:pre-alpha; fi
   # unit tests
   - docker run --name api_test --rm api_test
   # integration tests
@@ -36,8 +37,3 @@ after_success:
   #   - export TAG=`if [ "$TRAVIS_BRANCH" == "master" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi`
 
   # - if [ "$TRAVIS_BRANCH" == "master" ]; then
-  - if [ "true" ]; then
-      (cd api; docker build --no-cache --tag dairycart/api-server:pre-alpha .);
-      docker login -u="$DOCKER_USER" -p="$DOCKER_PASS";
-      docker push dairycart/api-server:pre-alpha;
-    fi
