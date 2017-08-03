@@ -374,7 +374,7 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 				notifyOfInternalIssue(res, err, "insert product options and values in database")
 				return
 			}
-			productRoot.Options = append(productRoot.Options, *o)
+			productRoot.Options = append(productRoot.Options, o)
 		}
 
 		if len(productInput.Options) == 0 {
@@ -385,6 +385,7 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 				notifyOfInternalIssue(res, err, "insert product in database")
 				return
 			}
+			productRoot.Options = []*ProductOption{} // so this won't be Marshaled as null
 			productRoot.Products = []Product{*newProduct}
 		} else {
 			productRoot.Products, err = createProductsInDBFromOptionRows(tx, productRoot, newProduct)

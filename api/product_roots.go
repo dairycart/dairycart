@@ -53,8 +53,8 @@ type ProductRoot struct {
 	PackageWidth  float32 `json:"package_width"`
 	PackageLength float32 `json:"package_length"`
 
-	Options  []ProductOption `json:"options"`
-	Products []Product       `json:"products"`
+	Options  []*ProductOption `json:"options"`
+	Products []Product        `json:"products"`
 }
 
 func createProductRootFromProduct(p *Product) *ProductRoot {
@@ -139,7 +139,7 @@ func buildProductRootListHandler(db *sqlx.DB) http.HandlerFunc {
 }
 
 func buildSingleProductRootHandler(db *sqlx.DB) http.HandlerFunc {
-	// SingleProductHandler is a request handler that returns a single Product
+	// SingleProductRootHandler is a request handler that returns a single product root
 	return func(res http.ResponseWriter, req *http.Request) {
 		productRootIDStr := chi.URLParam(req, "product_root_id")
 		productRootID, err := strconv.ParseUint(productRootIDStr, 10, 64)
@@ -150,6 +150,19 @@ func buildSingleProductRootHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		} else if err != nil {
 			notifyOfInternalIssue(res, err, "retrieving product root from database")
+			return
+		}
+
+		query, args := buildProductAssociatedWithRootListQuery(productRoot.ID)
+		err = retrieveListOfRowsFromDB(db, query, args, &productRoot.Products)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "retrieve products from the database")
+			return
+		}
+
+		productRoot.Options, err = getProductOptionsForProductRoot(db, productRoot.ID, nil)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "retrieve product options from the database")
 			return
 		}
 

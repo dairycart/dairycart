@@ -137,6 +137,17 @@ func setExpectationsForProductOptionListQuery(mock sqlmock.Sqlmock, a *ProductOp
 		WillReturnError(err)
 }
 
+func setExpectationsForProductOptionListQueryWithoutFilter(mock sqlmock.Sqlmock, a *ProductOption, err error) {
+	exampleRows := sqlmock.NewRows([]string{"id", "name", "product_root_id", "created_on", "updated_on", "archived_on"}).
+		AddRow([]driver.Value{a.ID, a.Name, a.ProductRootID, generateExampleTimeForTests(), nil, nil}...).
+		AddRow([]driver.Value{a.ID, a.Name, a.ProductRootID, generateExampleTimeForTests(), nil, nil}...).
+		AddRow([]driver.Value{a.ID, a.Name, a.ProductRootID, generateExampleTimeForTests(), nil, nil}...)
+	query, _ := buildProductOptionListQuery(exampleProductID, nil)
+	mock.ExpectQuery(formatQueryForSQLMock(query)).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
 func setExpectationsForProductOptionCreation(mock sqlmock.Sqlmock, a *ProductOption, productRootID uint64, err error) {
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(exampleProductOption.ID, generateExampleTimeForTests())
 	query, args := buildProductOptionCreationQuery(a, productRootID)
@@ -185,12 +196,12 @@ func TestGenerateCartesianProductForOptions(t *testing.T) {
 	cotton := ProductOptionValue{DBRow: DBRow{ID: 9}, Value: "cotton"}
 
 	tt := []struct {
-		in       []ProductOption
+		in       []*ProductOption
 		expected []simpleProductOption
 		len      int
 	}{
 		{
-			in: []ProductOption{
+			in: []*ProductOption{
 				{Name: "Size", Values: []ProductOptionValue{small, medium, large}},
 				{Name: "Color", Values: []ProductOptionValue{red, green, blue}},
 			},
@@ -209,7 +220,7 @@ func TestGenerateCartesianProductForOptions(t *testing.T) {
 		},
 		{
 			// test that name: value pairs can be completely different sizes
-			in: []ProductOption{
+			in: []*ProductOption{
 				{Name: "Size", Values: []ProductOptionValue{small, medium, large, xtraLarge}},
 				{Name: "Color", Values: []ProductOptionValue{red, green, blue}},
 				{Name: "Fabric", Values: []ProductOptionValue{polyester, cotton}},
@@ -778,6 +789,7 @@ func TestProductOptionUpdateHandler(t *testing.T) {
 	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
 	setExpectationsForProductOptionRetrievalQuery(testUtil.Mock, exampleProductOption, nil)
 	setExpectationsForProductOptionUpdate(testUtil.Mock, exampleUpdatedProductOption, nil)
+	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
 
 	productOptionEndpoint := buildRoute("v1", "product_options", optionIDString)
 	req, err := http.NewRequest(http.MethodPatch, productOptionEndpoint, strings.NewReader(exampleProductOptionUpdateBody))
@@ -849,6 +861,26 @@ func TestProductOptionUpdateHandlerWithErrorUpdatingOption(t *testing.T) {
 	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
 	setExpectationsForProductOptionRetrievalQuery(testUtil.Mock, exampleProductOption, nil)
 	setExpectationsForProductOptionUpdate(testUtil.Mock, exampleUpdatedProductOption, arbitraryError)
+
+	productOptionEndpoint := buildRoute("v1", "product_options", optionIDString)
+	req, err := http.NewRequest(http.MethodPatch, productOptionEndpoint, strings.NewReader(exampleProductOptionUpdateBody))
+	assert.Nil(t, err)
+	testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+	assert.Equal(t, http.StatusInternalServerError, testUtil.Response.Code, "status code should be 500")
+	ensureExpectationsWereMet(t, testUtil.Mock)
+}
+
+func TestProductOptionUpdateHandlerWithErrorRetrievingValues(t *testing.T) {
+	t.Parallel()
+	testUtil := setupTestVariables(t)
+
+	optionIDString := strconv.Itoa(int(exampleProductOption.ID))
+
+	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
+	setExpectationsForProductOptionRetrievalQuery(testUtil.Mock, exampleProductOption, nil)
+	setExpectationsForProductOptionUpdate(testUtil.Mock, exampleUpdatedProductOption, nil)
+	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, arbitraryError)
 
 	productOptionEndpoint := buildRoute("v1", "product_options", optionIDString)
 	req, err := http.NewRequest(http.MethodPatch, productOptionEndpoint, strings.NewReader(exampleProductOptionUpdateBody))

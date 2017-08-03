@@ -8,6 +8,10 @@ import (
 )
 
 func applyQueryFilterToQueryBuilder(queryBuilder squirrel.SelectBuilder, queryFilter *QueryFilter, includeOffset bool) squirrel.SelectBuilder {
+	if queryFilter == nil {
+		return queryBuilder
+	}
+
 	if queryFilter.Limit > 0 {
 		queryBuilder = queryBuilder.Limit(uint64(queryFilter.Limit))
 	} else {
