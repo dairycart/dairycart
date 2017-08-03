@@ -27,7 +27,6 @@ func createDiscountCreationBody(code string) string {
 			"code": "%s"
 		}
 	`, code)
-
 	return output
 }
 
