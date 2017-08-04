@@ -1,6 +1,62 @@
-$font-stack: Helvetica, sans-serif
-$gray: #333
+$off-white: #F6F7F7
+$light-gray: #6F7B7E
+
+
+
+
+
+
+
 
 body
-  font-family: $font-stack
-  background-color: $gray
+  font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol"
+  height: 100%
+
+.button.is-success
+  background-color: #2EB398
+
+.nav.is-dark
+  background-color: #232B2D
+  color: $off-white
+  .nav-item a, a.nav-item
+    color: $off-white
+  .nav-item a.button.is-default
+    color: $off-white
+    background-color: transparent
+    border-width: 2px
+
+.aside
+  background-color: #354052
+  margin-right: -10px
+  .main
+    padding: 40px
+    color: $light-gray
+  .title
+    color: $light-gray
+    font-size: 12px
+    font-weight: bold
+    text-transform: uppercase
+  .main
+    .item
+      display: block
+      padding: 10px 0
+      color: $light-gray
+      &.active
+        color: $off-white
+    .icon
+      font-size: 19px
+      padding-right: 30px
+    .name
+      font-size: 16px
+      font-weight: bold
+
+.admin-panel
+  padding-bottom: 0
+
+.content
+  display: block
+  background-color: #fff
+  padding: 40px 20px
+
+.hero .tabs ul
+  border-bottom: 1px solid #d3d6db

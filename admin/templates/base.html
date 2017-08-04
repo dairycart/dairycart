@@ -1,14 +1,59 @@
 {{define "base"}}
-<!doctype html>
+<!DOCTYPE html>
 <html>
     <head>
-        <meta charset="utf-8">
-        <title>{{template "title"}}</title>
-        <link rel="stylesheet" href="/static/css/app.css">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="/static/css/bulma.css">
+    <link rel="stylesheet" href="/static/css/app.css">
+
+    <!-- external dependencies -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+    <!--  -->
+
     </head>
     <body>
-        {{template "body"}}
+    <div class="columns">
+        <aside class="column is-2 aside hero is-fullheight is-hidden-mobile">
+            <div>
+                <div class="main">
+                <div class="title">Menu</div>
+                <a href="/" class="item"><span class="icon"><i class="fa fa-home"></i></span><span class="name">Dashboard</span></a>
+                <a href="/products" class="item"><span class="icon"><i class="fa fa-briefcase"></i></span><span class="name">Products</span></a>
+                <a href="/orders" class="item"><span class="icon"><i class="fa fa-th-list"></i></span><span class="name">Orders</span></a>
+                </div>
+            </div>
+        </aside>
+        <div class="column is-10 admin-panel">
+            <nav class="nav has-shadow" id="top">
+                <div class="container">
+                    <div class="nav-left">
+                        <a class="nav-item" href="../index.html">
+                        <img src="/static/images/logo.png" alt="Description">Dairycart</a>
+                    </div>
+                    <!--
+                        I don't know what this section accomplishes, but I'm too afraid to delete it
+                    -->
+                    <div class="nav-right nav-menu is-hidden-tablet">
+                        <a href="#" class="nav-item is-active">Dashboard</a>
+                        <a href="/products" class="nav-item">Products</a>
+                        <a href="#" class="nav-item">Orders</a>
+                    </div>
+                </div>
+            </nav>
+
+            {{template "body"}}
+
+        </div>
+    </div>
+    </div>
+    <script async type="text/javascript" src="../js/bulma.js"></script>
+    <script type="text/javascript" src="../demo/jquery.js"></script>
+    <script type="text/javascript" src="../demo/raphael.min.js"></script>
+    <script type="text/javascript" src="../demo/morris.js"></script>
+    <script type="text/javascript" src="../demo/admin.js"></script>
     </body>
-    <script type="text/javascript" src="/static/js/app.js"></script>
 </html>
 {{end}}
