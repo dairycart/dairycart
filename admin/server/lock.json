@@ -1,0 +1,13 @@
+{
+    "memo": "f4646ac18147d1be2a1bb06bcdfdda86431d31d28511fc1b41d5dbfbc61e1060",
+    "projects": [
+        {
+            "name": "github.com/go-chi/chi",
+            "version": "v3.1.5",
+            "revision": "25354a53cca531cb2efd3f1d3c565d90ff04d802",
+            "packages": [
+                "."
+            ]
+        }
+    ]
+}
