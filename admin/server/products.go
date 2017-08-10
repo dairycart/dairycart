@@ -8,11 +8,6 @@ import (
 	"time"
 )
 
-func subset(ps []Product, start, end int) []Product {
-	log.Printf("subset called with start: %d, end: %d\n", start, end)
-	return ps[start:end]
-}
-
 // Product describes something a user can buy
 type Product struct {
 	ID          uint64    `json:"id"`
@@ -27,6 +22,39 @@ type Product struct {
 type ProductsPage struct {
 	Page
 	ProductChunks [][]Product
+}
+
+type ProductPage struct {
+	Page
+	Product Product
+}
+
+func serveProduct(w http.ResponseWriter, r *http.Request) {
+	p := &ProductPage{
+		Page: Page{Title: "Products"},
+		Product: Product{
+			ID:        1,
+			CreatedOn: time.Now(),
+			Name:      "Farts",
+			Price:     123.45,
+			Quantity:  321,
+		},
+	}
+
+	baseTemplatePath := filepath.Join(templateDir, "base.html")
+	innerTemplatePath := filepath.Join(templateDir, "product.html")
+
+	tmpl, err := template.ParseFiles(baseTemplatePath, innerTemplatePath)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	if err := tmpl.ExecuteTemplate(w, "base", p); err != nil {
+		log.Println(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
 }
 
 func serveProducts(w http.ResponseWriter, r *http.Request) {
@@ -63,6 +91,14 @@ func serveProducts(w http.ResponseWriter, r *http.Request) {
 					Price:     12.34,
 					Quantity:  666,
 				},
+				{
+
+					ID:        5,
+					CreatedOn: time.Now(),
+					Name:      "Farts",
+					Price:     123.45,
+					Quantity:  321,
+				},
 			},
 			{
 				{
@@ -94,17 +130,12 @@ func serveProducts(w http.ResponseWriter, r *http.Request) {
 	baseTemplatePath := filepath.Join(templateDir, "base.html")
 	innerTemplatePath := filepath.Join(templateDir, "products.html")
 
-	fm := template.FuncMap{
-		"subset": subset,
-	}
-
 	tmpl, err := template.ParseFiles(baseTemplatePath, innerTemplatePath)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	tmpl = tmpl.Funcs(fm)
 
 	if err := tmpl.ExecuteTemplate(w, "base", p); err != nil {
 		log.Println(err)

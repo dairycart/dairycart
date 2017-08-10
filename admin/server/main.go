@@ -63,5 +63,8 @@ func main() {
 	FileServer(r, "/static/", http.Dir(staticDir))
 	r.Get("/", serveDashboard)
 	r.Get("/products", serveProducts)
+	r.Get("/products/{sku}", serveProduct)
+	r.Get("/orders", serveOrders)
+	r.Get("/order/{orderID}", serveOrder)
 	http.ListenAndServe(":3000", r)
 }
