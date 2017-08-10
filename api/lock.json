@@ -1,10 +1,18 @@
 {
-    "memo": "49145d037d18d071115ef1c9c3ff5a1674771ba4a9b86c135b88fe8eb5ab128e",
+    "memo": "ac7daa868972f92b00b2238c57d2771e0918106dbefbdb560d8bc37d03c4a4bf",
     "projects": [
         {
             "name": "github.com/Masterminds/squirrel",
             "branch": "v1",
             "revision": "20f192218cf52a73397fa2df45bdda720f3e47c8",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/asaskevich/govalidator",
+            "version": "v6",
+            "revision": "4918b99a7cb949bb295f3c7bbaf24b577d806e35",
             "packages": [
                 "."
             ]
@@ -37,23 +45,6 @@
             "name": "github.com/go-chi/chi",
             "version": "v3.0.0",
             "revision": "967844826e58cf31213a7dfb82455d242ad85101",
-            "packages": [
-                "."
-            ]
-        },
-        {
-            "name": "github.com/go-playground/locales",
-            "version": "v0.11.1",
-            "revision": "b860c92274dfb72f517b8b4c11c6d9f2f8cc9d91",
-            "packages": [
-                ".",
-                "currency"
-            ]
-        },
-        {
-            "name": "github.com/go-playground/universal-translator",
-            "version": "v0.16.0",
-            "revision": "b32fa301c9fe55953584134cb6853a13c87ec0a1",
             "packages": [
                 "."
             ]
@@ -189,14 +180,6 @@
             "name": "gopkg.in/DATA-DOG/go-sqlmock.v1",
             "version": "v1.2.0",
             "revision": "b983233bc0bbea4dc6e8ec8c8c923d935765ffec",
-            "packages": [
-                "."
-            ]
-        },
-        {
-            "name": "gopkg.in/go-playground/validator.v9",
-            "version": "v9.4.0",
-            "revision": "fb68f39656d7ebf8aa339ad4917aa0c260ecc237",
             "packages": [
                 "."
             ]

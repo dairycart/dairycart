@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"time"
 
-	validator "gopkg.in/go-playground/validator.v9"
+	validator "github.com/asaskevich/govalidator"
 
 	"github.com/fatih/structs"
 	"github.com/jmoiron/sqlx"
@@ -239,10 +239,9 @@ func validateRequestInput(req *http.Request, output interface{}) error {
 		return errors.New("Invalid input provided in request body")
 	}
 
-	validate := validator.New()
-	err = validate.Struct(output)
+	_, err = validator.ValidateStruct(output)
 	if err != nil {
-		return err
+		return errors.New("invalid request input")
 	}
 
 	return err
