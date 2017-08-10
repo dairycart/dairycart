@@ -209,13 +209,13 @@ func TestProductUpdateRoute(t *testing.T) {
 
 		body := turnResponseBodyIntoString(t, resp)
 		actual := cleanAPIResponseBody(body)
-		expected := minifyJSON(t, `
+		expected := minifyJSON(t, fmt.Sprintf(`
 			{
 				"name": "New Product",
 				"subtitle": "this is a product",
 				"description": "this product is neat or maybe its not who really knows for sure?",
 				"option_summary": "",
-				"sku": "test-product-updating",
+				"sku": "%s",
 				"upc": "",
 				"manufacturer": "Manufacturer",
 				"brand": "Brand",
@@ -235,7 +235,7 @@ func TestProductUpdateRoute(t *testing.T) {
 				"package_width": 9,
 				"package_length": 9
 			}
-		`)
+		`, testSKU))
 		assert.Equal(t, expected, actual, "product response upon update should reflect the updated fields")
 	}
 

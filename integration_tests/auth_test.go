@@ -71,7 +71,7 @@ func TestUserCreationWithInvalidPassword(t *testing.T) {
 	assertStatusCode(t, resp, http.StatusBadRequest)
 
 	// FIXME: this error response isn't super optimal
-	expected := `{"status":400,"message":"Key: 'UserCreationInput.Password' Error:Field validation for 'Password' failed on the 'gte' tag"}`
+	expected := `{"status":400,"message":"invalid request input"}`
 	actual := turnResponseBodyIntoString(t, resp)
 	assert.Equal(t, expected, actual, "response to invalid password should equal expectation")
 }

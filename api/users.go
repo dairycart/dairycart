@@ -71,11 +71,11 @@ type DisplayUser struct {
 
 // UserCreationInput represents the payload used to create a Dairycart user
 type UserCreationInput struct {
-	FirstName string `json:"first_name" validate:"required"`
-	LastName  string `json:"last_name"  validate:"required"`
-	Username  string `json:"username"   validate:"required"`
-	Email     string `json:"email"      validate:"required,email"`
-	Password  string `json:"password"   validate:"required,gte=64"`
+	FirstName string `json:"first_name" valid:"required"`
+	LastName  string `json:"last_name"  valid:"required"`
+	Username  string `json:"username"   valid:"required"`
+	Email     string `json:"email"      valid:"required,email"`
+	Password  string `json:"password"   valid:"required,length(64|8192)"`
 	IsAdmin   bool   `json:"is_admin"`
 }
 
@@ -87,12 +87,12 @@ type UserLoginInput struct {
 
 // UserUpdateInput represents the payload used to update a Dairycart user
 type UserUpdateInput struct {
-	FirstName       string `json:"first_name"       validate:"omitempty"`
-	LastName        string `json:"last_name"        validate:"omitempty"`
-	Username        string `json:"username"         validate:"omitempty"`
-	Email           string `json:"email"            validate:"omitempty,email"`
-	CurrentPassword string `json:"current_password" validate:"required,gte=64"`
-	NewPassword     string `json:"new_password"     validate:"omitempty,gte=64"`
+	FirstName       string `json:"first_name"`
+	LastName        string `json:"last_name"`
+	Username        string `json:"username"`
+	Email           string `json:"email"            valid:"email,optional"`
+	CurrentPassword string `json:"current_password" valid:"required,length(64|8192)"`
+	NewPassword     string `json:"new_password"     valid:"length(64|8192),optional"`
 }
 
 func validateSessionCookieMiddleware(res http.ResponseWriter, req *http.Request, store *sessions.CookieStore, next http.HandlerFunc) {
