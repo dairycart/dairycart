@@ -1,18 +1,21 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 )
 
 const (
-	templateDir = "../templates"
-	staticDir   = "../dist"
+	templateDir = "templates"
+	staticDir   = "dist"
 )
 
 type Page struct {
@@ -60,11 +63,20 @@ func serveDashboard(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	r := chi.NewRouter()
+
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{Logger: log.New(os.Stdout, "", log.LstdFlags)}))
+
 	FileServer(r, "/static/", http.Dir(staticDir))
 	r.Get("/", serveDashboard)
 	r.Get("/products", serveProducts)
 	r.Get("/products/{sku}", serveProduct)
 	r.Get("/orders", serveOrders)
 	r.Get("/order/{orderID}", serveOrder)
-	http.ListenAndServe(":3000", r)
+
+	port := 80
+	log.Printf("server is listening on port %d\n", port)
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), r); err != nil {
+		log.Fatal(err)
+	}
 }
