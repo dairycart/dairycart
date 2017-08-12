@@ -1,17 +1,18 @@
 # sass stage
-FROM ruby:latest AS sass-stage
+# FROM ruby:latest AS sass-stage
+FROM jbergknoff/sass AS sass-stage
 
-RUN gem install sass
+# RUN gem install sass
 ADD src .
 RUN sass sass/*.sass app.css
 
 # typescript stage
-# FROM node:latest AS typescript-stage
-FROM sandrokeil/typescript:latest as typescript-stage
+FROM sandrokeil/typescript:latest AS typescript-stage
 
 ADD src .
-# RUN npm install -g typescript
-RUN tsc typescript/*.ts --outFile app.js
+RUN tsc typescript/*.ts --outFile /app.js
+
+RUN ls
 
 # build stage
 FROM golang:alpine AS build-stage
@@ -24,13 +25,12 @@ RUN go build -o /admin-server
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 
-COPY templates/ /templates
-COPY /dist/vendor /dist/vendor
-COPY /dist/images /dist/images
+ADD templates/ /templates
+ADD /dist/vendor /dist/vendor
+ADD /dist/images /dist/images
 
 COPY --from=sass-stage /app.css /dist/css/app.css
 COPY --from=typescript-stage /app.js /dist/js/app.js
-
 COPY --from=build-stage /admin-server /admin-server
 
 ENTRYPOINT ["/admin-server"]

@@ -17,6 +17,7 @@ type Product struct {
 	SKU         string    `json:"sku"`
 	Quantity    uint32    `json:"quantity"`
 	Price       float32   `json:"price"`
+	MainImage   string    `json:"main_image"`
 }
 
 type ProductsPage struct {
@@ -69,6 +70,7 @@ func serveProducts(w http.ResponseWriter, r *http.Request) {
 					Name:      "Farts",
 					Price:     123.45,
 					Quantity:  321,
+					MainImage: "https://placehold.it/1280x960",
 				},
 				{
 					ID:        2,
@@ -76,6 +78,7 @@ func serveProducts(w http.ResponseWriter, r *http.Request) {
 					Name:      "Butts",
 					Price:     43.21,
 					Quantity:  420,
+					MainImage: "https://placehold.it/1280x960",
 				},
 				{
 					ID:        3,
@@ -83,6 +86,7 @@ func serveProducts(w http.ResponseWriter, r *http.Request) {
 					Name:      "Dongs",
 					Price:     12.34,
 					Quantity:  666,
+					MainImage: "https://placehold.it/1280x960",
 				},
 				{
 					ID:        4,
@@ -90,6 +94,7 @@ func serveProducts(w http.ResponseWriter, r *http.Request) {
 					Name:      "Shit",
 					Price:     12.34,
 					Quantity:  666,
+					MainImage: "https://placehold.it/1280x960",
 				},
 				{
 
@@ -98,6 +103,7 @@ func serveProducts(w http.ResponseWriter, r *http.Request) {
 					Name:      "Farts",
 					Price:     123.45,
 					Quantity:  321,
+					MainImage: "https://placehold.it/1280x960",
 				},
 			},
 			{
@@ -108,6 +114,7 @@ func serveProducts(w http.ResponseWriter, r *http.Request) {
 					Name:      "Farts",
 					Price:     123.45,
 					Quantity:  321,
+					MainImage: "https://placehold.it/1280x960",
 				},
 				{
 					ID:        2,
@@ -115,6 +122,7 @@ func serveProducts(w http.ResponseWriter, r *http.Request) {
 					Name:      "Butts",
 					Price:     43.21,
 					Quantity:  420,
+					MainImage: "https://placehold.it/1280x960",
 				},
 				{
 					ID:        3,

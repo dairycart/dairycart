@@ -3,7 +3,7 @@ version: '3.2'
 services:
   dairycart:
     build:
-      context: api
+      context: .
       dockerfile: Dockerfile
     ports:
       - '4321:4321'
