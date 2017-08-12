@@ -74,7 +74,7 @@ func main() {
 	r.Get("/orders", serveOrders)
 	r.Get("/order/{orderID}", serveOrder)
 
-	port := 80
+	port := 1234
 	log.Printf("server is listening on port %d\n", port)
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), r); err != nil {
 		log.Fatal(err)

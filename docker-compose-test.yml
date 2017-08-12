@@ -6,7 +6,7 @@ services:
       context: api
       dockerfile: Dockerfile
     ports:
-      - '8080:80'
+      - '4321:4321'
     depends_on:
       - database
     links:
@@ -24,6 +24,7 @@ services:
     links:
       - dairycart
     environment:
+      INTEGRATION_API_URL: http://dairycart:4321
       DAIRYCART_DB_URL: postgres://dairytest:hunter2@database:5432/dairytest?sslmode=disable
   database:
     image: postgres:alpine

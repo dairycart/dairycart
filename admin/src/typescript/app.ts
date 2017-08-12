@@ -5,3 +5,5 @@ let fb: any = document.
 function sayHello(): void {
     console.log('hello, there');
 }
+
+alert("hola!");

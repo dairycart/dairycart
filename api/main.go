@@ -7,6 +7,7 @@ import (
 
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -14,17 +15,22 @@ import (
 
 	// dependencies
 	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
 	"github.com/mattes/migrate"
 	migratePG "github.com/mattes/migrate/database/postgres"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 
 	// unnamed dependencies
 	_ "github.com/lib/pq"
 	_ "github.com/mattes/migrate/source/file"
+)
+
+const (
+	maxConnectionAttempts = 25
 )
 
 func determineMigrationCount() int {
@@ -49,12 +55,18 @@ func determineMigrationCount() int {
 
 // this function not only waits for the database to accept its incoming connection, but also performs any necessary migrations
 func migrateDatabase(db *sqlx.DB, migrationCount int) {
+	numberOfUnsuccessfulAttempts := 0
 	databaseIsNotMigrated := true
 	for databaseIsNotMigrated {
 		driver, err := migratePG.WithInstance(db.DB, &migratePG.Config{})
 		if err != nil {
 			log.Printf("waiting half a second for the database")
 			time.Sleep(500 * time.Millisecond)
+			numberOfUnsuccessfulAttempts++
+
+			if numberOfUnsuccessfulAttempts == maxConnectionAttempts {
+				log.Fatal("Failed to connect to the database")
+			}
 		} else {
 			migrationsDir := os.Getenv("DAIRYCART_MIGRATIONS_DIR")
 			m, err := migrate.NewWithDatabaseInstance(migrationsDir, "postgres", driver)
@@ -75,14 +87,14 @@ func migrateDatabase(db *sqlx.DB, migrationCount int) {
 }
 
 func main() {
-	log.SetOutput(os.Stdout)
-	log.SetLevel(log.InfoLevel)
+	logrus.SetOutput(os.Stdout)
+	logrus.SetLevel(logrus.InfoLevel)
 
 	// Connect to the database
 	dbURL := os.Getenv("DAIRYCART_DB_URL")
 	db, err := sqlx.Open("postgres", dbURL)
 	if err != nil {
-		log.Fatalf("error encountered connecting to database: %v", err)
+		logrus.Fatalf("error encountered connecting to database: %v", err)
 	}
 	db.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
 
@@ -92,16 +104,21 @@ func main() {
 
 	secret := os.Getenv("DAIRYSECRET")
 	if len(secret) < 32 {
-		log.Fatalf("Something is up with your app secret: `%s`", secret)
+		logrus.Fatalf("Something is up with your app secret: `%s`", secret)
 	}
 	store := sessions.NewCookieStore([]byte(secret))
 
 	v1APIRouter := chi.NewRouter()
+
+	v1APIRouter.Use(middleware.RequestID)
+	v1APIRouter.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{Logger: log.New(os.Stdout, "", log.LstdFlags)}))
+
 	SetupAPIRoutes(v1APIRouter, db, store)
 
 	// serve 'em up a lil' sauce
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "👍") })
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "healthy!") })
+
 	http.Handle("/", context.ClearHandler(v1APIRouter))
-	log.Println("Dairycart now listening for requests")
-	http.ListenAndServe(":80", nil)
+	log.Println("API now listening for requests")
+	http.ListenAndServe(":4321", nil)
 }
