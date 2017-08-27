@@ -26,5 +26,4 @@ _testmain.go
 dairycart
 .idea
 coverage.out
-api/test_app.rsa
-api/test_app.rsa.pub
+.DS_STORE

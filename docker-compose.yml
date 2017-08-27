@@ -20,7 +20,6 @@ services:
     links:
       - database
     environment:
-      - VIRTUAL_HOST=api.dairycart.com
       - DAIRYCART_MIGRATIONS_DIR=file:///migrations
       - DAIRYCART_DB_URL=postgres://dairycart:hunter2@database:5432/dairycart?sslmode=disable
 
@@ -36,13 +35,3 @@ services:
       - api
     depends_on:
       - api
-
-  # nginx-proxy:
-  #   image: jwilder/nginx-proxy:latest
-  #   container_name: nginx-proxy
-  #   ports:
-  #     - "80:80"
-  #   volumes:
-  #     - /var/run/docker.sock:/tmp/docker.sock:ro
-  #   depends_on:
-  #     - admin

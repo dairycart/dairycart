@@ -61,6 +61,41 @@ func serveDashboard(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func serveLogin(w http.ResponseWriter, r *http.Request) {
+	p := &Page{Title: "Login"}
+	lp := filepath.Join(templateDir, "login.html")
+
+	tmpl, err := template.ParseFiles(lp)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	if err := tmpl.ExecuteTemplate(w, "login.html", p); err != nil {
+		log.Println(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
+}
+
+// HTTP middleware setting a value on the request context
+func cookieMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		cookies := req.Cookies()
+		if len(cookies) == 0 {
+			http.Redirect(res, req, "/login", http.StatusTemporaryRedirect)
+		}
+
+		for _, c := range cookies {
+			if c.Name == "dairycart" {
+				next.ServeHTTP(res, req)
+				return
+			}
+		}
+		http.Redirect(res, req, "/login", http.StatusTemporaryRedirect)
+	})
+}
+
 func main() {
 	r := chi.NewRouter()
 
@@ -68,15 +103,17 @@ func main() {
 	r.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{Logger: log.New(os.Stdout, "", log.LstdFlags)}))
 
 	FileServer(r, "/static/", http.Dir(staticDir))
-	r.Get("/", serveDashboard)
-	r.Get("/products", serveProducts)
-	r.Get("/products/{sku}", serveProduct)
-	r.Get("/orders", serveOrders)
-	r.Get("/order/{orderID}", serveOrder)
+	r.Get("/login", serveLogin)
+	r.Route("/", func(r chi.Router) {
+		r.Use(cookieMiddleware)
+		r.Get("/", serveDashboard)
+		r.Get("/products", serveProducts)
+		r.Get("/products/{sku}", serveProduct)
+		r.Get("/orders", serveOrders)
+		r.Get("/order/{orderID}", serveOrder)
+	})
 
 	port := 1234
 	log.Printf("server is listening on port %d\n", port)
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), r); err != nil {
-		log.Fatal(err)
-	}
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), r))
 }
