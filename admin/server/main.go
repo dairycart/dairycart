@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,8 +15,14 @@ import (
 )
 
 const (
+	cookieName  = "dairycart"
 	templateDir = "templates"
 	staticDir   = "dist"
+)
+
+var (
+	apiURL string
+	debug  bool
 )
 
 type Page struct {
@@ -87,7 +94,7 @@ func cookieMiddleware(next http.Handler) http.Handler {
 		}
 
 		for _, c := range cookies {
-			if c.Name == "dairycart" {
+			if c.Name == cookieName {
 				next.ServeHTTP(res, req)
 				return
 			}
@@ -97,8 +104,24 @@ func cookieMiddleware(next http.Handler) http.Handler {
 }
 
 func main() {
-	r := chi.NewRouter()
+	debug = strings.ToLower(os.Getenv("DEBUG")) == "true"
+	apiURL = os.Getenv("DAIRYCART_API_URL")
+	if apiURL == "" {
+		log.Fatal("DAIRYCART_API_URL is not set")
+	}
 
+	log.Printf(`
+
+		apiURL: %s
+
+	`, apiURL)
+
+	_, err := url.Parse(apiURL)
+	if err != nil {
+		log.Fatalf("DAIRYCART_API_URL is invalid: %v", err)
+	}
+
+	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{Logger: log.New(os.Stdout, "", log.LstdFlags)}))
 
@@ -108,7 +131,7 @@ func main() {
 		r.Use(cookieMiddleware)
 		r.Get("/", serveDashboard)
 		r.Get("/products", serveProducts)
-		r.Get("/products/{sku}", serveProduct)
+		r.Get("/product/{sku}", serveProduct)
 		r.Get("/orders", serveOrders)
 		r.Get("/order/{orderID}", serveOrder)
 	})

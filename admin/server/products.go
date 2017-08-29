@@ -5,41 +5,43 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
-	"time"
+
+	"github.com/go-chi/chi"
+
+	"github.com/dairycart/dairyclient/v1"
 )
 
-// Product describes something a user can buy
-type Product struct {
-	ID          uint64    `json:"id"`
-	CreatedOn   time.Time `json:"created_on"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	SKU         string    `json:"sku"`
-	Quantity    uint32    `json:"quantity"`
-	Price       float32   `json:"price"`
-	MainImage   string    `json:"main_image"`
-}
+const (
+	maxGallerySize = 5
+)
 
 type ProductsPage struct {
 	Page
-	ProductChunks [][]Product
+	ProductChunks [][]dairyclient.Product
 }
 
 type ProductPage struct {
 	Page
-	Product Product
+	Product *dairyclient.Product
 }
 
-func serveProduct(w http.ResponseWriter, r *http.Request) {
+func serveProduct(res http.ResponseWriter, req *http.Request) {
+	sku := chi.URLParam(req, "sku")
+	dairyClient, err := buildClientFromRequest(res, req)
+	if err != nil {
+		return
+	}
+
+	product, err := dairyClient.GetProduct(sku)
+	if err != nil {
+		log.Println(err)
+		http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
 	p := &ProductPage{
-		Page: Page{Title: "Products"},
-		Product: Product{
-			ID:        1,
-			CreatedOn: time.Now(),
-			Name:      "Farts",
-			Price:     123.45,
-			Quantity:  321,
-		},
+		Page:    Page{Title: "Products"},
+		Product: product,
 	}
 
 	baseTemplatePath := filepath.Join(templateDir, "base.html")
@@ -48,91 +50,50 @@ func serveProduct(w http.ResponseWriter, r *http.Request) {
 	tmpl, err := template.ParseFiles(baseTemplatePath, innerTemplatePath)
 	if err != nil {
 		log.Println(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	if err := tmpl.ExecuteTemplate(w, "base", p); err != nil {
+	if err := tmpl.ExecuteTemplate(res, "base", p); err != nil {
 		log.Println(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
 	}
 }
 
-func serveProducts(w http.ResponseWriter, r *http.Request) {
+func splitProducts(in []dairyclient.Product) [][]dairyclient.Product {
+	var out [][]dairyclient.Product
+
+	x := []dairyclient.Product{}
+	for i, p := range in {
+		if i%maxGallerySize == 0 {
+			out = append(out, x)
+			x = []dairyclient.Product{}
+		}
+		x = append(x, p)
+	}
+	out = append(out, x)
+	return out
+}
+
+func serveProducts(res http.ResponseWriter, req *http.Request) {
+	dairyClient, err := buildClientFromRequest(res, req)
+	if err != nil {
+		// TODO: this pattern is bad and you should feel bad
+		return
+	}
+
+	products, err := dairyClient.GetProducts(nil)
+	if err != nil {
+		log.Printf("error encountered retrieving products with the dairyclient: %v\n", err)
+		http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	productChunks := splitProducts(products)
+
 	p := &ProductsPage{
-		Page: Page{Title: "Products"},
-		ProductChunks: [][]Product{
-			{
-				{
-
-					ID:        1,
-					CreatedOn: time.Now(),
-					Name:      "Farts",
-					Price:     123.45,
-					Quantity:  321,
-					MainImage: "https://placehold.it/1280x960",
-				},
-				{
-					ID:        2,
-					CreatedOn: time.Now(),
-					Name:      "Butts",
-					Price:     43.21,
-					Quantity:  420,
-					MainImage: "https://placehold.it/1280x960",
-				},
-				{
-					ID:        3,
-					CreatedOn: time.Now(),
-					Name:      "Dongs",
-					Price:     12.34,
-					Quantity:  666,
-					MainImage: "https://placehold.it/1280x960",
-				},
-				{
-					ID:        4,
-					CreatedOn: time.Now(),
-					Name:      "Shit",
-					Price:     12.34,
-					Quantity:  666,
-					MainImage: "https://placehold.it/1280x960",
-				},
-				{
-
-					ID:        5,
-					CreatedOn: time.Now(),
-					Name:      "Farts",
-					Price:     123.45,
-					Quantity:  321,
-					MainImage: "https://placehold.it/1280x960",
-				},
-			},
-			{
-				{
-
-					ID:        1,
-					CreatedOn: time.Now(),
-					Name:      "Farts",
-					Price:     123.45,
-					Quantity:  321,
-					MainImage: "https://placehold.it/1280x960",
-				},
-				{
-					ID:        2,
-					CreatedOn: time.Now(),
-					Name:      "Butts",
-					Price:     43.21,
-					Quantity:  420,
-					MainImage: "https://placehold.it/1280x960",
-				},
-				{
-					ID:        3,
-					CreatedOn: time.Now(),
-					Name:      "Dongs",
-					Price:     12.34,
-					Quantity:  666,
-				},
-			},
-		},
+		Page:          Page{Title: "Products"},
+		ProductChunks: productChunks,
 	}
 
 	baseTemplatePath := filepath.Join(templateDir, "base.html")
@@ -141,12 +102,13 @@ func serveProducts(w http.ResponseWriter, r *http.Request) {
 	tmpl, err := template.ParseFiles(baseTemplatePath, innerTemplatePath)
 	if err != nil {
 		log.Println(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	if err := tmpl.ExecuteTemplate(w, "base", p); err != nil {
+	if err := tmpl.ExecuteTemplate(res, "base", p); err != nil {
 		log.Println(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
 	}
 }

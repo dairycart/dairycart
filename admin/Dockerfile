@@ -29,6 +29,4 @@ COPY --from=sass-stage /app.css /dist/css/app.css
 COPY --from=typescript-stage /app.js /dist/js/app.js
 COPY --from=build-stage /admin-server /admin-server
 
-EXPOSE 80:1234
-
 ENTRYPOINT ["/admin-server"]
