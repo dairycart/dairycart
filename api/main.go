@@ -4,7 +4,7 @@ package main
 
 import (
 	// stdlib
-
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -119,6 +119,7 @@ func main() {
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "healthy!") })
 
 	http.Handle("/", context.ClearHandler(v1APIRouter))
-	log.Println("API now listening for requests")
-	http.ListenAndServe(":4321", nil)
+	port := 80
+	log.Printf("API now listening for requests on port %d\n", port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }

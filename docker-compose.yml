@@ -11,12 +11,12 @@ services:
     logging:
       driver: none
 
-  dairyapi.com:
+  api:
     build:
       context: api
       dockerfile: Dockerfile
     ports:
-      - '4321:4321'
+      - '80:80'
     depends_on:
       - database
     links:
@@ -32,8 +32,8 @@ services:
     ports:
       - '1234:1234'
     links:
-      - dairyapi.com
+      - api
     depends_on:
-      - dairyapi.com
+      - api
     environment:
-      - DAIRYCART_API_URL="http://dairyapi.com"
+      - DAIRYCART_API_URL=http://api

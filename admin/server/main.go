@@ -118,7 +118,7 @@ func main() {
 
 	_, err := url.Parse(apiURL)
 	if err != nil {
-		log.Fatalf("DAIRYCART_API_URL is invalid: %v", err)
+		log.Fatalf("DAIRYCART_API_URL (%s) is invalid: %v", apiURL, err)
 	}
 
 	r := chi.NewRouter()
