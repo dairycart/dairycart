@@ -1,7 +1,7 @@
 version: '3.2'
 
 services:
-  dairycart:
+  api:
     build:
       context: .
       dockerfile: Dockerfile
@@ -22,9 +22,9 @@ services:
       context: integration_tests
       dockerfile: Dockerfile
     links:
-      - dairycart
+      - api
     environment:
-      INTEGRATION_API_URL: http://dairycart:4321
+      INTEGRATION_API_URL: http://api
       DAIRYCART_DB_URL: postgres://dairytest:hunter2@database:5432/dairytest?sslmode=disable
   database:
     image: postgres:alpine
