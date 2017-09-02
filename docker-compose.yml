@@ -1,10 +1,17 @@
-version: '3.2'
+version: "3.2"
 
 services:
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+
   database:
     image: postgres:alpine
     ports:
-    - '2345:5432'
+    - "2345:5432"
     environment:
       - POSTGRES_USER=dairycart
       - POSTGRES_PASSWORD=hunter2
@@ -16,12 +23,13 @@ services:
       context: api
       dockerfile: Dockerfile
     ports:
-      - '80:80'
+      - "4321:4321"
     depends_on:
       - database
     links:
       - database
     environment:
+      - VIRTUAL_HOST=api.dairycart.com
       - DAIRYCART_MIGRATIONS_DIR=file:///migrations
       - DAIRYCART_DB_URL=postgres://dairycart:hunter2@database:5432/dairycart?sslmode=disable
 
@@ -30,10 +38,11 @@ services:
       context: admin
       dockerfile: Dockerfile
     ports:
-      - '1234:1234'
+      - "1234:1234"
     links:
       - api
     depends_on:
       - api
     environment:
-      - DAIRYCART_API_URL=http://api
+      - VIRTUAL_HOST=admin.dairycart.com
+      - DAIRYCART_API_URL=http://api:4321
