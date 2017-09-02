@@ -15,9 +15,9 @@ const (
 	functionNamePattern  = `Test[a-zA-Z]+`
 
 	// This tool should be run from two directories up.
-	testsFolder          = "integration_tests"
-	checklistFilePath    = "integration_tests/README.md"
-	newChecklistFilePath = "integration_tests/README_linked.md"
+	testsFolder          = "api/integration_tests"
+	checklistFilePath    = "api/integration_tests/README.md"
+	newChecklistFilePath = "api/integration_tests/README_linked.md"
 )
 
 type result struct {

@@ -1,0 +1,43 @@
+{{define "body"}}
+    <section class="hero is-small">
+        <div class="hero-body">
+            <div class="container">
+                <h1 class="title">Manage Products</h1>
+            </div>
+        </div>
+    </section>
+
+    {{range .ProductChunks}}
+        <div class="columns">
+            {{range .}}
+                <div class="column">
+                    <div class="card">
+                        <header class="card-header">
+                            <a href="/product/{{.SKU}}"><p class="card-header-title">{{.Name}}</p></a>
+                        </header>
+                        <div class="card-image">
+                            <figure class="image is-4by3">
+                                <img src="https://placehold.it/1280x960">
+                            </figure>
+                        </div>
+                        <div class="card-content">
+                            <div class="panel-block-item">
+                                <span class="">
+                                    <span class="icon">
+                                        <i class="fa fa-money"></i>
+                                    </span>
+                                    ${{.Price}}
+                                </span>
+                                <!--
+                                <span class="is-pulled-right">
+                                    <span class="icon"><i class="fa fa-info"></i></span>{{.Quantity}} in stock
+                                </span>
+                                -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {{end}}
+        </div>
+    {{end}}
+{{end}}

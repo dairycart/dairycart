@@ -1,0 +1,37 @@
+version: "3.2"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "4321:4321"
+    depends_on:
+      - database
+    links:
+      - database
+    environment:
+      MIGRATE_EXAMPLE_DATA: "YES"
+      DAIRYCART_MIGRATIONS_DIR: "file:///migrations"
+      DAIRYCART_DB_URL: postgres://dairytest:hunter2@database:5432/dairytest?sslmode=disable
+    logging:
+      driver: "none"
+  test:
+    build:
+      context: integration_tests
+      dockerfile: Dockerfile
+    links:
+      - api
+    environment:
+      INTEGRATION_API_URL: http://api:4321
+      DAIRYCART_DB_URL: postgres://dairytest:hunter2@database:5432/dairytest?sslmode=disable
+  database:
+    image: postgres:alpine
+    ports:
+    - "2345:5432"
+    environment:
+      POSTGRES_USER: dairytest
+      POSTGRES_PASSWORD: hunter2
+    logging:
+      driver: "none"
