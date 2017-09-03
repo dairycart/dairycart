@@ -23,17 +23,17 @@ const (
 type Product struct {
 	DBRow
 	// Basic Info
-	ProductRootID      uint64     `json:"product_root_id"`
-	Name               string     `json:"name"`
-	Subtitle           NullString `json:"subtitle"`
-	Description        string     `json:"description"`
-	OptionSummary      string     `json:"option_summary"`
-	SKU                string     `json:"sku"`
-	UPC                NullString `json:"upc"`
-	Manufacturer       NullString `json:"manufacturer"`
-	Brand              NullString `json:"brand"`
-	Quantity           uint32     `json:"quantity"`
-	QuantityPerPackage uint32     `json:"quantity_per_package"`
+	ProductRootID      uint64 `json:"product_root_id"`
+	Name               string `json:"name"`
+	Subtitle           string `json:"subtitle"`
+	Description        string `json:"description"`
+	OptionSummary      string `json:"option_summary"`
+	SKU                string `json:"sku"`
+	UPC                string `json:"upc"`
+	Manufacturer       string `json:"manufacturer"`
+	Brand              string `json:"brand"`
+	Quantity           uint32 `json:"quantity"`
+	QuantityPerPackage uint32 `json:"quantity_per_package"`
 
 	// Pricing Fields
 	Taxable   bool    `json:"taxable"`
@@ -63,12 +63,12 @@ type Product struct {
 func newProductFromCreationInput(in *ProductCreationInput) *Product {
 	np := &Product{
 		Name:               in.Name,
-		Subtitle:           NullString{sql.NullString{String: in.Subtitle, Valid: true}},
+		Subtitle:           in.Subtitle,
 		Description:        in.Description,
 		SKU:                in.SKU,
-		UPC:                NullString{sql.NullString{String: in.UPC, Valid: true}},
-		Manufacturer:       NullString{sql.NullString{String: in.Manufacturer, Valid: true}},
-		Brand:              NullString{sql.NullString{String: in.Brand, Valid: true}},
+		UPC:                in.UPC,
+		Manufacturer:       in.Manufacturer,
+		Brand:              in.Brand,
 		Quantity:           in.Quantity,
 		QuantityPerPackage: in.QuantityPerPackage,
 		Taxable:            in.Taxable,

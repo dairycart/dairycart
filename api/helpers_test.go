@@ -174,14 +174,6 @@ func assertStatusCode(t *testing.T, testUtil *TestUtil, statusCode int) {
 //                                                   //
 ///////////////////////////////////////////////////////
 
-func TestNullStringMarshalTextReturnsNilIfStringIsInvalid(t *testing.T) {
-	t.Parallel()
-	example := NullString{sql.NullString{String: "test", Valid: false}}
-	alsoNil, err := example.MarshalText()
-	assert.Nil(t, err)
-	assert.Nil(t, alsoNil)
-}
-
 func TestNullTimeMarshalText(t *testing.T) {
 	t.Parallel()
 	expected := []byte(exampleMarshalTimeString)

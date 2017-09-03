@@ -125,11 +125,11 @@ func buildProductRootCreationQuery(r *ProductRoot) (string, []interface{}) {
 		).
 		Values(
 			r.Name,
-			r.Subtitle.String,
+			r.Subtitle,
 			r.Description,
 			r.SKUPrefix,
-			r.Manufacturer.String,
-			r.Brand.String,
+			r.Manufacturer,
+			r.Brand,
 			r.AvailableOn,
 			r.QuantityPerPackage,
 			r.Taxable,
@@ -162,6 +162,7 @@ func getProductCreationColumns() []string {
 		"description",
 		"option_summary",
 		"sku",
+		"upc",
 		"manufacturer",
 		"brand",
 		"quantity",
@@ -301,12 +302,13 @@ func buildProductCreationQuery(p *Product) (string, []interface{}) {
 	values := []interface{}{
 		p.ProductRootID,
 		p.Name,
-		p.Subtitle.String,
+		p.Subtitle,
 		p.Description,
 		p.OptionSummary,
 		p.SKU,
-		p.Manufacturer.String,
-		p.Brand.String,
+		p.UPC,
+		p.Manufacturer,
+		p.Brand,
 		p.Quantity,
 		p.Taxable,
 		p.Price,
@@ -324,11 +326,6 @@ func buildProductCreationQuery(p *Product) (string, []interface{}) {
 		p.QuantityPerPackage,
 		p.AvailableOn,
 		squirrel.Expr("NOW()"),
-	}
-
-	if p.UPC.Valid && p.UPC.String != "" {
-		columns = append(columns, "upc")
-		values = append(values, p.UPC.String)
 	}
 
 	queryBuilder := sqlBuilder.
@@ -350,12 +347,12 @@ func buildMultipleProductCreationQuery(ps []*Product) (string, []interface{}) {
 		values := []interface{}{
 			p.ProductRootID,
 			p.Name,
-			p.Subtitle.String,
+			p.Subtitle,
 			p.Description,
 			p.OptionSummary,
 			p.SKU,
-			p.Manufacturer.String,
-			p.Brand.String,
+			p.Manufacturer,
+			p.Brand,
 			p.Quantity,
 			p.Taxable,
 			p.Price,

@@ -1,13 +1,6 @@
 version: "3.2"
 
 services:
-  nginx-proxy:
-    image: jwilder/nginx-proxy
-    ports:
-      - "80:80"
-    volumes:
-      - /var/run/docker.sock:/tmp/docker.sock:ro
-
   database:
     image: postgres:alpine
     ports:
@@ -15,8 +8,8 @@ services:
     environment:
       - POSTGRES_USER=dairycart
       - POSTGRES_PASSWORD=hunter2
-    logging:
-      driver: none
+    # logging:
+    #   driver: none
 
   api:
     build:
@@ -46,3 +39,12 @@ services:
     environment:
       - VIRTUAL_HOST=admin.dairycart.com
       - DAIRYCART_API_URL=http://api:4321
+
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    ports:
+      - "80:80"
+    depends_on:
+      - admin
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
