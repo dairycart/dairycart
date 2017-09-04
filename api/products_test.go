@@ -89,7 +89,7 @@ func setExpectationsForProductListQuery(mock sqlmock.Sqlmock, p *Product, err er
 		AddRow(exampleProductData...).
 		AddRow(exampleProductData...)
 
-	allProductsRetrievalQuery, _ := buildProductListQuery(defaultQueryFilter)
+	allProductsRetrievalQuery, _ := buildProductListQuery(genereateDefaultQueryFilter())
 	mock.ExpectQuery(formatQueryForSQLMock(allProductsRetrievalQuery)).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
@@ -377,10 +377,10 @@ func TestDeleteProductBySKUReturnsError(t *testing.T) {
 	testUtil.Mock.ExpectBegin()
 	tx, err := testUtil.PlainDB.Begin()
 	assert.Nil(t, err)
-	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU, arbitraryError)
+	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU, generateArbitraryError())
 
 	err = deleteProductBySKU(tx, exampleSKU)
-	assert.Equal(t, err, arbitraryError, "deleteProductBySKU should return errors when it encounters them")
+	assert.Equal(t, err, generateArbitraryError(), "deleteProductBySKU should return errors when it encounters them")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
@@ -499,7 +499,7 @@ func TestProductExistenceHandlerWithExistenceCheckerError(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	setExpectationsForProductExistence(testUtil.Mock, "unreal", false, arbitraryError)
+	setExpectationsForProductExistence(testUtil.Mock, "unreal", false, generateArbitraryError())
 
 	req, err := http.NewRequest("HEAD", "/v1/product/unreal", nil)
 	assert.Nil(t, err)
@@ -571,7 +571,7 @@ func TestProductRetrievalHandlerWithDBError(t *testing.T) {
 		AvailableOn:   generateExampleTimeForTests(),
 	}
 
-	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, arbitraryError)
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), nil)
 	assert.Nil(t, err)
@@ -643,7 +643,7 @@ func TestProductListHandler(t *testing.T) {
 		AvailableOn:   generateExampleTimeForTests(),
 	}
 
-	setExpectationsForRowCount(testUtil.Mock, "products", defaultQueryFilter, 3, nil)
+	setExpectationsForRowCount(testUtil.Mock, "products", genereateDefaultQueryFilter(), 3, nil)
 	setExpectationsForProductListQuery(testUtil.Mock, exampleProduct, nil)
 
 	req, err := http.NewRequest(http.MethodGet, "/v1/products", nil)
@@ -672,7 +672,7 @@ func TestProductListHandlerWithErrorRetrievingCount(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	setExpectationsForRowCount(testUtil.Mock, "products", defaultQueryFilter, 3, arbitraryError)
+	setExpectationsForRowCount(testUtil.Mock, "products", genereateDefaultQueryFilter(), 3, generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodGet, "/v1/products", nil)
 	assert.Nil(t, err)
@@ -709,8 +709,8 @@ func TestProductListHandlerWithDBError(t *testing.T) {
 		AvailableOn:   generateExampleTimeForTests(),
 	}
 
-	setExpectationsForRowCount(testUtil.Mock, "products", defaultQueryFilter, 3, nil)
-	setExpectationsForProductListQuery(testUtil.Mock, exampleProduct, arbitraryError)
+	setExpectationsForRowCount(testUtil.Mock, "products", genereateDefaultQueryFilter(), 3, nil)
+	setExpectationsForProductListQuery(testUtil.Mock, exampleProduct, generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodGet, "/v1/products", nil)
 	assert.Nil(t, err)
@@ -880,7 +880,7 @@ func TestProductUpdateHandlerWithDBErrorRetrievingProduct(t *testing.T) {
 		AvailableOn:   generateExampleTimeForTests(),
 	}
 
-	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, arbitraryError)
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), strings.NewReader(exampleProductUpdateInput))
 	assert.Nil(t, err)
@@ -930,7 +930,7 @@ func TestProductUpdateHandlerWithDBErrorUpdatingProduct(t *testing.T) {
 	}
 
 	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, nil)
-	setExpectationsForProductUpdateHandler(testUtil.Mock, exampleUpdatedProduct, arbitraryError)
+	setExpectationsForProductUpdateHandler(testUtil.Mock, exampleUpdatedProduct, generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), strings.NewReader(exampleProductUpdateInput))
 	assert.Nil(t, err)
@@ -1000,7 +1000,7 @@ func TestProductDeletionHandlerWithErrorRetrievingProduct(t *testing.T) {
 		Name: "Skateboard",
 	}
 
-	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, arbitraryError)
+	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 	assert.Nil(t, err)
@@ -1023,7 +1023,7 @@ func TestProductDeletionHandlerWithErrorBeginningTransaction(t *testing.T) {
 	}
 
 	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, nil)
-	testUtil.Mock.ExpectBegin().WillReturnError(arbitraryError)
+	testUtil.Mock.ExpectBegin().WillReturnError(generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 	assert.Nil(t, err)
@@ -1048,7 +1048,7 @@ func TestProductDeletionHandlerWithErrorEncounteredDeletingProduct(t *testing.T)
 	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, nil)
 	testUtil.Mock.ExpectBegin()
 	setExpectationsForProductValueBridgeEntryDeletion(testUtil.Mock, exampleProduct.ID, nil)
-	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU, arbitraryError)
+	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU, generateArbitraryError())
 	testUtil.Mock.ExpectRollback()
 
 	req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
@@ -1073,7 +1073,7 @@ func TestProductDeletionHandlerWithErrorDeletingBridgeEntries(t *testing.T) {
 
 	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, nil)
 	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductValueBridgeEntryDeletion(testUtil.Mock, exampleProduct.ID, arbitraryError)
+	setExpectationsForProductValueBridgeEntryDeletion(testUtil.Mock, exampleProduct.ID, generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 	assert.Nil(t, err)
@@ -1099,7 +1099,7 @@ func TestProductDeletionHandlerWithErrorCommittingTransaction(t *testing.T) {
 	testUtil.Mock.ExpectBegin()
 	setExpectationsForProductValueBridgeEntryDeletion(testUtil.Mock, exampleProduct.ID, nil)
 	setExpectationsForProductDeletion(testUtil.Mock, exampleSKU, nil)
-	testUtil.Mock.ExpectCommit().WillReturnError(arbitraryError)
+	testUtil.Mock.ExpectCommit().WillReturnError(generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 	assert.Nil(t, err)
@@ -1152,6 +1152,46 @@ func TestProductCreationHandler(t *testing.T) {
 	expectedThirdOption.SKU = "skateboard_three"
 
 	expectedCreatedProducts := []*Product{expectedFirstOption, expectedSecondOption, expectedThirdOption}
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
+	expectedCreatedProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        exampleProductOption.ID,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: exampleProductOption.ProductRootID,
+		Values: []ProductOptionValue{
+			{
+				DBRow: DBRow{
+					ID:        128, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "one",
+			}, {
+				DBRow: DBRow{
+					ID:        256, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "two",
+			}, {
+				DBRow: DBRow{
+					ID:        512, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "three",
+			},
+		},
+	}
 
 	exampleProductCreationInputWithOptions := `
 		{
@@ -1262,7 +1302,7 @@ func TestProductCreationHandlerWhereCommitReturnsAnError(t *testing.T) {
 	testUtil.Mock.ExpectBegin()
 	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, nil)
 	setExpectationsForProductCreation(testUtil.Mock, exampleProduct, nil)
-	testUtil.Mock.ExpectCommit().WillReturnError(arbitraryError)
+	testUtil.Mock.ExpectCommit().WillReturnError(generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
 	assert.Nil(t, err)
@@ -1298,7 +1338,7 @@ func TestProductCreationHandlerWhereTransactionFailsToBegin(t *testing.T) {
 		}
 	`
 	setExpectationsForProductRootSKUExistence(testUtil.Mock, "skateboard", false, nil)
-	testUtil.Mock.ExpectBegin().WillReturnError(arbitraryError)
+	testUtil.Mock.ExpectBegin().WillReturnError(generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
 	assert.Nil(t, err)
@@ -1358,7 +1398,7 @@ func TestProductCreationHandlerWithErrorCreatingProductRoot(t *testing.T) {
 
 	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleProduct.SKU, false, nil)
 	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, arbitraryError)
+	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, generateArbitraryError())
 	testUtil.Mock.ExpectRollback()
 
 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInput))
@@ -1503,6 +1543,46 @@ func TestProductCreationHandlerWithErrorCreatingOptions(t *testing.T) {
 		AvailableOn:   generateExampleTimeForTests(),
 	}
 	exampleRoot := createProductRootFromProduct(exampleProduct)
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
+	expectedCreatedProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        exampleProductOption.ID,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: exampleProductOption.ProductRootID,
+		Values: []ProductOptionValue{
+			{
+				DBRow: DBRow{
+					ID:        128, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "one",
+			}, {
+				DBRow: DBRow{
+					ID:        256, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "two",
+			}, {
+				DBRow: DBRow{
+					ID:        512, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "three",
+			},
+		},
+	}
 
 	exampleProductCreationInputWithOptions := fmt.Sprintf(`
 		{
@@ -1536,7 +1616,7 @@ func TestProductCreationHandlerWithErrorCreatingOptions(t *testing.T) {
 	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleProduct.SKU, false, nil)
 	testUtil.Mock.ExpectBegin()
 	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, nil)
-	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleRoot.ID, arbitraryError)
+	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleRoot.ID, generateArbitraryError())
 	testUtil.Mock.ExpectRollback()
 
 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
@@ -1597,7 +1677,7 @@ func TestProductCreationHandlerWhereProductCreationFails(t *testing.T) {
 	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleProduct.SKU, false, nil)
 	testUtil.Mock.ExpectBegin()
 	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, nil)
-	setExpectationsForProductCreation(testUtil.Mock, exampleProduct, arbitraryError)
+	setExpectationsForProductCreation(testUtil.Mock, exampleProduct, generateArbitraryError())
 	testUtil.Mock.ExpectRollback()
 
 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInput))
@@ -1651,6 +1731,46 @@ func TestProductCreationHandlerWithErrorCreatingOptionProducts(t *testing.T) {
 	expectedThirdOption.SKU = "skateboard_three"
 
 	expectedCreatedProducts := []*Product{expectedFirstOption, expectedSecondOption, expectedThirdOption}
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
+	expectedCreatedProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        exampleProductOption.ID,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: exampleProductOption.ProductRootID,
+		Values: []ProductOptionValue{
+			{
+				DBRow: DBRow{
+					ID:        128, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "one",
+			}, {
+				DBRow: DBRow{
+					ID:        256, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "two",
+			}, {
+				DBRow: DBRow{
+					ID:        512, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "three",
+			},
+		},
+	}
 
 	exampleProductCreationInputWithOptions := `
 		{
@@ -1686,7 +1806,7 @@ func TestProductCreationHandlerWithErrorCreatingOptionProducts(t *testing.T) {
 	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, nil)
 	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleRoot.ID, nil)
 	setExpectationsForMultipleProductOptionValuesCreation(testUtil.Mock, expectedCreatedProductOption.Values, nil, -1)
-	setExpectationsForProductCreationFromOptions(testUtil.Mock, expectedCreatedProducts, 1, arbitraryError, false, 0)
+	setExpectationsForProductCreationFromOptions(testUtil.Mock, expectedCreatedProducts, 1, generateArbitraryError(), false, 0)
 	testUtil.Mock.ExpectRollback()
 
 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
@@ -1740,6 +1860,46 @@ func TestProductCreationHandlerWithErrorCreatingBridgeEntries(t *testing.T) {
 	expectedThirdOption.SKU = "skateboard_three"
 
 	expectedCreatedProducts := []*Product{expectedFirstOption, expectedSecondOption, expectedThirdOption}
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
+	expectedCreatedProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        exampleProductOption.ID,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: exampleProductOption.ProductRootID,
+		Values: []ProductOptionValue{
+			{
+				DBRow: DBRow{
+					ID:        128, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "one",
+			}, {
+				DBRow: DBRow{
+					ID:        256, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "two",
+			}, {
+				DBRow: DBRow{
+					ID:        512, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "three",
+			},
+		},
+	}
 
 	exampleProductCreationInputWithOptions := `
 		{
@@ -1775,7 +1935,7 @@ func TestProductCreationHandlerWithErrorCreatingBridgeEntries(t *testing.T) {
 	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, nil)
 	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleRoot.ID, nil)
 	setExpectationsForMultipleProductOptionValuesCreation(testUtil.Mock, expectedCreatedProductOption.Values, nil, -1)
-	setExpectationsForProductCreationFromOptions(testUtil.Mock, expectedCreatedProducts, 1, arbitraryError, true, 0)
+	setExpectationsForProductCreationFromOptions(testUtil.Mock, expectedCreatedProducts, 1, generateArbitraryError(), true, 0)
 	testUtil.Mock.ExpectRollback()
 
 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))

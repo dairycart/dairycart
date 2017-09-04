@@ -34,36 +34,8 @@ const (
 	exampleMarshalTimeString = "2016-12-31T12:00:00.000000Z"
 )
 
-var (
-	exampleFilterStartTime time.Time
-	exampleFilterEndTime   time.Time
-	defaultQueryFilter     *QueryFilter
-	customQueryFilter      *QueryFilter
-
-	arbitraryError   error
-	exampleOlderTime time.Time
-)
-
 func init() {
 	log.SetOutput(ioutil.Discard)
-	arbitraryError = errors.New("pineapple on pizza")
-
-	var timeParseErr error
-	exampleOlderTime, timeParseErr = time.Parse("2006-01-02 03:04:00.000000", exampleTimeString)
-	if timeParseErr != nil {
-		log.Fatalf("error parsing time")
-	}
-
-	defaultQueryFilter = &QueryFilter{
-		Page:  1,
-		Limit: 25,
-	}
-
-	customQueryFilter = &QueryFilter{
-		Page:         2,
-		Limit:        35,
-		CreatedAfter: generateExampleTimeForTests(),
-	}
 }
 
 ///////////////////////////////////////////////////////
@@ -89,6 +61,19 @@ func generateExampleTimeForTests() time.Time {
 		log.Fatalf("error parsing time")
 	}
 	return out
+}
+
+func genereateDefaultQueryFilter() *QueryFilter {
+	qf := &QueryFilter{
+		Page:  1,
+		Limit: 25,
+	}
+	return qf
+}
+
+func generateArbitraryError() error {
+	err := errors.New("pineapple on pizza")
+	return err
 }
 
 func setExpectationsForRowCount(mock sqlmock.Sqlmock, table string, queryFilter *QueryFilter, count uint64, err error) {
@@ -211,12 +196,12 @@ func TestParseRawFilterParams(t *testing.T) {
 	}{
 		{
 			input:          "https://test.com/example",
-			expected:       defaultQueryFilter,
+			expected:       genereateDefaultQueryFilter(),
 			failureMessage: "URL with no query params should parse to the default query filter",
 		},
 		{
 			input:          "https://test.com/example?page=1&limit=25",
-			expected:       defaultQueryFilter,
+			expected:       genereateDefaultQueryFilter(),
 			failureMessage: "URL with query params set to the defaults should parse to the default query filter",
 		},
 		{
@@ -285,42 +270,42 @@ func TestParseRawFilterParams(t *testing.T) {
 		},
 		{
 			input:          "https://test.com/example?page=0",
-			expected:       defaultQueryFilter,
+			expected:       genereateDefaultQueryFilter(),
 			failureMessage: "URL with page set to zero should default to page 1",
 		},
 		{
 			input:          fmt.Sprintf("https://test.com/example?rage=2&dimit=35&upgraded_after=%v&agitated_before=%v", exampleUnixStartTime, exampleUnixEndTime),
-			expected:       defaultQueryFilter,
+			expected:       genereateDefaultQueryFilter(),
 			failureMessage: "URL with no relevant values should parsee to the default query filter",
 		},
 		{
 			input:          "https://test.com/example?page=two",
-			expected:       defaultQueryFilter,
+			expected:       genereateDefaultQueryFilter(),
 			failureMessage: "URL with no relevant values should parsee to the default query filter",
 		},
 		{
 			input:          "https://test.com/example?limit=eleventy",
-			expected:       defaultQueryFilter,
+			expected:       genereateDefaultQueryFilter(),
 			failureMessage: "URL with no relevant values should parsee to the default query filter",
 		},
 		{
 			input:          "https://test.com/example?updated_after=my_grandma_died",
-			expected:       defaultQueryFilter,
+			expected:       genereateDefaultQueryFilter(),
 			failureMessage: "URL with no relevant values should parsee to the default query filter",
 		},
 		{
 			input:          "https://test.com/example?updated_before=my_grandma_lived",
-			expected:       defaultQueryFilter,
+			expected:       genereateDefaultQueryFilter(),
 			failureMessage: "URL with no relevant values should parsee to the default query filter",
 		},
 		{
 			input:          "https://test.com/example?created_before=the_world_held_its_breath",
-			expected:       defaultQueryFilter,
+			expected:       genereateDefaultQueryFilter(),
 			failureMessage: "URL with no relevant values should parsee to the default query filter",
 		},
 		{
 			input:          "https://test.com/example?created_after=the_world_exhaled",
-			expected:       defaultQueryFilter,
+			expected:       genereateDefaultQueryFilter(),
 			failureMessage: "URL with no relevant values should parsee to the default query filter",
 		},
 	}

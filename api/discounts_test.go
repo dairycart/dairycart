@@ -17,6 +17,7 @@ import (
 )
 
 const (
+	exampleDiscountID            = 1
 	exampleDiscountStartTime     = "2016-12-01T12:00:00+05:00"
 	exampleDiscountCreationInput = `
 	{
@@ -36,57 +37,25 @@ const (
 	}`
 )
 
-var (
-	discountHeaders             []string
-	exampleDiscountReadData     []driver.Value
-	discountCreationHeaders     []string
-	exampleDiscountCreationData []driver.Value
-	exampleDiscount             *Discount
-)
-
-func init() {
-	exampleDiscount = &Discount{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		Name:      "Example Discount",
-		Type:      "flat_amount",
-		Amount:    12.34,
-		StartsOn:  generateExampleTimeForTests(),
-		ExpiresOn: NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
-	}
-
-	discountHeaders = strings.Split(strings.TrimSpace(discountsTableColumns), ",\n\t\t")
-	exampleDiscountReadData = []driver.Value{
-		exampleDiscount.ID,
-		exampleDiscount.Name,
-		exampleDiscount.Type,
-		exampleDiscount.Amount,
-		exampleDiscount.StartsOn,
-		exampleDiscount.ExpiresOn.Time,
-		exampleDiscount.RequiresCode,
-		exampleDiscount.Code,
-		exampleDiscount.LimitedUse,
-		exampleDiscount.NumberOfUses,
-		exampleDiscount.LoginRequired,
-		exampleDiscount.CreatedOn,
-		nil,
-		nil,
-	}
-
-	discountCreationHeaders = []string{
-		"id",
-		"created_on",
-	}
-	exampleDiscountCreationData = []driver.Value{
-		exampleDiscount.ID,
-		exampleDiscount.CreatedOn,
-	}
-}
-
 func setExpectationsForDiscountRetrievalByID(mock sqlmock.Sqlmock, id string, err error) {
-	exampleRows := sqlmock.NewRows(discountHeaders).AddRow(exampleDiscountReadData...)
+	exampleDiscountReadData := []driver.Value{
+		1,
+		"Example Discount",
+		"flat_amount",
+		12.34,
+		generateExampleTimeForTests(),
+		generateExampleTimeForTests().Add(30 * (24 * time.Hour)),
+		false,
+		"",
+		false,
+		0,
+		false,
+		generateExampleTimeForTests(),
+		nil,
+		nil,
+	}
+
+	exampleRows := sqlmock.NewRows(strings.Split(strings.TrimSpace(discountsTableColumns), ",\n\t\t")).AddRow(exampleDiscountReadData...)
 	query := formatQueryForSQLMock(discountRetrievalQuery)
 	mock.ExpectQuery(query).
 		WithArgs(id).
@@ -105,12 +74,29 @@ func setExpectationsForDiscountCountQuery(mock sqlmock.Sqlmock, queryFilter *Que
 }
 
 func setExpectationsForDiscountListQuery(mock sqlmock.Sqlmock, err error) {
-	exampleRows := sqlmock.NewRows(discountHeaders).
+	exampleDiscountReadData := []driver.Value{
+		1,
+		"Example Discount",
+		"flat_amount",
+		12.34,
+		generateExampleTimeForTests(),
+		generateExampleTimeForTests().Add(30 * (24 * time.Hour)),
+		false,
+		"",
+		false,
+		0,
+		false,
+		generateExampleTimeForTests(),
+		nil,
+		nil,
+	}
+
+	exampleRows := sqlmock.NewRows(strings.Split(strings.TrimSpace(discountsTableColumns), ",\n\t\t")).
 		AddRow(exampleDiscountReadData...).
 		AddRow(exampleDiscountReadData...).
 		AddRow(exampleDiscountReadData...)
 
-	discountListRetrievalQuery, _ := buildDiscountListQuery(defaultQueryFilter)
+	discountListRetrievalQuery, _ := buildDiscountListQuery(genereateDefaultQueryFilter())
 	query := formatQueryForSQLMock(discountListRetrievalQuery)
 	mock.ExpectQuery(query).
 		WillReturnRows(exampleRows).
@@ -118,7 +104,7 @@ func setExpectationsForDiscountListQuery(mock sqlmock.Sqlmock, err error) {
 }
 
 func setExpectationsForDiscountCreation(mock sqlmock.Sqlmock, d *Discount, err error) {
-	exampleRows := sqlmock.NewRows(discountCreationHeaders).AddRow(exampleDiscountCreationData...)
+	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(d.ID, d.CreatedOn)
 	discountCreationQuery, args := buildDiscountCreationQuery(d)
 	queryArgs := argsToDriverValues(args)
 	mock.ExpectQuery(formatQueryForSQLMock(discountCreationQuery)).
@@ -168,7 +154,7 @@ func TestRetrieveDiscountFromDB(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	discountIDString := strconv.Itoa(int(exampleDiscount.ID))
+	discountIDString := strconv.Itoa(int(exampleDiscountID))
 	setExpectationsForDiscountRetrievalByID(testUtil.Mock, discountIDString, nil)
 
 	expectedDiscount := &Discount{
@@ -193,7 +179,7 @@ func TestRetrieveDiscountFromDBWhenDBReturnsNoRows(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	discountIDString := strconv.Itoa(int(exampleDiscount.ID))
+	discountIDString := strconv.Itoa(int(exampleDiscountID))
 	setExpectationsForDiscountRetrievalByID(testUtil.Mock, discountIDString, sql.ErrNoRows)
 
 	_, err := retrieveDiscountFromDB(testUtil.DB, discountIDString)
@@ -205,8 +191,8 @@ func TestRetrieveDiscountFromDBWhenDBReturnsError(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	discountIDString := strconv.Itoa(int(exampleDiscount.ID))
-	setExpectationsForDiscountRetrievalByID(testUtil.Mock, discountIDString, arbitraryError)
+	discountIDString := strconv.Itoa(int(exampleDiscountID))
+	setExpectationsForDiscountRetrievalByID(testUtil.Mock, discountIDString, generateArbitraryError())
 
 	_, err := retrieveDiscountFromDB(testUtil.DB, discountIDString)
 	assert.NotNil(t, err)
@@ -216,6 +202,17 @@ func TestRetrieveDiscountFromDBWhenDBReturnsError(t *testing.T) {
 func TestCreateDiscountInDB(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleDiscount := &Discount{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:      "Example Discount",
+		Type:      "flat_amount",
+		Amount:    12.34,
+		StartsOn:  generateExampleTimeForTests(),
+		ExpiresOn: NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
+	}
 
 	setExpectationsForDiscountCreation(testUtil.Mock, exampleDiscount, nil)
 
@@ -231,7 +228,7 @@ func TestArchiveDiscount(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	exampleDiscountID := strconv.Itoa(int(exampleDiscount.ID))
+	exampleDiscountID := strconv.Itoa(int(exampleDiscountID))
 	setExpectationsForDiscountDeletion(testUtil.Mock, exampleDiscountID, nil)
 
 	err := archiveDiscount(testUtil.DB, exampleDiscountID)
@@ -243,17 +240,28 @@ func TestArchiveDiscountReturnsError(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	exampleDiscountID := strconv.Itoa(int(exampleDiscount.ID))
-	setExpectationsForDiscountDeletion(testUtil.Mock, exampleDiscountID, arbitraryError)
+	exampleDiscountID := strconv.Itoa(int(exampleDiscountID))
+	setExpectationsForDiscountDeletion(testUtil.Mock, exampleDiscountID, generateArbitraryError())
 
 	err := archiveDiscount(testUtil.DB, exampleDiscountID)
-	assert.Equal(t, err, arbitraryError, "archiveDiscount should return an error when it encounters one")
+	assert.Equal(t, err, generateArbitraryError(), "archiveDiscount should return an error when it encounters one")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestUpdateDiscountInDB(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleDiscount := &Discount{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:      "Example Discount",
+		Type:      "flat_amount",
+		Amount:    12.34,
+		StartsOn:  generateExampleTimeForTests(),
+		ExpiresOn: NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
+	}
 
 	setExpectationsForDiscountUpdate(testUtil.Mock, exampleDiscount, nil)
 
@@ -274,7 +282,7 @@ func TestDiscountRetrievalHandlerWithExistingDiscount(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	discountIDString := strconv.Itoa(int(exampleDiscount.ID))
+	discountIDString := strconv.Itoa(int(exampleDiscountID))
 	setExpectationsForDiscountRetrievalByID(testUtil.Mock, discountIDString, nil)
 
 	req, err := http.NewRequest(http.MethodGet, "/v1/discount/1", nil)
@@ -289,7 +297,7 @@ func TestDiscountRetrievalHandlerWithNoRowsFromDB(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	discountIDString := strconv.Itoa(int(exampleDiscount.ID))
+	discountIDString := strconv.Itoa(int(exampleDiscountID))
 	setExpectationsForDiscountRetrievalByID(testUtil.Mock, discountIDString, sql.ErrNoRows)
 
 	req, err := http.NewRequest(http.MethodGet, "/v1/discount/1", nil)
@@ -304,8 +312,8 @@ func TestDiscountRetrievalHandlerWithDBError(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	discountIDString := strconv.Itoa(int(exampleDiscount.ID))
-	setExpectationsForDiscountRetrievalByID(testUtil.Mock, discountIDString, arbitraryError)
+	discountIDString := strconv.Itoa(int(exampleDiscountID))
+	setExpectationsForDiscountRetrievalByID(testUtil.Mock, discountIDString, generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodGet, "/v1/discount/1", nil)
 	assert.Nil(t, err)
@@ -319,7 +327,7 @@ func TestDiscountListHandler(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	setExpectationsForDiscountCountQuery(testUtil.Mock, defaultQueryFilter, nil)
+	setExpectationsForDiscountCountQuery(testUtil.Mock, genereateDefaultQueryFilter(), nil)
 	setExpectationsForDiscountListQuery(testUtil.Mock, nil)
 
 	req, err := http.NewRequest(http.MethodGet, "/v1/discounts", nil)
@@ -348,7 +356,7 @@ func TestDiscountListHandlerWithDBErrorWithErrorReturnedFromCountQuery(t *testin
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	setExpectationsForDiscountCountQuery(testUtil.Mock, defaultQueryFilter, arbitraryError)
+	setExpectationsForDiscountCountQuery(testUtil.Mock, genereateDefaultQueryFilter(), generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodGet, "/v1/discounts", nil)
 	assert.Nil(t, err)
@@ -362,8 +370,8 @@ func TestDiscountListHandlerWithDBErrorWithErrorReturnedFromListQuery(t *testing
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	setExpectationsForDiscountCountQuery(testUtil.Mock, defaultQueryFilter, nil)
-	setExpectationsForDiscountListQuery(testUtil.Mock, arbitraryError)
+	setExpectationsForDiscountCountQuery(testUtil.Mock, genereateDefaultQueryFilter(), nil)
+	setExpectationsForDiscountListQuery(testUtil.Mock, generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodGet, "/v1/discounts", nil)
 	assert.Nil(t, err)
@@ -425,8 +433,19 @@ func TestDiscountCreationHandlerWithInvalidInput(t *testing.T) {
 func TestDiscountCreationHandlerWithDatabaseErrorUponCreation(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleDiscount := &Discount{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:      "Example Discount",
+		Type:      "flat_amount",
+		Amount:    12.34,
+		StartsOn:  generateExampleTimeForTests(),
+		ExpiresOn: NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
+	}
 
-	setExpectationsForDiscountCreation(testUtil.Mock, exampleDiscount, arbitraryError)
+	setExpectationsForDiscountCreation(testUtil.Mock, exampleDiscount, generateArbitraryError())
 	req, err := http.NewRequest(http.MethodPost, "/v1/discount", strings.NewReader(exampleDiscountCreationInput))
 	assert.Nil(t, err)
 
@@ -439,7 +458,7 @@ func TestDiscountDeletionHandler(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	exampleDiscountID := strconv.Itoa(int(exampleDiscount.ID))
+	exampleDiscountID := strconv.Itoa(int(exampleDiscountID))
 	setExpectationsForDiscountExistence(testUtil.Mock, exampleDiscountID, true, nil)
 	setExpectationsForDiscountDeletion(testUtil.Mock, exampleDiscountID, nil)
 
@@ -455,7 +474,7 @@ func TestDiscountDeletionHandlerForNonexistentDiscount(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	exampleDiscountID := strconv.Itoa(int(exampleDiscount.ID))
+	exampleDiscountID := strconv.Itoa(int(exampleDiscountID))
 	setExpectationsForDiscountExistence(testUtil.Mock, exampleDiscountID, false, nil)
 
 	req, err := http.NewRequest(http.MethodDelete, "/v1/discount/1", nil)
@@ -470,9 +489,9 @@ func TestDiscountDeletionHandlerWithErrorDeletingDiscount(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	exampleDiscountID := strconv.Itoa(int(exampleDiscount.ID))
+	exampleDiscountID := strconv.Itoa(int(exampleDiscountID))
 	setExpectationsForDiscountExistence(testUtil.Mock, exampleDiscountID, true, nil)
-	setExpectationsForDiscountDeletion(testUtil.Mock, exampleDiscountID, arbitraryError)
+	setExpectationsForDiscountDeletion(testUtil.Mock, exampleDiscountID, generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodDelete, "/v1/discount/1", nil)
 	assert.Nil(t, err)
@@ -514,7 +533,7 @@ func TestDiscountUpdateHandlerForNonexistentDiscount(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	exampleDiscountID := strconv.Itoa(int(exampleDiscount.ID))
+	exampleDiscountID := strconv.Itoa(int(exampleDiscountID))
 	setExpectationsForDiscountRetrievalByID(testUtil.Mock, exampleDiscountID, sql.ErrNoRows)
 
 	req, err := http.NewRequest(http.MethodPatch, "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
@@ -554,7 +573,7 @@ func TestDiscountUpdateHandlerWithErrorRetrievingDiscount(t *testing.T) {
 	}
 
 	exampleDiscountID := strconv.Itoa(int(updateInput.ID))
-	setExpectationsForDiscountRetrievalByID(testUtil.Mock, exampleDiscountID, arbitraryError)
+	setExpectationsForDiscountRetrievalByID(testUtil.Mock, exampleDiscountID, generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodPatch, "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
 	assert.Nil(t, err)
@@ -582,7 +601,7 @@ func TestDiscountUpdateHandlerWithErrorUpdatingDiscount(t *testing.T) {
 
 	exampleDiscountID := strconv.Itoa(int(updateInput.ID))
 	setExpectationsForDiscountRetrievalByID(testUtil.Mock, exampleDiscountID, nil)
-	setExpectationsForDiscountUpdate(testUtil.Mock, updateInput, arbitraryError)
+	setExpectationsForDiscountUpdate(testUtil.Mock, updateInput, generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodPatch, "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
 	assert.Nil(t, err)

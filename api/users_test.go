@@ -354,7 +354,7 @@ func TestCreateUserInDBWhenErrorOccurs(t *testing.T) {
 		Password:  examplePassword,
 	}
 
-	setExpectationsForUserCreation(testUtil.Mock, exampleUser, arbitraryError)
+	setExpectationsForUserCreation(testUtil.Mock, exampleUser, generateArbitraryError())
 	_, _, err := createUserInDB(testUtil.DB, exampleUser)
 
 	assert.NotNil(t, err)
@@ -522,7 +522,7 @@ func TestLoginAttemptsHaveBeenExhaustedWithErrorExecutingQuery(t *testing.T) {
 	testUtil := setupTestVariables(t)
 
 	exampleUsername := "farts"
-	setExpectationsForLoginAttemptExhaustionQuery(testUtil.Mock, exampleUsername, false, arbitraryError)
+	setExpectationsForLoginAttemptExhaustionQuery(testUtil.Mock, exampleUsername, false, generateArbitraryError())
 
 	exhausted, err := loginAttemptsHaveBeenExhausted(testUtil.DB, exampleUsername)
 	assert.False(t, exhausted)
@@ -731,7 +731,7 @@ func TestUserCreationHandlerWhenErrorEncounteredInsertingIntoDB(t *testing.T) {
 	}
 
 	setExpectationsForUserExistence(testUtil.Mock, exampleUser.Username, false, nil)
-	setExpectationsForUserCreation(testUtil.Mock, exampleUser, arbitraryError)
+	setExpectationsForUserCreation(testUtil.Mock, exampleUser, generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
 	assert.Nil(t, err)
@@ -847,7 +847,7 @@ func TestUserLoginHandlerWhenErrorOccursCheckingLoginAttempts(t *testing.T) {
 		Password:  examplePassword,
 	}
 
-	setExpectationsForLoginAttemptExhaustionQuery(testUtil.Mock, exampleUser.Username, false, arbitraryError)
+	setExpectationsForLoginAttemptExhaustionQuery(testUtil.Mock, exampleUser.Username, false, generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
 	assert.Nil(t, err)
@@ -916,7 +916,7 @@ func TestUserLoginHandlerWithErrorRetrievingUserFromDatabase(t *testing.T) {
 	}
 
 	setExpectationsForLoginAttemptExhaustionQuery(testUtil.Mock, exampleUser.Username, false, nil)
-	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, arbitraryError)
+	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
 	assert.Nil(t, err)
@@ -951,7 +951,7 @@ func TestUserLoginHandlerWithErrorCreatingLoginAttemptRow(t *testing.T) {
 
 	setExpectationsForLoginAttemptExhaustionQuery(testUtil.Mock, exampleUser.Username, false, nil)
 	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, nil)
-	setExpectationsForLoginAttemptCreationQuery(testUtil.Mock, exampleUser.Username, true, arbitraryError)
+	setExpectationsForLoginAttemptCreationQuery(testUtil.Mock, exampleUser.Username, true, generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
 	assert.Nil(t, err)
@@ -1148,7 +1148,7 @@ func TestUserDeletionHandlerWithArbitraryErrorWhenDeletingUser(t *testing.T) {
 	req.AddCookie(cookie)
 
 	setExpectationsForUserExistenceByID(testUtil.Mock, exampleIDString, true, nil)
-	setExpectationsForUserDeletion(testUtil.Mock, exampleID, arbitraryError)
+	setExpectationsForUserDeletion(testUtil.Mock, exampleID, generateArbitraryError())
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 	assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -1262,7 +1262,7 @@ func TestUserForgottenPasswordHandlerWithErrorRetrievingUserFromDB(t *testing.T)
 	req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleInput))
 	assert.Nil(t, err)
 
-	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, arbitraryError)
+	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, generateArbitraryError())
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 	assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -1333,7 +1333,7 @@ func TestUserForgottenPasswordHandlerWithErrorCreatingResetToken(t *testing.T) {
 
 	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, nil)
 	setExpectationsForPasswordResetEntryExistenceByUserID(testUtil.Mock, userID, false, nil)
-	setExpectationsForPasswordResetCreationWithNoSpecificResetToken(testUtil.Mock, exampleUser.ID, arbitraryError)
+	setExpectationsForPasswordResetCreationWithNoSpecificResetToken(testUtil.Mock, exampleUser.ID, generateArbitraryError())
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 	assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -1512,7 +1512,7 @@ func TestUserUpdateHandlerWithErrorRetrievingUser(t *testing.T) {
 		Salt:      dummySalt,
 	}
 
-	setExpectationsForUserRetrievalByID(testUtil.Mock, beforeUser.ID, arbitraryError)
+	setExpectationsForUserRetrievalByID(testUtil.Mock, beforeUser.ID, generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodPatch, "/user/1", strings.NewReader(exampleUserUpdateInput))
 	assert.Nil(t, err)
@@ -1651,7 +1651,7 @@ func TestUserUpdateHandlerWithErrorUpdatingUser(t *testing.T) {
 	}
 
 	setExpectationsForUserRetrievalByID(testUtil.Mock, beforeUser.ID, nil)
-	setExpectationsForUserUpdate(testUtil.Mock, afterUser, examplePasswordChanged, arbitraryError)
+	setExpectationsForUserUpdate(testUtil.Mock, afterUser, examplePasswordChanged, generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodPatch, "/user/1", strings.NewReader(exampleUserUpdateInput))
 	assert.Nil(t, err)

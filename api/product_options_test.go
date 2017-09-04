@@ -32,71 +32,6 @@ const (
 	`
 )
 
-var (
-	exampleProductOption         *ProductOption
-	exampleUpdatedProductOption  *ProductOption
-	expectedCreatedProductOption *ProductOption
-	exampleProductOptionInput    *ProductOptionCreationInput
-	productOptionHeaders         []string
-)
-
-func init() {
-	exampleProductOption = &ProductOption{
-		DBRow: DBRow{
-			ID:        123,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		Name:          "something",
-		ProductRootID: 2,
-	}
-	exampleUpdatedProductOption = &ProductOption{
-		DBRow: DBRow{
-			ID: exampleProductOption.ID,
-		},
-		Name:          "something else",
-		ProductRootID: exampleProductOption.ProductRootID,
-	}
-	productOptionHeaders = []string{"id", "name", "product_root_id", "created_on", "updated_on", "archived_on"}
-
-	expectedCreatedProductOption = &ProductOption{
-		DBRow: DBRow{
-			ID:        exampleProductOption.ID,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		Name:          "something",
-		ProductRootID: exampleProductOption.ProductRootID,
-		Values: []ProductOptionValue{
-			{
-				DBRow: DBRow{
-					ID:        128, // == exampleProductOptionValue.ID,
-					CreatedOn: generateExampleTimeForTests(),
-				},
-				ProductOptionID: exampleProductOption.ID,
-				Value:           "one",
-			}, {
-				DBRow: DBRow{
-					ID:        256, // == exampleProductOptionValue.ID,
-					CreatedOn: generateExampleTimeForTests(),
-				},
-				ProductOptionID: exampleProductOption.ID,
-				Value:           "two",
-			}, {
-				DBRow: DBRow{
-					ID:        512, // == exampleProductOptionValue.ID,
-					CreatedOn: generateExampleTimeForTests(),
-				},
-				ProductOptionID: exampleProductOption.ID,
-				Value:           "three",
-			},
-		},
-	}
-
-	exampleProductOptionInput = &ProductOptionCreationInput{
-		Name:   "something",
-		Values: []string{"one", "two", "three"},
-	}
-}
-
 func setExpectationsForProductOptionExistenceByID(mock sqlmock.Sqlmock, a *ProductOption, exists bool, err error) {
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
 	query := formatQueryForSQLMock(productOptionExistenceQuery)
@@ -117,7 +52,7 @@ func setExpectationsForProductOptionExistenceByName(mock sqlmock.Sqlmock, a *Pro
 }
 
 func setExpectationsForProductOptionRetrievalQuery(mock sqlmock.Sqlmock, a *ProductOption, err error) {
-	exampleRows := sqlmock.NewRows(productOptionHeaders).
+	exampleRows := sqlmock.NewRows([]string{"id", "name", "product_root_id", "created_on", "updated_on", "archived_on"}).
 		AddRow([]driver.Value{a.ID, a.Name, a.ProductRootID, generateExampleTimeForTests(), nil, nil}...)
 	query := formatQueryForSQLMock(productOptionRetrievalQuery)
 	mock.ExpectQuery(query).
@@ -131,7 +66,7 @@ func setExpectationsForProductOptionListQuery(mock sqlmock.Sqlmock, a *ProductOp
 		AddRow([]driver.Value{a.ID, a.Name, a.ProductRootID, generateExampleTimeForTests(), nil, nil}...).
 		AddRow([]driver.Value{a.ID, a.Name, a.ProductRootID, generateExampleTimeForTests(), nil, nil}...).
 		AddRow([]driver.Value{a.ID, a.Name, a.ProductRootID, generateExampleTimeForTests(), nil, nil}...)
-	query, _ := buildProductOptionListQuery(exampleProductID, defaultQueryFilter)
+	query, _ := buildProductOptionListQuery(exampleProductID, genereateDefaultQueryFilter())
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
@@ -149,7 +84,7 @@ func setExpectationsForProductOptionListQueryWithoutFilter(mock sqlmock.Sqlmock,
 }
 
 func setExpectationsForProductOptionCreation(mock sqlmock.Sqlmock, a *ProductOption, productRootID uint64, err error) {
-	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(exampleProductOption.ID, generateExampleTimeForTests())
+	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(a.ID, generateExampleTimeForTests())
 	query, args := buildProductOptionCreationQuery(a, productRootID)
 	queryArgs := argsToDriverValues(args)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
@@ -385,6 +320,14 @@ func TestGenerateCartesianProductForOptions(t *testing.T) {
 func TestRetrieveProductOptionFromDB(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
 
 	setExpectationsForProductOptionRetrievalQuery(testUtil.Mock, exampleProductOption, nil)
 
@@ -397,6 +340,14 @@ func TestRetrieveProductOptionFromDB(t *testing.T) {
 func TestRetrieveProductOptionFromDBWithNoRows(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
 
 	setExpectationsForProductOptionRetrievalQuery(testUtil.Mock, exampleProductOption, sql.ErrNoRows)
 
@@ -408,6 +359,14 @@ func TestRetrieveProductOptionFromDBWithNoRows(t *testing.T) {
 func TestCreateProductOptionInDB(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
 
 	testUtil.Mock.ExpectBegin()
 	setExpectationsForProductOptionCreation(testUtil.Mock, exampleProductOption, exampleProductID, nil)
@@ -430,6 +389,50 @@ func TestCreateProductOptionInDB(t *testing.T) {
 func TestCreateProductOptionAndValuesInDBFromInput(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
+	exampleProductOptionInput := &ProductOptionCreationInput{
+		Name:   "something",
+		Values: []string{"one", "two", "three"},
+	}
+	expectedCreatedProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        exampleProductOption.ID,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: exampleProductOption.ProductRootID,
+		Values: []ProductOptionValue{
+			{
+				DBRow: DBRow{
+					ID:        128, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "one",
+			}, {
+				DBRow: DBRow{
+					ID:        256, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "two",
+			}, {
+				DBRow: DBRow{
+					ID:        512, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "three",
+			},
+		},
+	}
 
 	testUtil.Mock.ExpectBegin()
 	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProductID, nil)
@@ -454,9 +457,53 @@ func TestCreateProductOptionAndValuesInDBFromInput(t *testing.T) {
 func TestCreateProductOptionAndValuesInDBFromInputWithIssueCreatingOption(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
+	exampleProductOptionInput := &ProductOptionCreationInput{
+		Name:   "something",
+		Values: []string{"one", "two", "three"},
+	}
+	expectedCreatedProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        exampleProductOption.ID,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: exampleProductOption.ProductRootID,
+		Values: []ProductOptionValue{
+			{
+				DBRow: DBRow{
+					ID:        128, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "one",
+			}, {
+				DBRow: DBRow{
+					ID:        256, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "two",
+			}, {
+				DBRow: DBRow{
+					ID:        512, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "three",
+			},
+		},
+	}
 
 	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProductID, arbitraryError)
+	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProductID, generateArbitraryError())
 	testUtil.Mock.ExpectCommit()
 
 	tx, err := testUtil.DB.Begin()
@@ -474,10 +521,54 @@ func TestCreateProductOptionAndValuesInDBFromInputWithIssueCreatingOption(t *tes
 func TestCreateProductOptionAndValuesInDBFromInputWithIssueCreatingOptionValue(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
+	exampleProductOptionInput := &ProductOptionCreationInput{
+		Name:   "something",
+		Values: []string{"one", "two", "three"},
+	}
+	expectedCreatedProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        exampleProductOption.ID,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: exampleProductOption.ProductRootID,
+		Values: []ProductOptionValue{
+			{
+				DBRow: DBRow{
+					ID:        128, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "one",
+			}, {
+				DBRow: DBRow{
+					ID:        256, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "two",
+			}, {
+				DBRow: DBRow{
+					ID:        512, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "three",
+			},
+		},
+	}
 
 	testUtil.Mock.ExpectBegin()
 	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProductID, nil)
-	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[0], arbitraryError)
+	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[0], generateArbitraryError())
 	testUtil.Mock.ExpectCommit()
 
 	tx, err := testUtil.DB.Begin()
@@ -495,6 +586,46 @@ func TestCreateProductOptionAndValuesInDBFromInputWithIssueCreatingOptionValue(t
 func TestUpdateProductOptionInDB(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
+	expectedCreatedProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        exampleProductOption.ID,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: exampleProductOption.ProductRootID,
+		Values: []ProductOptionValue{
+			{
+				DBRow: DBRow{
+					ID:        128, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "one",
+			}, {
+				DBRow: DBRow{
+					ID:        256, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "two",
+			}, {
+				DBRow: DBRow{
+					ID:        512, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "three",
+			},
+		},
+	}
 
 	setExpectationsForProductOptionUpdate(testUtil.Mock, expectedCreatedProductOption, nil)
 
@@ -541,8 +672,16 @@ func TestArchiveProductOptionValuesForOption(t *testing.T) {
 func TestProductOptionListHandler(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
 
-	setExpectationsForRowCount(testUtil.Mock, "product_options", defaultQueryFilter, 3, nil)
+	setExpectationsForRowCount(testUtil.Mock, "product_options", genereateDefaultQueryFilter(), 3, nil)
 	setExpectationsForProductOptionListQuery(testUtil.Mock, exampleProductOption, nil)
 	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
 	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
@@ -576,7 +715,7 @@ func TestProductOptionListHandlerWithErrorRetrievingCount(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	setExpectationsForRowCount(testUtil.Mock, "product_options", defaultQueryFilter, 3, arbitraryError)
+	setExpectationsForRowCount(testUtil.Mock, "product_options", genereateDefaultQueryFilter(), 3, generateArbitraryError())
 
 	productOptionEndpoint := buildRoute("v1", "product", strconv.Itoa(int(exampleProductID)), "options")
 	req, err := http.NewRequest(http.MethodGet, productOptionEndpoint, nil)
@@ -591,12 +730,20 @@ func TestProductOptionListHandlerWithErrorRetrievingCount(t *testing.T) {
 func TestProductOptionListHandlerWithErrorsRetrievingValues(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
 
-	setExpectationsForRowCount(testUtil.Mock, "product_options", defaultQueryFilter, 3, nil)
+	setExpectationsForRowCount(testUtil.Mock, "product_options", genereateDefaultQueryFilter(), 3, nil)
 	setExpectationsForProductOptionListQuery(testUtil.Mock, exampleProductOption, nil)
 	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
 	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
-	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, arbitraryError)
+	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, generateArbitraryError())
 
 	productOptionEndpoint := buildRoute("v1", "product", strconv.Itoa(int(exampleProductID)), "options")
 	req, err := http.NewRequest(http.MethodGet, productOptionEndpoint, nil)
@@ -610,9 +757,17 @@ func TestProductOptionListHandlerWithErrorsRetrievingValues(t *testing.T) {
 func TestProductOptionListHandlerWithDBErrors(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
 
-	setExpectationsForRowCount(testUtil.Mock, "product_options", defaultQueryFilter, 3, nil)
-	setExpectationsForProductOptionListQuery(testUtil.Mock, exampleProductOption, arbitraryError)
+	setExpectationsForRowCount(testUtil.Mock, "product_options", genereateDefaultQueryFilter(), 3, nil)
+	setExpectationsForProductOptionListQuery(testUtil.Mock, exampleProductOption, generateArbitraryError())
 
 	productOptionEndpoint := buildRoute("v1", "product", strconv.Itoa(int(exampleProductID)), "options")
 	req, err := http.NewRequest(http.MethodGet, productOptionEndpoint, nil)
@@ -626,6 +781,46 @@ func TestProductOptionListHandlerWithDBErrors(t *testing.T) {
 func TestProductOptionCreationHandler(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
+	expectedCreatedProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        exampleProductOption.ID,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: exampleProductOption.ProductRootID,
+		Values: []ProductOptionValue{
+			{
+				DBRow: DBRow{
+					ID:        128, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "one",
+			}, {
+				DBRow: DBRow{
+					ID:        256, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "two",
+			}, {
+				DBRow: DBRow{
+					ID:        512, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "three",
+			},
+		},
+	}
 
 	productIDString := strconv.Itoa(int(exampleProductOption.ProductRootID))
 	setExpectationsForProductRootExistence(testUtil.Mock, productIDString, true, nil)
@@ -649,11 +844,51 @@ func TestProductOptionCreationHandler(t *testing.T) {
 func TestProductOptionCreationHandlerFailureToSetupTransaction(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
+	expectedCreatedProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        exampleProductOption.ID,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: exampleProductOption.ProductRootID,
+		Values: []ProductOptionValue{
+			{
+				DBRow: DBRow{
+					ID:        128, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "one",
+			}, {
+				DBRow: DBRow{
+					ID:        256, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "two",
+			}, {
+				DBRow: DBRow{
+					ID:        512, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "three",
+			},
+		},
+	}
 
 	productIDString := strconv.Itoa(int(exampleProductOption.ProductRootID))
 	setExpectationsForProductRootExistence(testUtil.Mock, productIDString, true, nil)
 	setExpectationsForProductOptionExistenceByName(testUtil.Mock, expectedCreatedProductOption, productIDString, false, nil)
-	testUtil.Mock.ExpectBegin().WillReturnError(arbitraryError)
+	testUtil.Mock.ExpectBegin().WillReturnError(generateArbitraryError())
 
 	productOptionEndpoint := buildRoute("v1", "product", productIDString, "options")
 	req, err := http.NewRequest(http.MethodPost, productOptionEndpoint, strings.NewReader(exampleProductOptionCreationBody))
@@ -667,6 +902,46 @@ func TestProductOptionCreationHandlerFailureToSetupTransaction(t *testing.T) {
 func TestProductOptionCreationHandlerFailureToCommitTransaction(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
+	expectedCreatedProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        exampleProductOption.ID,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: exampleProductOption.ProductRootID,
+		Values: []ProductOptionValue{
+			{
+				DBRow: DBRow{
+					ID:        128, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "one",
+			}, {
+				DBRow: DBRow{
+					ID:        256, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "two",
+			}, {
+				DBRow: DBRow{
+					ID:        512, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "three",
+			},
+		},
+	}
 
 	productIDString := strconv.Itoa(int(exampleProductOption.ProductRootID))
 	setExpectationsForProductRootExistence(testUtil.Mock, productIDString, true, nil)
@@ -676,7 +951,7 @@ func TestProductOptionCreationHandlerFailureToCommitTransaction(t *testing.T) {
 	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[0], nil)
 	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[1], nil)
 	setExpectationsForProductOptionValueCreation(testUtil.Mock, &expectedCreatedProductOption.Values[2], nil)
-	testUtil.Mock.ExpectCommit().WillReturnError(arbitraryError)
+	testUtil.Mock.ExpectCommit().WillReturnError(generateArbitraryError())
 
 	productOptionEndpoint := buildRoute("v1", "product", productIDString, "options")
 	req, err := http.NewRequest(http.MethodPost, productOptionEndpoint, strings.NewReader(exampleProductOptionCreationBody))
@@ -690,6 +965,46 @@ func TestProductOptionCreationHandlerFailureToCommitTransaction(t *testing.T) {
 func TestProductOptionCreationHandlerWhenOptionWithTheSameNameCheckReturnsNoRows(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
+	expectedCreatedProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        exampleProductOption.ID,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: exampleProductOption.ProductRootID,
+		Values: []ProductOptionValue{
+			{
+				DBRow: DBRow{
+					ID:        128, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "one",
+			}, {
+				DBRow: DBRow{
+					ID:        256, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "two",
+			}, {
+				DBRow: DBRow{
+					ID:        512, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "three",
+			},
+		},
+	}
 
 	productIDString := strconv.Itoa(int(exampleProductOption.ProductRootID))
 	setExpectationsForProductRootExistence(testUtil.Mock, productIDString, true, nil)
@@ -713,6 +1028,14 @@ func TestProductOptionCreationHandlerWhenOptionWithTheSameNameCheckReturnsNoRows
 func TestProductOptionCreationHandlerWithNonExistentProduct(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
 
 	productIDString := strconv.Itoa(int(exampleProductOption.ProductRootID))
 	setExpectationsForProductRootExistence(testUtil.Mock, productIDString, false, nil)
@@ -729,6 +1052,14 @@ func TestProductOptionCreationHandlerWithNonExistentProduct(t *testing.T) {
 func TestProductOptionCreationHandlerWithInvalidOptionCreationInput(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
 
 	productIDString := strconv.Itoa(int(exampleProductOption.ProductRootID))
 	setExpectationsForProductRootExistence(testUtil.Mock, productIDString, true, nil)
@@ -745,6 +1076,46 @@ func TestProductOptionCreationHandlerWithInvalidOptionCreationInput(t *testing.T
 func TestProductOptionCreationHandlerWhenOptionWithTheSameNameExists(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
+	expectedCreatedProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        exampleProductOption.ID,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: exampleProductOption.ProductRootID,
+		Values: []ProductOptionValue{
+			{
+				DBRow: DBRow{
+					ID:        128, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "one",
+			}, {
+				DBRow: DBRow{
+					ID:        256, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "two",
+			}, {
+				DBRow: DBRow{
+					ID:        512, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "three",
+			},
+		},
+	}
 
 	productIDString := strconv.Itoa(int(exampleProductOption.ProductRootID))
 	setExpectationsForProductRootExistence(testUtil.Mock, productIDString, true, nil)
@@ -762,13 +1133,53 @@ func TestProductOptionCreationHandlerWhenOptionWithTheSameNameExists(t *testing.
 func TestProductOptionCreationHandlerWithProblemsCreatingOption(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
+	expectedCreatedProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        exampleProductOption.ID,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: exampleProductOption.ProductRootID,
+		Values: []ProductOptionValue{
+			{
+				DBRow: DBRow{
+					ID:        128, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "one",
+			}, {
+				DBRow: DBRow{
+					ID:        256, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "two",
+			}, {
+				DBRow: DBRow{
+					ID:        512, // == exampleProductOptionValue.ID,
+					CreatedOn: generateExampleTimeForTests(),
+				},
+				ProductOptionID: exampleProductOption.ID,
+				Value:           "three",
+			},
+		},
+	}
 
 	productIDString := strconv.Itoa(int(exampleProductOption.ProductRootID))
 	setExpectationsForProductRootExistence(testUtil.Mock, productIDString, true, nil)
 	setExpectationsForProductOptionExistenceByName(testUtil.Mock, expectedCreatedProductOption, productIDString, false, nil)
 
 	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProductID, arbitraryError)
+	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleProductID, generateArbitraryError())
 	testUtil.Mock.ExpectRollback()
 
 	productOptionEndpoint := buildRoute("v1", "product", productIDString, "options")
@@ -783,6 +1194,21 @@ func TestProductOptionCreationHandlerWithProblemsCreatingOption(t *testing.T) {
 func TestProductOptionUpdateHandler(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
+	exampleUpdatedProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID: exampleProductOption.ID,
+		},
+		Name:          "something else",
+		ProductRootID: exampleProductOption.ProductRootID,
+	}
 
 	optionIDString := strconv.Itoa(int(exampleProductOption.ID))
 
@@ -803,7 +1229,14 @@ func TestProductOptionUpdateHandler(t *testing.T) {
 func TestProductOptionUpdateHandlerWithNonexistentOption(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
 	optionIDString := strconv.Itoa(int(exampleProductOption.ID))
 
 	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, false, nil)
@@ -820,7 +1253,14 @@ func TestProductOptionUpdateHandlerWithNonexistentOption(t *testing.T) {
 func TestProductOptionUpdateHandlerWithInvalidInput(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
 	optionIDString := strconv.Itoa(int(exampleProductOption.ID))
 
 	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
@@ -837,11 +1277,18 @@ func TestProductOptionUpdateHandlerWithInvalidInput(t *testing.T) {
 func TestProductOptionUpdateHandlerWithErrorRetrievingOption(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
 	optionIDString := strconv.Itoa(int(exampleProductOption.ID))
 
 	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
-	setExpectationsForProductOptionRetrievalQuery(testUtil.Mock, exampleProductOption, arbitraryError)
+	setExpectationsForProductOptionRetrievalQuery(testUtil.Mock, exampleProductOption, generateArbitraryError())
 
 	productOptionEndpoint := buildRoute("v1", "product_options", optionIDString)
 	req, err := http.NewRequest(http.MethodPatch, productOptionEndpoint, strings.NewReader(exampleProductOptionUpdateBody))
@@ -855,12 +1302,27 @@ func TestProductOptionUpdateHandlerWithErrorRetrievingOption(t *testing.T) {
 func TestProductOptionUpdateHandlerWithErrorUpdatingOption(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
+	exampleUpdatedProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID: exampleProductOption.ID,
+		},
+		Name:          "something else",
+		ProductRootID: exampleProductOption.ProductRootID,
+	}
 
 	optionIDString := strconv.Itoa(int(exampleProductOption.ID))
 
 	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
 	setExpectationsForProductOptionRetrievalQuery(testUtil.Mock, exampleProductOption, nil)
-	setExpectationsForProductOptionUpdate(testUtil.Mock, exampleUpdatedProductOption, arbitraryError)
+	setExpectationsForProductOptionUpdate(testUtil.Mock, exampleUpdatedProductOption, generateArbitraryError())
 
 	productOptionEndpoint := buildRoute("v1", "product_options", optionIDString)
 	req, err := http.NewRequest(http.MethodPatch, productOptionEndpoint, strings.NewReader(exampleProductOptionUpdateBody))
@@ -874,13 +1336,28 @@ func TestProductOptionUpdateHandlerWithErrorUpdatingOption(t *testing.T) {
 func TestProductOptionUpdateHandlerWithErrorRetrievingValues(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
+	exampleUpdatedProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID: exampleProductOption.ID,
+		},
+		Name:          "something else",
+		ProductRootID: exampleProductOption.ProductRootID,
+	}
 
 	optionIDString := strconv.Itoa(int(exampleProductOption.ID))
 
 	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
 	setExpectationsForProductOptionRetrievalQuery(testUtil.Mock, exampleProductOption, nil)
 	setExpectationsForProductOptionUpdate(testUtil.Mock, exampleUpdatedProductOption, nil)
-	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, arbitraryError)
+	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, generateArbitraryError())
 
 	productOptionEndpoint := buildRoute("v1", "product_options", optionIDString)
 	req, err := http.NewRequest(http.MethodPatch, productOptionEndpoint, strings.NewReader(exampleProductOptionUpdateBody))
@@ -894,7 +1371,14 @@ func TestProductOptionUpdateHandlerWithErrorRetrievingValues(t *testing.T) {
 func TestProductOptionDeletionHandler(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
 	optionIDString := strconv.Itoa(int(exampleProductOption.ID))
 
 	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
@@ -915,7 +1399,14 @@ func TestProductOptionDeletionHandler(t *testing.T) {
 func TestProductOptionDeletionHandlerForNonexistentOption(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
 	optionIDString := strconv.Itoa(int(exampleProductOption.ID))
 
 	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, false, nil)
@@ -931,11 +1422,18 @@ func TestProductOptionDeletionHandlerForNonexistentOption(t *testing.T) {
 func TestProductOptionDeletionHandlerWithErrorCreatingTransaction(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
 	optionIDString := strconv.Itoa(int(exampleProductOption.ID))
 
 	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
-	testUtil.Mock.ExpectBegin().WillReturnError(arbitraryError)
+	testUtil.Mock.ExpectBegin().WillReturnError(generateArbitraryError())
 
 	productOptionEndpoint := buildRoute("v1", "product_options", optionIDString)
 	req, err := http.NewRequest(http.MethodDelete, productOptionEndpoint, strings.NewReader(exampleProductOptionCreationBody))
@@ -949,12 +1447,19 @@ func TestProductOptionDeletionHandlerWithErrorCreatingTransaction(t *testing.T) 
 func TestProductOptionDeletionHandlerWithErrorDeletingOptionValues(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
 	optionIDString := strconv.Itoa(int(exampleProductOption.ID))
 
 	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
 	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductOptionValuesDeletionByOptionID(testUtil.Mock, exampleProductOption.ID, arbitraryError)
+	setExpectationsForProductOptionValuesDeletionByOptionID(testUtil.Mock, exampleProductOption.ID, generateArbitraryError())
 
 	productOptionEndpoint := buildRoute("v1", "product_options", optionIDString)
 	req, err := http.NewRequest(http.MethodDelete, productOptionEndpoint, strings.NewReader(exampleProductOptionCreationBody))
@@ -968,13 +1473,20 @@ func TestProductOptionDeletionHandlerWithErrorDeletingOptionValues(t *testing.T)
 func TestProductOptionDeletionHandlerWithErrorDeletingOption(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
 	optionIDString := strconv.Itoa(int(exampleProductOption.ID))
 
 	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
 	testUtil.Mock.ExpectBegin()
 	setExpectationsForProductOptionValuesDeletionByOptionID(testUtil.Mock, exampleProductOption.ID, nil)
-	setExpectationsForProductOptionDeletion(testUtil.Mock, exampleProductOption.ID, arbitraryError)
+	setExpectationsForProductOptionDeletion(testUtil.Mock, exampleProductOption.ID, generateArbitraryError())
 
 	productOptionEndpoint := buildRoute("v1", "product_options", optionIDString)
 	req, err := http.NewRequest(http.MethodDelete, productOptionEndpoint, strings.NewReader(exampleProductOptionCreationBody))
@@ -988,14 +1500,21 @@ func TestProductOptionDeletionHandlerWithErrorDeletingOption(t *testing.T) {
 func TestProductOptionDeletionHandlerWithErrorCommittingTransaction(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
 	optionIDString := strconv.Itoa(int(exampleProductOption.ID))
 
 	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
 	testUtil.Mock.ExpectBegin()
 	setExpectationsForProductOptionValuesDeletionByOptionID(testUtil.Mock, exampleProductOption.ID, nil)
 	setExpectationsForProductOptionDeletion(testUtil.Mock, exampleProductOption.ID, nil)
-	testUtil.Mock.ExpectCommit().WillReturnError(arbitraryError)
+	testUtil.Mock.ExpectCommit().WillReturnError(generateArbitraryError())
 
 	productOptionEndpoint := buildRoute("v1", "product_options", optionIDString)
 	req, err := http.NewRequest(http.MethodDelete, productOptionEndpoint, strings.NewReader(exampleProductOptionCreationBody))

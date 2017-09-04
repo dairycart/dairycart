@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -69,7 +70,7 @@ func TestBuildProductRootListQuery(t *testing.T) {
 			updated_on,
 			archived_on
 		 FROM product_roots WHERE archived_on IS NULL LIMIT 25`
-	actualQuery, _ := buildProductRootListQuery(defaultQueryFilter)
+	actualQuery, _ := buildProductRootListQuery(genereateDefaultQueryFilter())
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 }
 
@@ -105,7 +106,7 @@ func TestBuildProductListQuery(t *testing.T) {
 			updated_on,
 			archived_on
 		 FROM products WHERE archived_on IS NULL LIMIT 25`
-	actualQuery, actualArgs := buildProductListQuery(defaultQueryFilter)
+	actualQuery, actualArgs := buildProductListQuery(genereateDefaultQueryFilter())
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 0, len(actualArgs), argsEqualityErrorMessage)
 }
@@ -431,13 +432,25 @@ func TestBuildDiscountListQuery(t *testing.T) {
 			created_on,
 			updated_on,
 			archived_on FROM discounts WHERE (expires_on IS NULL OR expires_on > $1) AND archived_on IS NULL LIMIT 25`
-	actualQuery, actualArgs := buildDiscountListQuery(defaultQueryFilter)
+	actualQuery, actualArgs := buildDiscountListQuery(genereateDefaultQueryFilter())
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 1, len(actualArgs), argsEqualityErrorMessage)
 }
 
 func TestBuildDiscountCreationQuery(t *testing.T) {
 	t.Parallel()
+	exampleDiscount := &Discount{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:      "Example Discount",
+		Type:      "flat_amount",
+		Amount:    12.34,
+		StartsOn:  generateExampleTimeForTests(),
+		ExpiresOn: NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
+	}
+
 	expectedQuery := `INSERT INTO discounts (name,type,amount,starts_on,expires_on,requires_code,code,limited_use,number_of_uses,login_required) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id, created_on`
 	actualQuery, actualArgs := buildDiscountCreationQuery(exampleDiscount)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
@@ -446,6 +459,18 @@ func TestBuildDiscountCreationQuery(t *testing.T) {
 
 func TestBuildDiscountUpdateQuery(t *testing.T) {
 	t.Parallel()
+	exampleDiscount := &Discount{
+		DBRow: DBRow{
+			ID:        1,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:      "Example Discount",
+		Type:      "flat_amount",
+		Amount:    12.34,
+		StartsOn:  generateExampleTimeForTests(),
+		ExpiresOn: NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
+	}
+
 	expectedQuery := `UPDATE discounts SET amount = $1, code = $2, expires_on = $3, limited_use = $4, login_required = $5, name = $6, number_of_uses = $7, requires_code = $8, starts_on = $9, type = $10, updated_on = NOW() WHERE id = $11 RETURNING updated_on`
 	actualQuery, actualArgs := buildDiscountUpdateQuery(exampleDiscount)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)

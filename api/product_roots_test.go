@@ -86,7 +86,7 @@ func setExpectationsForProductRootListQuery(mock sqlmock.Sqlmock, r *ProductRoot
 		AddRow(exampleProductRootData...).
 		AddRow(exampleProductRootData...)
 
-	rootsRetrievalQuery, _ := buildProductRootListQuery(defaultQueryFilter)
+	rootsRetrievalQuery, _ := buildProductRootListQuery(genereateDefaultQueryFilter())
 	mock.ExpectQuery(formatQueryForSQLMock(rootsRetrievalQuery)).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
@@ -353,6 +353,14 @@ func TestRetrieveProductRootFromDB(t *testing.T) {
 func TestSingleProductRootRetrievalHandler(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
 	exampleProductRoot := &ProductRoot{
 		DBRow: DBRow{
 			ID:        2,
@@ -431,7 +439,7 @@ func TestSingleProductRootRetrievalHandlerWithErrorQueryingDatabaseForProductRoo
 		Brand:        "brand",
 	}
 
-	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, arbitraryError)
+	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
 	assert.Nil(t, err)
@@ -466,7 +474,7 @@ func TestSingleProductRootRetrievalHandlerWithErrorRetrievingAssociatedProducts(
 	}
 
 	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, nil)
-	setExpectationsForProductAssociatedWithRootListQuery(testUtil.Mock, exampleProductRoot, exampleProduct, arbitraryError)
+	setExpectationsForProductAssociatedWithRootListQuery(testUtil.Mock, exampleProductRoot, exampleProduct, generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
 	assert.Nil(t, err)
@@ -479,6 +487,14 @@ func TestSingleProductRootRetrievalHandlerWithErrorRetrievingAssociatedProducts(
 func TestSingleProductRootRetrievalHandlerWitherrorRetrievingProductOptions(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
+	exampleProductOption := &ProductOption{
+		DBRow: DBRow{
+			ID:        123,
+			CreatedOn: generateExampleTimeForTests(),
+		},
+		Name:          "something",
+		ProductRootID: 2,
+	}
 	exampleProductRoot := &ProductRoot{
 		DBRow: DBRow{
 			ID:        2,
@@ -502,7 +518,7 @@ func TestSingleProductRootRetrievalHandlerWitherrorRetrievingProductOptions(t *t
 
 	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, nil)
 	setExpectationsForProductAssociatedWithRootListQuery(testUtil.Mock, exampleProductRoot, exampleProduct, nil)
-	setExpectationsForProductOptionListQueryWithoutFilter(testUtil.Mock, exampleProductOption, arbitraryError)
+	setExpectationsForProductOptionListQueryWithoutFilter(testUtil.Mock, exampleProductOption, generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
 	assert.Nil(t, err)
@@ -542,7 +558,7 @@ func TestProductRootListRetrievalHandler(t *testing.T) {
 		Description: "This is a skateboard. Please wear a helmet.",
 	}
 
-	setExpectationsForRowCount(testUtil.Mock, "product_roots", defaultQueryFilter, 3, nil)
+	setExpectationsForRowCount(testUtil.Mock, "product_roots", genereateDefaultQueryFilter(), 3, nil)
 	setExpectationsForProductRootListQuery(testUtil.Mock, exampleProductRoot, nil)
 	setExpectationsForProductAssociatedWithRootListQuery(testUtil.Mock, exampleProductRoot, exampleProduct, nil)
 	setExpectationsForProductAssociatedWithRootListQuery(testUtil.Mock, exampleProductRoot, exampleProduct, nil)
@@ -560,7 +576,7 @@ func TestProductRootListRetrievalHandlerWithErrorGettingRowCount(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	setExpectationsForRowCount(testUtil.Mock, "product_roots", defaultQueryFilter, 3, arbitraryError)
+	setExpectationsForRowCount(testUtil.Mock, "product_roots", genereateDefaultQueryFilter(), 3, generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodGet, "/v1/product_roots", nil)
 	assert.Nil(t, err)
@@ -586,8 +602,8 @@ func TestProductRootListRetrievalHandlerWithErrorRetrievingProductRoots(t *testi
 		Brand:        "brand",
 	}
 
-	setExpectationsForRowCount(testUtil.Mock, "product_roots", defaultQueryFilter, 3, nil)
-	setExpectationsForProductRootListQuery(testUtil.Mock, exampleProductRoot, arbitraryError)
+	setExpectationsForRowCount(testUtil.Mock, "product_roots", genereateDefaultQueryFilter(), 3, nil)
+	setExpectationsForProductRootListQuery(testUtil.Mock, exampleProductRoot, generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodGet, "/v1/product_roots", nil)
 	assert.Nil(t, err)
@@ -627,9 +643,9 @@ func TestProductRootListRetrievalHandlerWithErrorRetrivingAssociatedProducts(t *
 		Description: "This is a skateboard. Please wear a helmet.",
 	}
 
-	setExpectationsForRowCount(testUtil.Mock, "product_roots", defaultQueryFilter, 3, nil)
+	setExpectationsForRowCount(testUtil.Mock, "product_roots", genereateDefaultQueryFilter(), 3, nil)
 	setExpectationsForProductRootListQuery(testUtil.Mock, exampleProductRoot, nil)
-	setExpectationsForProductAssociatedWithRootListQuery(testUtil.Mock, exampleProductRoot, exampleProduct, arbitraryError)
+	setExpectationsForProductAssociatedWithRootListQuery(testUtil.Mock, exampleProductRoot, exampleProduct, generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodGet, "/v1/product_roots", nil)
 	assert.Nil(t, err)
@@ -714,7 +730,7 @@ func TestProductRootDeletionHandlerWithErrorRetrievingProductRoot(t *testing.T) 
 		Brand:        "brand",
 	}
 
-	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, arbitraryError)
+	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
 	assert.Nil(t, err)
@@ -741,7 +757,7 @@ func TestProductRootDeletionHandlerWithErrorBeginningTransaction(t *testing.T) {
 	}
 
 	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, nil)
-	testUtil.Mock.ExpectBegin().WillReturnError(arbitraryError)
+	testUtil.Mock.ExpectBegin().WillReturnError(generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
 	assert.Nil(t, err)
@@ -769,7 +785,7 @@ func TestProductRootDeletionHandlerWithErrorDeletingBridgeEntries(t *testing.T) 
 
 	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, nil)
 	testUtil.Mock.ExpectBegin()
-	setExpectationsForVariantBridgeEntriesAssociatedWithRootDeletion(testUtil.Mock, exampleProductRoot.ID, arbitraryError)
+	setExpectationsForVariantBridgeEntriesAssociatedWithRootDeletion(testUtil.Mock, exampleProductRoot.ID, generateArbitraryError())
 	testUtil.Mock.ExpectRollback()
 
 	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
@@ -799,7 +815,7 @@ func TestProductRootDeletionHandlerWithErrorDeletingOptionValues(t *testing.T) {
 	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, nil)
 	testUtil.Mock.ExpectBegin()
 	setExpectationsForVariantBridgeEntriesAssociatedWithRootDeletion(testUtil.Mock, exampleProductRoot.ID, nil)
-	setExpectationsForProductOptionValuesAssociatedWithRootDeletion(testUtil.Mock, exampleProductRoot.ID, arbitraryError)
+	setExpectationsForProductOptionValuesAssociatedWithRootDeletion(testUtil.Mock, exampleProductRoot.ID, generateArbitraryError())
 	testUtil.Mock.ExpectRollback()
 
 	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
@@ -830,7 +846,7 @@ func TestProductRootDeletionHandlerWithErrorDeletingOptions(t *testing.T) {
 	testUtil.Mock.ExpectBegin()
 	setExpectationsForVariantBridgeEntriesAssociatedWithRootDeletion(testUtil.Mock, exampleProductRoot.ID, nil)
 	setExpectationsForProductOptionValuesAssociatedWithRootDeletion(testUtil.Mock, exampleProductRoot.ID, nil)
-	setExpectationsForProductOptionsAssociatedWithRootDeletion(testUtil.Mock, exampleProductRoot.ID, arbitraryError)
+	setExpectationsForProductOptionsAssociatedWithRootDeletion(testUtil.Mock, exampleProductRoot.ID, generateArbitraryError())
 	testUtil.Mock.ExpectRollback()
 
 	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
@@ -862,7 +878,7 @@ func TestProductRootDeletionHandlerWithErrorDeletingProducts(t *testing.T) {
 	setExpectationsForVariantBridgeEntriesAssociatedWithRootDeletion(testUtil.Mock, exampleProductRoot.ID, nil)
 	setExpectationsForProductOptionValuesAssociatedWithRootDeletion(testUtil.Mock, exampleProductRoot.ID, nil)
 	setExpectationsForProductOptionsAssociatedWithRootDeletion(testUtil.Mock, exampleProductRoot.ID, nil)
-	setExpectationsForProductsAssociatedWithRootDeletion(testUtil.Mock, exampleProductRoot.ID, arbitraryError)
+	setExpectationsForProductsAssociatedWithRootDeletion(testUtil.Mock, exampleProductRoot.ID, generateArbitraryError())
 	testUtil.Mock.ExpectRollback()
 
 	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
@@ -895,7 +911,7 @@ func TestProductRootDeletionHandlerWithErrorDeletingProductRoot(t *testing.T) {
 	setExpectationsForProductOptionValuesAssociatedWithRootDeletion(testUtil.Mock, exampleProductRoot.ID, nil)
 	setExpectationsForProductOptionsAssociatedWithRootDeletion(testUtil.Mock, exampleProductRoot.ID, nil)
 	setExpectationsForProductsAssociatedWithRootDeletion(testUtil.Mock, exampleProductRoot.ID, nil)
-	setExpectationsForProductRootDeletion(testUtil.Mock, exampleProductRoot.ID, arbitraryError)
+	setExpectationsForProductRootDeletion(testUtil.Mock, exampleProductRoot.ID, generateArbitraryError())
 	testUtil.Mock.ExpectRollback()
 
 	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
@@ -929,7 +945,7 @@ func TestProductRootDeletionHandlerWithErrorCommittingTransaction(t *testing.T) 
 	setExpectationsForProductOptionsAssociatedWithRootDeletion(testUtil.Mock, exampleProductRoot.ID, nil)
 	setExpectationsForProductsAssociatedWithRootDeletion(testUtil.Mock, exampleProductRoot.ID, nil)
 	setExpectationsForProductRootDeletion(testUtil.Mock, exampleProductRoot.ID, nil)
-	testUtil.Mock.ExpectCommit().WillReturnError(arbitraryError)
+	testUtil.Mock.ExpectCommit().WillReturnError(generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
 	assert.Nil(t, err)
