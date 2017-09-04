@@ -124,7 +124,7 @@ func TestDiscountCreation(t *testing.T) {
 		assertStatusCode(t, resp, http.StatusCreated)
 
 		body := turnResponseBodyIntoString(t, resp)
-		createdDiscountID = retrieveIDFromResponseBody(body, t)
+		createdDiscountID = retrieveIDFromResponseBody(t, body)
 
 		actual := replaceTimeStringsForTests(body)
 		expected := minifyJSON(t, fmt.Sprintf(`
@@ -174,7 +174,7 @@ func TestDiscountDeletion(t *testing.T) {
 		assert.Nil(t, err)
 		assertStatusCode(t, resp, http.StatusCreated)
 		body := turnResponseBodyIntoString(t, resp)
-		createdDiscountID = retrieveIDFromResponseBody(body, t)
+		createdDiscountID = retrieveIDFromResponseBody(t, body)
 	}
 
 	testDeleteDiscount := func(t *testing.T) {
@@ -235,7 +235,7 @@ func TestDiscountUpdate(t *testing.T) {
 		assert.Nil(t, err)
 		assertStatusCode(t, resp, http.StatusCreated)
 		body := turnResponseBodyIntoString(t, resp)
-		createdDiscountID = retrieveIDFromResponseBody(body, t)
+		createdDiscountID = retrieveIDFromResponseBody(t, body)
 	}
 
 	testUpdateDiscount := func(t *testing.T) {

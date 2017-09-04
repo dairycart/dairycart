@@ -49,7 +49,7 @@ func init() {
 	dbURL := os.Getenv("DAIRYCART_DB_URL")
 	if dbURL == "" {
 		// running outside of docker, and therefore debugging
-		baseURL = `http://localhost`
+		baseURL = `http://localhost:4321`
 		dbURL = "postgres://dairycart:hunter2@localhost:2345/dairycart?sslmode=disable"
 	}
 

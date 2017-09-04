@@ -72,12 +72,14 @@ func replaceTimeStringsForTests(body string) string {
 }
 
 func turnResponseBodyIntoString(t *testing.T, res *http.Response) string {
+	t.Helper()
 	bodyBytes, err := ioutil.ReadAll(res.Body)
 	assert.Nil(t, err)
 	return strings.TrimSpace(string(bodyBytes))
 }
 
 func minifyJSON(t *testing.T, jsonBody string) string {
+	t.Helper()
 	jsonMinifier := minify.New()
 	jsonMinifier.AddFunc("application/json", jsonMinify.Minify)
 	minified, err := jsonMinifier.String("application/json", jsonBody)
@@ -85,7 +87,23 @@ func minifyJSON(t *testing.T, jsonBody string) string {
 	return minified
 }
 
-func retrieveIDFromResponseBody(body string, t *testing.T) uint64 {
+func retrieveProductIDFromResponseBody(t *testing.T, body string) uint64 {
+	t.Helper()
+	idContainer := struct {
+		Products []struct {
+			ID uint64 `json:"id"`
+		} `json:"products"`
+	}{}
+	err := json.Unmarshal([]byte(body), &idContainer)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, idContainer)
+	assert.NotZero(t, idContainer.Products[0].ID, fmt.Sprintf("ID should not be zero, body is:\n%s", body))
+
+	return idContainer.Products[0].ID
+}
+
+func retrieveIDFromResponseBody(t *testing.T, body string) uint64 {
+	t.Helper()
 	idContainer := struct {
 		ID uint64 `json:"id"`
 	}{}
@@ -97,7 +115,8 @@ func retrieveIDFromResponseBody(body string, t *testing.T) uint64 {
 	return idContainer.ID
 }
 
-func retrieveProductRootIDFromResponseBody(body string, t *testing.T) uint64 {
+func retrieveProductRootIDFromResponseBody(t *testing.T, body string) uint64 {
+	t.Helper()
 	idContainer := struct {
 		ID uint64 `json:"product_root_id"`
 	}{}
@@ -110,6 +129,7 @@ func retrieveProductRootIDFromResponseBody(body string, t *testing.T) uint64 {
 }
 
 func parseResponseIntoStruct(t *testing.T, body string) listResponse {
+	t.Helper()
 	lr := listResponse{}
 	err := json.Unmarshal([]byte(body), &lr)
 	assert.Nil(t, err)
@@ -120,6 +140,7 @@ func parseResponseIntoStruct(t *testing.T, body string) listResponse {
 
 // func runSubtestSuite(t *testing.T, testFuncs map[string]func(t *testing.T)) {
 func runSubtestSuite(t *testing.T, tests []subtest) {
+	t.Helper()
 	testPassed := true
 	for _, test := range tests {
 		if !testPassed {
@@ -130,5 +151,6 @@ func runSubtestSuite(t *testing.T, tests []subtest) {
 }
 
 func assertStatusCode(t *testing.T, resp *http.Response, statusCode int) {
+	t.Helper()
 	assert.Equal(t, statusCode, resp.StatusCode, "status code should be %d", statusCode)
 }

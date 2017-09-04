@@ -198,7 +198,7 @@ func TestProductUpdateRoute(t *testing.T) {
 		assert.Nil(t, err)
 		assertStatusCode(t, resp, http.StatusCreated)
 		body := turnResponseBodyIntoString(t, resp)
-		productRootID = retrieveIDFromResponseBody(body, t)
+		productRootID = retrieveIDFromResponseBody(t, body)
 	}
 
 	testUpdateProduct := func(t *testing.T) {
@@ -309,7 +309,7 @@ func TestProductCreationRoute(t *testing.T) {
 		assertStatusCode(t, resp, http.StatusCreated)
 
 		body := turnResponseBodyIntoString(t, resp)
-		productRootID = retrieveIDFromResponseBody(body, t)
+		productRootID = retrieveIDFromResponseBody(t, body)
 
 		actual := cleanAPIResponseBody(body)
 		expected := minifyJSON(t, fmt.Sprintf(`
@@ -435,7 +435,7 @@ func TestProductCreationRouteWithOptions(t *testing.T) {
 		assertStatusCode(t, resp, http.StatusCreated)
 
 		body := turnResponseBodyIntoString(t, resp)
-		productRootID = retrieveIDFromResponseBody(body, t)
+		productRootID = retrieveIDFromResponseBody(t, body)
 		actual := cleanAPIResponseBody(body)
 
 		tmpl, err := template.New("resp").Parse(`
@@ -1143,7 +1143,7 @@ func TestProductRootDeletionRoute(t *testing.T) {
 		assert.Nil(t, err)
 
 		body := turnResponseBodyIntoString(t, resp)
-		productRootID = retrieveIDFromResponseBody(body, t)
+		productRootID = retrieveIDFromResponseBody(t, body)
 		assertStatusCode(t, resp, http.StatusCreated)
 	}
 
@@ -1277,7 +1277,7 @@ func TestProductOptionCreation(t *testing.T) {
 		assertStatusCode(t, resp, http.StatusCreated)
 
 		body := turnResponseBodyIntoString(t, resp)
-		createdOptionID = retrieveIDFromResponseBody(body, t)
+		createdOptionID = retrieveIDFromResponseBody(t, body)
 		actual := cleanAPIResponseBody(body)
 
 		expected := minifyJSON(t, `
@@ -1330,7 +1330,7 @@ func TestProductOptionDeletion(t *testing.T) {
 		assertStatusCode(t, resp, http.StatusCreated)
 
 		body := turnResponseBodyIntoString(t, resp)
-		createdOptionID = retrieveIDFromResponseBody(body, t)
+		createdOptionID = retrieveIDFromResponseBody(t, body)
 	}
 
 	testDeleteProductOption := func(t *testing.T) {
@@ -1379,21 +1379,35 @@ func TestProductOptionCreationWithInvalidInput(t *testing.T) {
 
 func TestProductOptionCreationWithAlreadyExistentName(t *testing.T) {
 	t.Parallel()
-	testOptionName := "already-existent-option"
 	var createdOptionID uint64
+	var createdProductRootID uint64
+	testOptionName := "already-existent-option"
+	testSKU := "test-duplicate-option-sku"
+
+	testProductCreation := func(t *testing.T) {
+		newProductJSON := createProductCreationBody(testSKU, "")
+		resp, err := createProduct(newProductJSON)
+		assert.Nil(t, err)
+		assertStatusCode(t, resp, http.StatusCreated)
+		body := turnResponseBodyIntoString(t, resp)
+		createdProductRootID = retrieveIDFromResponseBody(t, body)
+	}
+
 	testProductOptionCreation := func(t *testing.T) {
 		newOptionJSON := createProductOptionCreationBody(testOptionName)
-		resp, err := createProductOptionForProduct(existentID, newOptionJSON)
+		createdProductRootIDString := strconv.Itoa(int(createdProductRootID))
+		resp, err := createProductOptionForProduct(createdProductRootIDString, newOptionJSON)
 		assert.Nil(t, err)
 		assertStatusCode(t, resp, http.StatusCreated)
 
 		body := turnResponseBodyIntoString(t, resp)
-		createdOptionID = retrieveIDFromResponseBody(body, t)
+		createdOptionID = retrieveIDFromResponseBody(t, body)
 	}
 
 	testDuplicateProductOptionCreation := func(t *testing.T) {
 		newOptionJSON := createProductOptionCreationBody(testOptionName)
-		resp, err := createProductOptionForProduct(existentID, newOptionJSON)
+		createdProductRootIDString := strconv.Itoa(int(createdProductRootID))
+		resp, err := createProductOptionForProduct(createdProductRootIDString, newOptionJSON)
 		assert.Nil(t, err)
 		assertStatusCode(t, resp, http.StatusBadRequest)
 	}
@@ -1408,6 +1422,10 @@ func TestProductOptionCreationWithAlreadyExistentName(t *testing.T) {
 	}
 
 	subtests := []subtest{
+		{
+			Message: "create product",
+			Test:    testProductCreation,
+		},
 		{
 			Message: "create product option",
 			Test:    testProductOptionCreation,
@@ -1439,7 +1457,7 @@ func TestProductOptionUpdate(t *testing.T) {
 		assert.Nil(t, err)
 		assertStatusCode(t, resp, http.StatusCreated)
 		body := turnResponseBodyIntoString(t, resp)
-		createdRootID = retrieveIDFromResponseBody(body, t)
+		createdRootID = retrieveIDFromResponseBody(t, body)
 	}
 
 	testProductOptionCreation := func(t *testing.T) {
@@ -1449,7 +1467,7 @@ func TestProductOptionUpdate(t *testing.T) {
 		assertStatusCode(t, resp, http.StatusCreated)
 
 		body := turnResponseBodyIntoString(t, resp)
-		createdOptionID = retrieveIDFromResponseBody(body, t)
+		createdOptionID = retrieveIDFromResponseBody(t, body)
 	}
 
 	testUpdateProductOption := func(t *testing.T) {
@@ -1557,7 +1575,7 @@ func TestProductOptionValueCreation(t *testing.T) {
 		assertStatusCode(t, resp, http.StatusCreated)
 
 		body := turnResponseBodyIntoString(t, resp)
-		createdOptionValueID = retrieveIDFromResponseBody(body, t)
+		createdOptionValueID = retrieveIDFromResponseBody(t, body)
 		actual := cleanAPIResponseBody(body)
 		expected := minifyJSON(t, fmt.Sprintf(`
 			{
@@ -1589,17 +1607,62 @@ func TestProductOptionValueCreation(t *testing.T) {
 func TestProductOptionValueUpdate(t *testing.T) {
 	t.Parallel()
 
+	var createdProductRootID uint64
+	var createdOptionID uint64
 	var createdOptionValueID uint64
+	testSKU := "test-value-update-sku"
+	testOptionName := "test-value-update-obligatory-option"
 	testValue := "test-value-update"
 	testUpdatedValue := "not_the_same_value"
-	testCreateProductOptionValue := func(t *testing.T) {
-		newOptionValueJSON := createProductOptionValueBody(testValue)
-		resp, err := createProductOptionValueForOption(existentID, newOptionValueJSON)
+
+	testProductCreation := func(t *testing.T) {
+		newProductJSON := createProductCreationBody(testSKU, "")
+		resp, err := createProduct(newProductJSON)
+		assert.Nil(t, err)
+		assertStatusCode(t, resp, http.StatusCreated)
+		body := turnResponseBodyIntoString(t, resp)
+		createdProductRootID = retrieveIDFromResponseBody(t, body)
+	}
+
+	testProductOptionCreation := func(t *testing.T) {
+		newOptionJSON := createProductOptionCreationBody(testOptionName)
+		createdProductRootIDString := strconv.Itoa(int(createdProductRootID))
+		resp, err := createProductOptionForProduct(createdProductRootIDString, newOptionJSON)
 		assert.Nil(t, err)
 		assertStatusCode(t, resp, http.StatusCreated)
 
 		body := turnResponseBodyIntoString(t, resp)
-		createdOptionValueID = retrieveIDFromResponseBody(body, t)
+		createdOptionID = retrieveIDFromResponseBody(t, body)
+		actual := cleanAPIResponseBody(body)
+
+		expected := minifyJSON(t, fmt.Sprintf(`
+			{
+				"name": "%s",
+				"values": [
+					{
+						"value": "one"
+					},
+					{
+						"value": "two"
+					},
+					{
+						"value": "three"
+					}
+				]
+			}
+		`, testOptionName))
+		assert.Equal(t, expected, actual, "product option creation route should respond with created product option body")
+	}
+
+	testCreateProductOptionValue := func(t *testing.T) {
+		newOptionValueJSON := createProductOptionValueBody(testValue)
+		createdOptionIDString := strconv.Itoa(int(createdOptionID))
+		resp, err := createProductOptionValueForOption(createdOptionIDString, newOptionValueJSON)
+		assert.Nil(t, err)
+		assertStatusCode(t, resp, http.StatusCreated)
+
+		body := turnResponseBodyIntoString(t, resp)
+		createdOptionValueID = retrieveIDFromResponseBody(t, body)
 	}
 
 	testUpdateProductOptionValue := func(t *testing.T) {
@@ -1625,6 +1688,14 @@ func TestProductOptionValueUpdate(t *testing.T) {
 	}
 
 	subtests := []subtest{
+		{
+			Message: "create product",
+			Test:    testProductCreation,
+		},
+		{
+			Message: "create product option",
+			Test:    testProductOptionCreation,
+		},
 		{
 			Message: "create product option value",
 			Test:    testCreateProductOptionValue,
@@ -1652,7 +1723,7 @@ func TestProductOptionValueDeletion(t *testing.T) {
 		assert.Nil(t, err)
 		assertStatusCode(t, resp, http.StatusCreated)
 		body := turnResponseBodyIntoString(t, resp)
-		createdOptionValueID = retrieveIDFromResponseBody(body, t)
+		createdOptionValueID = retrieveIDFromResponseBody(t, body)
 	}
 
 	testDeleteProductOptionValue := func(t *testing.T) {

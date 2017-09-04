@@ -227,6 +227,7 @@ func respondThatRowDoesNotExist(req *http.Request, res http.ResponseWriter, item
 		"product option":       "id",
 		"product option value": "id",
 		"product":              "sku",
+		"product root":         "id",
 		"discount":             "id",
 		"user":                 "username",
 	}

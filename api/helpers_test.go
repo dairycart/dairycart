@@ -84,11 +84,11 @@ type TestUtil struct {
 }
 
 func generateExampleTimeForTests() time.Time {
-	t, err := time.Parse("2006-01-02 03:04:00.000000", "2016-12-31 12:00:00.000000")
+	out, err := time.Parse("2006-01-02 03:04:00.000000", "2016-12-31 12:00:00.000000")
 	if err != nil {
 		log.Fatalf("error parsing time")
 	}
-	return t
+	return out
 }
 
 func setExpectationsForRowCount(mock sqlmock.Sqlmock, table string, queryFilter *QueryFilter, count uint64, err error) {
@@ -99,6 +99,7 @@ func setExpectationsForRowCount(mock sqlmock.Sqlmock, table string, queryFilter 
 }
 
 func setupTestVariables(t *testing.T) *TestUtil {
+	t.Helper()
 	mockDB, mock, err := sqlmock.New()
 	dbx := sqlx.NewDb(mockDB, "postgres")
 	dbx.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
@@ -131,6 +132,7 @@ func formatQueryForSQLMock(query string) string {
 }
 
 func ensureExpectationsWereMet(t *testing.T, mock sqlmock.Sqlmock) {
+	t.Helper()
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
@@ -145,6 +147,7 @@ func argsToDriverValues(args []interface{}) []driver.Value {
 }
 
 func buildCookieForRequest(t *testing.T, store *sessions.CookieStore, authorized bool, admin bool) (*http.Cookie, error) {
+	t.Helper()
 	session, err := store.New(&http.Request{}, dairycartCookieName)
 	if err != nil {
 		return nil, err
@@ -165,6 +168,7 @@ func attachBadCookieToRequest(req *http.Request) {
 }
 
 func assertStatusCode(t *testing.T, testUtil *TestUtil, statusCode int) {
+	t.Helper()
 	assert.Equal(t, statusCode, testUtil.Response.Code, "status code should be %d", statusCode)
 }
 
