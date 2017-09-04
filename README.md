@@ -18,14 +18,10 @@ To run the Dairycart API server, simply execute `debug.sh` after cloning this re
 
 There are two test suites, currently, a set of unit tests for the API server, and a suite of integration tests, which attempt to test the API server with real-world style requests. You can run the unit tests by executing `run_unit_tests.sh`, and you can run the integraiton tests similarly by executing `run_integration_tests.sh`
 
-## Trello
-
-The Trello board for this project can be found [here](https://trello.com/b/z3lgKd59/dairycart)
-
 ## Reporting Issues
 
 Thusfar, Dairycart's development has been a solo effort, and this may still be the case for some time. That being the case, there are most definitely issues with the
-code that warrant reporting. Any issues can be reported using the [Github Issue Tracker](https://github.com/dairycart/dairycart/issues/new) for this repository. Please ensure any issues filed adhere to the [Code of Conduct](CODE_OF_CONDUCT.md).
+code that warrant reporting. Any issues can be reported using the [Github Issue Tracker](https://github.com/dairycart/dairycart/issues/new) for this repository. Please ensure any issues filed adhere to the [Code of Conduct](CODE_OF_CONDUCT.md) and [contributing guidelines](CONTRIBUTING.md).
 
 ## Getting involved
 
