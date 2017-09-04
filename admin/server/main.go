@@ -110,12 +110,6 @@ func main() {
 		log.Fatal("DAIRYCART_API_URL is not set")
 	}
 
-	log.Printf(`
-
-		apiURL: %s
-
-	`, apiURL)
-
 	_, err := url.Parse(apiURL)
 	if err != nil {
 		log.Fatalf("DAIRYCART_API_URL (%s) is invalid: %v", apiURL, err)

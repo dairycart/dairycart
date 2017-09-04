@@ -298,7 +298,7 @@ func buildProductOptionCreationHandler(db *sqlx.DB) http.HandlerFunc {
 		// can't create an option for a product that doesn't exist!
 		productRootExists, err := rowExistsInDB(db, productRootExistenceQuery, productRootID)
 		if err != nil || !productRootExists {
-			respondThatRowDoesNotExist(req, res, "product", productRootID)
+			respondThatRowDoesNotExist(req, res, "product root", productRootID)
 			return
 		}
 

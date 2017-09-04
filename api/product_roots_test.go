@@ -20,11 +20,11 @@ func createExampleHeadersAndDataFromProductRoot(r *ProductRoot) ([]string, []dri
 	productMap := map[string]driver.Value{
 		"id":                   r.ID,
 		"name":                 r.Name,
-		"subtitle":             r.Subtitle.String,
+		"subtitle":             r.Subtitle,
 		"description":          r.Description,
 		"sku_prefix":           r.SKUPrefix,
-		"manufacturer":         r.Manufacturer.String,
-		"brand":                r.Brand.String,
+		"manufacturer":         r.Manufacturer,
+		"brand":                r.Brand,
 		"taxable":              r.Taxable,
 		"cost":                 r.Cost,
 		"product_weight":       r.ProductWeight,
@@ -232,11 +232,11 @@ func TestDeleteProductRoot(t *testing.T) {
 func TestCreateProductRootFromProduct(t *testing.T) {
 	exampleInput := &Product{
 		Name:               "name",
-		Subtitle:           NullString{sql.NullString{String: "subtitle", Valid: true}},
+		Subtitle:           "subtitle",
 		Description:        "description",
 		SKU:                "sku",
-		Manufacturer:       NullString{sql.NullString{String: "mfgr", Valid: true}},
-		Brand:              NullString{sql.NullString{String: "brand", Valid: true}},
+		Manufacturer:       "mfgr",
+		Brand:              "brand",
 		QuantityPerPackage: 666,
 		Taxable:            true,
 		Cost:               12.34,
@@ -252,11 +252,11 @@ func TestCreateProductRootFromProduct(t *testing.T) {
 	}
 	expected := &ProductRoot{
 		Name:               "name",
-		Subtitle:           NullString{sql.NullString{String: "subtitle", Valid: true}},
+		Subtitle:           "subtitle",
 		Description:        "description",
 		SKUPrefix:          "sku",
-		Manufacturer:       NullString{sql.NullString{String: "mfgr", Valid: true}},
-		Brand:              NullString{sql.NullString{String: "brand", Valid: true}},
+		Manufacturer:       "mfgr",
+		Brand:              "brand",
 		QuantityPerPackage: 666,
 		Taxable:            true,
 		Cost:               12.34,
@@ -334,7 +334,6 @@ func TestRetrieveProductRootFromDB(t *testing.T) {
 		PackageWidth:  2,
 		PackageLength: 1,
 	}
-	exampleRoot.Brand.Valid, exampleRoot.Manufacturer.Valid, exampleRoot.Subtitle.Valid = true, true, true
 
 	setupExpectationsForProductRootRetrieval(testUtil.Mock, &exampleRoot, nil)
 
@@ -360,11 +359,11 @@ func TestSingleProductRootRetrievalHandler(t *testing.T) {
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "root_name",
-		Subtitle:     NullString{sql.NullString{String: "subtitle", Valid: true}},
+		Subtitle:     "subtitle",
 		Description:  "description",
 		SKUPrefix:    "sku_prefix",
-		Manufacturer: NullString{sql.NullString{String: "manufacturer", Valid: true}},
-		Brand:        NullString{sql.NullString{String: "brand", Valid: true}},
+		Manufacturer: "manufacturer",
+		Brand:        "brand",
 	}
 	exampleProduct := &Product{
 		DBRow: DBRow{
@@ -399,11 +398,11 @@ func TestSingleProductRootRetrievalHandlerWhenNoSuchRootExists(t *testing.T) {
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "root_name",
-		Subtitle:     NullString{sql.NullString{String: "subtitle", Valid: true}},
+		Subtitle:     "subtitle",
 		Description:  "description",
 		SKUPrefix:    "sku_prefix",
-		Manufacturer: NullString{sql.NullString{String: "manufacturer", Valid: true}},
-		Brand:        NullString{sql.NullString{String: "brand", Valid: true}},
+		Manufacturer: "manufacturer",
+		Brand:        "brand",
 	}
 
 	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, sql.ErrNoRows)
@@ -425,11 +424,11 @@ func TestSingleProductRootRetrievalHandlerWithErrorQueryingDatabaseForProductRoo
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "root_name",
-		Subtitle:     NullString{sql.NullString{String: "subtitle", Valid: true}},
+		Subtitle:     "subtitle",
 		Description:  "description",
 		SKUPrefix:    "sku_prefix",
-		Manufacturer: NullString{sql.NullString{String: "manufacturer", Valid: true}},
-		Brand:        NullString{sql.NullString{String: "brand", Valid: true}},
+		Manufacturer: "manufacturer",
+		Brand:        "brand",
 	}
 
 	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, arbitraryError)
@@ -451,11 +450,11 @@ func TestSingleProductRootRetrievalHandlerWithErrorRetrievingAssociatedProducts(
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "root_name",
-		Subtitle:     NullString{sql.NullString{String: "subtitle", Valid: true}},
+		Subtitle:     "subtitle",
 		Description:  "description",
 		SKUPrefix:    "sku_prefix",
-		Manufacturer: NullString{sql.NullString{String: "manufacturer", Valid: true}},
-		Brand:        NullString{sql.NullString{String: "brand", Valid: true}},
+		Manufacturer: "manufacturer",
+		Brand:        "brand",
 	}
 	exampleProduct := &Product{
 		DBRow: DBRow{
@@ -486,11 +485,11 @@ func TestSingleProductRootRetrievalHandlerWitherrorRetrievingProductOptions(t *t
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "root_name",
-		Subtitle:     NullString{sql.NullString{String: "subtitle", Valid: true}},
+		Subtitle:     "subtitle",
 		Description:  "description",
 		SKUPrefix:    "sku_prefix",
-		Manufacturer: NullString{sql.NullString{String: "manufacturer", Valid: true}},
-		Brand:        NullString{sql.NullString{String: "brand", Valid: true}},
+		Manufacturer: "manufacturer",
+		Brand:        "brand",
 	}
 	exampleProduct := &Product{
 		DBRow: DBRow{
@@ -522,11 +521,11 @@ func TestProductRootListRetrievalHandler(t *testing.T) {
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "root_name",
-		Subtitle:     NullString{sql.NullString{String: "subtitle", Valid: true}},
+		Subtitle:     "subtitle",
 		Description:  "description",
 		SKUPrefix:    "sku_prefix",
-		Manufacturer: NullString{sql.NullString{String: "manufacturer", Valid: true}},
-		Brand:        NullString{sql.NullString{String: "brand", Valid: true}},
+		Manufacturer: "manufacturer",
+		Brand:        "brand",
 	}
 	exampleProduct := &Product{
 		DBRow: DBRow{
@@ -535,7 +534,7 @@ func TestProductRootListRetrievalHandler(t *testing.T) {
 		},
 		SKU:         "skateboard",
 		Name:        "Skateboard",
-		UPC:         NullString{sql.NullString{String: "1234567890", Valid: true}},
+		UPC:         "1234567890",
 		Quantity:    123,
 		Price:       12.34,
 		Cost:        5,
@@ -580,11 +579,11 @@ func TestProductRootListRetrievalHandlerWithErrorRetrievingProductRoots(t *testi
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "root_name",
-		Subtitle:     NullString{sql.NullString{String: "subtitle", Valid: true}},
+		Subtitle:     "subtitle",
 		Description:  "description",
 		SKUPrefix:    "sku_prefix",
-		Manufacturer: NullString{sql.NullString{String: "manufacturer", Valid: true}},
-		Brand:        NullString{sql.NullString{String: "brand", Valid: true}},
+		Manufacturer: "manufacturer",
+		Brand:        "brand",
 	}
 
 	setExpectationsForRowCount(testUtil.Mock, "product_roots", defaultQueryFilter, 3, nil)
@@ -607,11 +606,11 @@ func TestProductRootListRetrievalHandlerWithErrorRetrivingAssociatedProducts(t *
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "root_name",
-		Subtitle:     NullString{sql.NullString{String: "subtitle", Valid: true}},
+		Subtitle:     "subtitle",
 		Description:  "description",
 		SKUPrefix:    "sku_prefix",
-		Manufacturer: NullString{sql.NullString{String: "manufacturer", Valid: true}},
-		Brand:        NullString{sql.NullString{String: "brand", Valid: true}},
+		Manufacturer: "manufacturer",
+		Brand:        "brand",
 	}
 	exampleProduct := &Product{
 		DBRow: DBRow{
@@ -620,7 +619,7 @@ func TestProductRootListRetrievalHandlerWithErrorRetrivingAssociatedProducts(t *
 		},
 		SKU:         "skateboard",
 		Name:        "Skateboard",
-		UPC:         NullString{sql.NullString{String: "1234567890", Valid: true}},
+		UPC:         "1234567890",
 		Quantity:    123,
 		Price:       12.34,
 		Cost:        5,
@@ -649,11 +648,11 @@ func TestProductRootDeletionHandler(t *testing.T) {
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "root_name",
-		Subtitle:     NullString{sql.NullString{String: "subtitle", Valid: true}},
+		Subtitle:     "subtitle",
 		Description:  "description",
 		SKUPrefix:    "sku_prefix",
-		Manufacturer: NullString{sql.NullString{String: "manufacturer", Valid: true}},
-		Brand:        NullString{sql.NullString{String: "brand", Valid: true}},
+		Manufacturer: "manufacturer",
+		Brand:        "brand",
 	}
 
 	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, nil)
@@ -682,11 +681,11 @@ func TestProductRootDeletionHandlerWithNonexistentProductRoot(t *testing.T) {
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "root_name",
-		Subtitle:     NullString{sql.NullString{String: "subtitle", Valid: true}},
+		Subtitle:     "subtitle",
 		Description:  "description",
 		SKUPrefix:    "sku_prefix",
-		Manufacturer: NullString{sql.NullString{String: "manufacturer", Valid: true}},
-		Brand:        NullString{sql.NullString{String: "brand", Valid: true}},
+		Manufacturer: "manufacturer",
+		Brand:        "brand",
 	}
 
 	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, sql.ErrNoRows)
@@ -708,11 +707,11 @@ func TestProductRootDeletionHandlerWithErrorRetrievingProductRoot(t *testing.T) 
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "root_name",
-		Subtitle:     NullString{sql.NullString{String: "subtitle", Valid: true}},
+		Subtitle:     "subtitle",
 		Description:  "description",
 		SKUPrefix:    "sku_prefix",
-		Manufacturer: NullString{sql.NullString{String: "manufacturer", Valid: true}},
-		Brand:        NullString{sql.NullString{String: "brand", Valid: true}},
+		Manufacturer: "manufacturer",
+		Brand:        "brand",
 	}
 
 	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, arbitraryError)
@@ -734,11 +733,11 @@ func TestProductRootDeletionHandlerWithErrorBeginningTransaction(t *testing.T) {
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "root_name",
-		Subtitle:     NullString{sql.NullString{String: "subtitle", Valid: true}},
+		Subtitle:     "subtitle",
 		Description:  "description",
 		SKUPrefix:    "sku_prefix",
-		Manufacturer: NullString{sql.NullString{String: "manufacturer", Valid: true}},
-		Brand:        NullString{sql.NullString{String: "brand", Valid: true}},
+		Manufacturer: "manufacturer",
+		Brand:        "brand",
 	}
 
 	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, nil)
@@ -761,11 +760,11 @@ func TestProductRootDeletionHandlerWithErrorDeletingBridgeEntries(t *testing.T) 
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "root_name",
-		Subtitle:     NullString{sql.NullString{String: "subtitle", Valid: true}},
+		Subtitle:     "subtitle",
 		Description:  "description",
 		SKUPrefix:    "sku_prefix",
-		Manufacturer: NullString{sql.NullString{String: "manufacturer", Valid: true}},
-		Brand:        NullString{sql.NullString{String: "brand", Valid: true}},
+		Manufacturer: "manufacturer",
+		Brand:        "brand",
 	}
 
 	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, nil)
@@ -790,11 +789,11 @@ func TestProductRootDeletionHandlerWithErrorDeletingOptionValues(t *testing.T) {
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "root_name",
-		Subtitle:     NullString{sql.NullString{String: "subtitle", Valid: true}},
+		Subtitle:     "subtitle",
 		Description:  "description",
 		SKUPrefix:    "sku_prefix",
-		Manufacturer: NullString{sql.NullString{String: "manufacturer", Valid: true}},
-		Brand:        NullString{sql.NullString{String: "brand", Valid: true}},
+		Manufacturer: "manufacturer",
+		Brand:        "brand",
 	}
 
 	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, nil)
@@ -820,11 +819,11 @@ func TestProductRootDeletionHandlerWithErrorDeletingOptions(t *testing.T) {
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "root_name",
-		Subtitle:     NullString{sql.NullString{String: "subtitle", Valid: true}},
+		Subtitle:     "subtitle",
 		Description:  "description",
 		SKUPrefix:    "sku_prefix",
-		Manufacturer: NullString{sql.NullString{String: "manufacturer", Valid: true}},
-		Brand:        NullString{sql.NullString{String: "brand", Valid: true}},
+		Manufacturer: "manufacturer",
+		Brand:        "brand",
 	}
 
 	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, nil)
@@ -851,11 +850,11 @@ func TestProductRootDeletionHandlerWithErrorDeletingProducts(t *testing.T) {
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "root_name",
-		Subtitle:     NullString{sql.NullString{String: "subtitle", Valid: true}},
+		Subtitle:     "subtitle",
 		Description:  "description",
 		SKUPrefix:    "sku_prefix",
-		Manufacturer: NullString{sql.NullString{String: "manufacturer", Valid: true}},
-		Brand:        NullString{sql.NullString{String: "brand", Valid: true}},
+		Manufacturer: "manufacturer",
+		Brand:        "brand",
 	}
 
 	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, nil)
@@ -883,11 +882,11 @@ func TestProductRootDeletionHandlerWithErrorDeletingProductRoot(t *testing.T) {
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "root_name",
-		Subtitle:     NullString{sql.NullString{String: "subtitle", Valid: true}},
+		Subtitle:     "subtitle",
 		Description:  "description",
 		SKUPrefix:    "sku_prefix",
-		Manufacturer: NullString{sql.NullString{String: "manufacturer", Valid: true}},
-		Brand:        NullString{sql.NullString{String: "brand", Valid: true}},
+		Manufacturer: "manufacturer",
+		Brand:        "brand",
 	}
 
 	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, nil)
@@ -916,11 +915,11 @@ func TestProductRootDeletionHandlerWithErrorCommittingTransaction(t *testing.T) 
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "root_name",
-		Subtitle:     NullString{sql.NullString{String: "subtitle", Valid: true}},
+		Subtitle:     "subtitle",
 		Description:  "description",
 		SKUPrefix:    "sku_prefix",
-		Manufacturer: NullString{sql.NullString{String: "manufacturer", Valid: true}},
-		Brand:        NullString{sql.NullString{String: "brand", Valid: true}},
+		Manufacturer: "manufacturer",
+		Brand:        "brand",
 	}
 
 	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, nil)

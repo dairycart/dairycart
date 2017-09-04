@@ -37,7 +37,7 @@ func TestUserCreation(t *testing.T) {
 		assertStatusCode(t, resp, http.StatusCreated)
 
 		body := turnResponseBodyIntoString(t, resp)
-		createdUserID = retrieveIDFromResponseBody(body, t)
+		createdUserID = retrieveIDFromResponseBody(t, body)
 	}
 
 	testDeleteUser := func(t *testing.T) {
@@ -102,7 +102,7 @@ func TestAdminUserCreation(t *testing.T) {
 		assertStatusCode(t, resp, http.StatusCreated)
 
 		body := turnResponseBodyIntoString(t, resp)
-		createdUserID = retrieveIDFromResponseBody(body, t)
+		createdUserID = retrieveIDFromResponseBody(t, body)
 	}
 
 	testDeleteUser := func(t *testing.T) {
@@ -146,7 +146,7 @@ func TestUserCreationForAlreadyExistentUsername(t *testing.T) {
 		assertStatusCode(t, resp, http.StatusCreated)
 
 		body := turnResponseBodyIntoString(t, resp)
-		createdUserID = retrieveIDFromResponseBody(body, t)
+		createdUserID = retrieveIDFromResponseBody(t, body)
 	}
 
 	testCreateUserAgain := func(t *testing.T) {
@@ -189,7 +189,7 @@ func TestUserDeletion(t *testing.T) {
 		newUserJSON := createUserCreationBody(testUsername, validPassword, userShouldBeAdmin)
 		resp, err := createNewUser(newUserJSON, userShouldBeAdmin)
 		assert.Nil(t, err)
-		createdUserID = retrieveIDFromResponseBody(turnResponseBodyIntoString(t, resp), t)
+		createdUserID = retrieveIDFromResponseBody(t, turnResponseBodyIntoString(t, resp))
 	}
 
 	testDeleteUser := func(t *testing.T) {
@@ -235,7 +235,7 @@ func TestUserDeletionAsRegularUser(t *testing.T) {
 		newUserJSON := createUserCreationBody(testUsername, validPassword, userShouldBeAdmin)
 		resp, err := createNewUser(newUserJSON, userShouldBeAdmin)
 		assert.Nil(t, err)
-		createdUserID = retrieveIDFromResponseBody(turnResponseBodyIntoString(t, resp), t)
+		createdUserID = retrieveIDFromResponseBody(t, turnResponseBodyIntoString(t, resp))
 	}
 
 	testDeleteUser := func(t *testing.T) {
@@ -271,7 +271,7 @@ func TestAdminUserDeletion(t *testing.T) {
 		newUserJSON := createUserCreationBody(testUsername, validPassword, userShouldBeAdmin)
 		resp, err := createNewUser(newUserJSON, userShouldBeAdmin)
 		assert.Nil(t, err)
-		createdUserID = retrieveIDFromResponseBody(turnResponseBodyIntoString(t, resp), t)
+		createdUserID = retrieveIDFromResponseBody(t, turnResponseBodyIntoString(t, resp))
 	}
 
 	testDeleteUser := func(t *testing.T) {
@@ -305,7 +305,7 @@ func TestAdminUserDeletionAsRegularUser(t *testing.T) {
 		newUserJSON := createUserCreationBody(testUsername, validPassword, userShouldBeAdmin)
 		resp, err := createNewUser(newUserJSON, userShouldBeAdmin)
 		assert.Nil(t, err)
-		createdUserID = retrieveIDFromResponseBody(turnResponseBodyIntoString(t, resp), t)
+		createdUserID = retrieveIDFromResponseBody(t, turnResponseBodyIntoString(t, resp))
 	}
 
 	testDeleteUser := func(t *testing.T) {
@@ -347,7 +347,7 @@ func TestUserLogin(t *testing.T) {
 		testUserCookie = resp.Cookies()[0]
 
 		body := turnResponseBodyIntoString(t, resp)
-		createdUserID = retrieveIDFromResponseBody(body, t)
+		createdUserID = retrieveIDFromResponseBody(t, body)
 	}
 
 	testLogoutUser := func(t *testing.T) {
@@ -406,7 +406,7 @@ func TestUserLoginWithInvalidPassword(t *testing.T) {
 		testUserCookie = resp.Cookies()[0]
 
 		body := turnResponseBodyIntoString(t, resp)
-		createdUserID = retrieveIDFromResponseBody(body, t)
+		createdUserID = retrieveIDFromResponseBody(t, body)
 	}
 
 	testLogoutUser := func(t *testing.T) {
@@ -486,7 +486,7 @@ func TestUserLogout(t *testing.T) {
 		testUserCookie = resp.Cookies()[0]
 
 		body := turnResponseBodyIntoString(t, resp)
-		createdUserID = retrieveIDFromResponseBody(body, t)
+		createdUserID = retrieveIDFromResponseBody(t, body)
 	}
 
 	testLogoutUser := func(t *testing.T) {

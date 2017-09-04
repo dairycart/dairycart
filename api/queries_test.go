@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"testing"
 	"time"
 
@@ -250,7 +249,7 @@ func TestBuildProductUpdateQuery(t *testing.T) {
 		},
 		SKU:           "skateboard",
 		Name:          "Skateboard",
-		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		UPC:           "1234567890",
 		Quantity:      123,
 		Price:         99.99,
 		Cost:          50.00,
@@ -282,7 +281,7 @@ func TestBuildProductCreationQuery(t *testing.T) {
 		},
 		SKU:           "skateboard",
 		Name:          "Skateboard",
-		UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+		UPC:           "1234567890",
 		Quantity:      123,
 		Price:         99.99,
 		Cost:          50.00,
@@ -298,7 +297,7 @@ func TestBuildProductCreationQuery(t *testing.T) {
 		AvailableOn:   generateExampleTimeForTests(),
 	}
 
-	expectedQuery := `INSERT INTO products (product_root_id,name,subtitle,description,option_summary,sku,manufacturer,brand,quantity,taxable,price,on_sale,sale_price,cost,product_weight,product_height,product_width,product_length,package_weight,package_height,package_width,package_length,quantity_per_package,available_on,updated_on,upc) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,NOW(),$25) RETURNING id, available_on, created_on`
+	expectedQuery := `INSERT INTO products (product_root_id,name,subtitle,description,option_summary,sku,upc,manufacturer,brand,quantity,taxable,price,on_sale,sale_price,cost,product_weight,product_height,product_width,product_length,package_weight,package_height,package_width,package_length,quantity_per_package,available_on,updated_on) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,NOW()) RETURNING id, available_on, created_on`
 	actualQuery, actualArgs := buildProductCreationQuery(exampleProduct)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 25, len(actualArgs), argsEqualityErrorMessage)
@@ -314,7 +313,7 @@ func TestBuildMultipleProductCreationQuery(t *testing.T) {
 			},
 			SKU:           "skateboard",
 			Name:          "SKU ONE",
-			UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+			UPC:           "1234567890",
 			Quantity:      123,
 			Price:         99.99,
 			Cost:          50.00,
@@ -336,7 +335,7 @@ func TestBuildMultipleProductCreationQuery(t *testing.T) {
 			},
 			SKU:           "skateboard",
 			Name:          "SKU TWO",
-			UPC:           NullString{sql.NullString{String: "1234567890", Valid: true}},
+			UPC:           "1234567890",
 			Quantity:      123,
 			Price:         99.99,
 			Cost:          50.00,
@@ -353,7 +352,7 @@ func TestBuildMultipleProductCreationQuery(t *testing.T) {
 		},
 	}
 
-	expectedQuery := `INSERT INTO products (product_root_id,name,subtitle,description,option_summary,sku,manufacturer,brand,quantity,taxable,price,on_sale,sale_price,cost,product_weight,product_height,product_width,product_length,package_weight,package_height,package_width,package_length,quantity_per_package,available_on,updated_on) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,NOW()),($25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,NOW()) RETURNING id, created_on`
+	expectedQuery := `INSERT INTO products (product_root_id,name,subtitle,description,option_summary,sku,upc,manufacturer,brand,quantity,taxable,price,on_sale,sale_price,cost,product_weight,product_height,product_width,product_length,package_weight,package_height,package_width,package_length,quantity_per_package,available_on,updated_on) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,NOW()),($25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,NOW()) RETURNING id, created_on`
 	actualQuery, actualArgs := buildMultipleProductCreationQuery(exampleProducts)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 24*len(exampleProducts), len(actualArgs), argsEqualityErrorMessage)
