@@ -57,6 +57,7 @@ typings/
 # dotenv environment variables file
 .env
 
+src/elm/elm-stuff
 dist/css
 dist/js
 *.sassc

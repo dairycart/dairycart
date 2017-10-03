@@ -2,12 +2,9 @@ package main
 
 import (
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/go-chi/chi"
@@ -15,19 +12,9 @@ import (
 )
 
 const (
-	cookieName  = "dairycart"
-	templateDir = "templates"
-	staticDir   = "dist"
+	cookieName = "dairycart"
+	staticDir  = "assets"
 )
-
-var (
-	apiURL string
-	debug  bool
-)
-
-type Page struct {
-	Title string
-}
 
 // FileServer conveniently sets up a http.FileServer handler to serve
 // static files from a http.FileSystem.
@@ -49,40 +36,107 @@ func FileServer(r chi.Router, path string, root http.FileSystem) {
 	}))
 }
 
-func serveDashboard(w http.ResponseWriter, r *http.Request) {
-	// yuge thanks to Alex Edwards: http://www.alexedwards.net/blog/serving-static-sites-with-go
-	p := &Page{Title: "Dashboard"}
-	lp := filepath.Join(templateDir, "base.html")
-	fp := filepath.Join(templateDir, "index.html")
+func index(res http.ResponseWriter, req *http.Request) {
+	homePage := `
+	<!DOCTYPE html>
+	<html>
+		<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Dairycart</title>
+		<link rel="stylesheet" href="/assets/vendor/css/bulma.css">
+		<link rel="stylesheet" href="/assets/css/app.css">
 
-	tmpl, err := template.ParseFiles(lp, fp)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
+		<!-- external dependencies -->
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+		<!--  -->
 
-	if err := tmpl.ExecuteTemplate(w, "base", p); err != nil {
-		log.Println(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-	}
+		</head>
+		<body>
+		<div class="columns">
+			<aside class="column is-2 aside hero is-fullheight is-hidden-mobile">
+				<div>
+					<div class="main">
+					<div class="title">Menu</div>
+					<a href="#" class="item"><span class="icon"><i class="fa fa-home"></i></span><span class="name">Dashboard</span></a>
+					<a href="#products" class="item"><span class="icon"><i class="fa fa-briefcase"></i></span><span class="name">Products</span></a>
+					<a href="#" class="item"><span class="icon"><i class="fa fa-th-list"></i></span><span class="name">Orders</span></a>
+					</div>
+				</div>
+			</aside>
+			<div class="column is-10 admin-panel">
+				<nav class="nav has-shadow" id="top">
+					<div class="container">
+						<div class="nav-left">
+							<a class="nav-item" href="../index.html">
+							<img src="/assets/images/logo.png" alt="Description">Dairycart</a>
+						</div>
+						<!--
+							I don't know what this section accomplishes, but I'm too afraid to delete it
+						-->
+						<div class="nav-right nav-menu is-hidden-tablet">
+							<a href="#" class="nav-item is-active">Dashboard</a>
+							<a href="#" class="nav-item">Products</a>
+							<a href="#" class="nav-item">Orders</a>
+						</div>
+					</div>
+				</nav>
+				<div class="scooted">
+					<div id="elm-app"></div>
+				</div>
+			</div>
+		</div>
+		</div>
+		<script src="/assets/js/elm.js"></script>
+		<script>Elm.Dairycart.embed(document.getElementById('elm-app'));</script>
+		</body>
+	</html>
+	`
+	fmt.Fprintf(res, homePage)
 }
 
-func serveLogin(w http.ResponseWriter, r *http.Request) {
-	p := &Page{Title: "Login"}
-	lp := filepath.Join(templateDir, "login.html")
-
-	tmpl, err := template.ParseFiles(lp)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	if err := tmpl.ExecuteTemplate(w, "login.html", p); err != nil {
-		log.Println(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-	}
+func serveLogin(res http.ResponseWriter, req *http.Request) {
+	loginPage := `
+	<!DOCTYPE html>
+	<html>
+		<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Dairycart Login</title>
+		<link rel="stylesheet" href="/assets/vendor/css/bulma.css">
+		</head>
+		<body>
+			<section class="hero is-fullheight is-dark is-bold">
+				<div class="hero-body">
+					<div class="container">
+						<div class="columns is-vcentered">
+							<div class="column is-4 is-offset-4">
+								<h1 class="title">Login</h1>
+								<div class="box">
+									<label class="label">Username</label>
+									<p class="control">
+										<input class="input" type="text" placeholder="username">
+									</p>
+									<label class="label">Password</label>
+									<p class="control">
+										<input class="input" type="password" placeholder="••••••••••••••••••••••••••••••••••••••••••••••••">
+									</p>
+									<hr>
+									<p class="control">
+										<button class="button is-primary">Login</button>
+									</p>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+		</body>
+	</html>
+	`
+	fmt.Fprintf(res, loginPage)
 }
 
 // HTTP middleware setting a value on the request context
@@ -104,33 +158,20 @@ func cookieMiddleware(next http.Handler) http.Handler {
 }
 
 func main() {
-	debug = strings.ToLower(os.Getenv("DEBUG")) == "true"
-	apiURL = os.Getenv("DAIRYCART_API_URL")
-	if apiURL == "" {
-		log.Fatal("DAIRYCART_API_URL is not set")
-	}
-
-	_, err := url.Parse(apiURL)
-	if err != nil {
-		log.Fatalf("DAIRYCART_API_URL (%s) is invalid: %v", apiURL, err)
-	}
+	// debug = strings.ToLower(os.Getenv("DEBUG")) == "true"
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{Logger: log.New(os.Stdout, "", log.LstdFlags)}))
 
-	FileServer(r, "/static/", http.Dir(staticDir))
+	FileServer(r, "/assets/", http.Dir(staticDir))
 	r.Get("/login", serveLogin)
 	r.Route("/", func(r chi.Router) {
 		r.Use(cookieMiddleware)
-		r.Get("/", serveDashboard)
-		r.Get("/products", serveProducts)
-		r.Get("/product/{sku}", serveProduct)
-		r.Get("/orders", serveOrders)
-		r.Get("/order/{orderID}", serveOrder)
+		r.Get("/", index)
 	})
 
-	port := 1234
-	log.Printf("server is listening on port %d\n", port)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), r))
+	port := ":1234"
+	log.Printf("server is listening on port %s\n", port)
+	log.Fatal(http.ListenAndServe(port, r))
 }
