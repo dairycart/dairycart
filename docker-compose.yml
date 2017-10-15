@@ -26,25 +26,25 @@ services:
       - DAIRYCART_MIGRATIONS_DIR=file:///migrations
       - DAIRYCART_DB_URL=postgres://dairycart:hunter2@database:5432/dairycart?sslmode=disable
 
-  admin:
-    build:
-      context: admin
-      dockerfile: Dockerfile
-    ports:
-      - "1234:1234"
-    links:
-      - api
-    depends_on:
-      - api
-    environment:
-      - VIRTUAL_HOST=admin.dairycart.com
-      - DAIRYCART_API_URL=http://api:4321
+  # admin:
+  #   build:
+  #     context: admin
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "1234:1234"
+  #   links:
+  #     - api
+  #   depends_on:
+  #     - api
+  #   environment:
+  #     - VIRTUAL_HOST=admin.dairycart.com
+  #     - DAIRYCART_API_URL=http://api:4321
 
   nginx-proxy:
     image: jwilder/nginx-proxy
     ports:
       - "80:80"
     depends_on:
-      - admin
+      - api
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro

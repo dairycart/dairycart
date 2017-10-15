@@ -1,14 +1,22 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"io/ioutil"
+)
+
+var (
+	debug        bool
+	apiServerURL *url.URL
 )
 
 const (
@@ -37,61 +45,139 @@ func FileServer(r chi.Router, path string, root http.FileSystem) {
 }
 
 func index(res http.ResponseWriter, req *http.Request) {
+	// oldHomePage := `
+	// <!DOCTYPE html>
+	// <html>
+	// 	<head>
+	// 	<meta charset="utf-8">
+	// 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	// 	<meta name="viewport" content="width=device-width, initial-scale=1">
+	// 	<title>Dairycart</title>
+	// 	<link rel="stylesheet" href="/assets/vendor/css/bulma.css">
+	// 	<link rel="stylesheet" href="/assets/css/app.css">
+
+	// 	<!-- external dependencies -->
+	// 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+	// 	<!--  -->
+
+	// 	</head>
+	// 	<body>
+	// 	<div class="columns">
+	// 		<aside class="column is-2 aside hero is-fullheight is-hidden-mobile">
+	// 			<div>
+	// 				<div class="main">
+	// 				<div class="title">Menu</div>
+	// 				<a href="#" class="item"><span class="icon"><i class="fa fa-home"></i></span><span class="name">Dashboard</span></a>
+	// 				<a href="#products" class="item"><span class="icon"><i class="fa fa-briefcase"></i></span><span class="name">Products</span></a>
+	// 				<a href="#" class="item"><span class="icon"><i class="fa fa-th-list"></i></span><span class="name">Orders</span></a>
+	// 				</div>
+	// 			</div>
+	// 		</aside>
+	// 		<div class="column is-10 admin-panel">
+	// 			<nav class="nav has-shadow" id="top">
+	// 				<div class="container">
+	// 					<div class="nav-left">
+	// 						<a class="nav-item" href="../index.html">
+	// 						<img src="/assets/images/logo.png" alt="Description">Dairycart</a>
+	// 					</div>
+	// 					<!--
+	// 						I don't know what this section accomplishes, but I'm too afraid to delete it
+	// 					-->
+	// 					<div class="nav-right nav-menu is-hidden-tablet">
+	// 						<a href="#" class="nav-item is-active">Dashboard</a>
+	// 						<a href="#" class="nav-item">Products</a>
+	// 						<a href="#" class="nav-item">Orders</a>
+	// 					</div>
+	// 				</div>
+	// 			</nav>
+	// 			<div class="scooted">
+	// 				<div id="elm-app"></div>
+	// 			</div>
+	// 		</div>
+	// 	</div>
+	// 	</div>
+	// 	<script src="/assets/js/elm.js"></script>
+	// 	<script>Elm.Dairycart.embed(document.getElementById('elm-app'));</script>
+	// 	</body>
+	// </html>
+	// `
 	homePage := `
-	<!DOCTYPE html>
-	<html>
-		<head>
-		<meta charset="utf-8">
-		<meta http-equiv="X-UA-Compatible" content="IE=edge">
-		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<title>Dairycart</title>
-		<link rel="stylesheet" href="/assets/vendor/css/bulma.css">
-		<link rel="stylesheet" href="/assets/css/app.css">
+		<!DOCTYPE html>
+		<html>
+			<head>
+				<meta charset="utf-8">
+				<meta http-equiv="X-UA-Compatible" content="IE=edge">
+				<meta name="viewport" content="width=device-width, initial-scale=1">
+				<title>Dairycart</title>
+				<link rel="stylesheet" href="assets/vendor/css/bulma.css">
+				<link rel="stylesheet" href="assets/css/app.css">
+			</head>
+			<body>
+				<div id="app">
+					<div class="columns">
+						<aside class="column is-2 aside hero is-fullheight is-hidden-mobile">
+							<div>
+								<div class="main">
+									<div class="title">Menu</div>
+									<router-link to="/" class="item">
+										<span class="icon">
+											<i class="fa fa-home"></i>
+										</span>
+										<span class="name">Dashboard</span>
+									</router-link>
+									<router-link to="/products" class="item">
+										<span class="icon">
+											<i class="fa fa-briefcase"></i>
+										</span>
+										<span class="name">Products</span>
+									</router-link>
+									<a href="#" class="item">
+										<span class="icon">
+											<i class="fa fa-th-list"></i>
+										</span>
+										<span class="name">Orders</span>
+									</a>
+								</div>
+							</div>
+						</aside>
+						<div class="column is-10 admin-panel">
+							<nav class="nav has-shadow" id="top">
+								<div class="container">
+									<div class="nav-left">
+										<a class="nav-item" href="../index.html">
+											<img src="assets/images/logo.png" alt="Description">Dairycart</a>
+									</div>
+									<!--
+									I don't know what this section accomplishes, but I'm too afraid to delete it
+								-->
+									<div class="nav-right nav-menu is-hidden-tablet">
+										<a href="#" class="nav-item is-active">Dashboard</a>
+										<a href="#" class="nav-item">Products</a>
+										<a href="#" class="nav-item">Orders</a>
+									</div>
+								</div>
+							</nav>
+							<div class="scooted">
 
-		<!-- external dependencies -->
-		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
-		<!--  -->
+								<!-- BEGIN VUE SHIT -->
 
-		</head>
-		<body>
-		<div class="columns">
-			<aside class="column is-2 aside hero is-fullheight is-hidden-mobile">
-				<div>
-					<div class="main">
-					<div class="title">Menu</div>
-					<a href="#" class="item"><span class="icon"><i class="fa fa-home"></i></span><span class="name">Dashboard</span></a>
-					<a href="#products" class="item"><span class="icon"><i class="fa fa-briefcase"></i></span><span class="name">Products</span></a>
-					<a href="#" class="item"><span class="icon"><i class="fa fa-th-list"></i></span><span class="name">Orders</span></a>
+
+								<router-view></router-view>
+
+
+								<!-- END VUE SHIT -->
+
+							</div>
+						</div>
 					</div>
 				</div>
-			</aside>
-			<div class="column is-10 admin-panel">
-				<nav class="nav has-shadow" id="top">
-					<div class="container">
-						<div class="nav-left">
-							<a class="nav-item" href="../index.html">
-							<img src="/assets/images/logo.png" alt="Description">Dairycart</a>
-						</div>
-						<!--
-							I don't know what this section accomplishes, but I'm too afraid to delete it
-						-->
-						<div class="nav-right nav-menu is-hidden-tablet">
-							<a href="#" class="nav-item is-active">Dashboard</a>
-							<a href="#" class="nav-item">Products</a>
-							<a href="#" class="nav-item">Orders</a>
-						</div>
-					</div>
-				</nav>
-				<div class="scooted">
-					<div id="elm-app"></div>
-				</div>
-			</div>
-		</div>
-		</div>
-		<script src="/assets/js/elm.js"></script>
-		<script>Elm.Dairycart.embed(document.getElementById('elm-app'));</script>
-		</body>
-	</html>
+
+				<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+				<script src="https://unpkg.com/vue/dist/vue.js"></script>
+				<script src="https://unpkg.com/vue-router/dist/vue-router.js"></script>
+				<script src="assets/js/fart.js"></script>
+			</body>
+		</html>
 	`
 	fmt.Fprintf(res, homePage)
 }
@@ -157,8 +243,50 @@ func cookieMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func informUserOfForwardingError(res http.ResponseWriter, err error) {
+	res.WriteHeader(http.StatusInternalServerError)
+	json.NewEncoder(res).Encode(struct {
+		Response string `json:"error"`
+	}{fmt.Sprintf("Error encountered forwarding request to API server: %v", err)})
+}
+
+func apiForwarder(res http.ResponseWriter, req *http.Request) {
+	u, _ := url.Parse(fmt.Sprintf("%s?%s", strings.Replace(req.URL.Path, "/api", "", 1), req.URL.Query().Encode()))
+	toForwardTo := apiServerURL.ResolveReference(u)
+
+	req, err := http.NewRequest(req.Method, toForwardTo.String(), req.Body)
+	if err != nil {
+		informUserOfForwardingError(res, err)
+		return
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		informUserOfForwardingError(res, err)
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		informUserOfForwardingError(res, err)
+		return
+	}
+
+	res.WriteHeader(resp.StatusCode)
+	res.Write(body)
+}
+
 func main() {
-	// debug = strings.ToLower(os.Getenv("DEBUG")) == "true"
+	debug = strings.ToLower(os.Getenv("DEBUG")) == "true"
+
+	// apiURL := os.Getenv("DAIRYCART_API_URL")
+	apiURL := "http://api.dairycart.com/"
+
+	var err error
+	apiServerURL, err = url.Parse(apiURL)
+	if err != nil {
+		log.Fatal("API server URL is invalid")
+	}
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
@@ -167,8 +295,10 @@ func main() {
 	FileServer(r, "/assets/", http.Dir(staticDir))
 	r.Get("/login", serveLogin)
 	r.Route("/", func(r chi.Router) {
+		// commented out currently for debugging reasons
 		// r.Use(cookieMiddleware)
 		r.Get("/", index)
+		r.HandleFunc("/api/*", apiForwarder)
 	})
 
 	port := ":1234"
