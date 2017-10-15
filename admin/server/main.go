@@ -111,6 +111,10 @@ func index(res http.ResponseWriter, req *http.Request) {
 				<title>Dairycart</title>
 				<link rel="stylesheet" href="assets/vendor/css/bulma.css">
 				<link rel="stylesheet" href="assets/css/app.css">
+
+				<!-- external dependencies -->
+				<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+				<!--  -->
 			</head>
 			<body>
 				<div id="app">
@@ -158,15 +162,7 @@ func index(res http.ResponseWriter, req *http.Request) {
 								</div>
 							</nav>
 							<div class="scooted">
-
-								<!-- BEGIN VUE SHIT -->
-
-
 								<router-view></router-view>
-
-
-								<!-- END VUE SHIT -->
-
 							</div>
 						</div>
 					</div>
@@ -175,7 +171,7 @@ func index(res http.ResponseWriter, req *http.Request) {
 				<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 				<script src="https://unpkg.com/vue/dist/vue.js"></script>
 				<script src="https://unpkg.com/vue-router/dist/vue-router.js"></script>
-				<script src="assets/js/fart.js"></script>
+				<script src="assets/js/app.js"></script>
 			</body>
 		</html>
 	`
