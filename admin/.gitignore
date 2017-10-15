@@ -58,6 +58,6 @@ typings/
 .env
 
 src/elm/elm-stuff
-dist/css
-dist/js
+assets/css
+assets/js
 *.sassc

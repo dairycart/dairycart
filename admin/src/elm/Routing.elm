@@ -7,6 +7,7 @@ import UrlParser exposing (..)
 type Route
     = MainPage
     | ProductsPage
+    | ProductPage String
     | NotFoundRoute
 
 
@@ -15,6 +16,7 @@ matchers =
     oneOf
         [ map MainPage top
         , map ProductsPage (s "products")
+        , map ProductPage (s "product" </> string)
         ]
 
 

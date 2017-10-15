@@ -167,7 +167,7 @@ func main() {
 	FileServer(r, "/assets/", http.Dir(staticDir))
 	r.Get("/login", serveLogin)
 	r.Route("/", func(r chi.Router) {
-		r.Use(cookieMiddleware)
+		// r.Use(cookieMiddleware)
 		r.Get("/", index)
 	})
 

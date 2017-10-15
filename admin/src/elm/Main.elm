@@ -10,20 +10,7 @@ import View exposing (view)
 
 init : Location -> ( Model, Cmd Msg )
 init location =
-    let
-        currentRoute =
-            Routing.parseLocation location
-    in
-        ( initialModel currentRoute, Cmd.none )
-
-
-
--- SUBSCRIPTIONS
-
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.none
+    ( initialModel (Routing.parseLocation location), Cmd.none )
 
 
 
@@ -36,5 +23,5 @@ main =
         { init = init
         , view = view
         , update = update
-        , subscriptions = subscriptions
+        , subscriptions = \_ -> Sub.none
         }

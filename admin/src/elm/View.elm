@@ -1,14 +1,14 @@
 module View exposing (..)
 
-import Html exposing (Html, div, text)
+import Html exposing (Html, div, h1, text)
 import Messages exposing (Msg(..))
-import Models exposing (Model)
+import Models exposing (Model, Product)
 import Routing exposing (Route(..))
 
 
 -- Local Stuff
 
-import Products exposing (productPageHTML, buildProductCards, chunkProducts, products)
+import Products exposing (getProducts, productsPageHTML)
 import Dashboard exposing (dashboardHTML)
 
 
@@ -24,8 +24,11 @@ page model =
         MainPage ->
             mainPage
 
+        ProductPage sku ->
+            notFoundView
+
         ProductsPage ->
-            productsPage
+            productsPage model
 
         NotFoundRoute ->
             notFoundView
@@ -36,12 +39,12 @@ mainPage =
     dashboardHTML
 
 
-productsPage : Html Msg
-productsPage =
-    productPageHTML (List.map buildProductCards (chunkProducts 5 products))
+productsPage : { a | products : List Product } -> Html Msg
+productsPage model =
+    productsPageHTML model.products
 
 
 notFoundView : Html Msg
 notFoundView =
-    div []
+    h1 []
         [ text "Not Found" ]
