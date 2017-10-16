@@ -5,12 +5,14 @@ RUN gem install sass
 ADD src .
 RUN sass sass/*.sass app.css
 
-# elm stage
-FROM codesimple/elm:0.18 AS elm-stage
+# node stage
+FROM node:latest AS node-stage
 
-ADD src/elm .
+ADD src/javascript build
+WORKDIR build
 
-RUN elm-make --yes Main.elm --output elm.js
+RUN npm install
+RUN npm run docker-build
 
 # build stage
 FROM golang:alpine AS build-stage
@@ -23,11 +25,14 @@ RUN go build -o /admin-server
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 
+ADD server/html /html
+ADD server/html /html
 ADD /assets/vendor /assets/vendor
 ADD /assets/images /assets/images
 
 COPY --from=sass-stage /app.css /assets/css/app.css
-COPY --from=elm-stage /elm.js /assets/js/elm.js
+COPY --from=node-stage /build/output/js/app.js /assets/js/app.js
+COPY --from=node-stage /build/output/js/app.js.map /assets/js/app.js.map
 COPY --from=build-stage /admin-server /admin-server
 
 ENTRYPOINT ["/admin-server"]
