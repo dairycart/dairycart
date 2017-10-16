@@ -2,32 +2,14 @@
 
 
 [[projects]]
-  branch = "master"
-  name = "github.com/dairycart/dairyclient"
-  packages = ["v1"]
-  revision = "eeaa5c16bd3c596fe60b5110dd1040128f5f64fe"
-
-[[projects]]
   name = "github.com/go-chi/chi"
   packages = [".","middleware"]
-  revision = "ba73ba0623af32e4e5f09880177e73bd78d98852"
-  version = "v3.2.0"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/lib/pq"
-  packages = [".","oid"]
-  revision = "e42267488fe361b9dc034be7a6bffef5b195bceb"
-
-[[projects]]
-  name = "github.com/pkg/errors"
-  packages = ["."]
-  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
-  version = "v0.8.0"
+  revision = "f7c66f685bcab06bcce78ac212c5f3553c063d19"
+  version = "v3.3.0"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3fa3b677c5fb1d27bd757c739292770b0c04bc2cceab7bb2d05d0532b3fb4c24"
+  inputs-digest = "8eabdfe61dfde1465e08790b89d15a2d8a52e9bdfe4cc4f6cfc56b68f116df80"
   solver-name = "gps-cdcl"
   solver-version = 1

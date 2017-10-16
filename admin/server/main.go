@@ -1,33 +1,28 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 )
 
-const (
-	cookieName  = "dairycart"
-	templateDir = "templates"
-	staticDir   = "dist"
-)
-
 var (
-	apiURL string
-	debug  bool
+	debug        bool
+	apiServerURL *url.URL
 )
 
-type Page struct {
-	Title string
-}
+const (
+	cookieName = "dairycart"
+	staticDir  = "assets"
+)
 
 // FileServer conveniently sets up a http.FileServer handler to serve
 // static files from a http.FileSystem.
@@ -49,40 +44,29 @@ func FileServer(r chi.Router, path string, root http.FileSystem) {
 	}))
 }
 
-func serveDashboard(w http.ResponseWriter, r *http.Request) {
-	// yuge thanks to Alex Edwards: http://www.alexedwards.net/blog/serving-static-sites-with-go
-	p := &Page{Title: "Dashboard"}
-	lp := filepath.Join(templateDir, "base.html")
-	fp := filepath.Join(templateDir, "index.html")
-
-	tmpl, err := template.ParseFiles(lp, fp)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	if err := tmpl.ExecuteTemplate(w, "base", p); err != nil {
-		log.Println(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-	}
+func informUserOfFileReadError(res http.ResponseWriter, err error) {
+	res.WriteHeader(http.StatusInternalServerError)
+	json.NewEncoder(res).Encode(struct {
+		Response string `json:"error"`
+	}{fmt.Sprintf("Error encountered reading local file: %v", err)})
 }
 
-func serveLogin(w http.ResponseWriter, r *http.Request) {
-	p := &Page{Title: "Login"}
-	lp := filepath.Join(templateDir, "login.html")
-
-	tmpl, err := template.ParseFiles(lp)
+func serveHomePage(res http.ResponseWriter, req *http.Request) {
+	homepage, err := ioutil.ReadFile("html/base.html")
 	if err != nil {
-		log.Println(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		informUserOfFileReadError(res, err)
 		return
 	}
+	res.Write(homepage)
+}
 
-	if err := tmpl.ExecuteTemplate(w, "login.html", p); err != nil {
-		log.Println(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+func serveLogin(res http.ResponseWriter, req *http.Request) {
+	homepage, err := ioutil.ReadFile("html/login.html")
+	if err != nil {
+		informUserOfFileReadError(res, err)
+		return
 	}
+	res.Write(homepage)
 }
 
 // HTTP middleware setting a value on the request context
@@ -103,34 +87,66 @@ func cookieMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func main() {
-	debug = strings.ToLower(os.Getenv("DEBUG")) == "true"
-	apiURL = os.Getenv("DAIRYCART_API_URL")
-	if apiURL == "" {
-		log.Fatal("DAIRYCART_API_URL is not set")
+func informUserOfForwardingError(res http.ResponseWriter, err error) {
+	res.WriteHeader(http.StatusInternalServerError)
+	json.NewEncoder(res).Encode(struct {
+		Response string `json:"error"`
+	}{fmt.Sprintf("Error encountered forwarding request to API server: %v", err)})
+}
+
+func apiForwarder(res http.ResponseWriter, req *http.Request) {
+	u, _ := url.Parse(fmt.Sprintf("%s?%s", strings.Replace(req.URL.Path, "/api", "", 1), req.URL.Query().Encode()))
+	toForwardTo := apiServerURL.ResolveReference(u)
+
+	req, err := http.NewRequest(req.Method, toForwardTo.String(), req.Body)
+	if err != nil {
+		informUserOfForwardingError(res, err)
+		return
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		informUserOfForwardingError(res, err)
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		informUserOfForwardingError(res, err)
+		return
 	}
 
-	_, err := url.Parse(apiURL)
+	res.WriteHeader(resp.StatusCode)
+	res.Write(body)
+}
+
+func main() {
+	debug = strings.ToLower(os.Getenv("DEBUG")) == "true"
+
+	apiURL := os.Getenv("DAIRYCART_API_URL")
+
+	var err error
+	apiServerURL, err = url.Parse(apiURL)
 	if err != nil {
-		log.Fatalf("DAIRYCART_API_URL (%s) is invalid: %v", apiURL, err)
+		log.Fatal("API server URL is invalid")
 	}
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{Logger: log.New(os.Stdout, "", log.LstdFlags)}))
 
-	FileServer(r, "/static/", http.Dir(staticDir))
+	FileServer(r, "/assets/", http.Dir(staticDir))
 	r.Get("/login", serveLogin)
 	r.Route("/", func(r chi.Router) {
-		r.Use(cookieMiddleware)
-		r.Get("/", serveDashboard)
-		r.Get("/products", serveProducts)
-		r.Get("/product/{sku}", serveProduct)
-		r.Get("/orders", serveOrders)
-		r.Get("/order/{orderID}", serveOrder)
+		// commented out currently for debugging reasons
+		if !debug {
+			r.Use(cookieMiddleware)
+		}
+		r.Get("/", serveHomePage)
+		r.HandleFunc("/api/*", apiForwarder)
 	})
 
-	port := 1234
-	log.Printf("server is listening on port %d\n", port)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), r))
+	port := ":1234"
+	log.Printf("server is listening on port %s\n", port)
+	log.Fatal(http.ListenAndServe(port, r))
 }
