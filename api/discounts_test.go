@@ -140,13 +140,13 @@ func setExpectationsForDiscountUpdate(mock sqlmock.Sqlmock, d *Discount, err err
 
 func TestDiscountTypeIsValidWithValidInput(t *testing.T) {
 	t.Parallel()
-	d := &Discount{Type: "invalid_type"}
+	d := &Discount{DiscountType: "invalid_type"}
 	assert.False(t, d.discountTypeIsValid())
 }
 
 func TestDiscountTypeIsValidWithInvalidInput(t *testing.T) {
 	t.Parallel()
-	d := &Discount{Type: "this is nonsense"}
+	d := &Discount{DiscountType: "this is nonsense"}
 	assert.False(t, d.discountTypeIsValid())
 }
 
@@ -162,11 +162,11 @@ func TestRetrieveDiscountFromDB(t *testing.T) {
 			ID:        1,
 			CreatedOn: generateExampleTimeForTests(),
 		},
-		Name:      "Example Discount",
-		Type:      "flat_amount",
-		Amount:    12.34,
-		StartsOn:  generateExampleTimeForTests(),
-		ExpiresOn: NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
+		Name:         "Example Discount",
+		DiscountType: "flat_amount",
+		Amount:       12.34,
+		StartsOn:     generateExampleTimeForTests(),
+		ExpiresOn:    NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
 	}
 
 	actual, err := retrieveDiscountFromDB(testUtil.DB, discountIDString)
@@ -207,11 +207,11 @@ func TestCreateDiscountInDB(t *testing.T) {
 			ID:        1,
 			CreatedOn: generateExampleTimeForTests(),
 		},
-		Name:      "Example Discount",
-		Type:      "flat_amount",
-		Amount:    12.34,
-		StartsOn:  generateExampleTimeForTests(),
-		ExpiresOn: NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
+		Name:         "Example Discount",
+		DiscountType: "flat_amount",
+		Amount:       12.34,
+		StartsOn:     generateExampleTimeForTests(),
+		ExpiresOn:    NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
 	}
 
 	setExpectationsForDiscountCreation(testUtil.Mock, exampleDiscount, nil)
@@ -256,11 +256,11 @@ func TestUpdateDiscountInDB(t *testing.T) {
 			ID:        1,
 			CreatedOn: generateExampleTimeForTests(),
 		},
-		Name:      "Example Discount",
-		Type:      "flat_amount",
-		Amount:    12.34,
-		StartsOn:  generateExampleTimeForTests(),
-		ExpiresOn: NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
+		Name:         "Example Discount",
+		DiscountType: "flat_amount",
+		Amount:       12.34,
+		StartsOn:     generateExampleTimeForTests(),
+		ExpiresOn:    NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
 	}
 
 	setExpectationsForDiscountUpdate(testUtil.Mock, exampleDiscount, nil)
@@ -392,7 +392,7 @@ func TestDiscountCreationHandler(t *testing.T) {
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "Test",
-		Type:         "flat_amount",
+		DiscountType: "flat_amount",
 		Amount:       12.34,
 		StartsOn:     dummyTime,
 		RequiresCode: true,
@@ -438,11 +438,11 @@ func TestDiscountCreationHandlerWithDatabaseErrorUponCreation(t *testing.T) {
 			ID:        1,
 			CreatedOn: generateExampleTimeForTests(),
 		},
-		Name:      "Example Discount",
-		Type:      "flat_amount",
-		Amount:    12.34,
-		StartsOn:  generateExampleTimeForTests(),
-		ExpiresOn: NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
+		Name:         "Example Discount",
+		DiscountType: "flat_amount",
+		Amount:       12.34,
+		StartsOn:     generateExampleTimeForTests(),
+		ExpiresOn:    NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
 	}
 
 	setExpectationsForDiscountCreation(testUtil.Mock, exampleDiscount, generateArbitraryError())
@@ -511,7 +511,7 @@ func TestDiscountUpdateHandler(t *testing.T) {
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "New Name",
-		Type:         "flat_amount",
+		DiscountType: "flat_amount",
 		Amount:       12.34,
 		RequiresCode: true,
 		Code:         "TEST",
@@ -566,7 +566,7 @@ func TestDiscountUpdateHandlerWithErrorRetrievingDiscount(t *testing.T) {
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "New Name",
-		Type:         "flat_amount",
+		DiscountType: "flat_amount",
 		Amount:       12.34,
 		RequiresCode: true,
 		Code:         "TEST",
@@ -593,7 +593,7 @@ func TestDiscountUpdateHandlerWithErrorUpdatingDiscount(t *testing.T) {
 			CreatedOn: generateExampleTimeForTests(),
 		},
 		Name:         "New Name",
-		Type:         "flat_amount",
+		DiscountType: "flat_amount",
 		Amount:       12.34,
 		RequiresCode: true,
 		Code:         "TEST",

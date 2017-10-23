@@ -420,7 +420,7 @@ func TestBuildDiscountListQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `SELECT id,
 			name,
-			type,
+			discount_type,
 			amount,
 			starts_on,
 			expires_on,
@@ -444,14 +444,14 @@ func TestBuildDiscountCreationQuery(t *testing.T) {
 			ID:        1,
 			CreatedOn: generateExampleTimeForTests(),
 		},
-		Name:      "Example Discount",
-		Type:      "flat_amount",
-		Amount:    12.34,
-		StartsOn:  generateExampleTimeForTests(),
-		ExpiresOn: NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
+		Name:         "Example Discount",
+		DiscountType: "flat_amount",
+		Amount:       12.34,
+		StartsOn:     generateExampleTimeForTests(),
+		ExpiresOn:    NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
 	}
 
-	expectedQuery := `INSERT INTO discounts (name,type,amount,starts_on,expires_on,requires_code,code,limited_use,number_of_uses,login_required) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id, created_on`
+	expectedQuery := `INSERT INTO discounts (name,discount_type,amount,starts_on,expires_on,requires_code,code,limited_use,number_of_uses,login_required) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id, created_on`
 	actualQuery, actualArgs := buildDiscountCreationQuery(exampleDiscount)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 10, len(actualArgs), argsEqualityErrorMessage)
@@ -464,14 +464,14 @@ func TestBuildDiscountUpdateQuery(t *testing.T) {
 			ID:        1,
 			CreatedOn: generateExampleTimeForTests(),
 		},
-		Name:      "Example Discount",
-		Type:      "flat_amount",
-		Amount:    12.34,
-		StartsOn:  generateExampleTimeForTests(),
-		ExpiresOn: NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
+		Name:         "Example Discount",
+		DiscountType: "flat_amount",
+		Amount:       12.34,
+		StartsOn:     generateExampleTimeForTests(),
+		ExpiresOn:    NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
 	}
 
-	expectedQuery := `UPDATE discounts SET amount = $1, code = $2, expires_on = $3, limited_use = $4, login_required = $5, name = $6, number_of_uses = $7, requires_code = $8, starts_on = $9, type = $10, updated_on = NOW() WHERE id = $11 RETURNING updated_on`
+	expectedQuery := `UPDATE discounts SET amount = $1, code = $2, expires_on = $3, limited_use = $4, login_required = $5, name = $6, number_of_uses = $7, requires_code = $8, starts_on = $9, discount_type = $10, updated_on = NOW() WHERE id = $11 RETURNING updated_on`
 	actualQuery, actualArgs := buildDiscountUpdateQuery(exampleDiscount)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 11, len(actualArgs), argsEqualityErrorMessage)
