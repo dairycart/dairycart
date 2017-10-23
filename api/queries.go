@@ -505,7 +505,7 @@ func buildDiscountListQuery(queryFilter *QueryFilter) (string, []interface{}) {
 	queryBuilder := sqlBuilder.
 		Select(`id,
 			name,
-			type,
+			discount_type,
 			amount,
 			starts_on,
 			expires_on,
@@ -531,8 +531,8 @@ func buildDiscountCreationQuery(d *Discount) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Insert("discounts").
-		Columns("name", "type", "amount", "starts_on", "expires_on", "requires_code", "code", "limited_use", "number_of_uses", "login_required").
-		Values(d.Name, d.Type, d.Amount, d.StartsOn, d.ExpiresOn, d.RequiresCode, d.Code, d.LimitedUse, d.NumberOfUses, d.LoginRequired).
+		Columns("name", "discount_type", "amount", "starts_on", "expires_on", "requires_code", "code", "limited_use", "number_of_uses", "login_required").
+		Values(d.Name, d.DiscountType, d.Amount, d.StartsOn, d.ExpiresOn, d.RequiresCode, d.Code, d.LimitedUse, d.NumberOfUses, d.LoginRequired).
 		Suffix("RETURNING id, created_on")
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
@@ -542,7 +542,7 @@ func buildDiscountUpdateQuery(d *Discount) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	updateSetMap := map[string]interface{}{
 		"name":           d.Name,
-		"type":           d.Type,
+		"discount_type":  d.DiscountType,
 		"amount":         d.Amount,
 		"starts_on":      d.StartsOn,
 		"expires_on":     d.ExpiresOn.Time,

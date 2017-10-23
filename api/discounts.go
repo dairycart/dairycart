@@ -41,7 +41,7 @@ const (
 type Discount struct {
 	DBRow
 	Name          string    `json:"name"`
-	Type          string    `json:"type"`
+	DiscountType  string    `json:"discount_type"`
 	Amount        float32   `json:"amount"`
 	StartsOn      time.Time `json:"starts_on"`
 	ExpiresOn     NullTime  `json:"expires_on"`
@@ -70,7 +70,7 @@ func (d *Discount) discountTypeIsValid() bool {
 	// Because Go doesn't have typed enums (https://github.com/golang/go/issues/19814),
 	// this is my only real line of defense against a user attempting to load an invalid
 	// discount type into the database. It's lame, type enums aren't, here's hoping.
-	return d.Type == "percentage" || d.Type == "flat_amount"
+	return d.DiscountType == "percentage" || d.DiscountType == "flat_amount"
 }
 
 func retrieveDiscountFromDB(db *sqlx.DB, discountID string) (Discount, error) {

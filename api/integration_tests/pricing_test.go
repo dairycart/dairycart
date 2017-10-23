@@ -20,7 +20,7 @@ func createDiscountCreationBody(code string) string {
 	output := fmt.Sprintf(`
 		{
 			"name": "Test",
-			"type": "flat_amount",
+			"discount_type": "flat_amount",
 			"amount": 12.34,
 			"starts_on": "2016-12-01T12:00:00+05:00",
 			"requires_code": true,
@@ -54,7 +54,7 @@ func TestDiscountRetrievalForExistingDiscount(t *testing.T) {
 		{
 			"id": 1,
 			"name": "10% off",
-			"type": "percentage",
+			"discount_type": "percentage",
 			"amount": 10,
 			"requires_code": false,
 			"limited_use": false,
@@ -131,7 +131,7 @@ func TestDiscountCreation(t *testing.T) {
 			{
 				"id": %d,
 				"name": "Test",
-				"type": "flat_amount",
+				"discount_type": "flat_amount",
 				"amount": 12.34,
 				"requires_code": true,
 				"code": "%s",
@@ -250,7 +250,7 @@ func TestDiscountUpdate(t *testing.T) {
 			{
 				"id": %d,
 				"name": "new name",
-				"type": "flat_amount",
+				"discount_type": "flat_amount",
 				"amount": 12.34,
 				"requires_code": true,
 				"code": "update",
