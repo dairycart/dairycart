@@ -22,6 +22,7 @@ services:
     links:
       - database
     environment:
+      - DB_TO_USE=postgres
       - VIRTUAL_HOST=api.dairycart.com
       - DAIRYCART_MIGRATIONS_DIR=file:///migrations
       - DAIRYCART_DB_URL=postgres://dairycart:hunter2@database:5432/dairycart?sslmode=disable

@@ -14,14 +14,17 @@ import (
 	"testing"
 	"time"
 
-	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
+	// local dependencies
+	"github.com/dairycart/dairycart/api/storage/postgres"
 
+	// external dependencies
 	"github.com/go-chi/chi"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
+	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 
 	"github.com/gorilla/securecookie"
 	log "github.com/sirupsen/logrus"
@@ -96,8 +99,10 @@ func setupTestVariables(t *testing.T) *TestUtil {
 	}
 	store := sessions.NewCookieStore([]byte(secret))
 
+	db := postgres.Postgres{DB: mockDB}
+
 	router := chi.NewRouter()
-	SetupAPIRoutes(router, dbx, store)
+	SetupAPIRoutes(router, dbx, store, db)
 
 	return &TestUtil{
 		Response: httptest.NewRecorder(),

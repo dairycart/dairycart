@@ -7,6 +7,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/dairycart/dairycart/api/storage"
+	// "github.com/dairycart/dairycart/api/storage/models"
+
 	"github.com/go-chi/chi"
 	"github.com/imdario/mergo"
 	"github.com/jmoiron/sqlx"
@@ -153,12 +156,13 @@ func retrieveProductFromDB(db *sqlx.DB, sku string) (Product, error) {
 	return p, err
 }
 
-func buildSingleProductHandler(db *sqlx.DB) http.HandlerFunc {
+func buildSingleProductHandler(dbx *sqlx.DB, db storage.Storage) http.HandlerFunc {
 	// SingleProductHandler is a request handler that returns a single Product
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := chi.URLParam(req, "sku")
 
-		product, err := retrieveProductFromDB(db, sku)
+		// product, err := retrieveProductFromDB(db, sku)
+		product, err := db.GetProductBySKU(sku)
 		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "product", sku)
 			return
