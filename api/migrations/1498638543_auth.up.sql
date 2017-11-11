@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
     "email" text NOT NULL,
     "password" text NOT NULL,
     "salt" bytea NOT NULL,
-    "is_admin" bool DEFAULT 'false',
+    "is_admin" bool NOT NULL DEFAULT 'false',
     "password_last_changed_on" timestamp,
     "created_on" timestamp NOT NULL DEFAULT NOW(),
     "updated_on" timestamp,

@@ -22,7 +22,7 @@ const (
 	exampleDiscountCreationInput = `
 	{
 		"name": "Test",
-		"type": "flat_amount",
+		"discount_type": "flat_amount",
 		"amount": 12.34,
 		"starts_on": "2016-12-01T12:00:00+05:00",
 		"requires_code": true,

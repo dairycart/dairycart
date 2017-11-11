@@ -18,7 +18,7 @@ const (
 	discountsTableColumns = `
 		id,
 		name,
-		type,
+		discount_type,
 		amount,
 		starts_on,
 		expires_on,

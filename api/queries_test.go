@@ -471,7 +471,7 @@ func TestBuildDiscountUpdateQuery(t *testing.T) {
 		ExpiresOn:    NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
 	}
 
-	expectedQuery := `UPDATE discounts SET amount = $1, code = $2, expires_on = $3, limited_use = $4, login_required = $5, name = $6, number_of_uses = $7, requires_code = $8, starts_on = $9, discount_type = $10, updated_on = NOW() WHERE id = $11 RETURNING updated_on`
+	expectedQuery := `UPDATE discounts SET amount = $1, code = $2, discount_type = $3, expires_on = $4, limited_use = $5, login_required = $6, name = $7, number_of_uses = $8, requires_code = $9, starts_on = $10, updated_on = NOW() WHERE id = $11 RETURNING updated_on`
 	actualQuery, actualArgs := buildDiscountUpdateQuery(exampleDiscount)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 11, len(actualArgs), argsEqualityErrorMessage)
