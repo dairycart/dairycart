@@ -161,7 +161,6 @@ func buildSingleProductHandler(db storage.Storage) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := chi.URLParam(req, "sku")
 
-		// product, err := retrieveProductFromDB(db, sku)
 		product, err := db.GetProductBySKU(sku)
 		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "product", sku)

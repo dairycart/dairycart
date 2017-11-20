@@ -55,7 +55,7 @@ type TestUtil struct {
 	PlainDB  *sql.DB
 	DB       *sqlx.DB
 	Mock     sqlmock.Sqlmock
-	MockDB   dairymock.MockDB
+	MockDB   *dairymock.MockDB
 	Store    *sessions.CookieStore
 }
 
@@ -108,6 +108,33 @@ func setupTestVariables(t *testing.T) *TestUtil {
 		Response: httptest.NewRecorder(),
 		Router:   router,
 		PlainDB:  mockDB,
+		DB:       dbx,
+		Mock:     mock,
+		Store:    store,
+	}
+}
+
+func setupTestVariablesWithMock(t *testing.T) *TestUtil {
+	t.Helper()
+	mockDB, mock, err := sqlmock.New()
+	dbx := sqlx.NewDb(mockDB, "postgres")
+	dbx.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
+	assert.Nil(t, err)
+	dairymockDB := &dairymock.MockDB{}
+
+	secret := os.Getenv("DAIRYSECRET")
+	if len(secret) < 32 {
+		log.Fatalf("Something is up with your app secret: `%s`", secret)
+	}
+	store := sessions.NewCookieStore([]byte(secret))
+
+	router := chi.NewRouter()
+
+	return &TestUtil{
+		Response: httptest.NewRecorder(),
+		Router:   router,
+		PlainDB:  mockDB,
+		MockDB: dairymockDB,
 		DB:       dbx,
 		Mock:     mock,
 		Store:    store,
