@@ -1,6 +1,7 @@
 package dairymock
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/dairycart/dairycart/api/storage/models"
@@ -26,7 +27,7 @@ func (m *MockDB) UpdateProductVariantBridge(updated *models.ProductVariantBridge
 	return args.Get(0).(time.Time), args.Error(1)
 }
 
-func (m *MockDB) DeleteProductVariantBridge(id uint64) (time.Time, error) {
-	args := m.Called(id)
+func (m *MockDB) DeleteProductVariantBridge(id uint64, tx *sql.Tx) (time.Time, error) {
+	args := m.Called(id, tx)
 	return args.Get(0).(time.Time), args.Error(1)
 }

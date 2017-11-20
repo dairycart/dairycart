@@ -92,8 +92,11 @@ const productOptionValueDeletionQuery = `
     RETURNING archived_on
 `
 
-func (pg *Postgres) DeleteProductOptionValue(id uint64) (time.Time, error) {
-	var t time.Time
-	err := pg.DB.QueryRow(productOptionValueDeletionQuery, id).Scan(&t)
-	return t, err
+func (pg *Postgres) DeleteProductOptionValue(id uint64, tx *sql.Tx) (t time.Time, err error) {
+	if tx != nil {
+		err = tx.QueryRow(productOptionValueDeletionQuery, id).Scan(&t)
+	} else {
+		err = pg.DB.QueryRow(productOptionValueDeletionQuery, id).Scan(&t)
+	}
+	return
 }

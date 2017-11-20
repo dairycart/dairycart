@@ -2,9 +2,11 @@ package postgres
 
 import (
 	"fmt"
-	"log"
 	"strings"
+	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func formatQueryForSQLMock(query string) string {
@@ -14,10 +16,9 @@ func formatQueryForSQLMock(query string) string {
 	return query
 }
 
-func generateExampleTimeForTests() time.Time {
+func generateExampleTimeForTests(t *testing.T) time.Time {
+	t.Helper()
 	out, err := time.Parse("2006-01-02 03:04:00.000000", "2016-12-31 12:00:00.000000")
-	if err != nil {
-		log.Fatalf("error parsing time")
-	}
+	require.Nil(t, err)
 	return out
 }

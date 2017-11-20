@@ -208,12 +208,14 @@ func deleteProductBySKU(tx *sql.Tx, sku string) error {
 	return err
 }
 
+// func buildProductDeletionHandler(db storage.Storage) http.HandlerFunc {
 func buildProductDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 	// ProductDeletionHandler is a request handler that deletes a single product
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := chi.URLParam(req, "sku")
 
 		// can't delete a product that doesn't exist!
+		// existingProduct, err := db.GetProductBySKU(sku)
 		existingProduct, err := retrieveProductFromDB(db, sku)
 		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "product", sku)
@@ -236,6 +238,7 @@ func buildProductDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
+		// archiveTime, err := db.DeleteProduct(existingProduct.ID, tx)
 		err = deleteProductBySKU(tx, sku)
 		if err != nil {
 			tx.Rollback()
@@ -248,8 +251,8 @@ func buildProductDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 			notifyOfInternalIssue(res, err, "close out transaction")
 			return
 		}
-
-		res.WriteHeader(http.StatusOK)
+		// existingProduct.ArchivedOn = archiveTime
+		// json.NewEncoder(res).Encode(existingProduct)
 	}
 }
 

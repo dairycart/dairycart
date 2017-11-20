@@ -93,8 +93,11 @@ const passwordResetTokenDeletionQuery = `
     RETURNING archived_on
 `
 
-func (pg *Postgres) DeletePasswordResetToken(id uint64) (time.Time, error) {
-	var t time.Time
-	err := pg.DB.QueryRow(passwordResetTokenDeletionQuery, id).Scan(&t)
-	return t, err
+func (pg *Postgres) DeletePasswordResetToken(id uint64, tx *sql.Tx) (t time.Time, err error) {
+	if tx != nil {
+		err = tx.QueryRow(passwordResetTokenDeletionQuery, id).Scan(&t)
+	} else {
+		err = pg.DB.QueryRow(passwordResetTokenDeletionQuery, id).Scan(&t)
+	}
+	return
 }

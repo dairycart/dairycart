@@ -8,6 +8,4 @@ import (
 
 var _ storage.Storage = (*Postgres)(nil)
 
-type Postgres struct {
-	DB *sql.DB
-}
+type Postgres struct{ *sql.DB }

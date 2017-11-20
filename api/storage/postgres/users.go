@@ -104,8 +104,11 @@ const userDeletionQuery = `
     RETURNING archived_on
 `
 
-func (pg *Postgres) DeleteUser(id uint64) (time.Time, error) {
-	var t time.Time
-	err := pg.DB.QueryRow(userDeletionQuery, id).Scan(&t)
-	return t, err
+func (pg *Postgres) DeleteUser(id uint64, tx *sql.Tx) (t time.Time, err error) {
+	if tx != nil {
+		err = tx.QueryRow(userDeletionQuery, id).Scan(&t)
+	} else {
+		err = pg.DB.QueryRow(userDeletionQuery, id).Scan(&t)
+	}
+	return
 }

@@ -1,13 +1,17 @@
 package storage
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/dairycart/dairycart/api/storage/models"
 )
 
 type Storage interface {
-    {{- range .Schema.Tables }}
+	// Basic Database Stuff
+	Begin() (*sql.Tx, error)
+
+    {{ range .Schema.Tables }}
     {{- $modelName := pascal (trimSuffix .Name "s") }}
     {{- $isProduct := eq $modelName "Product" }}
     {{- $isDiscount := eq $modelName "Discount" }}
@@ -16,7 +20,7 @@ type Storage interface {
     {{ $modelName }}Exists(uint64) (bool, error)
     Create{{ $modelName }}(*models.{{ $modelName }}) (uint64, time.Time, {{ if $isProduct }}time.Time, {{ end }}error)
     Update{{ $modelName }}(*models.{{ $modelName }}) (time.Time, error)
-    Delete{{ $modelName }}(uint64) (time.Time, error)
+    Delete{{ $modelName }}(uint64, *sql.Tx) (time.Time, error)
     {{ if $isProduct }}Get{{ $modelName }}BySKU(string) (*models.{{ $modelName }}, error)
     {{ $modelName }}WithSKUExists(string) (bool, error){{- end -}}
     {{ if $isDiscount }}Get{{ $modelName }}ByCode(string) (*models.{{ $modelName }}, error){{- end }}

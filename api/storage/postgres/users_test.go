@@ -117,7 +117,7 @@ func TestGetUserByID(t *testing.T) {
 func setUserCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.User, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(userCreationQuery)
-	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), generateExampleTimeForTests())
+	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), generateExampleTimeForTests(t))
 	mock.ExpectQuery(query).
 		WithArgs(
 			toCreate.FirstName,
@@ -143,7 +143,7 @@ func TestCreateUser(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setUserCreationQueryExpectation(t, mock, exampleInput, nil)
-		expected := generateExampleTimeForTests()
+		expected := generateExampleTimeForTests(t)
 		client := Postgres{DB: mockDB}
 		actualID, actualCreationDate, err := client.CreateUser(exampleInput)
 
@@ -158,7 +158,7 @@ func TestCreateUser(t *testing.T) {
 func setUserUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate *models.User, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(userUpdateQuery)
-	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests())
+	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests(t))
 	mock.ExpectQuery(query).
 		WithArgs(
 			toUpdate.FirstName,
@@ -184,7 +184,7 @@ func TestUpdateUserByID(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setUserUpdateQueryExpectation(t, mock, exampleInput, nil)
-		expected := generateExampleTimeForTests()
+		expected := generateExampleTimeForTests(t)
 		client := Postgres{DB: mockDB}
 		actual, err := client.UpdateUser(exampleInput)
 
@@ -197,7 +197,7 @@ func TestUpdateUserByID(t *testing.T) {
 func setUserDeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(userDeletionQuery)
-	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests())
+	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
@@ -210,9 +210,23 @@ func TestDeleteUserByID(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setUserDeletionQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests()
+		expected := generateExampleTimeForTests(t)
 		client := Postgres{DB: mockDB}
-		actual, err := client.DeleteUser(exampleID)
+		actual, err := client.DeleteUser(exampleID, nil)
+
+		require.Nil(t, err)
+		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+
+	t.Run("with transaction", func(t *testing.T) {
+		mock.ExpectBegin()
+		setUserDeletionQueryExpectation(t, mock, exampleID, nil)
+		expected := generateExampleTimeForTests(t)
+		tx, err := mockDB.Begin()
+		require.Nil(t, err, "no error should be returned setting up a transaction in the mock DB")
+		client := Postgres{DB: mockDB}
+		actual, err := client.DeleteUser(exampleID, tx)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")

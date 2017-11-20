@@ -179,7 +179,7 @@ func TestGetDiscountByID(t *testing.T) {
 func setDiscountCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.Discount, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(discountCreationQuery)
-	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), generateExampleTimeForTests())
+	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), generateExampleTimeForTests(t))
 	mock.ExpectQuery(query).
 		WithArgs(
 			toCreate.Name,
@@ -207,7 +207,7 @@ func TestCreateDiscount(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setDiscountCreationQueryExpectation(t, mock, exampleInput, nil)
-		expected := generateExampleTimeForTests()
+		expected := generateExampleTimeForTests(t)
 		client := Postgres{DB: mockDB}
 		actualID, actualCreationDate, err := client.CreateDiscount(exampleInput)
 
@@ -222,7 +222,7 @@ func TestCreateDiscount(t *testing.T) {
 func setDiscountUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate *models.Discount, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(discountUpdateQuery)
-	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests())
+	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests(t))
 	mock.ExpectQuery(query).
 		WithArgs(
 			toUpdate.Name,
@@ -250,7 +250,7 @@ func TestUpdateDiscountByID(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setDiscountUpdateQueryExpectation(t, mock, exampleInput, nil)
-		expected := generateExampleTimeForTests()
+		expected := generateExampleTimeForTests(t)
 		client := Postgres{DB: mockDB}
 		actual, err := client.UpdateDiscount(exampleInput)
 
@@ -263,7 +263,7 @@ func TestUpdateDiscountByID(t *testing.T) {
 func setDiscountDeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(discountDeletionQuery)
-	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests())
+	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
@@ -276,9 +276,23 @@ func TestDeleteDiscountByID(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setDiscountDeletionQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests()
+		expected := generateExampleTimeForTests(t)
 		client := Postgres{DB: mockDB}
-		actual, err := client.DeleteDiscount(exampleID)
+		actual, err := client.DeleteDiscount(exampleID, nil)
+
+		require.Nil(t, err)
+		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+
+	t.Run("with transaction", func(t *testing.T) {
+		mock.ExpectBegin()
+		setDiscountDeletionQueryExpectation(t, mock, exampleID, nil)
+		expected := generateExampleTimeForTests(t)
+		tx, err := mockDB.Begin()
+		require.Nil(t, err, "no error should be returned setting up a transaction in the mock DB")
+		client := Postgres{DB: mockDB}
+		actual, err := client.DeleteDiscount(exampleID, tx)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
