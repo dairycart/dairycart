@@ -515,46 +515,45 @@ func TestCreateProductInDB(t *testing.T) {
 //                                                    //
 ////////////////////////////////////////////////////////
 
-func TestProductExistenceHandlerWithExistingProduct(t *testing.T) {
+func TestProductExistenceHandler(t *testing.T) {
 	t.Parallel()
-	testUtil := setupTestVariables(t)
+	exampleSKU := "example"
+	t.Run("with existent product", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductWithSKUExists", exampleSKU).Return(true, nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	setExpectationsForProductExistence(testUtil.Mock, exampleSKU, true, nil)
+		req, err := http.NewRequest("HEAD", "/v1/product/example", nil)
+		assert.Nil(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	req, err := http.NewRequest("HEAD", "/v1/product/example", nil)
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusOK)
+		ensureExpectationsWereMet(t, testUtil.Mock)
+	})
+	t.Run("with nonexistent product", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductWithSKUExists", exampleSKU).Return(false, nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	assertStatusCode(t, testUtil, http.StatusOK)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+		req, err := http.NewRequest("HEAD", "/v1/product/example", nil)
+		assert.Nil(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-func TestProductExistenceHandlerWithNonexistentProduct(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+		assertStatusCode(t, testUtil, http.StatusNotFound)
+		ensureExpectationsWereMet(t, testUtil.Mock)
+	})
+	t.Run("with error performing check", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductWithSKUExists", exampleSKU).Return(false, generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	setExpectationsForProductExistence(testUtil.Mock, "unreal", false, nil)
+		req, err := http.NewRequest("HEAD", "/v1/product/example", nil)
+		assert.Nil(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	req, err := http.NewRequest("HEAD", "/v1/product/unreal", nil)
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-	assertStatusCode(t, testUtil, http.StatusNotFound)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-func TestProductExistenceHandlerWithExistenceCheckerError(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
-	setExpectationsForProductExistence(testUtil.Mock, "unreal", false, generateArbitraryError())
-
-	req, err := http.NewRequest("HEAD", "/v1/product/unreal", nil)
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-	assertStatusCode(t, testUtil, http.StatusNotFound)
-	ensureExpectationsWereMet(t, testUtil.Mock)
+		assertStatusCode(t, testUtil, http.StatusNotFound)
+		ensureExpectationsWereMet(t, testUtil.Mock)
+	})
 }
 
 func TestProductRetrievalHandler(t *testing.T) {

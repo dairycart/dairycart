@@ -6,6 +6,11 @@ import (
 	"github.com/dairycart/dairycart/api/storage/models"
 )
 
+func (m *MockDB) ProductVariantBridgeExists(id uint64) (bool, error) {
+	args := m.Called(id)
+	return args.Bool(0), args.Error(1)
+}
+
 func (m *MockDB) GetProductVariantBridge(id uint64) (*models.ProductVariantBridge, error) {
 	args := m.Called(id)
 	return args.Get(0).(*models.ProductVariantBridge), args.Error(1)

@@ -6,6 +6,11 @@ import (
 	"github.com/dairycart/dairycart/api/storage/models"
 )
 
+func (m *MockDB) PasswordResetTokenExists(id uint64) (bool, error) {
+	args := m.Called(id)
+	return args.Bool(0), args.Error(1)
+}
+
 func (m *MockDB) GetPasswordResetToken(id uint64) (*models.PasswordResetToken, error) {
 	args := m.Called(id)
 	return args.Get(0).(*models.PasswordResetToken), args.Error(1)

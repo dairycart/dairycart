@@ -17,7 +17,8 @@ type Storage interface {
     Create{{ $modelName }}(*models.{{ $modelName }}) (uint64, time.Time, {{ if $isProduct }}time.Time, {{ end }}error)
     Update{{ $modelName }}(*models.{{ $modelName }}) (time.Time, error)
     Delete{{ $modelName }}(uint64) (time.Time, error)
-    {{ if $isProduct }}Get{{ $modelName }}BySKU(string) (*models.{{ $modelName }}, error){{- end -}}
+    {{ if $isProduct }}Get{{ $modelName }}BySKU(string) (*models.{{ $modelName }}, error)
+    {{ $modelName }}WithSKUExists(string) (bool, error){{- end -}}
     {{ if $isDiscount }}Get{{ $modelName }}ByCode(string) (*models.{{ $modelName }}, error){{- end }}
     {{ end }}
 }

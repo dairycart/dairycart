@@ -102,6 +102,52 @@ func TestGetProductBySKU(t *testing.T) {
 	})
 }
 
+func setProductWithSKUExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, sku string, shouldExist bool, err error) {
+	t.Helper()
+	query := formatQueryForSQLMock(productWithSKUExistenceQuery)
+
+	mock.ExpectQuery(query).
+		WithArgs(sku).
+		WillReturnRows(sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(shouldExist))).
+		WillReturnError(err)
+}
+
+func TestProductWithSKUExists(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	require.Nil(t, err)
+	defer mockDB.Close()
+	exampleSKU := "example"
+
+	t.Run("existing", func(t *testing.T) {
+		setProductWithSKUExistenceQueryExpectation(t, mock, exampleSKU, true, nil)
+		client := Postgres{DB: mockDB}
+		actual, err := client.ProductWithSKUExists(exampleSKU)
+
+		require.Nil(t, err)
+		require.True(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with no rows found", func(t *testing.T) {
+		setProductWithSKUExistenceQueryExpectation(t, mock, exampleSKU, true, sql.ErrNoRows)
+		client := Postgres{DB: mockDB}
+		actual, err := client.ProductWithSKUExists(exampleSKU)
+
+		require.Nil(t, err)
+		require.False(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with a database error", func(t *testing.T) {
+		setProductWithSKUExistenceQueryExpectation(t, mock, exampleSKU, true, errors.New("pineapple on pizza"))
+		client := Postgres{DB: mockDB}
+		actual, err := client.ProductWithSKUExists(exampleSKU)
+
+		require.NotNil(t, err)
+		require.False(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
+
 func setProductExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, shouldExist bool, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productExistenceQuery)

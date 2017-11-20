@@ -54,6 +54,21 @@ func (pg *Postgres) GetProductBySKU(sku string) (*models.Product, error) {
 	return p, err
 }
 
+const productWithSKUExistenceQuery = `SELECT EXISTS(SELECT id FROM products WHERE sku = $1 and archived_on IS NULL);`
+
+func (pg *Postgres) ProductWithSKUExists(sku string) (bool, error) {
+	var exists string
+
+	err := pg.DB.QueryRow(productWithSKUExistenceQuery, sku).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return exists == "true", err
+}
+
 const productExistenceQuery = `SELECT EXISTS(SELECT id FROM products WHERE id = $1 and archived_on IS NULL);`
 
 func (pg *Postgres) ProductExists(id uint64) (bool, error) {

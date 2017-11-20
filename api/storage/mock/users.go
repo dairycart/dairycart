@@ -6,6 +6,11 @@ import (
 	"github.com/dairycart/dairycart/api/storage/models"
 )
 
+func (m *MockDB) UserExists(id uint64) (bool, error) {
+	args := m.Called(id)
+	return args.Bool(0), args.Error(1)
+}
+
 func (m *MockDB) GetUser(id uint64) (*models.User, error) {
 	args := m.Called(id)
 	return args.Get(0).(*models.User), args.Error(1)

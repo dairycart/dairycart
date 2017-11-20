@@ -10,6 +10,15 @@ func (m *MockDB) GetProductBySKU(sku string) (*models.Product, error) {
 	args := m.Called(sku)
 	return args.Get(0).(*models.Product), args.Error(1)
 }
+func (m *MockDB) ProductWithSKUExists(sku string) (bool, error) {
+	args := m.Called(sku)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *MockDB) ProductExists(id uint64) (bool, error) {
+	args := m.Called(id)
+	return args.Bool(0), args.Error(1)
+}
 
 func (m *MockDB) GetProduct(id uint64) (*models.Product, error) {
 	args := m.Called(id)

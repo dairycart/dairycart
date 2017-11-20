@@ -24,6 +24,18 @@ func (m *MockDB) Get{{ $modelName }}ByCode(code string) (*models.{{ $modelName }
 }
 {{- end }}
 
+{{- if $isProduct }}
+func (m *MockDB) {{ $modelName }}WithSKUExists(sku string) (bool, error) {
+    args := m.Called(sku)
+	return args.Bool(0), args.Error(1)
+}
+{{- end }}
+
+func (m *MockDB) {{ $modelName }}Exists(id uint64) (bool, error) {
+    args := m.Called(id)
+	return args.Bool(0), args.Error(1)
+}
+
 func (m *MockDB) Get{{ $modelName }}(id uint64) (*models.{{ $modelName }}, error) {
     args := m.Called(id)
 	return args.Get(0).(*models.{{ $modelName }}), args.Error(1)

@@ -59,6 +59,24 @@ func (pg *Postgres) Get{{ $modelName }}ByCode(code string) (*models.{{ $modelNam
 }
 {{- end }}
 
+{{- if $isProduct }}
+{{ $existenceBySKUQueryVarName := printf "%sWithSKUExistenceQuery" ( camel $modelName ) -}}
+const {{ $existenceBySKUQueryVarName }} = `SELECT EXISTS(SELECT id FROM {{ .Table.Name }} WHERE sku = $1 and archived_on IS NULL);`
+
+func (pg *Postgres) {{ $modelName }}WithSKUExists(sku string) (bool, error) {
+    var exists string
+
+	err := pg.DB.QueryRow({{ $existenceBySKUQueryVarName }}, sku).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return exists == "true", err
+}
+{{- end }}
+
 {{ $existenceQueryVarName := printf "%sExistenceQuery" ( camel $modelName ) -}}
 const {{ $existenceQueryVarName }} = `SELECT EXISTS(SELECT id FROM {{ .Table.Name }} WHERE id = $1 and archived_on IS NULL);`
 

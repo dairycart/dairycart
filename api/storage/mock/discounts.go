@@ -11,6 +11,11 @@ func (m *MockDB) GetDiscountByCode(code string) (*models.Discount, error) {
 	return args.Get(0).(*models.Discount), args.Error(1)
 }
 
+func (m *MockDB) DiscountExists(id uint64) (bool, error) {
+	args := m.Called(id)
+	return args.Bool(0), args.Error(1)
+}
+
 func (m *MockDB) GetDiscount(id uint64) (*models.Discount, error) {
 	args := m.Called(id)
 	return args.Get(0).(*models.Discount), args.Error(1)

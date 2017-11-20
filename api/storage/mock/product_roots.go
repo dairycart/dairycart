@@ -6,6 +6,11 @@ import (
 	"github.com/dairycart/dairycart/api/storage/models"
 )
 
+func (m *MockDB) ProductRootExists(id uint64) (bool, error) {
+	args := m.Called(id)
+	return args.Bool(0), args.Error(1)
+}
+
 func (m *MockDB) GetProductRoot(id uint64) (*models.ProductRoot, error) {
 	args := m.Called(id)
 	return args.Get(0).(*models.ProductRoot), args.Error(1)
