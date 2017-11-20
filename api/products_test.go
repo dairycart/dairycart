@@ -528,7 +528,6 @@ func TestProductExistenceHandler(t *testing.T) {
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 		assertStatusCode(t, testUtil, http.StatusOK)
-		ensureExpectationsWereMet(t, testUtil.Mock)
 	})
 	t.Run("with nonexistent product", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
@@ -540,7 +539,6 @@ func TestProductExistenceHandler(t *testing.T) {
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 		assertStatusCode(t, testUtil, http.StatusNotFound)
-		ensureExpectationsWereMet(t, testUtil.Mock)
 	})
 	t.Run("with error performing check", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
@@ -552,7 +550,6 @@ func TestProductExistenceHandler(t *testing.T) {
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 		assertStatusCode(t, testUtil, http.StatusNotFound)
-		ensureExpectationsWereMet(t, testUtil.Mock)
 	})
 }
 

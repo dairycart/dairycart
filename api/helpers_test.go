@@ -116,10 +116,10 @@ func setupTestVariables(t *testing.T) *TestUtil {
 
 func setupTestVariablesWithMock(t *testing.T) *TestUtil {
 	t.Helper()
-	mockDB, mock, err := sqlmock.New()
+	mockDB, _, err := sqlmock.New()
+	assert.Nil(t, err)
 	dbx := sqlx.NewDb(mockDB, "postgres")
 	dbx.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
-	assert.Nil(t, err)
 	dairymockDB := &dairymock.MockDB{}
 
 	secret := os.Getenv("DAIRYSECRET")
@@ -133,10 +133,8 @@ func setupTestVariablesWithMock(t *testing.T) *TestUtil {
 	return &TestUtil{
 		Response: httptest.NewRecorder(),
 		Router:   router,
-		PlainDB:  mockDB,
-		MockDB: dairymockDB,
+		MockDB:   dairymockDB,
 		DB:       dbx,
-		Mock:     mock,
 		Store:    store,
 	}
 }
