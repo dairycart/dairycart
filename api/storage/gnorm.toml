@@ -58,6 +58,7 @@ PluginDirs = ["/Users/jeffrey/golang/src/github.com/verygoodsoftwarenotvirus/gno
 [TablePaths]
 "models/{{snake .Table}}.go" = "model.gotmpl"
 "postgres/{{snake .Table}}.go" = "pg_table.gotmpl"
+"mock/{{snake .Table}}.go" = "mock_table.gotmpl"
 "postgres/{{snake .Table}}_test.go" = "pg_table_test.gotmpl"
 
 # SchemaPaths iis a map of output paths to template paths that tells Gnorm how
@@ -71,8 +72,8 @@ PluginDirs = ["/Users/jeffrey/golang/src/github.com/verygoodsoftwarenotvirus/gno
 # example, "schemas/{{.Schema}}/{{.Schema}}.go" = "schemas.gotmpl" would render
 # schemas.gotmpl template with the "public" schema and output to
 # ./schemas/public/public.go
-# [SchemaPaths]
-# "{{.Schema}}.go" = "schema.gotmpl"
+[SchemaPaths]
+"storage.go" = "interface.gotmpl"
 
 # EnumPaths is a is a map of output paths to template paths that tells Gnorm how
 # to render and output its enum info.  Each template will be rendered with each

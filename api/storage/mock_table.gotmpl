@@ -1,0 +1,45 @@
+package postgres
+
+import (
+    "time"
+
+    "github.com/verygoodsoftwarenotvirus/gnorm-dairymodels/models"
+)
+
+{{- $modelName := pascal (trimSuffix .Table.Name "s") }}
+{{- $isProduct := eq $modelName "Product" }}
+{{- $isDiscount := eq $modelName "Discount" }}
+
+{{- if $isProduct }}
+func (m *MockDB) Get{{ $modelName }}BySKU(sku string) (models.{{ $modelName }}, error) {
+    args := m.Called(sku)
+	return args.Get(0), args.Error(1)
+}
+{{- end }}
+
+{{- if $isDiscount }}
+func (m *MockDB) Get{{ $modelName }}ByCode(code string) (models.{{ $modelName }}, error) {
+    args := m.Called(code)
+	return args.Get(0), args.Error(1)
+}
+{{- end }}
+
+func (m *MockDB) Get{{ $modelName }}(id uint64) (models.{{ $modelName }}, error) {
+    args := m.Called(id)
+	return args.Get(0), args.Error(1)
+}
+
+func (m *MockDB) Create{{ $modelName }}(nu models.{{ $modelName }}) (uint64, time.Time, {{- if $isProduct }}time.Time, {{ end }}error) {
+    args := m.Called(nu)
+	return args.Get(0), args.Get(1), {{ if $isProduct -}}args.Get(2), args.Error(3){{ else }}args.Error(2){{ end -}}
+}
+
+func (m *MockDB) Update{{ $modelName }}(updated models.{{ $modelName }}) (time.Time, error) {
+    args := m.Called(updated)
+	return args.Get(0), args.Error(1)
+}
+
+func (m *MockDB) Delete{{ $modelName }}(id uint64) (time.Time, error) {
+    args := m.Called(id)
+	return args.Get(0), args.Error(1)
+}
