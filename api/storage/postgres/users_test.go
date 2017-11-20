@@ -1,6 +1,9 @@
 package postgres
 
 import (
+	"database/sql"
+	"errors"
+	"strconv"
 	"testing"
 
 	// internal dependencies
@@ -10,6 +13,52 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
+
+func setUserExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, shouldExist bool, err error) {
+	t.Helper()
+	query := formatQueryForSQLMock(userExistenceQuery)
+
+	mock.ExpectQuery(query).
+		WithArgs(id).
+		WillReturnRows(sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(shouldExist))).
+		WillReturnError(err)
+}
+
+func TestUserExists(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	require.Nil(t, err)
+	defer mockDB.Close()
+	exampleID := uint64(1)
+
+	t.Run("existing", func(t *testing.T) {
+		setUserExistenceQueryExpectation(t, mock, exampleID, true, nil)
+		client := Postgres{DB: mockDB}
+		actual, err := client.UserExists(exampleID)
+
+		require.Nil(t, err)
+		require.True(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with no rows found", func(t *testing.T) {
+		setUserExistenceQueryExpectation(t, mock, exampleID, true, sql.ErrNoRows)
+		client := Postgres{DB: mockDB}
+		actual, err := client.UserExists(exampleID)
+
+		require.Nil(t, err)
+		require.False(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with a database error", func(t *testing.T) {
+		setUserExistenceQueryExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
+		client := Postgres{DB: mockDB}
+		actual, err := client.UserExists(exampleID)
+
+		require.NotNil(t, err)
+		require.False(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
 
 func setUserReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, toReturn *models.User, err error) {
 	t.Helper()

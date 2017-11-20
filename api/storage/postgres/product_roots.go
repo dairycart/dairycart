@@ -1,10 +1,26 @@
 package postgres
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/dairycart/dairycart/api/storage/models"
 )
+
+const productRootExistenceQuery = `SELECT EXISTS(SELECT id FROM product_roots WHERE id = $1 and archived_on IS NULL);`
+
+func (pg *Postgres) ProductRootExists(id uint64) (bool, error) {
+	var exists string
+
+	err := pg.DB.QueryRow(productRootExistenceQuery, id).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return exists == "true", err
+}
 
 const productRootSelectionQuery = `
     SELECT

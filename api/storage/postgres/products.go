@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/dairycart/dairycart/api/storage/models"
@@ -51,6 +52,21 @@ func (pg *Postgres) GetProductBySKU(sku string) (*models.Product, error) {
 	err := pg.DB.QueryRow(productQueryBySKU, sku).Scan(&p.ID, &p.ProductRootID, &p.Name, &p.Subtitle, &p.Description, &p.OptionSummary, &p.SKU, &p.UPC, &p.Manufacturer, &p.Brand, &p.Quantity, &p.Taxable, &p.Price, &p.OnSale, &p.SalePrice, &p.Cost, &p.ProductWeight, &p.ProductHeight, &p.ProductWidth, &p.ProductLength, &p.PackageWeight, &p.PackageHeight, &p.PackageWidth, &p.PackageLength, &p.QuantityPerPackage, &p.AvailableOn, &p.CreatedOn, &p.UpdatedOn, &p.ArchivedOn)
 
 	return p, err
+}
+
+const productExistenceQuery = `SELECT EXISTS(SELECT id FROM products WHERE id = $1 and archived_on IS NULL);`
+
+func (pg *Postgres) ProductExists(id uint64) (bool, error) {
+	var exists string
+
+	err := pg.DB.QueryRow(productExistenceQuery, id).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return exists == "true", err
 }
 
 const productSelectionQuery = `

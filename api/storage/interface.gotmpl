@@ -13,6 +13,7 @@ type Storage interface {
     {{- $isDiscount := eq $modelName "Discount" }}
     // {{ pascal .Name }}
     Get{{ $modelName }}(uint64) (*models.{{ $modelName }}, error)
+    {{ $modelName }}Exists(uint64) (bool, error)
     Create{{ $modelName }}(*models.{{ $modelName }}) (uint64, time.Time, {{ if $isProduct }}time.Time, {{ end }}error)
     Update{{ $modelName }}(*models.{{ $modelName }}) (time.Time, error)
     Delete{{ $modelName }}(uint64) (time.Time, error)

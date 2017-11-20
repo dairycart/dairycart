@@ -1,6 +1,9 @@
 package postgres
 
 import (
+	"database/sql"
+	"errors"
+	"strconv"
 	"testing"
 
 	// internal dependencies
@@ -95,6 +98,52 @@ func TestGetProductBySKU(t *testing.T) {
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected product did not match actual product")
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
+
+func setProductExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, shouldExist bool, err error) {
+	t.Helper()
+	query := formatQueryForSQLMock(productExistenceQuery)
+
+	mock.ExpectQuery(query).
+		WithArgs(id).
+		WillReturnRows(sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(shouldExist))).
+		WillReturnError(err)
+}
+
+func TestProductExists(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	require.Nil(t, err)
+	defer mockDB.Close()
+	exampleID := uint64(1)
+
+	t.Run("existing", func(t *testing.T) {
+		setProductExistenceQueryExpectation(t, mock, exampleID, true, nil)
+		client := Postgres{DB: mockDB}
+		actual, err := client.ProductExists(exampleID)
+
+		require.Nil(t, err)
+		require.True(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with no rows found", func(t *testing.T) {
+		setProductExistenceQueryExpectation(t, mock, exampleID, true, sql.ErrNoRows)
+		client := Postgres{DB: mockDB}
+		actual, err := client.ProductExists(exampleID)
+
+		require.Nil(t, err)
+		require.False(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with a database error", func(t *testing.T) {
+		setProductExistenceQueryExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
+		client := Postgres{DB: mockDB}
+		actual, err := client.ProductExists(exampleID)
+
+		require.NotNil(t, err)
+		require.False(t, actual)
 		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }

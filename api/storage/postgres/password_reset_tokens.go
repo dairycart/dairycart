@@ -1,10 +1,26 @@
 package postgres
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/dairycart/dairycart/api/storage/models"
 )
+
+const passwordResetTokenExistenceQuery = `SELECT EXISTS(SELECT id FROM password_reset_tokens WHERE id = $1 and archived_on IS NULL);`
+
+func (pg *Postgres) PasswordResetTokenExists(id uint64) (bool, error) {
+	var exists string
+
+	err := pg.DB.QueryRow(passwordResetTokenExistenceQuery, id).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return exists == "true", err
+}
 
 const passwordResetTokenSelectionQuery = `
     SELECT

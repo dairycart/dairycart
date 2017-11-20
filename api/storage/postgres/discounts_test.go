@@ -1,6 +1,9 @@
 package postgres
 
 import (
+	"database/sql"
+	"errors"
+	"strconv"
 	"testing"
 
 	// internal dependencies
@@ -65,6 +68,52 @@ func TestGetDiscountByCode(t *testing.T) {
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected discount did not match actual discount")
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
+
+func setDiscountExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, shouldExist bool, err error) {
+	t.Helper()
+	query := formatQueryForSQLMock(discountExistenceQuery)
+
+	mock.ExpectQuery(query).
+		WithArgs(id).
+		WillReturnRows(sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(shouldExist))).
+		WillReturnError(err)
+}
+
+func TestDiscountExists(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	require.Nil(t, err)
+	defer mockDB.Close()
+	exampleID := uint64(1)
+
+	t.Run("existing", func(t *testing.T) {
+		setDiscountExistenceQueryExpectation(t, mock, exampleID, true, nil)
+		client := Postgres{DB: mockDB}
+		actual, err := client.DiscountExists(exampleID)
+
+		require.Nil(t, err)
+		require.True(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with no rows found", func(t *testing.T) {
+		setDiscountExistenceQueryExpectation(t, mock, exampleID, true, sql.ErrNoRows)
+		client := Postgres{DB: mockDB}
+		actual, err := client.DiscountExists(exampleID)
+
+		require.Nil(t, err)
+		require.False(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with a database error", func(t *testing.T) {
+		setDiscountExistenceQueryExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
+		client := Postgres{DB: mockDB}
+		actual, err := client.DiscountExists(exampleID)
+
+		require.NotNil(t, err)
+		require.False(t, actual)
 		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }

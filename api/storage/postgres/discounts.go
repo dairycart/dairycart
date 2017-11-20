@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/dairycart/dairycart/api/storage/models"
@@ -35,6 +36,21 @@ func (pg *Postgres) GetDiscountByCode(code string) (*models.Discount, error) {
 
 	err := pg.DB.QueryRow(discountQueryByCode, code).Scan(&d.ID, &d.Name, &d.DiscountType, &d.Amount, &d.StartsOn, &d.ExpiresOn, &d.RequiresCode, &d.Code, &d.LimitedUse, &d.NumberOfUses, &d.LoginRequired, &d.CreatedOn, &d.UpdatedOn, &d.ArchivedOn)
 	return d, err
+}
+
+const discountExistenceQuery = `SELECT EXISTS(SELECT id FROM discounts WHERE id = $1 and archived_on IS NULL);`
+
+func (pg *Postgres) DiscountExists(id uint64) (bool, error) {
+	var exists string
+
+	err := pg.DB.QueryRow(discountExistenceQuery, id).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return exists == "true", err
 }
 
 const discountSelectionQuery = `
