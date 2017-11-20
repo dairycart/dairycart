@@ -25,51 +25,55 @@ func buildRoute(routeVersion string, routeParts ...string) string {
 }
 
 // SetupAPIRoutes takes a mux router and a database connection and creates all the API routes for the API
-func SetupAPIRoutes(router *chi.Mux, dbx *sqlx.DB, store *sessions.CookieStore, db storage.Storage) {
+func SetupAPIRoutes(router *chi.Mux, dbxReplaceMePlz *sqlx.DB, store *sessions.CookieStore, db storage.Storage) {
 	// Auth
-	router.Post("/login", buildUserLoginHandler(dbx, store))
+	router.Post("/login", buildUserLoginHandler(dbxReplaceMePlz, store))
 	router.Post("/logout", buildUserLogoutHandler(store))
-	router.Post("/user", buildUserCreationHandler(dbx, store))
-	router.Patch(fmt.Sprintf("/user/{user_id:%s}", NumericPattern), buildUserInfoUpdateHandler(dbx))
-	router.Post("/password_reset", buildUserForgottenPasswordHandler(dbx))
-	router.Head("/password_reset/{reset_token}", buildUserPasswordResetTokenValidationHandler(dbx))
-	//router.Head("/password_reset/{reset_token:[a-zA-Z0-9]{}}", buildUserPasswordResetTokenValidationHandler(dbx))
+	router.Post("/user", buildUserCreationHandler(dbxReplaceMePlz, store))
+	router.Patch(fmt.Sprintf("/user/{user_id:%s}", NumericPattern), buildUserInfoUpdateHandler(dbxReplaceMePlz))
+	router.Post("/password_reset", buildUserForgottenPasswordHandler(dbxReplaceMePlz))
+	router.Head("/password_reset/{reset_token}", buildUserPasswordResetTokenValidationHandler(dbxReplaceMePlz))
+	//router.Head("/password_reset/{reset_token:[a-zA-Z0-9]{}}", buildUserPasswordResetTokenValidationHandler(dbxReplaceMePlz))
 
 	router.Route("/v1", func(r chi.Router) {
 		// Users
-		r.Delete(fmt.Sprintf("/user/{user_id:%s}", NumericPattern), buildUserDeletionHandler(dbx, store))
+		r.Delete(fmt.Sprintf("/user/{user_id:%s}", NumericPattern), buildUserDeletionHandler(dbxReplaceMePlz, store))
 
 		// Product Roots
-		r.Get("/product_roots", buildProductRootListHandler(dbx))
-		r.Get(fmt.Sprintf("/product_root/{product_root_id:%s}", NumericPattern), buildSingleProductRootHandler(dbx))
-		r.Delete(fmt.Sprintf("/product_root/{product_root_id:%s}", NumericPattern), buildProductRootDeletionHandler(dbx))
+		specificProductRootRoute := fmt.Sprintf("/product_root/{product_root_id:%s}", NumericPattern)
+		r.Get("/product_roots", buildProductRootListHandler(dbxReplaceMePlz))
+		r.Get(specificProductRootRoute, buildSingleProductRootHandler(dbxReplaceMePlz))
+		r.Delete(specificProductRootRoute, buildProductRootDeletionHandler(dbxReplaceMePlz))
 
 		// Products
-		r.Post("/product", buildProductCreationHandler(dbx))
-		r.Get("/products", buildProductListHandler(dbx))
-		r.Get(fmt.Sprintf("/product/{sku:%s}", ValidURLCharactersPattern), buildSingleProductHandler(db))
-		r.Patch(fmt.Sprintf("/product/{sku:%s}", ValidURLCharactersPattern), buildProductUpdateHandler(dbx))
-		r.Head(fmt.Sprintf("/product/{sku:%s}", ValidURLCharactersPattern), buildProductExistenceHandler(db))
-		r.Delete(fmt.Sprintf("/product/{sku:%s}", ValidURLCharactersPattern), buildProductDeletionHandler(dbx))
+		specificProductRoute := fmt.Sprintf("/product/{sku:%s}", ValidURLCharactersPattern)
+		r.Post("/product", buildProductCreationHandler(dbxReplaceMePlz))
+		r.Get("/products", buildProductListHandler(dbxReplaceMePlz))
+		r.Get(specificProductRoute, buildSingleProductHandler(db))
+		r.Patch(specificProductRoute, buildProductUpdateHandler(dbxReplaceMePlz))
+		r.Head(specificProductRoute, buildProductExistenceHandler(db))
+		r.Delete(specificProductRoute, buildProductDeletionHandler(dbxReplaceMePlz))
 
 		// Product Options
-		r.Get(fmt.Sprintf("/product/{product_root_id:%s}/options", NumericPattern), buildProductOptionListHandler(dbx))
-		r.Post(fmt.Sprintf("/product/{product_root_id:%s}/options", NumericPattern), buildProductOptionCreationHandler(dbx))
-		r.Patch(fmt.Sprintf("/product_options/{option_id:%s}", NumericPattern), buildProductOptionUpdateHandler(dbx))
-		r.Delete(fmt.Sprintf("/product_options/{option_id:%s}", NumericPattern), buildProductOptionDeletionHandler(dbx))
+		optionsListRoute := fmt.Sprintf("/product/{product_root_id:%s}/options", NumericPattern)
+		specificOptionRoute := fmt.Sprintf("/product_options/{option_id:%s}", NumericPattern)
+		r.Get(optionsListRoute, buildProductOptionListHandler(dbxReplaceMePlz))
+		r.Post(optionsListRoute, buildProductOptionCreationHandler(dbxReplaceMePlz))
+		r.Patch(specificOptionRoute, buildProductOptionUpdateHandler(dbxReplaceMePlz))
+		r.Delete(specificOptionRoute, buildProductOptionDeletionHandler(dbxReplaceMePlz))
 
 		// Product Option Values
-		r.Post(fmt.Sprintf("/product_options/{option_id:%s}/value", NumericPattern), buildProductOptionValueCreationHandler(dbx))
-		r.Patch(fmt.Sprintf("/product_option_values/{option_value_id:%s}", NumericPattern), buildProductOptionValueUpdateHandler(dbx))
-		r.Delete(fmt.Sprintf("/product_option_values/{option_value_id:%s}", NumericPattern), buildProductOptionValueDeletionHandler(dbx))
+		specificOptionValueRoute := fmt.Sprintf("/product_option_values/{option_value_id:%s}", NumericPattern)
+		r.Post(fmt.Sprintf("/product_options/{option_id:%s}/value", NumericPattern), buildProductOptionValueCreationHandler(dbxReplaceMePlz))
+		r.Patch(specificOptionValueRoute, buildProductOptionValueUpdateHandler(dbxReplaceMePlz))
+		r.Delete(specificOptionValueRoute, buildProductOptionValueDeletionHandler(dbxReplaceMePlz))
 
 		// Discounts
-		r.Get(fmt.Sprintf("/discount/{discount_id:%s}", NumericPattern), buildDiscountRetrievalHandler(dbx))
-		r.Patch(fmt.Sprintf("/discount/{discount_id:%s}", NumericPattern), buildDiscountUpdateHandler(dbx))
-		r.Delete(fmt.Sprintf("/discount/{discount_id:%s}", NumericPattern), buildDiscountDeletionHandler(dbx))
-		r.Get("/discounts", buildDiscountListRetrievalHandler(dbx))
-		r.Post("/discount", buildDiscountCreationHandler(dbx))
-		// specificDiscountCodeEndpoint := buildRoute("v1", "discount", fmt.Sprintf("{code:%s}", ValidURLCharactersPattern))
-		// router.HandleFunc(specificDiscountCodeEndpoint, buildDiscountRetrievalHandler(dbx)).Methods(http.MethodHead)
+		specificDiscountRoute := fmt.Sprintf("/discount/{discount_id:%s}", NumericPattern)
+		r.Get(specificDiscountRoute, buildDiscountRetrievalHandler(dbxReplaceMePlz))
+		r.Patch(specificDiscountRoute, buildDiscountUpdateHandler(dbxReplaceMePlz))
+		r.Delete(specificDiscountRoute, buildDiscountDeletionHandler(dbxReplaceMePlz))
+		r.Get("/discounts", buildDiscountListRetrievalHandler(dbxReplaceMePlz))
+		r.Post("/discount", buildDiscountCreationHandler(dbxReplaceMePlz))
 	})
 }
