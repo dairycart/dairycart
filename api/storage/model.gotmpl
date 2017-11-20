@@ -1,0 +1,30 @@
+package models
+
+{{ $modelName := pascal (trimSuffix .Table.Name "s") -}}
+{{- $allColumns := join (.Table.Columns.Names.Sprintf "%s") ", " -}}
+
+import(
+    {{ if contains $allColumns "archived_on" }}
+        "time"
+    {{ else if contains $allColumns "created_on" }}
+        "time"
+    {{ end }}
+)
+
+// {{ $modelName }} represents a Diarycart {{ toLower $modelName }}
+type {{ $modelName }} struct {
+    {{- range .Table.Columns }}
+
+    {{- if (eq (pascal .Name) "Upc") }}
+        {{ "UPC" }} {{ .Type }} `json:"{{ snake .Name }}"` // {{ .DBName }}
+    {{- else if (eq (pascal .Name) "Sku") }}
+        {{ "SKU" }} {{ .Type }} `json:"{{ snake .Name }}"` // {{ .DBName }}
+    {{- else if (eq .Type "") }}
+        /* putting this here so that go fmt/build/etc will barf when they encounter it and I'll know to fix it */
+        something bad has happened here
+    {{- else }}
+        {{ pascal .Name }} {{ .Type }} `json:"{{ snake .Name }}"` // {{ .DBName }}
+    {{- end }}
+
+    {{- end }}
+}

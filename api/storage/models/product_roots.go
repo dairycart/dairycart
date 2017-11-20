@@ -4,23 +4,16 @@ import (
 	"time"
 )
 
-// Product represents a Diarycart product
-type Product struct {
+// ProductRoot represents a Diarycart productroot
+type ProductRoot struct {
 	ID                 uint64    `json:"id"`                   // id
-	ProductRootID      uint64    `json:"product_root_id"`      // product_root_id
 	Name               string    `json:"name"`                 // name
 	Subtitle           string    `json:"subtitle"`             // subtitle
 	Description        string    `json:"description"`          // description
-	OptionSummary      string    `json:"option_summary"`       // option_summary
-	SKU                string    `json:"sku"`                  // sku
-	UPC                string    `json:"upc"`                  // upc
+	SkuPrefix          string    `json:"sku_prefix"`           // sku_prefix
 	Manufacturer       string    `json:"manufacturer"`         // manufacturer
 	Brand              string    `json:"brand"`                // brand
-	Quantity           int       `json:"quantity"`             // quantity
 	Taxable            bool      `json:"taxable"`              // taxable
-	Price              float64   `json:"price"`                // price
-	OnSale             bool      `json:"on_sale"`              // on_sale
-	SalePrice          float64   `json:"sale_price"`           // sale_price
 	Cost               float64   `json:"cost"`                 // cost
 	ProductWeight      float64   `json:"product_weight"`       // product_weight
 	ProductHeight      float64   `json:"product_height"`       // product_height

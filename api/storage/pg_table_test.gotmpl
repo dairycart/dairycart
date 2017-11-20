@@ -1,0 +1,232 @@
+package postgres
+
+import(
+    "testing"
+
+    // internal dependencies
+    "github.com/verygoodsoftwarenotvirus/gnorm-dairymodels/models"
+
+    // external dependencies
+	"github.com/stretchr/testify/require"
+	"gopkg.in/DATA-DOG/go-sqlmock.v1"
+)
+
+{{- $modelName := pascal (trimSuffix .Table.Name "s")}}
+{{- $shortVarName := toLower (sliceString $modelName 0 1) }}
+
+{{- $isProduct := eq $modelName "Product" }}
+{{- $isDiscount := eq $modelName "Discount" }}
+
+{{ $readQueryVarName := printf "%sSelectionQuery" ( camel $modelName ) -}}
+{{ $creationQueryVarName := printf "%sCreationQuery" ( toLower $modelName ) -}}
+{{ $updateQueryVarName := printf "%sUpdateQuery" ( camel $modelName ) -}}
+{{ $deletionQueryVarName := printf "%sDeletionQuery" ( camel $modelName ) -}}
+
+{{ if $isProduct }}
+{{ $bySKUVarName := printf "%sQueryBySKU" ( camel $modelName ) -}}
+func set{{ $modelName }}ReadQueryExpectationBySKU(t *testing.T, mock sqlmock.Sqlmock, sku string, toReturn models.{{ $modelName }}, err error) {
+    t.Helper()
+    query := formatQueryForSQLMock({{ $bySKUVarName }})
+
+    exampleRows := sqlmock.NewRows([]string{
+        {{ range $_, $x := .Table.Columns.DBNames }}{{ printf "\"%s\"" $x }},
+        {{ end }}
+    }).AddRow(
+        {{ range $_, $x := .Table.Columns.DBNames }}{{ if or (eq (toLower $x) "sku") (eq (toLower $x) "upc") }}toReturn.{{ toUpper $x }},{{ else }}toReturn.{{ pascal $x }},{{ end }}
+        {{ end }}
+    )
+    mock.ExpectQuery(query).WithArgs(sku).WillReturnRows(exampleRows).WillReturnError(err)
+}
+
+func TestGet{{ $modelName }}BySKU(t *testing.T) {
+    t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+    require.Nil(t, err)
+    defer mockDB.Close()
+
+    exampleSKU := "hello"
+    expected := models.{{ $modelName }}{SKU: exampleSKU}
+
+    t.Run("optimal behavior", func(t *testing.T) {
+        set{{ $modelName }}ReadQueryExpectationBySKU(t, mock, exampleSKU, expected, nil)
+        client := Postgres{DB: mockDB}
+        actual, err := client.Get{{ $modelName }}BySKU(exampleSKU)
+
+        require.Nil(t, err)
+        require.Equal(t, expected, actual, "expected {{ toLower $modelName }} did not match actual {{ toLower $modelName }}")
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+}
+{{ end }}
+
+{{ if $isDiscount }}
+{{ $byCodeVarName := printf "%sQueryByCode" ( camel $modelName ) -}}
+func set{{ $modelName }}ReadQueryExpectationByCode(t *testing.T, mock sqlmock.Sqlmock, code string, toReturn models.{{ $modelName }}, err error) {
+    t.Helper()
+    query := formatQueryForSQLMock({{ $byCodeVarName }})
+
+    exampleRows := sqlmock.NewRows([]string{
+        {{ range $_, $x := .Table.Columns.DBNames }}{{ printf "\"%s\"" $x }},
+        {{ end }}
+    }).AddRow(
+        {{ range $_, $x := .Table.Columns.DBNames }}{{ if or (eq (toLower $x) "sku") (eq (toLower $x) "upc") }}toReturn.{{ toUpper $x }},{{ else }}toReturn.{{ pascal $x }},{{ end }}
+        {{ end }}
+    )
+    mock.ExpectQuery(query).WithArgs(code).WillReturnRows(exampleRows).WillReturnError(err)
+}
+
+func TestGet{{ $modelName }}ByCode(t *testing.T) {
+    t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+    require.Nil(t, err)
+    defer mockDB.Close()
+
+    exampleCode := "welcome"
+    expected := models.{{ $modelName }}{Code: exampleCode}
+
+    t.Run("optimal behavior", func(t *testing.T) {
+        set{{ $modelName }}ReadQueryExpectationByCode(t, mock, exampleCode, expected, nil)
+        client := Postgres{DB: mockDB}
+        actual, err := client.Get{{ $modelName }}ByCode(exampleCode)
+
+        require.Nil(t, err)
+        require.Equal(t, expected, actual, "expected {{ toLower $modelName }} did not match actual {{ toLower $modelName }}")
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+}
+{{ end }}
+
+func set{{ $modelName }}ReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, toReturn models.{{ $modelName }}, err error) {
+    t.Helper()
+    query := formatQueryForSQLMock({{ $readQueryVarName }})
+
+    exampleRows := sqlmock.NewRows([]string{
+        {{ range $_, $x := .Table.Columns.DBNames }}{{ printf "\"%s\"" $x }},
+        {{ end }}
+    }).AddRow(
+        {{ range $_, $x := .Table.Columns.DBNames }}{{ if or (eq (toLower $x) "sku") (eq (toLower $x) "upc") }}toReturn.{{ toUpper $x }},{{ else }}toReturn.{{ pascal $x }},{{ end }}
+        {{ end }}
+    )
+    mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
+}
+
+func TestGet{{ $modelName }}ByID(t *testing.T) {
+    t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+    require.Nil(t, err)
+    defer mockDB.Close()
+
+    exampleID := uint64(1)
+    expected := models.{{ $modelName }}{ID: exampleID}
+
+    t.Run("optimal behavior", func(t *testing.T) {
+        set{{ $modelName }}ReadQueryExpectation(t, mock, exampleID, expected, nil)
+        client := Postgres{DB: mockDB}
+        actual, err := client.Get{{ $modelName }}(exampleID)
+
+        require.Nil(t, err)
+        require.Equal(t, expected, actual, "expected {{ toLower $modelName }} did not match actual {{ toLower $modelName }}")
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+}
+
+{{ $creationColumns := .Table.Columns.Names.Except (makeSlice "id" "created_on" "archived_on" "updated_on") -}}
+func set{{ $modelName }}CreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate models.{{ $modelName }}, err error) {
+    t.Helper()
+    query := formatQueryForSQLMock({{ $creationQueryVarName }})
+    exampleRows := sqlmock.NewRows([]string{"id", "created_on"{{- if $isProduct }}, "available_on"{{ end }}}).AddRow(uint64(1), generateExampleTimeForTests(){{- if $isProduct }}, generateExampleTimeForTests(){{ end }})
+    mock.ExpectQuery(query).
+        WithArgs(
+            {{ $lastCol := dec (len $creationColumns) -}}
+            {{ range $x, $col := $creationColumns -}}
+            toCreate.{{ if or (eq (toLower $col) "sku") (eq (toLower $col) "upc") }}{{ toUpper $col }}{{ else }}{{ pascal $col }}{{ end }},
+            {{ end }}
+        ).
+        WillReturnRows(exampleRows).
+        WillReturnError(err)
+}
+
+func TestCreate{{ $modelName }}(t *testing.T) {
+    t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+    require.Nil(t, err)
+    defer mockDB.Close()
+    expectedID := uint64(1)
+    exampleInput := models.{{ $modelName }}{ID: expectedID}
+
+    t.Run("optimal behavior", func(t *testing.T) {
+        set{{ $modelName }}CreationQueryExpectation(t, mock, exampleInput, nil)
+        expected := generateExampleTimeForTests()
+        client := Postgres{DB: mockDB}
+        actualID, actualCreationDate,{{- if $isProduct }} actualAvailableOn, {{ end }}err := client.Create{{ $modelName }}(exampleInput)
+
+        require.Nil(t, err)
+        require.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
+        require.Equal(t, expected, actualCreationDate, "expected creation time did not match actual creation time")
+        {{ if $isProduct -}}require.Equal(t, expected, actualAvailableOn, "expected availability time did not match actual availability time"){{ end }}
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+}
+
+
+{{ $updateColumns := .Table.Columns.Names.Except (makeSlice "id" "created_on" "archived_on") -}}
+func set{{ $modelName }}UpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate models.{{ $modelName }}, err error) {
+    t.Helper()
+    query := formatQueryForSQLMock({{ $updateQueryVarName }})
+    exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests())
+    mock.ExpectQuery(query).
+        WithArgs(
+            {{ $lastCol := dec (len $updateColumns) -}}
+            {{ range $x, $col := $updateColumns -}}
+            {{ if eq $col "updated_on"}}{{ else }}toUpdate.{{ if or (eq (toLower $col) "sku") (eq (toLower $col) "upc") }}{{ toUpper $col }}{{ else }}{{ pascal $col }}{{ end }},
+            {{ end }}{{ end }}toUpdate.ID,
+        ).
+        WillReturnRows(exampleRows).
+        WillReturnError(err)
+}
+
+func TestUpdate{{ $modelName }}ByID(t *testing.T) {
+    t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+    require.Nil(t, err)
+    defer mockDB.Close()
+    exampleInput := models.{{ $modelName }}{ID: uint64(1)}
+
+    t.Run("optimal behavior", func(t *testing.T) {
+        set{{ $modelName }}UpdateQueryExpectation(t, mock, exampleInput, nil)
+        expected := generateExampleTimeForTests()
+        client := Postgres{DB: mockDB}
+        actual, err := client.Update{{ $modelName }}(exampleInput)
+
+        require.Nil(t, err)
+        require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+}
+
+
+func set{{ $modelName }}DeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
+    t.Helper()
+    query := formatQueryForSQLMock({{ $deletionQueryVarName }})
+    exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests())
+    mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
+}
+
+func TestDelete{{ $modelName }}ByID(t *testing.T) {
+    t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+    require.Nil(t, err)
+    defer mockDB.Close()
+    exampleID := uint64(1)
+
+    t.Run("optimal behavior", func(t *testing.T) {
+        set{{ $modelName }}DeletionQueryExpectation(t, mock, exampleID, nil)
+        expected := generateExampleTimeForTests()
+        client := Postgres{DB: mockDB}
+        actual, err := client.Delete{{ $modelName }}(exampleID)
+
+        require.Nil(t, err)
+        require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+}

@@ -5,6 +5,6 @@ import (
 )
 
 type Storage interface {
-	GetProductBySKU(sku string) (models.Product, error)
-	GetProductByID(id uint64) (models.Product, error)
+	GetProductBySKU(sku string) (*models.Product, error)
+	GetProductByID(id uint64) (*models.Product, error)
 }
