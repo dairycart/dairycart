@@ -2,6 +2,7 @@ package css // import "github.com/tdewolff/minify/css"
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"testing"
 
@@ -32,14 +33,20 @@ func TestCSS(t *testing.T) {
 		{"@media (-webkit-min-device-pixel-ratio:1.5),(min-resolution:1.5dppx){}", "@media(-webkit-min-device-pixel-ratio:1.5),(min-resolution:1.5dppx){}"},
 		{"[class^=icon-] i[class^=icon-],i[class*=\" icon-\"]{x:y}", "[class^=icon-] i[class^=icon-],i[class*=\" icon-\"]{x:y}"},
 		{"html{line-height:1;}html{line-height:1;}", "html{line-height:1}html{line-height:1}"},
-		{".clearfix { *zoom: 1; }", ".clearfix{*zoom:1}"},
 		{"a { b: 1", "a{b:1}"},
+
+		{":root { --custom-variable:0px; }", ":root{--custom-variable:0px}"},
 
 		// case sensitivity
 		{"@counter-style Ident{}", "@counter-style Ident{}"},
 
 		// coverage
 		{"a, b + c { x:y; }", "a,b+c{x:y}"},
+
+		// bad declaration
+		{".clearfix { *zoom: 1px; }", ".clearfix{*zoom:1px}"},
+		{".clearfix { *zoom: 1px }", ".clearfix{*zoom:1px}"},
+		{".clearfix { color:green; *zoom: 1px; color:red; }", ".clearfix{color:green;*zoom:1px;color:red}"},
 
 		// go-fuzz
 		{"input[type=\"\x00\"] {  a: b\n}.a{}", "input[type=\"\x00\"]{a:b}.a{}"},
@@ -48,9 +55,12 @@ func TestCSS(t *testing.T) {
 
 	m := minify.New()
 	for _, tt := range cssTests {
-		r := bytes.NewBufferString(tt.css)
-		w := &bytes.Buffer{}
-		test.Minify(t, tt.css, Minify(m, w, r, nil), w.String(), tt.expected)
+		t.Run(tt.css, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.css)
+			w := &bytes.Buffer{}
+			err := Minify(m, w, r, nil)
+			test.Minify(t, tt.css, err, w.String(), tt.expected)
+		})
 	}
 }
 
@@ -75,6 +85,7 @@ func TestCSSInline(t *testing.T) {
 		{"color: rgba(255,0,0,0.5);", "color:rgba(255,0,0,.5)"},
 		{"color: rgba(255,0,0,-1);", "color:transparent"},
 		{"color: rgba(0%,15%,25%,0.2);", "color:rgba(0%,15%,25%,.2)"},
+		{"color: rgba(0,0,0,0.5);", "color:rgba(0,0,0,.5)"},
 		{"color: hsla(5,0%,10%,0.75);", "color:hsla(5,0%,10%,.75)"},
 		{"color: hsl(0,100%,50%);", "color:red"},
 		{"color: hsla(1,2%,3%,1);", "color:#080807"},
@@ -131,6 +142,9 @@ func TestCSSInline(t *testing.T) {
 		{"z-index:1000", "z-index:1000"},
 
 		{"any:0deg 0s 0ms 0dpi 0dpcm 0dppx 0hz 0khz", "any:0 0s 0ms 0dpi 0dpcm 0dppx 0hz 0khz"},
+		{"--custom-variable:0px;", "--custom-variable:0px"},
+		{"--foo: if(x > 5) this.width = 10", "--foo: if(x > 5) this.width = 10"},
+		{"--foo: ;", "--foo: "},
 
 		// case sensitivity
 		{"animation:Ident", "animation:Ident"},
@@ -158,17 +172,21 @@ func TestCSSInline(t *testing.T) {
 	m := minify.New()
 	params := map[string]string{"inline": "1"}
 	for _, tt := range cssTests {
-		r := bytes.NewBufferString(tt.css)
-		w := &bytes.Buffer{}
-		test.Minify(t, tt.css, Minify(m, w, r, params), w.String(), tt.expected)
+		t.Run(tt.css, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.css)
+			w := &bytes.Buffer{}
+			err := Minify(m, w, r, params)
+			test.Minify(t, tt.css, err, w.String(), tt.expected)
+		})
 	}
 }
 
 func TestReaderErrors(t *testing.T) {
-	m := minify.New()
 	r := test.NewErrorReader(0)
 	w := &bytes.Buffer{}
-	test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at first read")
+	m := minify.New()
+	err := Minify(m, w, r, nil)
+	test.T(t, err, test.ErrPlain, "return error at first read")
 }
 
 func TestWriterErrors(t *testing.T) {
@@ -186,14 +204,20 @@ func TestWriterErrors(t *testing.T) {
 		{`a{color:f(arg)}`, []int{4}},
 		{`<!--`, []int{0}},
 		{`/*!comment*/`, []int{0, 1, 2}},
+		{`a{--var:val}`, []int{2, 3, 4}},
+		{`a{*color:0}`, []int{2, 3}},
+		{`a{color:0;baddecl 5}`, []int{5}},
 	}
 
 	m := minify.New()
 	for _, tt := range errorTests {
 		for _, n := range tt.n {
-			r := bytes.NewBufferString(tt.css)
-			w := test.NewErrorWriter(n)
-			test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at write", n, "in", tt.css)
+			t.Run(fmt.Sprint(tt.css, " ", tt.n), func(t *testing.T) {
+				r := bytes.NewBufferString(tt.css)
+				w := test.NewErrorWriter(n)
+				err := Minify(m, w, r, nil)
+				test.T(t, err, test.ErrPlain)
+			})
 		}
 	}
 }

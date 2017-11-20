@@ -111,7 +111,7 @@ func main() {
 		if err != nil {
 			logrus.Fatalf("error encountered connecting to database: %v", err)
 		}
-		db = postgres.Postgres{DB: rawDB}
+		db = &postgres.Postgres{DB: rawDB}
 		dbx = sqlx.NewDb(rawDB, "postgres")
 		dbx.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
 

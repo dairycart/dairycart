@@ -3,7 +3,7 @@ package postgres
 import (
 	"time"
 
-	"github.com/verygoodsoftwarenotvirus/gnorm-dairymodels/models"
+	"github.com/dairycart/dairycart/api/storage/models"
 )
 
 const discountQueryByCode = `
@@ -30,8 +30,8 @@ const discountQueryByCode = `
         sku = $1
 `
 
-func (pg *Postgres) GetDiscountByCode(code string) (models.Discount, error) {
-	var d models.Discount
+func (pg *Postgres) GetDiscountByCode(code string) (*models.Discount, error) {
+	d := &models.Discount{}
 
 	err := pg.DB.QueryRow(discountQueryByCode, code).Scan(&d.ID, &d.Name, &d.DiscountType, &d.Amount, &d.StartsOn, &d.ExpiresOn, &d.RequiresCode, &d.Code, &d.LimitedUse, &d.NumberOfUses, &d.LoginRequired, &d.CreatedOn, &d.UpdatedOn, &d.ArchivedOn)
 	return d, err
@@ -61,8 +61,8 @@ const discountSelectionQuery = `
         id = $1
 `
 
-func (pg *Postgres) GetDiscount(id uint64) (models.Discount, error) {
-	var d models.Discount
+func (pg *Postgres) GetDiscount(id uint64) (*models.Discount, error) {
+	d := &models.Discount{}
 
 	err := pg.DB.QueryRow(discountSelectionQuery, id).Scan(&d.ID, &d.Name, &d.DiscountType, &d.Amount, &d.StartsOn, &d.ExpiresOn, &d.RequiresCode, &d.Code, &d.LimitedUse, &d.NumberOfUses, &d.LoginRequired, &d.CreatedOn, &d.UpdatedOn, &d.ArchivedOn)
 
@@ -82,12 +82,12 @@ const discountCreationQuery = `
         id, created_on;
 `
 
-func (pg *Postgres) CreateDiscount(np models.Discount) (uint64, time.Time, error) {
+func (pg *Postgres) CreateDiscount(nu *models.Discount) (uint64, time.Time, error) {
 	var (
 		createdID uint64
 		createdAt time.Time
 	)
-	err := pg.DB.QueryRow(discountCreationQuery, &np.Name, &np.DiscountType, &np.Amount, &np.StartsOn, &np.ExpiresOn, &np.RequiresCode, &np.Code, &np.LimitedUse, &np.NumberOfUses, &np.LoginRequired).Scan(&createdID, &createdAt)
+	err := pg.DB.QueryRow(discountCreationQuery, &nu.Name, &nu.DiscountType, &nu.Amount, &nu.StartsOn, &nu.ExpiresOn, &nu.RequiresCode, &nu.Code, &nu.LimitedUse, &nu.NumberOfUses, &nu.LoginRequired).Scan(&createdID, &createdAt)
 
 	return createdID, createdAt, err
 }
@@ -110,7 +110,7 @@ const discountUpdateQuery = `
     RETURNING updated_on;
 `
 
-func (pg *Postgres) UpdateDiscount(updated models.Discount) (time.Time, error) {
+func (pg *Postgres) UpdateDiscount(updated *models.Discount) (time.Time, error) {
 	var t time.Time
 	err := pg.DB.QueryRow(discountUpdateQuery, &updated.Name, &updated.DiscountType, &updated.Amount, &updated.StartsOn, &updated.ExpiresOn, &updated.RequiresCode, &updated.Code, &updated.LimitedUse, &updated.NumberOfUses, &updated.LoginRequired, &updated.ID).Scan(&t)
 	return t, err

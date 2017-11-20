@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// LoginAttempt represents a Diarycart loginattempt
+// LoginAttempt represents a Dairycart loginattempt
 type LoginAttempt struct {
 	ID         uint64    `json:"id"`         // id
 	Username   string    `json:"username"`   // username

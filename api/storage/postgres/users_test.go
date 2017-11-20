@@ -4,14 +4,14 @@ import (
 	"testing"
 
 	// internal dependencies
-	"github.com/verygoodsoftwarenotvirus/gnorm-dairymodels/models"
+	"github.com/dairycart/dairycart/api/storage/models"
 
 	// external dependencies
 	"github.com/stretchr/testify/require"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
-func setUserReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, toReturn models.User, err error) {
+func setUserReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, toReturn *models.User, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(userSelectionQuery)
 
@@ -52,7 +52,7 @@ func TestGetUserByID(t *testing.T) {
 	defer mockDB.Close()
 
 	exampleID := uint64(1)
-	expected := models.User{ID: exampleID}
+	expected := &models.User{ID: exampleID}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setUserReadQueryExpectation(t, mock, exampleID, expected, nil)
@@ -65,7 +65,7 @@ func TestGetUserByID(t *testing.T) {
 	})
 }
 
-func setUserCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate models.User, err error) {
+func setUserCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.User, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(userCreationQuery)
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), generateExampleTimeForTests())
@@ -90,7 +90,7 @@ func TestCreateUser(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	expectedID := uint64(1)
-	exampleInput := models.User{ID: expectedID}
+	exampleInput := &models.User{ID: expectedID}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setUserCreationQueryExpectation(t, mock, exampleInput, nil)
@@ -106,7 +106,7 @@ func TestCreateUser(t *testing.T) {
 	})
 }
 
-func setUserUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate models.User, err error) {
+func setUserUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate *models.User, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(userUpdateQuery)
 	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests())
@@ -131,7 +131,7 @@ func TestUpdateUserByID(t *testing.T) {
 	mockDB, mock, err := sqlmock.New()
 	require.Nil(t, err)
 	defer mockDB.Close()
-	exampleInput := models.User{ID: uint64(1)}
+	exampleInput := &models.User{ID: uint64(1)}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setUserUpdateQueryExpectation(t, mock, exampleInput, nil)

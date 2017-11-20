@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// User represents a Diarycart user
+// User represents a Dairycart user
 type User struct {
 	ID                    uint64    `json:"id"`                       // id
 	FirstName             string    `json:"first_name"`               // first_name

@@ -4,14 +4,14 @@ import (
 	"testing"
 
 	// internal dependencies
-	"github.com/verygoodsoftwarenotvirus/gnorm-dairymodels/models"
+	"github.com/dairycart/dairycart/api/storage/models"
 
 	// external dependencies
 	"github.com/stretchr/testify/require"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
-func setLoginAttemptReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, toReturn models.LoginAttempt, err error) {
+func setLoginAttemptReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, toReturn *models.LoginAttempt, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(loginAttemptSelectionQuery)
 
@@ -36,7 +36,7 @@ func TestGetLoginAttemptByID(t *testing.T) {
 	defer mockDB.Close()
 
 	exampleID := uint64(1)
-	expected := models.LoginAttempt{ID: exampleID}
+	expected := &models.LoginAttempt{ID: exampleID}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setLoginAttemptReadQueryExpectation(t, mock, exampleID, expected, nil)
@@ -49,7 +49,7 @@ func TestGetLoginAttemptByID(t *testing.T) {
 	})
 }
 
-func setLoginAttemptCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate models.LoginAttempt, err error) {
+func setLoginAttemptCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.LoginAttempt, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(loginattemptCreationQuery)
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), generateExampleTimeForTests())
@@ -68,7 +68,7 @@ func TestCreateLoginAttempt(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	expectedID := uint64(1)
-	exampleInput := models.LoginAttempt{ID: expectedID}
+	exampleInput := &models.LoginAttempt{ID: expectedID}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setLoginAttemptCreationQueryExpectation(t, mock, exampleInput, nil)
@@ -84,7 +84,7 @@ func TestCreateLoginAttempt(t *testing.T) {
 	})
 }
 
-func setLoginAttemptUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate models.LoginAttempt, err error) {
+func setLoginAttemptUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate *models.LoginAttempt, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(loginAttemptUpdateQuery)
 	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests())
@@ -103,7 +103,7 @@ func TestUpdateLoginAttemptByID(t *testing.T) {
 	mockDB, mock, err := sqlmock.New()
 	require.Nil(t, err)
 	defer mockDB.Close()
-	exampleInput := models.LoginAttempt{ID: uint64(1)}
+	exampleInput := &models.LoginAttempt{ID: uint64(1)}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setLoginAttemptUpdateQueryExpectation(t, mock, exampleInput, nil)

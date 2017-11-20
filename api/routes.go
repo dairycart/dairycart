@@ -47,7 +47,7 @@ func SetupAPIRoutes(router *chi.Mux, dbx *sqlx.DB, store *sessions.CookieStore, 
 		// Products
 		r.Post("/product", buildProductCreationHandler(dbx))
 		r.Get("/products", buildProductListHandler(dbx))
-		r.Get(fmt.Sprintf("/product/{sku:%s}", ValidURLCharactersPattern), buildSingleProductHandler(dbx, db))
+		r.Get(fmt.Sprintf("/product/{sku:%s}", ValidURLCharactersPattern), buildSingleProductHandler(db))
 		r.Patch(fmt.Sprintf("/product/{sku:%s}", ValidURLCharactersPattern), buildProductUpdateHandler(dbx))
 		r.Head(fmt.Sprintf("/product/{sku:%s}", ValidURLCharactersPattern), buildProductExistenceHandler(dbx))
 		r.Delete(fmt.Sprintf("/product/{sku:%s}", ValidURLCharactersPattern), buildProductDeletionHandler(dbx))

@@ -3,7 +3,7 @@ package postgres
 import (
     "time"
 
-    "github.com/verygoodsoftwarenotvirus/gnorm-dairymodels/models"
+	"github.com/dairycart/dairycart/api/storage/models"
 )
 
 {{- $modelName := pascal (trimSuffix .Table.Name "s") }}
@@ -26,8 +26,8 @@ const {{ $bySKUVarName }} = `
         sku = $1
 `
 
-func (pg *Postgres) Get{{ $modelName }}BySKU(sku string) (models.{{ $modelName }}, error) {
-	var {{ $shortVarName }} models.{{ $modelName }}
+func (pg *Postgres) Get{{ $modelName }}BySKU(sku string) (*models.{{ $modelName }}, error) {
+	{{ $shortVarName }} := &models.{{ $modelName }}{}
 
     err := pg.DB.QueryRow({{ $bySKUVarName }}, sku).Scan({{ $lastCol := dec (len .Table.Columns.DBNames) -}}{{ range $x, $col := .Table.Columns.DBNames }}&{{ $shortVarName }}.{{ if or (eq (toLower $col) "sku") (eq (toLower $col) "upc") }}{{ toUpper $col }}{{ else }}{{ pascal $col }}{{ end }}{{ if ne $x $lastCol }}, {{ end }}{{ end }})
 
@@ -50,8 +50,8 @@ const {{ $byCodeVarName }} = `
         sku = $1
 `
 
-func (pg *Postgres) Get{{ $modelName }}ByCode(code string) (models.{{ $modelName }}, error) {
-	var {{ $shortVarName }} models.{{ $modelName }}
+func (pg *Postgres) Get{{ $modelName }}ByCode(code string) (*models.{{ $modelName }}, error) {
+	{{ $shortVarName }} := &models.{{ $modelName }}{}
 
     err := pg.DB.QueryRow({{ $byCodeVarName }}, code).Scan({{ $lastCol := dec (len .Table.Columns.DBNames) -}}{{ range $x, $col := .Table.Columns.DBNames }}&{{ $shortVarName }}.{{ pascal $col }}{{ if ne $x $lastCol }}, {{ end }}{{ end }})
 	return {{ $shortVarName }}, err
@@ -72,8 +72,8 @@ const {{ $readQueryVarName }} = `
         id = $1
 `
 
-func (pg *Postgres) Get{{ $modelName }}(id uint64) (models.{{ $modelName }}, error) {
-	var {{ $shortVarName }} models.{{ $modelName }}
+func (pg *Postgres) Get{{ $modelName }}(id uint64) (*models.{{ $modelName }}, error) {
+	{{ $shortVarName }} := &models.{{ $modelName }}{}
 
     err := pg.DB.QueryRow({{ $readQueryVarName }}, id).Scan({{ $lastCol := dec (len .Table.Columns.DBNames) -}}{{ range $x, $col := .Table.Columns.DBNames }}&{{ $shortVarName }}.{{ if or (eq (toLower $col) "sku") (eq (toLower $col) "upc") }}{{ toUpper $col }}{{ else }}{{ pascal $col }}{{ end }}{{ if ne $x $lastCol }},{{ end }}{{ end }})
 
@@ -99,13 +99,13 @@ const {{ $creationQueryVarName }} = `
         id, created_on{{ if $isProduct }}, available_on{{ end }};
 `
 
-func (pg *Postgres) Create{{ $modelName }}(np models.{{ $modelName }}) (uint64, time.Time, {{- if $isProduct }}time.Time, {{ end }}error) {
+func (pg *Postgres) Create{{ $modelName }}(nu *models.{{ $modelName }}) (uint64, time.Time, {{- if $isProduct }}time.Time, {{ end }}error) {
     var (
         createdID uint64
         createdAt time.Time
         {{ if $isProduct -}}availableOn time.Time{{ end -}}
     )
-    err := pg.DB.QueryRow({{ $creationQueryVarName }}, {{ range $x, $col := $creationColumns -}}&np.{{- if and (ne $col "upc") (ne $col "sku") -}}{{ pascal $col -}}{{ else }}{{ toUpper $col }}{{ end }}{{ if ne $lastCol $x }}, {{ end }}{{ end }}).Scan(&createdID, &createdAt{{- if $isProduct }}, &availableOn{{ end }})
+    err := pg.DB.QueryRow({{ $creationQueryVarName }}, {{ range $x, $col := $creationColumns -}}&nu.{{- if and (ne $col "upc") (ne $col "sku") -}}{{ pascal $col -}}{{ else }}{{ toUpper $col }}{{ end }}{{ if ne $lastCol $x }}, {{ end }}{{ end }}).Scan(&createdID, &createdAt{{- if $isProduct }}, &availableOn{{ end }})
 
     return createdID, createdAt, {{- if $isProduct }}availableOn, {{ end }}err
 }
@@ -121,7 +121,7 @@ const {{ $updateQueryVarName }} = `
     RETURNING updated_on;
 `
 
-func (pg *Postgres) Update{{ $modelName }}(updated models.{{ $modelName }}) (time.Time, error) {
+func (pg *Postgres) Update{{ $modelName }}(updated *models.{{ $modelName }}) (time.Time, error) {
     var t time.Time
 	err := pg.DB.QueryRow({{ $updateQueryVarName }}, {{ $lastCol := dec (len $updateColumns) -}}{{ range $x, $col := $updateColumns }}{{ if and (ne $col "updated_on") (ne $col "id")}}&updated.{{ if or (eq (toLower $col) "sku") (eq (toLower $col) "upc") }}{{ toUpper $col }}{{ else }}{{ pascal $col }}{{ end }}, {{ end }}{{ end }}&updated.ID).Scan(&t)
     return t, err

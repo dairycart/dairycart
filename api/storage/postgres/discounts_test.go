@@ -4,14 +4,14 @@ import (
 	"testing"
 
 	// internal dependencies
-	"github.com/verygoodsoftwarenotvirus/gnorm-dairymodels/models"
+	"github.com/dairycart/dairycart/api/storage/models"
 
 	// external dependencies
 	"github.com/stretchr/testify/require"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
-func setDiscountReadQueryExpectationByCode(t *testing.T, mock sqlmock.Sqlmock, code string, toReturn models.Discount, err error) {
+func setDiscountReadQueryExpectationByCode(t *testing.T, mock sqlmock.Sqlmock, code string, toReturn *models.Discount, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(discountQueryByCode)
 
@@ -56,7 +56,7 @@ func TestGetDiscountByCode(t *testing.T) {
 	defer mockDB.Close()
 
 	exampleCode := "welcome"
-	expected := models.Discount{Code: exampleCode}
+	expected := &models.Discount{Code: exampleCode}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setDiscountReadQueryExpectationByCode(t, mock, exampleCode, expected, nil)
@@ -69,7 +69,7 @@ func TestGetDiscountByCode(t *testing.T) {
 	})
 }
 
-func setDiscountReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, toReturn models.Discount, err error) {
+func setDiscountReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, toReturn *models.Discount, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(discountSelectionQuery)
 
@@ -114,7 +114,7 @@ func TestGetDiscountByID(t *testing.T) {
 	defer mockDB.Close()
 
 	exampleID := uint64(1)
-	expected := models.Discount{ID: exampleID}
+	expected := &models.Discount{ID: exampleID}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setDiscountReadQueryExpectation(t, mock, exampleID, expected, nil)
@@ -127,7 +127,7 @@ func TestGetDiscountByID(t *testing.T) {
 	})
 }
 
-func setDiscountCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate models.Discount, err error) {
+func setDiscountCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.Discount, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(discountCreationQuery)
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), generateExampleTimeForTests())
@@ -154,7 +154,7 @@ func TestCreateDiscount(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	expectedID := uint64(1)
-	exampleInput := models.Discount{ID: expectedID}
+	exampleInput := &models.Discount{ID: expectedID}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setDiscountCreationQueryExpectation(t, mock, exampleInput, nil)
@@ -170,7 +170,7 @@ func TestCreateDiscount(t *testing.T) {
 	})
 }
 
-func setDiscountUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate models.Discount, err error) {
+func setDiscountUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate *models.Discount, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(discountUpdateQuery)
 	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests())
@@ -197,7 +197,7 @@ func TestUpdateDiscountByID(t *testing.T) {
 	mockDB, mock, err := sqlmock.New()
 	require.Nil(t, err)
 	defer mockDB.Close()
-	exampleInput := models.Discount{ID: uint64(1)}
+	exampleInput := &models.Discount{ID: uint64(1)}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setDiscountUpdateQueryExpectation(t, mock, exampleInput, nil)

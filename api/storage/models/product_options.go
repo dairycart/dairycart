@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// ProductOption represents a Diarycart productoption
+// ProductOption represents a Dairycart productoption
 type ProductOption struct {
 	ID            uint64    `json:"id"`              // id
 	Name          string    `json:"name"`            // name

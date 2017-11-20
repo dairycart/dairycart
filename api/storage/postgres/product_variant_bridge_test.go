@@ -4,14 +4,14 @@ import (
 	"testing"
 
 	// internal dependencies
-	"github.com/verygoodsoftwarenotvirus/gnorm-dairymodels/models"
+	"github.com/dairycart/dairycart/api/storage/models"
 
 	// external dependencies
 	"github.com/stretchr/testify/require"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
-func setProductVariantBridgeReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, toReturn models.ProductVariantBridge, err error) {
+func setProductVariantBridgeReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, toReturn *models.ProductVariantBridge, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productVariantBridgeSelectionQuery)
 
@@ -38,7 +38,7 @@ func TestGetProductVariantBridgeByID(t *testing.T) {
 	defer mockDB.Close()
 
 	exampleID := uint64(1)
-	expected := models.ProductVariantBridge{ID: exampleID}
+	expected := &models.ProductVariantBridge{ID: exampleID}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductVariantBridgeReadQueryExpectation(t, mock, exampleID, expected, nil)
@@ -51,7 +51,7 @@ func TestGetProductVariantBridgeByID(t *testing.T) {
 	})
 }
 
-func setProductVariantBridgeCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate models.ProductVariantBridge, err error) {
+func setProductVariantBridgeCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.ProductVariantBridge, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productvariantbridgeCreationQuery)
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), generateExampleTimeForTests())
@@ -70,7 +70,7 @@ func TestCreateProductVariantBridge(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	expectedID := uint64(1)
-	exampleInput := models.ProductVariantBridge{ID: expectedID}
+	exampleInput := &models.ProductVariantBridge{ID: expectedID}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductVariantBridgeCreationQueryExpectation(t, mock, exampleInput, nil)
@@ -86,7 +86,7 @@ func TestCreateProductVariantBridge(t *testing.T) {
 	})
 }
 
-func setProductVariantBridgeUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate models.ProductVariantBridge, err error) {
+func setProductVariantBridgeUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate *models.ProductVariantBridge, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productVariantBridgeUpdateQuery)
 	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests())
@@ -105,7 +105,7 @@ func TestUpdateProductVariantBridgeByID(t *testing.T) {
 	mockDB, mock, err := sqlmock.New()
 	require.Nil(t, err)
 	defer mockDB.Close()
-	exampleInput := models.ProductVariantBridge{ID: uint64(1)}
+	exampleInput := &models.ProductVariantBridge{ID: uint64(1)}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductVariantBridgeUpdateQueryExpectation(t, mock, exampleInput, nil)

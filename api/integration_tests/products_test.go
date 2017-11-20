@@ -139,7 +139,6 @@ func TestProductRetrievalRoute(t *testing.T) {
 			"manufacturer": "Record Company",
 			"brand": "Your Favorite Band",
 			"quantity": 666,
-			"quantity_per_package": 1,
 			"taxable": true,
 			"price": 20,
 			"on_sale": false,
@@ -152,7 +151,8 @@ func TestProductRetrievalRoute(t *testing.T) {
 			"package_weight": 1,
 			"package_height": 5,
 			"package_width": 5,
-			"package_length": 5
+			"package_length": 5,
+			"quantity_per_package": 1
 		}
 	`, existentSKU))
 	assert.Equal(t, expected, actual, "product retrieval response should contain a complete product")

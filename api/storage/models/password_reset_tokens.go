@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// PasswordResetToken represents a Diarycart passwordresettoken
+// PasswordResetToken represents a Dairycart passwordresettoken
 type PasswordResetToken struct {
 	ID              uint64    `json:"id"`                // id
 	UserID          uint64    `json:"user_id"`           // user_id

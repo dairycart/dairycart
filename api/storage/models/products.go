@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// Product represents a Diarycart product
+// Product represents a Dairycart product
 type Product struct {
 	ID                 uint64    `json:"id"`                   // id
 	ProductRootID      uint64    `json:"product_root_id"`      // product_root_id

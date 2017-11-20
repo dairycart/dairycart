@@ -3,7 +3,7 @@ package postgres
 import (
 	"time"
 
-	"github.com/verygoodsoftwarenotvirus/gnorm-dairymodels/models"
+	"github.com/dairycart/dairycart/api/storage/models"
 )
 
 const userSelectionQuery = `
@@ -28,8 +28,8 @@ const userSelectionQuery = `
         id = $1
 `
 
-func (pg *Postgres) GetUser(id uint64) (models.User, error) {
-	var u models.User
+func (pg *Postgres) GetUser(id uint64) (*models.User, error) {
+	u := &models.User{}
 
 	err := pg.DB.QueryRow(userSelectionQuery, id).Scan(&u.ID, &u.FirstName, &u.LastName, &u.Username, &u.Email, &u.Password, &u.Salt, &u.IsAdmin, &u.PasswordLastChangedOn, &u.CreatedOn, &u.UpdatedOn, &u.ArchivedOn)
 
@@ -49,12 +49,12 @@ const userCreationQuery = `
         id, created_on;
 `
 
-func (pg *Postgres) CreateUser(np models.User) (uint64, time.Time, error) {
+func (pg *Postgres) CreateUser(nu *models.User) (uint64, time.Time, error) {
 	var (
 		createdID uint64
 		createdAt time.Time
 	)
-	err := pg.DB.QueryRow(userCreationQuery, &np.FirstName, &np.LastName, &np.Username, &np.Email, &np.Password, &np.Salt, &np.IsAdmin, &np.PasswordLastChangedOn).Scan(&createdID, &createdAt)
+	err := pg.DB.QueryRow(userCreationQuery, &nu.FirstName, &nu.LastName, &nu.Username, &nu.Email, &nu.Password, &nu.Salt, &nu.IsAdmin, &nu.PasswordLastChangedOn).Scan(&createdID, &createdAt)
 
 	return createdID, createdAt, err
 }
@@ -75,7 +75,7 @@ const userUpdateQuery = `
     RETURNING updated_on;
 `
 
-func (pg *Postgres) UpdateUser(updated models.User) (time.Time, error) {
+func (pg *Postgres) UpdateUser(updated *models.User) (time.Time, error) {
 	var t time.Time
 	err := pg.DB.QueryRow(userUpdateQuery, &updated.FirstName, &updated.LastName, &updated.Username, &updated.Email, &updated.Password, &updated.Salt, &updated.IsAdmin, &updated.PasswordLastChangedOn, &updated.ID).Scan(&t)
 	return t, err

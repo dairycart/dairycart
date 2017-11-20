@@ -3,7 +3,7 @@ package postgres
 import (
 	"time"
 
-	"github.com/verygoodsoftwarenotvirus/gnorm-dairymodels/models"
+	"github.com/dairycart/dairycart/api/storage/models"
 )
 
 const passwordResetTokenSelectionQuery = `
@@ -22,8 +22,8 @@ const passwordResetTokenSelectionQuery = `
         id = $1
 `
 
-func (pg *Postgres) GetPasswordResetToken(id uint64) (models.PasswordResetToken, error) {
-	var p models.PasswordResetToken
+func (pg *Postgres) GetPasswordResetToken(id uint64) (*models.PasswordResetToken, error) {
+	p := &models.PasswordResetToken{}
 
 	err := pg.DB.QueryRow(passwordResetTokenSelectionQuery, id).Scan(&p.ID, &p.UserID, &p.Token, &p.CreatedOn, &p.ExpiresOn, &p.PasswordResetOn)
 
@@ -43,12 +43,12 @@ const passwordresettokenCreationQuery = `
         id, created_on;
 `
 
-func (pg *Postgres) CreatePasswordResetToken(np models.PasswordResetToken) (uint64, time.Time, error) {
+func (pg *Postgres) CreatePasswordResetToken(nu *models.PasswordResetToken) (uint64, time.Time, error) {
 	var (
 		createdID uint64
 		createdAt time.Time
 	)
-	err := pg.DB.QueryRow(passwordresettokenCreationQuery, &np.UserID, &np.Token, &np.ExpiresOn, &np.PasswordResetOn).Scan(&createdID, &createdAt)
+	err := pg.DB.QueryRow(passwordresettokenCreationQuery, &nu.UserID, &nu.Token, &nu.ExpiresOn, &nu.PasswordResetOn).Scan(&createdID, &createdAt)
 
 	return createdID, createdAt, err
 }
@@ -64,7 +64,7 @@ const passwordResetTokenUpdateQuery = `
     RETURNING updated_on;
 `
 
-func (pg *Postgres) UpdatePasswordResetToken(updated models.PasswordResetToken) (time.Time, error) {
+func (pg *Postgres) UpdatePasswordResetToken(updated *models.PasswordResetToken) (time.Time, error) {
 	var t time.Time
 	err := pg.DB.QueryRow(passwordResetTokenUpdateQuery, &updated.UserID, &updated.Token, &updated.ExpiresOn, &updated.PasswordResetOn, &updated.ID).Scan(&t)
 	return t, err

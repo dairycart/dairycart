@@ -3,7 +3,7 @@ package postgres
 import (
 	"time"
 
-	"github.com/verygoodsoftwarenotvirus/gnorm-dairymodels/models"
+	"github.com/dairycart/dairycart/api/storage/models"
 )
 
 const loginAttemptSelectionQuery = `
@@ -20,8 +20,8 @@ const loginAttemptSelectionQuery = `
         id = $1
 `
 
-func (pg *Postgres) GetLoginAttempt(id uint64) (models.LoginAttempt, error) {
-	var l models.LoginAttempt
+func (pg *Postgres) GetLoginAttempt(id uint64) (*models.LoginAttempt, error) {
+	l := &models.LoginAttempt{}
 
 	err := pg.DB.QueryRow(loginAttemptSelectionQuery, id).Scan(&l.ID, &l.Username, &l.Successful, &l.CreatedOn)
 
@@ -41,12 +41,12 @@ const loginattemptCreationQuery = `
         id, created_on;
 `
 
-func (pg *Postgres) CreateLoginAttempt(np models.LoginAttempt) (uint64, time.Time, error) {
+func (pg *Postgres) CreateLoginAttempt(nu *models.LoginAttempt) (uint64, time.Time, error) {
 	var (
 		createdID uint64
 		createdAt time.Time
 	)
-	err := pg.DB.QueryRow(loginattemptCreationQuery, &np.Username, &np.Successful).Scan(&createdID, &createdAt)
+	err := pg.DB.QueryRow(loginattemptCreationQuery, &nu.Username, &nu.Successful).Scan(&createdID, &createdAt)
 
 	return createdID, createdAt, err
 }
@@ -60,7 +60,7 @@ const loginAttemptUpdateQuery = `
     RETURNING updated_on;
 `
 
-func (pg *Postgres) UpdateLoginAttempt(updated models.LoginAttempt) (time.Time, error) {
+func (pg *Postgres) UpdateLoginAttempt(updated *models.LoginAttempt) (time.Time, error) {
 	var t time.Time
 	err := pg.DB.QueryRow(loginAttemptUpdateQuery, &updated.Username, &updated.Successful, &updated.ID).Scan(&t)
 	return t, err

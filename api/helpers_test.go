@@ -15,7 +15,7 @@ import (
 	"time"
 
 	// local dependencies
-	"github.com/dairycart/dairycart/api/storage/postgres"
+	"github.com/dairycart/dairycart/api/storage/mock"
 
 	// external dependencies
 	"github.com/go-chi/chi"
@@ -24,7 +24,7 @@ import (
 	"github.com/jmoiron/sqlx/reflectx"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
-	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
+	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 
 	"github.com/gorilla/securecookie"
 	log "github.com/sirupsen/logrus"
@@ -55,6 +55,7 @@ type TestUtil struct {
 	PlainDB  *sql.DB
 	DB       *sqlx.DB
 	Mock     sqlmock.Sqlmock
+	MockDB   dairymock.MockDB
 	Store    *sessions.CookieStore
 }
 
@@ -92,6 +93,7 @@ func setupTestVariables(t *testing.T) *TestUtil {
 	dbx := sqlx.NewDb(mockDB, "postgres")
 	dbx.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
 	assert.Nil(t, err)
+	dairymockDB := &dairymock.MockDB{}
 
 	secret := os.Getenv("DAIRYSECRET")
 	if len(secret) < 32 {
@@ -99,10 +101,8 @@ func setupTestVariables(t *testing.T) *TestUtil {
 	}
 	store := sessions.NewCookieStore([]byte(secret))
 
-	db := postgres.Postgres{DB: mockDB}
-
 	router := chi.NewRouter()
-	SetupAPIRoutes(router, dbx, store, db)
+	SetupAPIRoutes(router, dbx, store, dairymockDB)
 
 	return &TestUtil{
 		Response: httptest.NewRecorder(),

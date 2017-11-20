@@ -2,10 +2,10 @@
 
 
 [[projects]]
-  branch = "v1"
   name = "github.com/Masterminds/squirrel"
   packages = ["."]
   revision = "a6b93000bd219143c56c16e6cb1c4b91da3f224b"
+  version = "v1.0"
 
 [[projects]]
   name = "github.com/asaskevich/govalidator"
@@ -65,7 +65,7 @@
   branch = "master"
   name = "github.com/jmoiron/sqlx"
   packages = [".","reflectx"]
-  revision = "d9bd385d68c068f1fabb5057e3dedcbcbb039d0f"
+  revision = "3379e5993990b1f927fc8db926485e6f6becf2d2"
 
 [[projects]]
   branch = "master"
@@ -83,7 +83,7 @@
   branch = "master"
   name = "github.com/lib/pq"
   packages = [".","oid"]
-  revision = "017e4c14d80628353eaee677a1aeffe47a10c0dc"
+  revision = "8c6ee72f3e6bcb1542298dd5f76cb74af9742cec"
 
 [[projects]]
   name = "github.com/mattes/migrate"
@@ -110,46 +110,40 @@
   version = "v1.0.3"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/stretchr/objx"
+  packages = ["."]
+  revision = "1a9d0bb9f541897e62256577b352fdbc1fb4fd94"
+
+[[projects]]
   name = "github.com/stretchr/testify"
-  packages = ["assert"]
+  packages = ["assert","mock","require"]
   revision = "69483b4bd14f5845b5a1e55bca19e954e827f1d0"
   version = "v1.1.4"
 
 [[projects]]
-  name = "github.com/tdewolff/buffer"
-  packages = ["."]
-  revision = "43cef5ba7b6ce99cc410632dad46cf1c6c97026e"
-  version = "v1.0.0"
-
-[[projects]]
   name = "github.com/tdewolff/minify"
   packages = [".","json"]
-  revision = "bf4ffcc476fdee34561726f5b5523dc0f87a707a"
-  version = "v2.1.0"
+  revision = "90df1aae5028a7cbb441bde86e86a55df6b5aa34"
+  version = "v2.3.3"
 
 [[projects]]
   name = "github.com/tdewolff/parse"
-  packages = [".","json"]
-  revision = "70d04d8c1ad44f8f9e435a056f276910cb1f29bf"
-  version = "v2.1.0"
-
-[[projects]]
-  name = "github.com/tdewolff/strconv"
-  packages = ["."]
-  revision = "3e8091f4417ebaaa3910da63a45ea394ebbfb0e3"
-  version = "v1.0.0"
+  packages = [".","buffer","json","strconv"]
+  revision = "bace4cf682c41e03b154044b561575ff541b83e8"
+  version = "v2.3.1"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["bcrypt","blowfish","ssh/terminal"]
-  revision = "9419663f5a44be8b34ca85f08abc5fe1be11f8a3"
+  revision = "9f005a07e0d31d45e6656d241bb5c0f2efd4bc94"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
-  revision = "686000749eaec0b8855b8eef5336cf63899fe51d"
+  revision = "0ac51a24ef1c37380f98ba8b98f56e3bffd59850"
 
 [[projects]]
   name = "gopkg.in/DATA-DOG/go-sqlmock.v1"
@@ -160,6 +154,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6f64bde09beb281717ba9ca7c64a6754a3626323fc7303693cc6669e447ff1fa"
+  inputs-digest = "1c4e05343aaf69c58f802b4122fd46a2e529206a0575f0c58a163b3b46dcdcd2"
   solver-name = "gps-cdcl"
   solver-version = 1

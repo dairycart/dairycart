@@ -156,7 +156,7 @@ func retrieveProductFromDB(db *sqlx.DB, sku string) (Product, error) {
 	return p, err
 }
 
-func buildSingleProductHandler(dbx *sqlx.DB, db storage.Storage) http.HandlerFunc {
+func buildSingleProductHandler(db storage.Storage) http.HandlerFunc {
 	// SingleProductHandler is a request handler that returns a single Product
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := chi.URLParam(req, "sku")

@@ -3,7 +3,7 @@ package postgres
 import (
 	"time"
 
-	"github.com/verygoodsoftwarenotvirus/gnorm-dairymodels/models"
+	"github.com/dairycart/dairycart/api/storage/models"
 )
 
 const productOptionSelectionQuery = `
@@ -22,8 +22,8 @@ const productOptionSelectionQuery = `
         id = $1
 `
 
-func (pg *Postgres) GetProductOption(id uint64) (models.ProductOption, error) {
-	var p models.ProductOption
+func (pg *Postgres) GetProductOption(id uint64) (*models.ProductOption, error) {
+	p := &models.ProductOption{}
 
 	err := pg.DB.QueryRow(productOptionSelectionQuery, id).Scan(&p.ID, &p.Name, &p.ProductRootID, &p.CreatedOn, &p.UpdatedOn, &p.ArchivedOn)
 
@@ -43,12 +43,12 @@ const productoptionCreationQuery = `
         id, created_on;
 `
 
-func (pg *Postgres) CreateProductOption(np models.ProductOption) (uint64, time.Time, error) {
+func (pg *Postgres) CreateProductOption(nu *models.ProductOption) (uint64, time.Time, error) {
 	var (
 		createdID uint64
 		createdAt time.Time
 	)
-	err := pg.DB.QueryRow(productoptionCreationQuery, &np.Name, &np.ProductRootID).Scan(&createdID, &createdAt)
+	err := pg.DB.QueryRow(productoptionCreationQuery, &nu.Name, &nu.ProductRootID).Scan(&createdID, &createdAt)
 
 	return createdID, createdAt, err
 }
@@ -63,7 +63,7 @@ const productOptionUpdateQuery = `
     RETURNING updated_on;
 `
 
-func (pg *Postgres) UpdateProductOption(updated models.ProductOption) (time.Time, error) {
+func (pg *Postgres) UpdateProductOption(updated *models.ProductOption) (time.Time, error) {
 	var t time.Time
 	err := pg.DB.QueryRow(productOptionUpdateQuery, &updated.Name, &updated.ProductRootID, &updated.ID).Scan(&t)
 	return t, err

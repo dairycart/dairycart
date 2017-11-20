@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// Discount represents a Diarycart discount
+// Discount represents a Dairycart discount
 type Discount struct {
 	ID            uint64    `json:"id"`             // id
 	Name          string    `json:"name"`           // name

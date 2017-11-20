@@ -3,7 +3,7 @@ package postgres
 import (
 	"time"
 
-	"github.com/verygoodsoftwarenotvirus/gnorm-dairymodels/models"
+	"github.com/dairycart/dairycart/api/storage/models"
 )
 
 const productRootSelectionQuery = `
@@ -38,8 +38,8 @@ const productRootSelectionQuery = `
         id = $1
 `
 
-func (pg *Postgres) GetProductRoot(id uint64) (models.ProductRoot, error) {
-	var p models.ProductRoot
+func (pg *Postgres) GetProductRoot(id uint64) (*models.ProductRoot, error) {
+	p := &models.ProductRoot{}
 
 	err := pg.DB.QueryRow(productRootSelectionQuery, id).Scan(&p.ID, &p.Name, &p.Subtitle, &p.Description, &p.SkuPrefix, &p.Manufacturer, &p.Brand, &p.Taxable, &p.Cost, &p.ProductWeight, &p.ProductHeight, &p.ProductWidth, &p.ProductLength, &p.PackageWeight, &p.PackageHeight, &p.PackageWidth, &p.PackageLength, &p.QuantityPerPackage, &p.AvailableOn, &p.CreatedOn, &p.UpdatedOn, &p.ArchivedOn)
 
@@ -59,12 +59,12 @@ const productrootCreationQuery = `
         id, created_on;
 `
 
-func (pg *Postgres) CreateProductRoot(np models.ProductRoot) (uint64, time.Time, error) {
+func (pg *Postgres) CreateProductRoot(nu *models.ProductRoot) (uint64, time.Time, error) {
 	var (
 		createdID uint64
 		createdAt time.Time
 	)
-	err := pg.DB.QueryRow(productrootCreationQuery, &np.Name, &np.Subtitle, &np.Description, &np.SkuPrefix, &np.Manufacturer, &np.Brand, &np.Taxable, &np.Cost, &np.ProductWeight, &np.ProductHeight, &np.ProductWidth, &np.ProductLength, &np.PackageWeight, &np.PackageHeight, &np.PackageWidth, &np.PackageLength, &np.QuantityPerPackage, &np.AvailableOn).Scan(&createdID, &createdAt)
+	err := pg.DB.QueryRow(productrootCreationQuery, &nu.Name, &nu.Subtitle, &nu.Description, &nu.SkuPrefix, &nu.Manufacturer, &nu.Brand, &nu.Taxable, &nu.Cost, &nu.ProductWeight, &nu.ProductHeight, &nu.ProductWidth, &nu.ProductLength, &nu.PackageWeight, &nu.PackageHeight, &nu.PackageWidth, &nu.PackageLength, &nu.QuantityPerPackage, &nu.AvailableOn).Scan(&createdID, &createdAt)
 
 	return createdID, createdAt, err
 }
@@ -95,7 +95,7 @@ const productRootUpdateQuery = `
     RETURNING updated_on;
 `
 
-func (pg *Postgres) UpdateProductRoot(updated models.ProductRoot) (time.Time, error) {
+func (pg *Postgres) UpdateProductRoot(updated *models.ProductRoot) (time.Time, error) {
 	var t time.Time
 	err := pg.DB.QueryRow(productRootUpdateQuery, &updated.Name, &updated.Subtitle, &updated.Description, &updated.SkuPrefix, &updated.Manufacturer, &updated.Brand, &updated.Taxable, &updated.Cost, &updated.ProductWeight, &updated.ProductHeight, &updated.ProductWidth, &updated.ProductLength, &updated.PackageWeight, &updated.PackageHeight, &updated.PackageWidth, &updated.PackageLength, &updated.QuantityPerPackage, &updated.AvailableOn, &updated.ID).Scan(&t)
 	return t, err

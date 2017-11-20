@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// ProductVariantBridge represents a Diarycart productvariantbridge
+// ProductVariantBridge represents a Dairycart productvariantbridge
 type ProductVariantBridge struct {
 	ID                   uint64    `json:"id"`                      // id
 	ProductID            uint64    `json:"product_id"`              // product_id

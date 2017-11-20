@@ -106,6 +106,53 @@ func setExpectationsForProductRetrieval(mock sqlmock.Sqlmock, sku string, p *Pro
 		WillReturnError(err)
 }
 
+func setExpectationsForProductRetrievalNEW(mock sqlmock.Sqlmock, sku string, p *Product, err error) {
+	productHeaders, exampleProductData := createExampleHeadersAndDataFromProduct(p)
+	exampleRows := sqlmock.NewRows(productHeaders).AddRow(exampleProductData...)
+
+	productQuery := `
+		SELECT
+			id,
+			product_root_id,
+			name,
+			subtitle,
+			description,
+			option_summary,
+			sku,
+			upc,
+			manufacturer,
+			brand,
+			quantity,
+			taxable,
+			price,
+			on_sale,
+			sale_price,
+			cost,
+			product_weight,
+			product_height,
+			product_width,
+			product_length,
+			package_weight,
+			package_height,
+			package_width,
+			package_length,
+			quantity_per_package,
+			available_on,
+			created_on,
+			updated_on,
+			archived_on
+
+		FROM products
+		WHERE sku = $1
+	`
+
+	skuRetrievalQuery := formatQueryForSQLMock(productQuery)
+	mock.ExpectQuery(skuRetrievalQuery).
+		WithArgs(sku).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
 func setExpectationsForProductUpdate(mock sqlmock.Sqlmock, p *Product, err error) {
 	productHeaders := []string{
 		"id",
@@ -535,7 +582,7 @@ func TestProductRetrievalHandlerWithExistingProduct(t *testing.T) {
 		AvailableOn:   generateExampleTimeForTests(),
 	}
 
-	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, nil)
+	// setExpectationsForProductRetrievalNEW(testUtil.Mock, exampleProduct.SKU, exampleProduct, nil)
 
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), nil)
 	assert.Nil(t, err)
@@ -571,7 +618,7 @@ func TestProductRetrievalHandlerWithDBError(t *testing.T) {
 		AvailableOn:   generateExampleTimeForTests(),
 	}
 
-	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, generateArbitraryError())
+	// setExpectationsForProductRetrievalNEW(testUtil.Mock, exampleProduct.SKU, exampleProduct, generateArbitraryError())
 
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), nil)
 	assert.Nil(t, err)
@@ -607,7 +654,7 @@ func TestProductRetrievalHandlerWithNonexistentProduct(t *testing.T) {
 		AvailableOn:   generateExampleTimeForTests(),
 	}
 
-	setExpectationsForProductRetrieval(testUtil.Mock, exampleProduct.SKU, exampleProduct, sql.ErrNoRows)
+	// setExpectationsForProductRetrievalNEW(testUtil.Mock, exampleProduct.SKU, exampleProduct, sql.ErrNoRows)
 
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), nil)
 	assert.Nil(t, err)

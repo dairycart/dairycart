@@ -4,14 +4,14 @@ import (
 	"testing"
 
 	// internal dependencies
-	"github.com/verygoodsoftwarenotvirus/gnorm-dairymodels/models"
+	"github.com/dairycart/dairycart/api/storage/models"
 
 	// external dependencies
 	"github.com/stretchr/testify/require"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
-func setProductRootReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, toReturn models.ProductRoot, err error) {
+func setProductRootReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, toReturn *models.ProductRoot, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productRootSelectionQuery)
 
@@ -72,7 +72,7 @@ func TestGetProductRootByID(t *testing.T) {
 	defer mockDB.Close()
 
 	exampleID := uint64(1)
-	expected := models.ProductRoot{ID: exampleID}
+	expected := &models.ProductRoot{ID: exampleID}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductRootReadQueryExpectation(t, mock, exampleID, expected, nil)
@@ -85,7 +85,7 @@ func TestGetProductRootByID(t *testing.T) {
 	})
 }
 
-func setProductRootCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate models.ProductRoot, err error) {
+func setProductRootCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.ProductRoot, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productrootCreationQuery)
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), generateExampleTimeForTests())
@@ -120,7 +120,7 @@ func TestCreateProductRoot(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	expectedID := uint64(1)
-	exampleInput := models.ProductRoot{ID: expectedID}
+	exampleInput := &models.ProductRoot{ID: expectedID}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductRootCreationQueryExpectation(t, mock, exampleInput, nil)
@@ -136,7 +136,7 @@ func TestCreateProductRoot(t *testing.T) {
 	})
 }
 
-func setProductRootUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate models.ProductRoot, err error) {
+func setProductRootUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate *models.ProductRoot, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productRootUpdateQuery)
 	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests())
@@ -171,7 +171,7 @@ func TestUpdateProductRootByID(t *testing.T) {
 	mockDB, mock, err := sqlmock.New()
 	require.Nil(t, err)
 	defer mockDB.Close()
-	exampleInput := models.ProductRoot{ID: uint64(1)}
+	exampleInput := &models.ProductRoot{ID: uint64(1)}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductRootUpdateQueryExpectation(t, mock, exampleInput, nil)

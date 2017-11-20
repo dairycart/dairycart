@@ -4,14 +4,14 @@ import (
 	"testing"
 
 	// internal dependencies
-	"github.com/verygoodsoftwarenotvirus/gnorm-dairymodels/models"
+	"github.com/dairycart/dairycart/api/storage/models"
 
 	// external dependencies
 	"github.com/stretchr/testify/require"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
-func setPasswordResetTokenReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, toReturn models.PasswordResetToken, err error) {
+func setPasswordResetTokenReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, toReturn *models.PasswordResetToken, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(passwordResetTokenSelectionQuery)
 
@@ -40,7 +40,7 @@ func TestGetPasswordResetTokenByID(t *testing.T) {
 	defer mockDB.Close()
 
 	exampleID := uint64(1)
-	expected := models.PasswordResetToken{ID: exampleID}
+	expected := &models.PasswordResetToken{ID: exampleID}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setPasswordResetTokenReadQueryExpectation(t, mock, exampleID, expected, nil)
@@ -53,7 +53,7 @@ func TestGetPasswordResetTokenByID(t *testing.T) {
 	})
 }
 
-func setPasswordResetTokenCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate models.PasswordResetToken, err error) {
+func setPasswordResetTokenCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.PasswordResetToken, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(passwordresettokenCreationQuery)
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), generateExampleTimeForTests())
@@ -74,7 +74,7 @@ func TestCreatePasswordResetToken(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	expectedID := uint64(1)
-	exampleInput := models.PasswordResetToken{ID: expectedID}
+	exampleInput := &models.PasswordResetToken{ID: expectedID}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setPasswordResetTokenCreationQueryExpectation(t, mock, exampleInput, nil)
@@ -90,7 +90,7 @@ func TestCreatePasswordResetToken(t *testing.T) {
 	})
 }
 
-func setPasswordResetTokenUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate models.PasswordResetToken, err error) {
+func setPasswordResetTokenUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate *models.PasswordResetToken, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(passwordResetTokenUpdateQuery)
 	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests())
@@ -111,7 +111,7 @@ func TestUpdatePasswordResetTokenByID(t *testing.T) {
 	mockDB, mock, err := sqlmock.New()
 	require.Nil(t, err)
 	defer mockDB.Close()
-	exampleInput := models.PasswordResetToken{ID: uint64(1)}
+	exampleInput := &models.PasswordResetToken{ID: uint64(1)}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setPasswordResetTokenUpdateQueryExpectation(t, mock, exampleInput, nil)

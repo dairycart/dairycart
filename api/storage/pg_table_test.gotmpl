@@ -4,7 +4,7 @@ import(
     "testing"
 
     // internal dependencies
-    "github.com/verygoodsoftwarenotvirus/gnorm-dairymodels/models"
+	"github.com/dairycart/dairycart/api/storage/models"
 
     // external dependencies
 	"github.com/stretchr/testify/require"
@@ -24,7 +24,7 @@ import(
 
 {{ if $isProduct }}
 {{ $bySKUVarName := printf "%sQueryBySKU" ( camel $modelName ) -}}
-func set{{ $modelName }}ReadQueryExpectationBySKU(t *testing.T, mock sqlmock.Sqlmock, sku string, toReturn models.{{ $modelName }}, err error) {
+func set{{ $modelName }}ReadQueryExpectationBySKU(t *testing.T, mock sqlmock.Sqlmock, sku string, toReturn *models.{{ $modelName }}, err error) {
     t.Helper()
     query := formatQueryForSQLMock({{ $bySKUVarName }})
 
@@ -45,7 +45,7 @@ func TestGet{{ $modelName }}BySKU(t *testing.T) {
     defer mockDB.Close()
 
     exampleSKU := "hello"
-    expected := models.{{ $modelName }}{SKU: exampleSKU}
+    expected := &models.{{ $modelName }}{SKU: exampleSKU}
 
     t.Run("optimal behavior", func(t *testing.T) {
         set{{ $modelName }}ReadQueryExpectationBySKU(t, mock, exampleSKU, expected, nil)
@@ -61,7 +61,7 @@ func TestGet{{ $modelName }}BySKU(t *testing.T) {
 
 {{ if $isDiscount }}
 {{ $byCodeVarName := printf "%sQueryByCode" ( camel $modelName ) -}}
-func set{{ $modelName }}ReadQueryExpectationByCode(t *testing.T, mock sqlmock.Sqlmock, code string, toReturn models.{{ $modelName }}, err error) {
+func set{{ $modelName }}ReadQueryExpectationByCode(t *testing.T, mock sqlmock.Sqlmock, code string, toReturn *models.{{ $modelName }}, err error) {
     t.Helper()
     query := formatQueryForSQLMock({{ $byCodeVarName }})
 
@@ -82,7 +82,7 @@ func TestGet{{ $modelName }}ByCode(t *testing.T) {
     defer mockDB.Close()
 
     exampleCode := "welcome"
-    expected := models.{{ $modelName }}{Code: exampleCode}
+    expected := &models.{{ $modelName }}{Code: exampleCode}
 
     t.Run("optimal behavior", func(t *testing.T) {
         set{{ $modelName }}ReadQueryExpectationByCode(t, mock, exampleCode, expected, nil)
@@ -96,7 +96,7 @@ func TestGet{{ $modelName }}ByCode(t *testing.T) {
 }
 {{ end }}
 
-func set{{ $modelName }}ReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, toReturn models.{{ $modelName }}, err error) {
+func set{{ $modelName }}ReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, toReturn *models.{{ $modelName }}, err error) {
     t.Helper()
     query := formatQueryForSQLMock({{ $readQueryVarName }})
 
@@ -117,7 +117,7 @@ func TestGet{{ $modelName }}ByID(t *testing.T) {
     defer mockDB.Close()
 
     exampleID := uint64(1)
-    expected := models.{{ $modelName }}{ID: exampleID}
+    expected := &models.{{ $modelName }}{ID: exampleID}
 
     t.Run("optimal behavior", func(t *testing.T) {
         set{{ $modelName }}ReadQueryExpectation(t, mock, exampleID, expected, nil)
@@ -131,7 +131,7 @@ func TestGet{{ $modelName }}ByID(t *testing.T) {
 }
 
 {{ $creationColumns := .Table.Columns.Names.Except (makeSlice "id" "created_on" "archived_on" "updated_on") -}}
-func set{{ $modelName }}CreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate models.{{ $modelName }}, err error) {
+func set{{ $modelName }}CreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.{{ $modelName }}, err error) {
     t.Helper()
     query := formatQueryForSQLMock({{ $creationQueryVarName }})
     exampleRows := sqlmock.NewRows([]string{"id", "created_on"{{- if $isProduct }}, "available_on"{{ end }}}).AddRow(uint64(1), generateExampleTimeForTests(){{- if $isProduct }}, generateExampleTimeForTests(){{ end }})
@@ -152,7 +152,7 @@ func TestCreate{{ $modelName }}(t *testing.T) {
     require.Nil(t, err)
     defer mockDB.Close()
     expectedID := uint64(1)
-    exampleInput := models.{{ $modelName }}{ID: expectedID}
+    exampleInput := &models.{{ $modelName }}{ID: expectedID}
 
     t.Run("optimal behavior", func(t *testing.T) {
         set{{ $modelName }}CreationQueryExpectation(t, mock, exampleInput, nil)
@@ -170,7 +170,7 @@ func TestCreate{{ $modelName }}(t *testing.T) {
 
 
 {{ $updateColumns := .Table.Columns.Names.Except (makeSlice "id" "created_on" "archived_on") -}}
-func set{{ $modelName }}UpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate models.{{ $modelName }}, err error) {
+func set{{ $modelName }}UpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate *models.{{ $modelName }}, err error) {
     t.Helper()
     query := formatQueryForSQLMock({{ $updateQueryVarName }})
     exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests())
@@ -190,7 +190,7 @@ func TestUpdate{{ $modelName }}ByID(t *testing.T) {
 	mockDB, mock, err := sqlmock.New()
     require.Nil(t, err)
     defer mockDB.Close()
-    exampleInput := models.{{ $modelName }}{ID: uint64(1)}
+    exampleInput := &models.{{ $modelName }}{ID: uint64(1)}
 
     t.Run("optimal behavior", func(t *testing.T) {
         set{{ $modelName }}UpdateQueryExpectation(t, mock, exampleInput, nil)
