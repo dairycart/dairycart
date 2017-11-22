@@ -10,7 +10,7 @@ import (
 
 const passwordResetTokenExistenceQuery = `SELECT EXISTS(SELECT id FROM password_reset_tokens WHERE id = $1 and archived_on IS NULL);`
 
-func (pg *Postgres) PasswordResetTokenExists(db storage.Querier, id uint64) (bool, error) {
+func (pg *postgres) PasswordResetTokenExists(db storage.Querier, id uint64) (bool, error) {
 	var exists string
 
 	err := db.QueryRow(passwordResetTokenExistenceQuery, id).Scan(&exists)
@@ -39,7 +39,7 @@ const passwordResetTokenSelectionQuery = `
         id = $1
 `
 
-func (pg *Postgres) GetPasswordResetToken(db storage.Querier, id uint64) (*models.PasswordResetToken, error) {
+func (pg *postgres) GetPasswordResetToken(db storage.Querier, id uint64) (*models.PasswordResetToken, error) {
 	p := &models.PasswordResetToken{}
 
 	err := db.QueryRow(passwordResetTokenSelectionQuery, id).Scan(&p.ID, &p.UserID, &p.Token, &p.CreatedOn, &p.ExpiresOn, &p.PasswordResetOn)
@@ -60,7 +60,7 @@ const passwordresettokenCreationQuery = `
         id, created_on;
 `
 
-func (pg *Postgres) CreatePasswordResetToken(db storage.Querier, nu *models.PasswordResetToken) (uint64, time.Time, error) {
+func (pg *postgres) CreatePasswordResetToken(db storage.Querier, nu *models.PasswordResetToken) (uint64, time.Time, error) {
 	var (
 		createdID uint64
 		createdAt time.Time
@@ -81,7 +81,7 @@ const passwordResetTokenUpdateQuery = `
     RETURNING updated_on;
 `
 
-func (pg *Postgres) UpdatePasswordResetToken(db storage.Querier, updated *models.PasswordResetToken) (time.Time, error) {
+func (pg *postgres) UpdatePasswordResetToken(db storage.Querier, updated *models.PasswordResetToken) (time.Time, error) {
 	var t time.Time
 	err := db.QueryRow(passwordResetTokenUpdateQuery, &updated.UserID, &updated.Token, &updated.ExpiresOn, &updated.PasswordResetOn, &updated.ID).Scan(&t)
 	return t, err
@@ -94,7 +94,7 @@ const passwordResetTokenDeletionQuery = `
     RETURNING archived_on
 `
 
-func (pg *Postgres) DeletePasswordResetToken(db storage.Querier, id uint64) (t time.Time, err error) {
+func (pg *postgres) DeletePasswordResetToken(db storage.Querier, id uint64) (t time.Time, err error) {
 	err = db.QueryRow(passwordResetTokenDeletionQuery, id).Scan(&t)
 	return t, err
 }

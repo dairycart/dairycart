@@ -8,11 +8,12 @@ import (
 	"time"
 
 	"github.com/dairycart/dairycart/api/storage"
-	// "github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairycart/api/storage/models"
 
 	"github.com/go-chi/chi"
 	"github.com/imdario/mergo"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 )
 
 const (
@@ -203,20 +204,14 @@ func buildProductListHandler(db *sqlx.DB) http.HandlerFunc {
 	}
 }
 
-func deleteProductBySKU(tx *sql.Tx, sku string) error {
-	_, err := tx.Exec(productDeletionQuery, sku)
-	return err
-}
-
-// func buildProductDeletionHandler(db storage.Storage) http.HandlerFunc {
-func buildProductDeletionHandler(db *sqlx.DB) http.HandlerFunc {
+func buildProductDeletionHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
 	// ProductDeletionHandler is a request handler that deletes a single product
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := chi.URLParam(req, "sku")
 
 		// can't delete a product that doesn't exist!
-		// existingProduct, err := db.GetProductBySKU(sku)
-		existingProduct, err := retrieveProductFromDB(db, sku)
+		existingProduct, err := client.GetProductBySKU(db, sku)
+		// existingProduct, err := retrieveProductFromDB(db, sku)
 		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "product", sku)
 			return
@@ -231,15 +226,14 @@ func buildProductDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		err = deleteProductVariantBridgeEntriesByProductID(tx, existingProduct.ID)
+		_, err = client.DeleteProductVariantBridgeByProductID(tx, existingProduct.ID)
 		if err != nil {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "archive product in database")
 			return
 		}
 
-		// archiveTime, err := db.DeleteProduct(existingProduct.ID, tx)
-		err = deleteProductBySKU(tx, sku)
+		archiveTime, err := client.DeleteProduct(tx, existingProduct.ID)
 		if err != nil {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "archive product in database")
@@ -251,31 +245,24 @@ func buildProductDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 			notifyOfInternalIssue(res, err, "close out transaction")
 			return
 		}
-		// existingProduct.ArchivedOn = archiveTime
-		// json.NewEncoder(res).Encode(existingProduct)
+		existingProduct.ArchivedOn = models.NullTime{NullTime: pq.NullTime{Time: archiveTime, Valid: true}}
+		json.NewEncoder(res).Encode(existingProduct)
 	}
 }
 
-func updateProductInDatabase(db *sqlx.DB, up *Product) error {
-	// FIXME: this update function is not like the others.
-	productUpdateQuery, queryArgs := buildProductUpdateQuery(up)
-	err := db.QueryRowx(productUpdateQuery, queryArgs...).StructScan(up)
-	return err
-}
-
-func buildProductUpdateHandler(db *sqlx.DB) http.HandlerFunc {
+func buildProductUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
 	// ProductUpdateHandler is a request handler that can update products
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := chi.URLParam(req, "sku")
 
-		newerProduct := &Product{}
+		newerProduct := &models.Product{}
 		err := validateRequestInput(req, newerProduct)
 		if err != nil {
 			notifyOfInvalidRequestBody(res, err)
 			return
 		}
 
-		existingProduct, err := retrieveProductFromDB(db, sku)
+		existingProduct, err := client.GetProductBySKU(db, sku)
 		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "product", sku)
 			return
@@ -291,11 +278,13 @@ func buildProductUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 			notifyOfInvalidRequestBody(res, fmt.Errorf("The sku received (%s) is invalid", newerProduct.SKU))
 			return
 		}
-		err = updateProductInDatabase(db, newerProduct)
+
+		updatedTime, err := client.UpdateProduct(db, newerProduct)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "update product in database")
 			return
 		}
+		newerProduct.UpdatedOn = models.NullTime{NullTime: pq.NullTime{Time: updatedTime, Valid: true}}
 
 		json.NewEncoder(res).Encode(newerProduct)
 	}

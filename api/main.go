@@ -18,7 +18,7 @@ import (
 	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairycart/api/storage/postgres"
 
-	// dependencies
+	// external dependencies
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/gorilla/context"
@@ -98,7 +98,7 @@ func main() {
 	var (
 		storageClient storage.Storer
 		dbx           *sqlx.DB
-		rawDB         *sql.DB
+		db            *sql.DB
 		err           error
 	)
 
@@ -107,12 +107,12 @@ func main() {
 	switch dbChoice {
 	case "postgres":
 		dbURL := os.Getenv("DAIRYCART_DB_URL")
-		rawDB, err = sql.Open("postgres", dbURL)
+		db, err = sql.Open("postgres", dbURL)
 		if err != nil {
 			logrus.Fatalf("error encountered connecting to database: %v", err)
 		}
-		storageClient = &postgres.Postgres{}
-		dbx = sqlx.NewDb(rawDB, "postgres")
+		storageClient = postgres.NewPostgres()
+		dbx = sqlx.NewDb(db, "postgres")
 		dbx.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
 
 	default:
@@ -121,7 +121,7 @@ func main() {
 
 	// migrate the database
 	migrationCount := determineMigrationCount()
-	migrateDatabase(rawDB, migrationCount)
+	migrateDatabase(db, migrationCount)
 
 	secret := os.Getenv("DAIRYSECRET")
 	if len(secret) < 32 {
@@ -134,7 +134,7 @@ func main() {
 	v1APIRouter.Use(middleware.RequestID)
 	v1APIRouter.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{Logger: log.New(os.Stdout, "", log.LstdFlags)}))
 
-	SetupAPIRoutes(v1APIRouter, rawDB, dbx, store, storageClient)
+	SetupAPIRoutes(v1APIRouter, db, dbx, store, storageClient)
 
 	// serve 'em up a lil' sauce
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "healthy!") })

@@ -87,7 +87,7 @@ func TestGetProductBySKU(t *testing.T) {
 	mockDB, mock, err := sqlmock.New()
 	require.Nil(t, err)
 	defer mockDB.Close()
-	client := Postgres{}
+	client := NewPostgres()
 
 	exampleSKU := "hello"
 	expected := &models.Product{SKU: exampleSKU}
@@ -118,7 +118,7 @@ func TestProductWithSKUExists(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleSKU := "example"
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("existing", func(t *testing.T) {
 		setProductWithSKUExistenceQueryExpectation(t, mock, exampleSKU, true, nil)
@@ -162,7 +162,7 @@ func TestProductExists(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("existing", func(t *testing.T) {
 		setProductExistenceQueryExpectation(t, mock, exampleID, true, nil)
@@ -265,7 +265,7 @@ func TestGetProduct(t *testing.T) {
 	defer mockDB.Close()
 	exampleID := uint64(1)
 	expected := &models.Product{ID: exampleID}
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductReadQueryExpectation(t, mock, exampleID, expected, nil)
@@ -320,7 +320,7 @@ func TestCreateProduct(t *testing.T) {
 	defer mockDB.Close()
 	expectedID := uint64(1)
 	exampleInput := &models.Product{ID: expectedID}
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductCreationQueryExpectation(t, mock, exampleInput, nil)
@@ -378,7 +378,7 @@ func TestUpdateProductByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleInput := &models.Product{ID: uint64(1)}
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductUpdateQueryExpectation(t, mock, exampleInput, nil)
@@ -404,7 +404,7 @@ func TestDeleteProductByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductDeletionQueryExpectation(t, mock, exampleID, nil)

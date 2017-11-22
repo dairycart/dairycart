@@ -10,7 +10,7 @@ import (
 
 const productVariantBridgeExistenceQuery = `SELECT EXISTS(SELECT id FROM product_variant_bridge WHERE id = $1 and archived_on IS NULL);`
 
-func (pg *Postgres) ProductVariantBridgeExists(db storage.Querier, id uint64) (bool, error) {
+func (pg *postgres) ProductVariantBridgeExists(db storage.Querier, id uint64) (bool, error) {
 	var exists string
 
 	err := db.QueryRow(productVariantBridgeExistenceQuery, id).Scan(&exists)
@@ -38,7 +38,7 @@ const productVariantBridgeSelectionQuery = `
         id = $1
 `
 
-func (pg *Postgres) GetProductVariantBridge(db storage.Querier, id uint64) (*models.ProductVariantBridge, error) {
+func (pg *postgres) GetProductVariantBridge(db storage.Querier, id uint64) (*models.ProductVariantBridge, error) {
 	p := &models.ProductVariantBridge{}
 
 	err := db.QueryRow(productVariantBridgeSelectionQuery, id).Scan(&p.ID, &p.ProductID, &p.ProductOptionValueID, &p.CreatedOn, &p.ArchivedOn)
@@ -59,7 +59,7 @@ const productvariantbridgeCreationQuery = `
         id, created_on;
 `
 
-func (pg *Postgres) CreateProductVariantBridge(db storage.Querier, nu *models.ProductVariantBridge) (uint64, time.Time, error) {
+func (pg *postgres) CreateProductVariantBridge(db storage.Querier, nu *models.ProductVariantBridge) (uint64, time.Time, error) {
 	var (
 		createdID uint64
 		createdAt time.Time
@@ -78,7 +78,7 @@ const productVariantBridgeUpdateQuery = `
     RETURNING updated_on;
 `
 
-func (pg *Postgres) UpdateProductVariantBridge(db storage.Querier, updated *models.ProductVariantBridge) (time.Time, error) {
+func (pg *postgres) UpdateProductVariantBridge(db storage.Querier, updated *models.ProductVariantBridge) (time.Time, error) {
 	var t time.Time
 	err := db.QueryRow(productVariantBridgeUpdateQuery, &updated.ProductID, &updated.ProductOptionValueID, &updated.ID).Scan(&t)
 	return t, err
@@ -91,7 +91,7 @@ const productVariantBridgeDeletionQuery = `
     RETURNING archived_on
 `
 
-func (pg *Postgres) DeleteProductVariantBridge(db storage.Querier, id uint64) (t time.Time, err error) {
+func (pg *postgres) DeleteProductVariantBridge(db storage.Querier, id uint64) (t time.Time, err error) {
 	err = db.QueryRow(productVariantBridgeDeletionQuery, id).Scan(&t)
 	return t, err
 }
@@ -100,7 +100,7 @@ const productVariantBridgeDeletionQueryByProductID = `
     UPDATE product_variant_bridge SET archived_on = NOW() WHERE product_id = $1 AND archived_on IS NULL RETURNING archived_on
 `
 
-func (pg *Postgres) DeleteProductVariantBridgeByProductID(db storage.Querier, productID uint64) (t time.Time, err error) {
+func (pg *postgres) DeleteProductVariantBridgeByProductID(db storage.Querier, productID uint64) (t time.Time, err error) {
 	err = db.QueryRow(productVariantBridgeDeletionQueryByProductID, productID).Scan(&t)
 	return t, err
 }

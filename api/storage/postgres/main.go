@@ -4,10 +4,10 @@ import (
 	"github.com/dairycart/dairycart/api/storage"
 )
 
-var _ storage.Storer = (*Postgres)(nil)
+var _ storage.Storer = (*postgres)(nil)
 
-type Postgres struct{}
+type postgres struct{}
 
-func NewPostgres() *Postgres {
-	return &Postgres{}
+func NewPostgres() *postgres {
+	return &postgres{}
 }

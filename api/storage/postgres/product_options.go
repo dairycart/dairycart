@@ -10,7 +10,7 @@ import (
 
 const productOptionExistenceQuery = `SELECT EXISTS(SELECT id FROM product_options WHERE id = $1 and archived_on IS NULL);`
 
-func (pg *Postgres) ProductOptionExists(db storage.Querier, id uint64) (bool, error) {
+func (pg *postgres) ProductOptionExists(db storage.Querier, id uint64) (bool, error) {
 	var exists string
 
 	err := db.QueryRow(productOptionExistenceQuery, id).Scan(&exists)
@@ -39,7 +39,7 @@ const productOptionSelectionQuery = `
         id = $1
 `
 
-func (pg *Postgres) GetProductOption(db storage.Querier, id uint64) (*models.ProductOption, error) {
+func (pg *postgres) GetProductOption(db storage.Querier, id uint64) (*models.ProductOption, error) {
 	p := &models.ProductOption{}
 
 	err := db.QueryRow(productOptionSelectionQuery, id).Scan(&p.ID, &p.Name, &p.ProductRootID, &p.CreatedOn, &p.UpdatedOn, &p.ArchivedOn)
@@ -60,7 +60,7 @@ const productoptionCreationQuery = `
         id, created_on;
 `
 
-func (pg *Postgres) CreateProductOption(db storage.Querier, nu *models.ProductOption) (uint64, time.Time, error) {
+func (pg *postgres) CreateProductOption(db storage.Querier, nu *models.ProductOption) (uint64, time.Time, error) {
 	var (
 		createdID uint64
 		createdAt time.Time
@@ -80,7 +80,7 @@ const productOptionUpdateQuery = `
     RETURNING updated_on;
 `
 
-func (pg *Postgres) UpdateProductOption(db storage.Querier, updated *models.ProductOption) (time.Time, error) {
+func (pg *postgres) UpdateProductOption(db storage.Querier, updated *models.ProductOption) (time.Time, error) {
 	var t time.Time
 	err := db.QueryRow(productOptionUpdateQuery, &updated.Name, &updated.ProductRootID, &updated.ID).Scan(&t)
 	return t, err
@@ -93,7 +93,7 @@ const productOptionDeletionQuery = `
     RETURNING archived_on
 `
 
-func (pg *Postgres) DeleteProductOption(db storage.Querier, id uint64) (t time.Time, err error) {
+func (pg *postgres) DeleteProductOption(db storage.Querier, id uint64) (t time.Time, err error) {
 	err = db.QueryRow(productOptionDeletionQuery, id).Scan(&t)
 	return t, err
 }

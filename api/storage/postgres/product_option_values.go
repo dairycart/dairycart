@@ -10,7 +10,7 @@ import (
 
 const productOptionValueExistenceQuery = `SELECT EXISTS(SELECT id FROM product_option_values WHERE id = $1 and archived_on IS NULL);`
 
-func (pg *Postgres) ProductOptionValueExists(db storage.Querier, id uint64) (bool, error) {
+func (pg *postgres) ProductOptionValueExists(db storage.Querier, id uint64) (bool, error) {
 	var exists string
 
 	err := db.QueryRow(productOptionValueExistenceQuery, id).Scan(&exists)
@@ -39,7 +39,7 @@ const productOptionValueSelectionQuery = `
         id = $1
 `
 
-func (pg *Postgres) GetProductOptionValue(db storage.Querier, id uint64) (*models.ProductOptionValue, error) {
+func (pg *postgres) GetProductOptionValue(db storage.Querier, id uint64) (*models.ProductOptionValue, error) {
 	p := &models.ProductOptionValue{}
 
 	err := db.QueryRow(productOptionValueSelectionQuery, id).Scan(&p.ID, &p.ProductOptionID, &p.Value, &p.CreatedOn, &p.UpdatedOn, &p.ArchivedOn)
@@ -60,7 +60,7 @@ const productoptionvalueCreationQuery = `
         id, created_on;
 `
 
-func (pg *Postgres) CreateProductOptionValue(db storage.Querier, nu *models.ProductOptionValue) (uint64, time.Time, error) {
+func (pg *postgres) CreateProductOptionValue(db storage.Querier, nu *models.ProductOptionValue) (uint64, time.Time, error) {
 	var (
 		createdID uint64
 		createdAt time.Time
@@ -80,7 +80,7 @@ const productOptionValueUpdateQuery = `
     RETURNING updated_on;
 `
 
-func (pg *Postgres) UpdateProductOptionValue(db storage.Querier, updated *models.ProductOptionValue) (time.Time, error) {
+func (pg *postgres) UpdateProductOptionValue(db storage.Querier, updated *models.ProductOptionValue) (time.Time, error) {
 	var t time.Time
 	err := db.QueryRow(productOptionValueUpdateQuery, &updated.ProductOptionID, &updated.Value, &updated.ID).Scan(&t)
 	return t, err
@@ -93,7 +93,7 @@ const productOptionValueDeletionQuery = `
     RETURNING archived_on
 `
 
-func (pg *Postgres) DeleteProductOptionValue(db storage.Querier, id uint64) (t time.Time, err error) {
+func (pg *postgres) DeleteProductOptionValue(db storage.Querier, id uint64) (t time.Time, err error) {
 	err = db.QueryRow(productOptionValueDeletionQuery, id).Scan(&t)
 	return t, err
 }

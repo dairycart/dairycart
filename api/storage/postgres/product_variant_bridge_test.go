@@ -30,7 +30,7 @@ func TestProductVariantBridgeExists(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("existing", func(t *testing.T) {
 		setProductVariantBridgeExistenceQueryExpectation(t, mock, exampleID, true, nil)
@@ -85,7 +85,7 @@ func TestGetProductVariantBridge(t *testing.T) {
 	defer mockDB.Close()
 	exampleID := uint64(1)
 	expected := &models.ProductVariantBridge{ID: exampleID}
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductVariantBridgeReadQueryExpectation(t, mock, exampleID, expected, nil)
@@ -117,7 +117,7 @@ func TestCreateProductVariantBridge(t *testing.T) {
 	defer mockDB.Close()
 	expectedID := uint64(1)
 	exampleInput := &models.ProductVariantBridge{ID: expectedID}
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductVariantBridgeCreationQueryExpectation(t, mock, exampleInput, nil)
@@ -152,7 +152,7 @@ func TestUpdateProductVariantBridgeByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleInput := &models.ProductVariantBridge{ID: uint64(1)}
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductVariantBridgeUpdateQueryExpectation(t, mock, exampleInput, nil)
@@ -178,7 +178,7 @@ func TestDeleteProductVariantBridgeByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductVariantBridgeDeletionQueryExpectation(t, mock, exampleID, nil)
@@ -217,7 +217,7 @@ func TestDeleteProductVariantBridgeByProductID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductVariantBridgeDeletionByProductIDQueryExpectation(t, mock, exampleID, nil)

@@ -31,3 +31,8 @@ func (m *MockDB) DeleteProductVariantBridge(db storage.Querier, id uint64) (time
 	args := m.Called(db, id)
 	return args.Get(0).(time.Time), args.Error(1)
 }
+
+func (m *MockDB) DeleteProductVariantBridgeByProductID(db storage.Querier, productID uint64) (t time.Time, err error) {
+	args := m.Called(db, productID)
+	return args.Get(0).(time.Time), args.Error(1)
+}

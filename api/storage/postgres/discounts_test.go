@@ -57,7 +57,7 @@ func TestGetDiscountByCode(t *testing.T) {
 	mockDB, mock, err := sqlmock.New()
 	require.Nil(t, err)
 	defer mockDB.Close()
-	client := Postgres{}
+	client := NewPostgres()
 
 	exampleCode := "welcome"
 	expected := &models.Discount{Code: exampleCode}
@@ -88,7 +88,7 @@ func TestDiscountExists(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("existing", func(t *testing.T) {
 		setDiscountExistenceQueryExpectation(t, mock, exampleID, true, nil)
@@ -161,7 +161,7 @@ func TestGetDiscount(t *testing.T) {
 	defer mockDB.Close()
 	exampleID := uint64(1)
 	expected := &models.Discount{ID: exampleID}
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setDiscountReadQueryExpectation(t, mock, exampleID, expected, nil)
@@ -201,7 +201,7 @@ func TestCreateDiscount(t *testing.T) {
 	defer mockDB.Close()
 	expectedID := uint64(1)
 	exampleInput := &models.Discount{ID: expectedID}
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setDiscountCreationQueryExpectation(t, mock, exampleInput, nil)
@@ -244,7 +244,7 @@ func TestUpdateDiscountByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleInput := &models.Discount{ID: uint64(1)}
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setDiscountUpdateQueryExpectation(t, mock, exampleInput, nil)
@@ -270,7 +270,7 @@ func TestDeleteDiscountByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setDiscountDeletionQueryExpectation(t, mock, exampleID, nil)

@@ -30,7 +30,7 @@ func TestPasswordResetTokenExists(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("existing", func(t *testing.T) {
 		setPasswordResetTokenExistenceQueryExpectation(t, mock, exampleID, true, nil)
@@ -87,7 +87,7 @@ func TestGetPasswordResetToken(t *testing.T) {
 	defer mockDB.Close()
 	exampleID := uint64(1)
 	expected := &models.PasswordResetToken{ID: exampleID}
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setPasswordResetTokenReadQueryExpectation(t, mock, exampleID, expected, nil)
@@ -121,7 +121,7 @@ func TestCreatePasswordResetToken(t *testing.T) {
 	defer mockDB.Close()
 	expectedID := uint64(1)
 	exampleInput := &models.PasswordResetToken{ID: expectedID}
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setPasswordResetTokenCreationQueryExpectation(t, mock, exampleInput, nil)
@@ -158,7 +158,7 @@ func TestUpdatePasswordResetTokenByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleInput := &models.PasswordResetToken{ID: uint64(1)}
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setPasswordResetTokenUpdateQueryExpectation(t, mock, exampleInput, nil)
@@ -184,7 +184,7 @@ func TestDeletePasswordResetTokenByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setPasswordResetTokenDeletionQueryExpectation(t, mock, exampleID, nil)

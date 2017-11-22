@@ -30,7 +30,7 @@ func TestLoginAttemptExists(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("existing", func(t *testing.T) {
 		setLoginAttemptExistenceQueryExpectation(t, mock, exampleID, true, nil)
@@ -83,7 +83,7 @@ func TestGetLoginAttempt(t *testing.T) {
 	defer mockDB.Close()
 	exampleID := uint64(1)
 	expected := &models.LoginAttempt{ID: exampleID}
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setLoginAttemptReadQueryExpectation(t, mock, exampleID, expected, nil)
@@ -115,7 +115,7 @@ func TestCreateLoginAttempt(t *testing.T) {
 	defer mockDB.Close()
 	expectedID := uint64(1)
 	exampleInput := &models.LoginAttempt{ID: expectedID}
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setLoginAttemptCreationQueryExpectation(t, mock, exampleInput, nil)
@@ -150,7 +150,7 @@ func TestUpdateLoginAttemptByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleInput := &models.LoginAttempt{ID: uint64(1)}
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setLoginAttemptUpdateQueryExpectation(t, mock, exampleInput, nil)
@@ -176,7 +176,7 @@ func TestDeleteLoginAttemptByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setLoginAttemptDeletionQueryExpectation(t, mock, exampleID, nil)

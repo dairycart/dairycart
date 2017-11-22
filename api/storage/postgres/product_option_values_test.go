@@ -30,7 +30,7 @@ func TestProductOptionValueExists(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("existing", func(t *testing.T) {
 		setProductOptionValueExistenceQueryExpectation(t, mock, exampleID, true, nil)
@@ -87,7 +87,7 @@ func TestGetProductOptionValue(t *testing.T) {
 	defer mockDB.Close()
 	exampleID := uint64(1)
 	expected := &models.ProductOptionValue{ID: exampleID}
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductOptionValueReadQueryExpectation(t, mock, exampleID, expected, nil)
@@ -119,7 +119,7 @@ func TestCreateProductOptionValue(t *testing.T) {
 	defer mockDB.Close()
 	expectedID := uint64(1)
 	exampleInput := &models.ProductOptionValue{ID: expectedID}
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductOptionValueCreationQueryExpectation(t, mock, exampleInput, nil)
@@ -154,7 +154,7 @@ func TestUpdateProductOptionValueByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleInput := &models.ProductOptionValue{ID: uint64(1)}
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductOptionValueUpdateQueryExpectation(t, mock, exampleInput, nil)
@@ -180,7 +180,7 @@ func TestDeleteProductOptionValueByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductOptionValueDeletionQueryExpectation(t, mock, exampleID, nil)

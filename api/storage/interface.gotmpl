@@ -17,12 +17,14 @@ type Storer interface {
     {{- $modelName := pascal (trimSuffix .Name "s") }}
     {{- $isProduct := eq $modelName "Product" }}
     {{- $isDiscount := eq $modelName "Discount" }}
+    {{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
     // {{ pascal .Name }}
     Get{{ $modelName }}(Querier, uint64) (*models.{{ $modelName }}, error)
     {{ $modelName }}Exists(Querier, uint64) (bool, error)
     Create{{ $modelName }}(Querier, *models.{{ $modelName }}) (uint64, time.Time, {{ if $isProduct }}time.Time, {{ end }}error)
     Update{{ $modelName }}(Querier, *models.{{ $modelName }}) (time.Time, error)
     Delete{{ $modelName }}(Querier, uint64) (time.Time, error)
+    {{ if $isProductVariantBridge }}Delete{{ $modelName }}ByProductID(Querier, uint64) (time.Time, error){{ end }}
     {{ if $isProduct }}Get{{ $modelName }}BySKU(Querier, string) (*models.{{ $modelName }}, error)
     {{ $modelName }}WithSKUExists(Querier, string) (bool, error){{- end -}}
     {{ if $isDiscount }}Get{{ $modelName }}ByCode(Querier, string) (*models.{{ $modelName }}, error){{- end }}

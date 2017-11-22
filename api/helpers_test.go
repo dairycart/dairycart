@@ -117,10 +117,12 @@ func setupTestVariables(t *testing.T) *TestUtil {
 
 func setupTestVariablesWithMock(t *testing.T) *TestUtil {
 	t.Helper()
+	mockDB, mock, _ := sqlmock.New()
 	return &TestUtil{
 		Response: httptest.NewRecorder(),
 		Router:   chi.NewRouter(),
-		PlainDB:  &sql.DB{},
+		PlainDB:  mockDB,
+		Mock: mock,
 		MockDB:   &dairymock.MockDB{},
 		Store:    sessions.NewCookieStore([]byte(os.Getenv("DAIRYSECRET"))),
 	}

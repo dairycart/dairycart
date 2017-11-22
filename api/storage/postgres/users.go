@@ -10,7 +10,7 @@ import (
 
 const userExistenceQuery = `SELECT EXISTS(SELECT id FROM users WHERE id = $1 and archived_on IS NULL);`
 
-func (pg *Postgres) UserExists(db storage.Querier, id uint64) (bool, error) {
+func (pg *postgres) UserExists(db storage.Querier, id uint64) (bool, error) {
 	var exists string
 
 	err := db.QueryRow(userExistenceQuery, id).Scan(&exists)
@@ -45,7 +45,7 @@ const userSelectionQuery = `
         id = $1
 `
 
-func (pg *Postgres) GetUser(db storage.Querier, id uint64) (*models.User, error) {
+func (pg *postgres) GetUser(db storage.Querier, id uint64) (*models.User, error) {
 	u := &models.User{}
 
 	err := db.QueryRow(userSelectionQuery, id).Scan(&u.ID, &u.FirstName, &u.LastName, &u.Username, &u.Email, &u.Password, &u.Salt, &u.IsAdmin, &u.PasswordLastChangedOn, &u.CreatedOn, &u.UpdatedOn, &u.ArchivedOn)
@@ -66,7 +66,7 @@ const userCreationQuery = `
         id, created_on;
 `
 
-func (pg *Postgres) CreateUser(db storage.Querier, nu *models.User) (uint64, time.Time, error) {
+func (pg *postgres) CreateUser(db storage.Querier, nu *models.User) (uint64, time.Time, error) {
 	var (
 		createdID uint64
 		createdAt time.Time
@@ -92,7 +92,7 @@ const userUpdateQuery = `
     RETURNING updated_on;
 `
 
-func (pg *Postgres) UpdateUser(db storage.Querier, updated *models.User) (time.Time, error) {
+func (pg *postgres) UpdateUser(db storage.Querier, updated *models.User) (time.Time, error) {
 	var t time.Time
 	err := db.QueryRow(userUpdateQuery, &updated.FirstName, &updated.LastName, &updated.Username, &updated.Email, &updated.Password, &updated.Salt, &updated.IsAdmin, &updated.PasswordLastChangedOn, &updated.ID).Scan(&t)
 	return t, err
@@ -105,7 +105,7 @@ const userDeletionQuery = `
     RETURNING archived_on
 `
 
-func (pg *Postgres) DeleteUser(db storage.Querier, id uint64) (t time.Time, err error) {
+func (pg *postgres) DeleteUser(db storage.Querier, id uint64) (t time.Time, err error) {
 	err = db.QueryRow(userDeletionQuery, id).Scan(&t)
 	return t, err
 }

@@ -30,7 +30,7 @@ func TestUserExists(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("existing", func(t *testing.T) {
 		setUserExistenceQueryExpectation(t, mock, exampleID, true, nil)
@@ -99,7 +99,7 @@ func TestGetUser(t *testing.T) {
 	defer mockDB.Close()
 	exampleID := uint64(1)
 	expected := &models.User{ID: exampleID}
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setUserReadQueryExpectation(t, mock, exampleID, expected, nil)
@@ -137,7 +137,7 @@ func TestCreateUser(t *testing.T) {
 	defer mockDB.Close()
 	expectedID := uint64(1)
 	exampleInput := &models.User{ID: expectedID}
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setUserCreationQueryExpectation(t, mock, exampleInput, nil)
@@ -178,7 +178,7 @@ func TestUpdateUserByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleInput := &models.User{ID: uint64(1)}
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setUserUpdateQueryExpectation(t, mock, exampleInput, nil)
@@ -204,7 +204,7 @@ func TestDeleteUserByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setUserDeletionQueryExpectation(t, mock, exampleID, nil)

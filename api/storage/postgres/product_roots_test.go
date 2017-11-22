@@ -30,7 +30,7 @@ func TestProductRootExists(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("existing", func(t *testing.T) {
 		setProductRootExistenceQueryExpectation(t, mock, exampleID, true, nil)
@@ -119,7 +119,7 @@ func TestGetProductRoot(t *testing.T) {
 	defer mockDB.Close()
 	exampleID := uint64(1)
 	expected := &models.ProductRoot{ID: exampleID}
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductRootReadQueryExpectation(t, mock, exampleID, expected, nil)
@@ -167,7 +167,7 @@ func TestCreateProductRoot(t *testing.T) {
 	defer mockDB.Close()
 	expectedID := uint64(1)
 	exampleInput := &models.ProductRoot{ID: expectedID}
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductRootCreationQueryExpectation(t, mock, exampleInput, nil)
@@ -218,7 +218,7 @@ func TestUpdateProductRootByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleInput := &models.ProductRoot{ID: uint64(1)}
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductRootUpdateQueryExpectation(t, mock, exampleInput, nil)
@@ -244,7 +244,7 @@ func TestDeleteProductRootByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
-	client := Postgres{}
+	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductRootDeletionQueryExpectation(t, mock, exampleID, nil)

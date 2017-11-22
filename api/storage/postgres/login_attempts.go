@@ -10,7 +10,7 @@ import (
 
 const loginAttemptExistenceQuery = `SELECT EXISTS(SELECT id FROM login_attempts WHERE id = $1 and archived_on IS NULL);`
 
-func (pg *Postgres) LoginAttemptExists(db storage.Querier, id uint64) (bool, error) {
+func (pg *postgres) LoginAttemptExists(db storage.Querier, id uint64) (bool, error) {
 	var exists string
 
 	err := db.QueryRow(loginAttemptExistenceQuery, id).Scan(&exists)
@@ -37,7 +37,7 @@ const loginAttemptSelectionQuery = `
         id = $1
 `
 
-func (pg *Postgres) GetLoginAttempt(db storage.Querier, id uint64) (*models.LoginAttempt, error) {
+func (pg *postgres) GetLoginAttempt(db storage.Querier, id uint64) (*models.LoginAttempt, error) {
 	l := &models.LoginAttempt{}
 
 	err := db.QueryRow(loginAttemptSelectionQuery, id).Scan(&l.ID, &l.Username, &l.Successful, &l.CreatedOn)
@@ -58,7 +58,7 @@ const loginattemptCreationQuery = `
         id, created_on;
 `
 
-func (pg *Postgres) CreateLoginAttempt(db storage.Querier, nu *models.LoginAttempt) (uint64, time.Time, error) {
+func (pg *postgres) CreateLoginAttempt(db storage.Querier, nu *models.LoginAttempt) (uint64, time.Time, error) {
 	var (
 		createdID uint64
 		createdAt time.Time
@@ -77,7 +77,7 @@ const loginAttemptUpdateQuery = `
     RETURNING updated_on;
 `
 
-func (pg *Postgres) UpdateLoginAttempt(db storage.Querier, updated *models.LoginAttempt) (time.Time, error) {
+func (pg *postgres) UpdateLoginAttempt(db storage.Querier, updated *models.LoginAttempt) (time.Time, error) {
 	var t time.Time
 	err := db.QueryRow(loginAttemptUpdateQuery, &updated.Username, &updated.Successful, &updated.ID).Scan(&t)
 	return t, err
@@ -90,7 +90,7 @@ const loginAttemptDeletionQuery = `
     RETURNING archived_on
 `
 
-func (pg *Postgres) DeleteLoginAttempt(db storage.Querier, id uint64) (t time.Time, err error) {
+func (pg *postgres) DeleteLoginAttempt(db storage.Querier, id uint64) (t time.Time, err error) {
 	err = db.QueryRow(loginAttemptDeletionQuery, id).Scan(&t)
 	return t, err
 }

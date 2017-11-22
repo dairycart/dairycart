@@ -21,7 +21,6 @@ const (
 	productOptionValueRetrievalForOptionIDQuery      = `SELECT id, product_option_id, value, created_on, updated_on, archived_on FROM product_option_values WHERE product_option_id = $1 AND archived_on IS NULL`
 	productOptionValueDeletionQuery                  = `UPDATE product_option_values SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
 	productVariantBridgeDeletionQueryByProductID     = `UPDATE product_variant_bridge SET archived_on = NOW() WHERE product_id = $1 AND archived_on IS NULL`
-	productVariantBridgeDeletionQueryByOptionValueID = `UPDATE product_variant_bridge SET archived_on = NOW() WHERE product_option_value_id = $1 AND archived_on IS NULL`
 )
 
 // ProductOptionValue represents a product's option values. If you have a t-shirt that comes in three colors
@@ -33,25 +32,9 @@ type ProductOptionValue struct {
 	Value           string `json:"value"`
 }
 
-// ProductOptionValueCreationInput is a struct to use for creating product option values
-type ProductOptionValueCreationInput struct {
-	ProductOptionID uint64
-	Value           string `json:"value"`
-}
-
-// ProductOptionValueUpdateInput is a struct to use for updating product option values
-type ProductOptionValueUpdateInput struct {
-	Value string `json:"value"`
-}
-
 func createBridgeEntryForProductValues(tx *sql.Tx, productID uint64, ids []uint64) error {
 	query, queryArgs := buildProductVariantBridgeCreationQuery(productID, ids)
 	_, err := tx.Exec(query, queryArgs...)
-	return err
-}
-
-func deleteProductVariantBridgeEntriesByProductID(tx *sql.Tx, id uint64) error {
-	_, err := tx.Exec(productVariantBridgeDeletionQueryByProductID, id)
 	return err
 }
 
