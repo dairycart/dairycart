@@ -107,13 +107,9 @@ func buildDiscountListRetrievalQuery(qf *models.QueryFilter) (string, []interfac
 			"updated_on",
 			"archived_on",
 		).
-		From("discounts").
-		Where(squirrel.Eq{"archived_on": nil}).
-		Limit(uint64(qf.Limit))
+		From("discounts")
 
-	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, qf, true)
-
-	query, args, _ := queryBuilder.ToSql()
+	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, true).ToSql()
 	return query, args
 }
 
@@ -156,6 +152,23 @@ func (pg *postgres) GetDiscountList(db storage.Querier, qf *models.QueryFilter) 
 	}
 
 	return list, err
+}
+
+func buildDiscountCountRetrievalQuery(qf *models.QueryFilter) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		Select("count(id)").
+		From("discounts")
+
+	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, true).ToSql()
+	return query, args
+}
+
+func (pg *postgres) GetDiscountCount(db storage.Querier, qf *models.QueryFilter) (uint64, error) {
+	var count uint64
+	query, args := buildDiscountCountRetrievalQuery(qf)
+	err := db.QueryRow(query, args...).Scan(&count)
+	return count, err
 }
 
 const discountCreationQuery = `

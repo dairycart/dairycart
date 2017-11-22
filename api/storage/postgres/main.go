@@ -46,5 +46,10 @@ func applyQueryFilterToQueryBuilder(queryBuilder squirrel.SelectBuilder, qf *mod
 	if !qf.UpdatedBefore.IsZero() {
 		queryBuilder = queryBuilder.Where(squirrel.Lt{"updated_on": qf.UpdatedBefore})
 	}
+
+	if !qf.IncludeArchived {
+		queryBuilder = queryBuilder.Where(squirrel.Eq{"archived_on": nil})
+	}
+
 	return queryBuilder
 }

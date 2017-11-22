@@ -68,10 +68,11 @@ type ErrorResponse struct {
 
 // QueryFilter represents a query filter
 type QueryFilter struct {
-	Page          uint64
-	Limit         uint8
-	CreatedAfter  time.Time
-	CreatedBefore time.Time
-	UpdatedAfter  time.Time
-	UpdatedBefore time.Time
+	Page            uint64
+	Limit           uint8
+	CreatedAfter    time.Time
+	CreatedBefore   time.Time
+	UpdatedAfter    time.Time
+	UpdatedBefore   time.Time
+	IncludeArchived bool
 }

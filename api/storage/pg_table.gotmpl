@@ -148,13 +148,9 @@ func build{{ $modelName }}ListRetrievalQuery(qf *models.QueryFilter) (string, []
             {{ range $x, $col := .Table.Columns.DBNames }}"{{ $col }}",
             {{ end }}
         ).
-		From("{{ .Table.Name }}").
-		Where(squirrel.Eq{"archived_on": nil}).
-		Limit(uint64(qf.Limit))
+		From("{{ .Table.Name }}")
 
-	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, qf, true)
-
-	query, args, _ := queryBuilder.ToSql()
+	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, true).ToSql()
 	return query, args
 }
 
@@ -186,6 +182,23 @@ func (pg *postgres) Get{{ $modelName }}List(db storage.Querier, qf *models.Query
     }
 
 	return list, err
+}
+
+func build{{ $modelName }}CountRetrievalQuery(qf *models.QueryFilter) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		Select("count(id)").
+		From("{{ .Table.Name }}")
+
+	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, true).ToSql()
+	return query, args
+}
+
+func (pg *postgres) Get{{ $modelName }}Count(db storage.Querier, qf *models.QueryFilter) (uint64, error) {
+	var count uint64
+	query, args := build{{ $modelName }}CountRetrievalQuery(qf)
+	err := db.QueryRow(query, args...).Scan(&count)
+	return count, err
 }
 
 {{ $creationColumns := .Table.Columns.Names.Except (makeSlice "id" "created_on" "archived_on" "updated_on") -}}

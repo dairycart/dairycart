@@ -60,13 +60,9 @@ func buildPasswordResetTokenListRetrievalQuery(qf *models.QueryFilter) (string, 
 			"expires_on",
 			"password_reset_on",
 		).
-		From("password_reset_tokens").
-		Where(squirrel.Eq{"archived_on": nil}).
-		Limit(uint64(qf.Limit))
+		From("password_reset_tokens")
 
-	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, qf, true)
-
-	query, args, _ := queryBuilder.ToSql()
+	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, true).ToSql()
 	return query, args
 }
 
@@ -101,6 +97,23 @@ func (pg *postgres) GetPasswordResetTokenList(db storage.Querier, qf *models.Que
 	}
 
 	return list, err
+}
+
+func buildPasswordResetTokenCountRetrievalQuery(qf *models.QueryFilter) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		Select("count(id)").
+		From("password_reset_tokens")
+
+	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, true).ToSql()
+	return query, args
+}
+
+func (pg *postgres) GetPasswordResetTokenCount(db storage.Querier, qf *models.QueryFilter) (uint64, error) {
+	var count uint64
+	query, args := buildPasswordResetTokenCountRetrievalQuery(qf)
+	err := db.QueryRow(query, args...).Scan(&count)
+	return count, err
 }
 
 const passwordresettokenCreationQuery = `

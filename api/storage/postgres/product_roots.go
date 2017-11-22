@@ -107,13 +107,9 @@ func buildProductRootListRetrievalQuery(qf *models.QueryFilter) (string, []inter
 			"updated_on",
 			"archived_on",
 		).
-		From("product_roots").
-		Where(squirrel.Eq{"archived_on": nil}).
-		Limit(uint64(qf.Limit))
+		From("product_roots")
 
-	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, qf, true)
-
-	query, args, _ := queryBuilder.ToSql()
+	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, true).ToSql()
 	return query, args
 }
 
@@ -164,6 +160,23 @@ func (pg *postgres) GetProductRootList(db storage.Querier, qf *models.QueryFilte
 	}
 
 	return list, err
+}
+
+func buildProductRootCountRetrievalQuery(qf *models.QueryFilter) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		Select("count(id)").
+		From("product_roots")
+
+	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, true).ToSql()
+	return query, args
+}
+
+func (pg *postgres) GetProductRootCount(db storage.Querier, qf *models.QueryFilter) (uint64, error) {
+	var count uint64
+	query, args := buildProductRootCountRetrievalQuery(qf)
+	err := db.QueryRow(query, args...).Scan(&count)
+	return count, err
 }
 
 const productrootCreationQuery = `

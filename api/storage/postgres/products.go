@@ -168,13 +168,9 @@ func buildProductListRetrievalQuery(qf *models.QueryFilter) (string, []interface
 			"updated_on",
 			"archived_on",
 		).
-		From("products").
-		Where(squirrel.Eq{"archived_on": nil}).
-		Limit(uint64(qf.Limit))
+		From("products")
 
-	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, qf, true)
-
-	query, args, _ := queryBuilder.ToSql()
+	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, true).ToSql()
 	return query, args
 }
 
@@ -232,6 +228,23 @@ func (pg *postgres) GetProductList(db storage.Querier, qf *models.QueryFilter) (
 	}
 
 	return list, err
+}
+
+func buildProductCountRetrievalQuery(qf *models.QueryFilter) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		Select("count(id)").
+		From("products")
+
+	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, true).ToSql()
+	return query, args
+}
+
+func (pg *postgres) GetProductCount(db storage.Querier, qf *models.QueryFilter) (uint64, error) {
+	var count uint64
+	query, args := buildProductCountRetrievalQuery(qf)
+	err := db.QueryRow(query, args...).Scan(&count)
+	return count, err
 }
 
 const productCreationQuery = `

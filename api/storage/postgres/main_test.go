@@ -7,7 +7,8 @@ import (
 	"github.com/dairycart/dairycart/api/storage/models"
 
 	"github.com/Masterminds/squirrel"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
+	// "github.com/stretchr/testify/require"
 )
 
 func TestApplyQueryFilterToQueryBuilder(t *testing.T) {
@@ -22,13 +23,13 @@ func TestApplyQueryFilterToQueryBuilder(t *testing.T) {
 			Limit: 15,
 			Page:  2,
 		}
-		expected := `SELECT things FROM stuff WHERE condition = $1 LIMIT 15`
+		expected := `SELECT things FROM stuff WHERE condition = $1 AND archived_on IS NULL LIMIT 15`
 
 		x := applyQueryFilterToQueryBuilder(baseQueryBuilder, exampleQF, false)
 		actual, args, err := x.ToSql()
-		require.Equal(t, expected, actual, "expected and actual queries don't match")
-		require.Nil(t, err)
-	 	require.NotEmpty(t, args)
+		assert.Equal(t, expected, actual, "expected and actual queries don't match")
+		assert.Nil(t, err)
+		assert.NotEmpty(t, args)
 	})
 
 	t.Run("returns query builder if query filter is nil", func(*testing.T) {
@@ -36,27 +37,27 @@ func TestApplyQueryFilterToQueryBuilder(t *testing.T) {
 
 		x := applyQueryFilterToQueryBuilder(baseQueryBuilder, nil, false)
 		actual, args, err := x.ToSql()
-		require.Equal(t, expected, actual, "expected and actual queries don't match")
-		require.Nil(t, err)
-		require.NotEmpty(t, args)
+		assert.Equal(t, expected, actual, "expected and actual queries don't match")
+		assert.Nil(t, err)
+		assert.NotEmpty(t, args)
 	})
 
-	t.Run("whole kit and kaboodle", func(*testing.T){
+	t.Run("whole kit and kaboodle", func(*testing.T) {
 		exampleQF := &models.QueryFilter{
-			Limit: 20,
-			Page:  6,
-			CreatedAfter: time.Now(),
+			Limit:         20,
+			Page:          6,
+			CreatedAfter:  time.Now(),
 			CreatedBefore: time.Now(),
-			UpdatedAfter: time.Now(),
+			UpdatedAfter:  time.Now(),
 			UpdatedBefore: time.Now(),
 		}
-		expected := `SELECT things FROM stuff WHERE condition = $1 AND created_on > $2 AND created_on < $3 AND updated_on > $4 AND updated_on < $5 LIMIT 20 OFFSET 100`
+		expected := `SELECT things FROM stuff WHERE condition = $1 AND created_on > $2 AND created_on < $3 AND updated_on > $4 AND updated_on < $5 AND archived_on IS NULL LIMIT 20 OFFSET 100`
 
 		x := applyQueryFilterToQueryBuilder(baseQueryBuilder, exampleQF, true)
 		actual, args, err := x.ToSql()
-		require.Equal(t, expected, actual, "expected and actual queries don't match")
-		require.Nil(t, err)
-		require.NotEmpty(t, args)
+		assert.Equal(t, expected, actual, "expected and actual queries don't match")
+		assert.Nil(t, err)
+		assert.NotEmpty(t, args)
 	})
 
 	t.Run("with zero limit", func(*testing.T) {
@@ -64,13 +65,13 @@ func TestApplyQueryFilterToQueryBuilder(t *testing.T) {
 			Limit: 0,
 			Page:  1,
 		}
-		expected := `SELECT things FROM stuff WHERE condition = $1 LIMIT 25`
+		expected := `SELECT things FROM stuff WHERE condition = $1 AND archived_on IS NULL LIMIT 25`
 
 		x := applyQueryFilterToQueryBuilder(baseQueryBuilder, exampleQF, false)
 		actual, args, err := x.ToSql()
-		require.Equal(t, expected, actual, "expected and actual queries don't match")
-		require.Nil(t, err)
-		require.NotEmpty(t, args)
+		assert.Equal(t, expected, actual, "expected and actual queries don't match")
+		assert.Nil(t, err)
+		assert.NotEmpty(t, args)
 	})
 
 }

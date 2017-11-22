@@ -60,13 +60,9 @@ func buildProductOptionValueListRetrievalQuery(qf *models.QueryFilter) (string, 
 			"updated_on",
 			"archived_on",
 		).
-		From("product_option_values").
-		Where(squirrel.Eq{"archived_on": nil}).
-		Limit(uint64(qf.Limit))
+		From("product_option_values")
 
-	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, qf, true)
-
-	query, args, _ := queryBuilder.ToSql()
+	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, true).ToSql()
 	return query, args
 }
 
@@ -101,6 +97,23 @@ func (pg *postgres) GetProductOptionValueList(db storage.Querier, qf *models.Que
 	}
 
 	return list, err
+}
+
+func buildProductOptionValueCountRetrievalQuery(qf *models.QueryFilter) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		Select("count(id)").
+		From("product_option_values")
+
+	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, true).ToSql()
+	return query, args
+}
+
+func (pg *postgres) GetProductOptionValueCount(db storage.Querier, qf *models.QueryFilter) (uint64, error) {
+	var count uint64
+	query, args := buildProductOptionValueCountRetrievalQuery(qf)
+	err := db.QueryRow(query, args...).Scan(&count)
+	return count, err
 }
 
 const productoptionvalueCreationQuery = `

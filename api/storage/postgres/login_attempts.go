@@ -56,13 +56,9 @@ func buildLoginAttemptListRetrievalQuery(qf *models.QueryFilter) (string, []inte
 			"successful",
 			"created_on",
 		).
-		From("login_attempts").
-		Where(squirrel.Eq{"archived_on": nil}).
-		Limit(uint64(qf.Limit))
+		From("login_attempts")
 
-	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, qf, true)
-
-	query, args, _ := queryBuilder.ToSql()
+	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, true).ToSql()
 	return query, args
 }
 
@@ -95,6 +91,23 @@ func (pg *postgres) GetLoginAttemptList(db storage.Querier, qf *models.QueryFilt
 	}
 
 	return list, err
+}
+
+func buildLoginAttemptCountRetrievalQuery(qf *models.QueryFilter) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		Select("count(id)").
+		From("login_attempts")
+
+	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, true).ToSql()
+	return query, args
+}
+
+func (pg *postgres) GetLoginAttemptCount(db storage.Querier, qf *models.QueryFilter) (uint64, error) {
+	var count uint64
+	query, args := buildLoginAttemptCountRetrievalQuery(qf)
+	err := db.QueryRow(query, args...).Scan(&count)
+	return count, err
 }
 
 const loginattemptCreationQuery = `

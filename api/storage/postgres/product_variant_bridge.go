@@ -59,13 +59,9 @@ func buildProductVariantBridgeListRetrievalQuery(qf *models.QueryFilter) (string
 			"created_on",
 			"archived_on",
 		).
-		From("product_variant_bridge").
-		Where(squirrel.Eq{"archived_on": nil}).
-		Limit(uint64(qf.Limit))
+		From("product_variant_bridge")
 
-	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, qf, true)
-
-	query, args, _ := queryBuilder.ToSql()
+	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, true).ToSql()
 	return query, args
 }
 
@@ -99,6 +95,23 @@ func (pg *postgres) GetProductVariantBridgeList(db storage.Querier, qf *models.Q
 	}
 
 	return list, err
+}
+
+func buildProductVariantBridgeCountRetrievalQuery(qf *models.QueryFilter) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		Select("count(id)").
+		From("product_variant_bridge")
+
+	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, true).ToSql()
+	return query, args
+}
+
+func (pg *postgres) GetProductVariantBridgeCount(db storage.Querier, qf *models.QueryFilter) (uint64, error) {
+	var count uint64
+	query, args := buildProductVariantBridgeCountRetrievalQuery(qf)
+	err := db.QueryRow(query, args...).Scan(&count)
+	return count, err
 }
 
 const productvariantbridgeCreationQuery = `
