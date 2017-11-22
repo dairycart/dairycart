@@ -604,7 +604,6 @@ func TestProductCreationHandler(t *testing.T) {
 	expectedThirdOption.OptionSummary = "something: three"
 	expectedThirdOption.SKU = "skateboard_three"
 
-	expectedCreatedProducts := []*models.Product{expectedFirstOption, expectedSecondOption, expectedThirdOption}
 	exampleProductOption := &models.ProductOption{
 		ID:            123,
 		CreatedOn:     generateExampleTimeForTests(),
@@ -636,6 +635,27 @@ func TestProductCreationHandler(t *testing.T) {
 		},
 	}
 
+	exampleProductCreationInput := `
+		{
+			"sku": "skateboard",
+			"name": "Skateboard",
+			"upc": "1234567890",
+			"quantity": 123,
+			"price": 12.34,
+			"cost": 5,
+			"description": "This is a skateboard. Please wear a helmet.",
+			"taxable": true,
+			"product_weight": 8,
+			"product_height": 7,
+			"product_width": 6,
+			"product_length": 5,
+			"package_weight": 4,
+			"package_height": 3,
+			"package_width": 2,
+			"package_length": 1
+		}
+	`
+
 	exampleProductCreationInputWithOptions := `
 		{
 			"sku": "skateboard",
@@ -666,728 +686,224 @@ func TestProductCreationHandler(t *testing.T) {
 	`
 
 	t.Run("optimal conditions", func(*testing.T) {
-		testUtil := setupTestVariables(t)
-		setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleProduct.SKU, false, nil)
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductRootWithSKUPrefixExists", mock.Anything, exampleProduct.SKU).
+			Return(false, nil)
 		testUtil.Mock.ExpectBegin()
-		setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, nil)
-		setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleRoot.ID, nil)
-		setExpectationsForMultipleProductOptionValuesCreation(testUtil.Mock, expectedCreatedProductOption.Values, nil, -1)
-		setExpectationsForProductCreationFromOptions(testUtil.Mock, expectedCreatedProducts, 1, nil, false, -1)
+		testUtil.MockDB.On("CreateProductRoot", mock.Anything, mock.Anything).
+			Return(exampleRoot.ID, generateExampleTimeForTests(), nil)
+		testUtil.MockDB.On("CreateProduct", mock.Anything, mock.Anything).
+			Return(exampleProduct.ID, generateExampleTimeForTests(), generateExampleTimeForTests(), nil)
+		testUtil.MockDB.On("CreateMultipleProductVariantBridgesForProductID", mock.Anything, mock.Anything, mock.Anything).
+			Return(nil)
+		testUtil.MockDB.On("CreateProductOption", mock.Anything, mock.Anything).
+			Return(expectedCreatedProductOption.ID, generateExampleTimeForTests(), nil)
+		testUtil.MockDB.On("CreateProductOptionValue", mock.Anything, mock.Anything).
+			Return(expectedCreatedProductOption.Values[0].ID, generateExampleTimeForTests(), nil)
 		testUtil.Mock.ExpectCommit()
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
 		assert.Nil(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 		assertStatusCode(t, testUtil, http.StatusCreated)
-		ensureExpectationsWereMet(t, testUtil.Mock)
+	})
+
+	t.Run("without options", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductRootWithSKUPrefixExists", mock.Anything, exampleProduct.SKU).
+			Return(false, nil)
+		testUtil.Mock.ExpectBegin()
+		testUtil.MockDB.On("CreateProductRoot", mock.Anything, mock.Anything).
+			Return(exampleRoot.ID, generateExampleTimeForTests(), nil)
+		testUtil.MockDB.On("CreateProduct", mock.Anything, mock.Anything).
+			Return(exampleProduct.ID, generateExampleTimeForTests(), generateExampleTimeForTests(), nil)
+		testUtil.MockDB.On("CreateMultipleProductVariantBridgesForProductID", mock.Anything, mock.Anything, mock.Anything).
+			Return(nil)
+		testUtil.Mock.ExpectCommit()
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+
+		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInput))
+		assert.Nil(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+		assertStatusCode(t, testUtil, http.StatusCreated)
+	})
+
+	t.Run("with error validating input", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductRootWithSKUPrefixExists", mock.Anything, exampleProduct.SKU).Return(false, nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+
+		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleGarbageInput))
+		assert.Nil(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+		assertStatusCode(t, testUtil, http.StatusBadRequest)
+	})
+
+	t.Run("with invalid product sku", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductRootWithSKUPrefixExists", mock.Anything, exampleProduct.SKU).Return(false, nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+
+		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(badSKUUpdateJSON))
+		assert.Nil(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+		assertStatusCode(t, testUtil, http.StatusBadRequest)
+	})
+
+	t.Run("with already existent product", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductRootWithSKUPrefixExists", mock.Anything, exampleProduct.SKU).Return(true, nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+
+		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
+		assert.Nil(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+		assertStatusCode(t, testUtil, http.StatusBadRequest)
+	})
+
+	t.Run("when transaction fails to begin", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductRootWithSKUPrefixExists", mock.Anything, exampleProduct.SKU).
+			Return(false, nil)
+		testUtil.Mock.ExpectBegin().WillReturnError(generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+
+		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
+		assert.Nil(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
+
+	t.Run("with error creating product root", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductRootWithSKUPrefixExists", mock.Anything, exampleProduct.SKU).
+			Return(false, nil)
+		testUtil.Mock.ExpectBegin()
+		testUtil.MockDB.On("CreateProductRoot", mock.Anything, mock.Anything).
+			Return(exampleRoot.ID, generateExampleTimeForTests(), generateArbitraryError())
+		testUtil.Mock.ExpectRollback()
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+
+		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
+		assert.Nil(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
+
+	t.Run("where product creation fails", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductRootWithSKUPrefixExists", mock.Anything, exampleProduct.SKU).
+			Return(false, nil)
+		testUtil.Mock.ExpectBegin()
+		testUtil.MockDB.On("CreateProductRoot", mock.Anything, mock.Anything).
+			Return(exampleRoot.ID, generateExampleTimeForTests(), nil)
+		testUtil.MockDB.On("CreateProduct", mock.Anything, mock.Anything).
+			Return(exampleProduct.ID, generateExampleTimeForTests(), generateExampleTimeForTests(), generateArbitraryError())
+		testUtil.Mock.ExpectRollback()
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+
+		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInput))
+		assert.Nil(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
+
+	t.Run("with error creating product options", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductRootWithSKUPrefixExists", mock.Anything, exampleProduct.SKU).
+			Return(false, nil)
+		testUtil.Mock.ExpectBegin()
+		testUtil.MockDB.On("CreateProductRoot", mock.Anything, mock.Anything).
+			Return(exampleRoot.ID, generateExampleTimeForTests(), nil)
+		testUtil.MockDB.On("CreateProduct", mock.Anything, mock.Anything).
+			Return(exampleProduct.ID, generateExampleTimeForTests(), generateExampleTimeForTests(), generateArbitraryError())
+		testUtil.MockDB.On("CreateProductOption", mock.Anything, mock.Anything).
+			Return(expectedCreatedProductOption.ID, generateExampleTimeForTests(), generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+
+		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
+		assert.Nil(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
+
+	t.Run("with error creating option products", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductRootWithSKUPrefixExists", mock.Anything, exampleProduct.SKU).
+			Return(false, nil)
+		testUtil.Mock.ExpectBegin()
+		testUtil.MockDB.On("CreateProductRoot", mock.Anything, mock.Anything).
+			Return(exampleRoot.ID, generateExampleTimeForTests(), nil)
+		testUtil.MockDB.On("CreateProduct", mock.Anything, mock.Anything).
+			Return(exampleProduct.ID, generateExampleTimeForTests(), generateExampleTimeForTests(), generateArbitraryError())
+		testUtil.MockDB.On("CreateProductOption", mock.Anything, mock.Anything).
+			Return(expectedCreatedProductOption.ID, generateExampleTimeForTests(), generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+
+		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
+		assert.Nil(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
+
+	t.Run("with error creating bridge entries", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductRootWithSKUPrefixExists", mock.Anything, exampleProduct.SKU).
+			Return(false, nil)
+		testUtil.Mock.ExpectBegin()
+		testUtil.MockDB.On("CreateProductRoot", mock.Anything, mock.Anything).
+			Return(exampleRoot.ID, generateExampleTimeForTests(), nil)
+		testUtil.MockDB.On("CreateProduct", mock.Anything, mock.Anything).
+			Return(exampleProduct.ID, generateExampleTimeForTests(), generateExampleTimeForTests(), nil)
+		testUtil.MockDB.On("CreateProductOption", mock.Anything, mock.Anything).
+			Return(expectedCreatedProductOption.ID, generateExampleTimeForTests(), nil)
+		testUtil.MockDB.On("CreateProductOptionValue", mock.Anything, mock.Anything).
+			Return(expectedCreatedProductOption.Values[0].ID, generateExampleTimeForTests(), nil)
+		testUtil.MockDB.On("CreateMultipleProductVariantBridgesForProductID", mock.Anything, mock.Anything, mock.Anything).
+			Return(generateArbitraryError())
+		testUtil.Mock.ExpectRollback()
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+
+		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
+		assert.Nil(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
+
+	t.Run("when commit returns an error", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductRootWithSKUPrefixExists", mock.Anything, exampleProduct.SKU).
+			Return(false, nil)
+		testUtil.Mock.ExpectBegin()
+		testUtil.MockDB.On("CreateProductRoot", mock.Anything, mock.Anything).
+			Return(exampleRoot.ID, generateExampleTimeForTests(), nil)
+		testUtil.MockDB.On("CreateProduct", mock.Anything, mock.Anything).
+			Return(exampleProduct.ID, generateExampleTimeForTests(), generateExampleTimeForTests(), nil)
+		testUtil.MockDB.On("CreateMultipleProductVariantBridgesForProductID", mock.Anything, mock.Anything, mock.Anything).
+			Return(nil)
+		testUtil.MockDB.On("CreateProductOption", mock.Anything, mock.Anything).
+			Return(expectedCreatedProductOption.ID, generateExampleTimeForTests(), nil)
+		testUtil.MockDB.On("CreateProductOptionValue", mock.Anything, mock.Anything).
+			Return(expectedCreatedProductOption.Values[0].ID, generateExampleTimeForTests(), nil)
+		testUtil.Mock.ExpectCommit().WillReturnError(generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+
+		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
+		assert.Nil(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	})
 }
-
-// func TestProductCreationHandlerWithErrorValidatingInput(t *testing.T) {
-// 	t.Parallel()
-// 	testUtil := setupTestVariables(t)
-
-// 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleGarbageInput))
-// 	assert.Nil(t, err)
-// 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-// 	assertStatusCode(t, testUtil, http.StatusBadRequest)
-// 	ensureExpectationsWereMet(t, testUtil.Mock)
-// }
-
-// func TestProductCreationHandlerWhereCommitReturnsAnError(t *testing.T) {
-// 	t.Parallel()
-// 	testUtil := setupTestVariables(t)
-// 	exampleProductCreationInputWithOptions := `
-// 		{
-// 			"sku": "skateboard",
-// 			"name": "Skateboard",
-// 			"upc": "1234567890",
-// 			"quantity": 123,
-// 			"price": 12.34,
-// 			"cost": 5,
-// 			"description": "This is a skateboard. Please wear a helmet.",
-// 			"taxable": true,
-// 			"product_weight": 8,
-// 			"product_height": 7,
-// 			"product_width": 6,
-// 			"product_length": 5,
-// 			"package_weight": 4,
-// 			"package_height": 3,
-// 			"package_width": 2,
-// 			"package_length": 1,
-// 			"options": []
-// 		}
-// 	`
-// 	exampleProduct := &models.Product{
-// 		DBRow: DBRow{
-// 			ID:        2,
-// 			CreatedOn: generateExampleTimeForTests(),
-// 		},
-// 		Name:          "Skateboard",
-// 		SKU:           "skateboard",
-// 		Price:         12.34,
-// 		Cost:          5,
-// 		Taxable:       true,
-// 		Description:   "This is a skateboard. Please wear a helmet.",
-// 		ProductWeight: 8,
-// 		ProductHeight: 7,
-// 		ProductWidth:  6,
-// 		ProductLength: 5,
-// 		PackageWeight: 4,
-// 		PackageHeight: 3,
-// 		PackageWidth:  2,
-// 		PackageLength: 1,
-// 		UPC:           "1234567890",
-// 		Quantity:      123,
-// 	}
-// 	exampleRoot := createProductRootFromProduct(exampleProduct)
-
-// 	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleProduct.SKU, false, nil)
-// 	testUtil.Mock.ExpectBegin()
-// 	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, nil)
-// 	setExpectationsForProductCreation(testUtil.Mock, exampleProduct, nil)
-// 	testUtil.Mock.ExpectCommit().WillReturnError(generateArbitraryError())
-
-// 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
-// 	assert.Nil(t, err)
-// 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-// 	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-// 	ensureExpectationsWereMet(t, testUtil.Mock)
-// }
-
-// func TestProductCreationHandlerWhereTransactionFailsToBegin(t *testing.T) {
-// 	t.Parallel()
-// 	testUtil := setupTestVariables(t)
-
-// 	exampleProductCreationInputWithOptions := `
-// 		{
-// 			"sku": "skateboard",
-// 			"name": "Skateboard",
-// 			"upc": "1234567890",
-// 			"quantity": 123,
-// 			"price": 12.34,
-// 			"cost": 5,
-// 			"description": "This is a skateboard. Please wear a helmet.",
-// 			"taxable": true,
-// 			"product_weight": 8,
-// 			"product_height": 7,
-// 			"product_width": 6,
-// 			"product_length": 5,
-// 			"package_weight": 4,
-// 			"package_height": 3,
-// 			"package_width": 2,
-// 			"package_length": 1,
-// 			"options": []
-// 		}
-// 	`
-// 	setExpectationsForProductRootSKUExistence(testUtil.Mock, "skateboard", false, nil)
-// 	testUtil.Mock.ExpectBegin().WillReturnError(generateArbitraryError())
-
-// 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
-// 	assert.Nil(t, err)
-// 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-// 	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-// 	ensureExpectationsWereMet(t, testUtil.Mock)
-// }
-
-// func TestProductCreationHandlerWithErrorCreatingProductRoot(t *testing.T) {
-// 	t.Parallel()
-// 	testUtil := setupTestVariables(t)
-// 	exampleProduct := &models.Product{
-// 		DBRow: DBRow{
-// 			ID:        2,
-// 			CreatedOn: generateExampleTimeForTests(),
-// 		},
-// 		SKU:           "skateboard",
-// 		Name:          "Skateboard",
-// 		UPC:           "1234567890",
-// 		Quantity:      123,
-// 		Price:         12.34,
-// 		Cost:          5,
-// 		Taxable:       true,
-// 		Description:   "This is a skateboard. Please wear a helmet.",
-// 		ProductWeight: 8,
-// 		ProductHeight: 7,
-// 		ProductWidth:  6,
-// 		ProductLength: 5,
-// 		PackageWeight: 4,
-// 		PackageHeight: 3,
-// 		PackageWidth:  2,
-// 		PackageLength: 1,
-// 	}
-// 	exampleRoot := createProductRootFromProduct(exampleProduct)
-
-// 	exampleProductCreationInput := `
-// 		{
-// 			"sku": "skateboard",
-// 			"name": "Skateboard",
-// 			"upc": "1234567890",
-// 			"quantity": 123,
-// 			"price": 12.34,
-// 			"cost": 5,
-// 			"description": "This is a skateboard. Please wear a helmet.",
-// 			"taxable": true,
-// 			"product_weight": 8,
-// 			"product_height": 7,
-// 			"product_width": 6,
-// 			"product_length": 5,
-// 			"package_weight": 4,
-// 			"package_height": 3,
-// 			"package_width": 2,
-// 			"package_length": 1
-// 		}
-// 	`
-
-// 	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleProduct.SKU, false, nil)
-// 	testUtil.Mock.ExpectBegin()
-// 	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, generateArbitraryError())
-// 	testUtil.Mock.ExpectRollback()
-
-// 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInput))
-// 	assert.Nil(t, err)
-// 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-// 	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-// 	ensureExpectationsWereMet(t, testUtil.Mock)
-// }
-
-// func TestProductCreationHandlerWithoutOptions(t *testing.T) {
-// 	t.Parallel()
-// 	testUtil := setupTestVariables(t)
-
-// 	exampleProductCreationInput := `
-// 		{
-// 			"sku": "skateboard",
-// 			"name": "Skateboard",
-// 			"upc": "1234567890",
-// 			"quantity": 123,
-// 			"price": 12.34,
-// 			"cost": 5,
-// 			"description": "This is a skateboard. Please wear a helmet.",
-// 			"taxable": true,
-// 			"product_weight": 8,
-// 			"product_height": 7,
-// 			"product_width": 6,
-// 			"product_length": 5,
-// 			"package_weight": 4,
-// 			"package_height": 3,
-// 			"package_width": 2,
-// 			"package_length": 1
-// 		}
-// 	`
-// 	exampleProduct := &models.Product{
-// 		DBRow: DBRow{
-// 			ID:        2,
-// 			CreatedOn: generateExampleTimeForTests(),
-// 		},
-// 		Name:          "Skateboard",
-// 		SKU:           "skateboard",
-// 		Price:         12.34,
-// 		Cost:          5,
-// 		Taxable:       true,
-// 		Description:   "This is a skateboard. Please wear a helmet.",
-// 		ProductWeight: 8,
-// 		ProductHeight: 7,
-// 		ProductWidth:  6,
-// 		ProductLength: 5,
-// 		PackageWeight: 4,
-// 		PackageHeight: 3,
-// 		PackageWidth:  2,
-// 		PackageLength: 1,
-// 		UPC:           "1234567890",
-// 		Quantity:      123,
-// 	}
-// 	exampleRoot := createProductRootFromProduct(exampleProduct)
-
-// 	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleProduct.SKU, false, nil)
-// 	testUtil.Mock.ExpectBegin()
-// 	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, nil)
-// 	setExpectationsForProductCreation(testUtil.Mock, exampleProduct, nil)
-// 	testUtil.Mock.ExpectCommit()
-
-// 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInput))
-// 	assert.Nil(t, err)
-// 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-// 	assertStatusCode(t, testUtil, http.StatusCreated)
-// 	ensureExpectationsWereMet(t, testUtil.Mock)
-// }
-
-// func TestProductCreationHandlerWithInvalidProductInput(t *testing.T) {
-// 	t.Parallel()
-// 	testUtil := setupTestVariables(t)
-
-// 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(badSKUUpdateJSON))
-// 	assert.Nil(t, err)
-// 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-// 	assertStatusCode(t, testUtil, http.StatusBadRequest)
-// 	ensureExpectationsWereMet(t, testUtil.Mock)
-// }
-
-// func TestProductCreationHandlerForAlreadyExistentProduct(t *testing.T) {
-// 	t.Parallel()
-// 	testUtil := setupTestVariables(t)
-
-// 	exampleProductCreationInput := `
-// 		{
-// 			"sku": "skateboard",
-// 			"name": "Skateboard",
-// 			"upc": "1234567890",
-// 			"quantity": 123,
-// 			"price": 12.34,
-// 			"cost": 5,
-// 			"description": "This is a skateboard. Please wear a helmet.",
-// 			"taxable": true,
-// 			"product_weight": 8,
-// 			"product_height": 7,
-// 			"product_width": 6,
-// 			"product_length": 5,
-// 			"package_weight": 4,
-// 			"package_height": 3,
-// 			"package_width": 2,
-// 			"package_length": 1
-// 		}
-// 	`
-// 	setExpectationsForProductRootSKUExistence(testUtil.Mock, "skateboard", true, nil)
-
-// 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInput))
-// 	assert.Nil(t, err)
-// 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-// 	assertStatusCode(t, testUtil, http.StatusBadRequest)
-// 	ensureExpectationsWereMet(t, testUtil.Mock)
-// }
-
-// func TestProductCreationHandlerWithErrorCreatingOptions(t *testing.T) {
-// 	t.Parallel()
-// 	testUtil := setupTestVariables(t)
-// 	exampleProduct := &models.Product{
-// 		DBRow: DBRow{
-// 			ID:        2,
-// 			CreatedOn: generateExampleTimeForTests(),
-// 		},
-// 		SKU:           "skateboard",
-// 		Name:          "Skateboard",
-// 		UPC:           "1234567890",
-// 		Quantity:      123,
-// 		Price:         99.99,
-// 		Cost:          50.00,
-// 		Description:   "This is a skateboard. Please wear a helmet.",
-// 		ProductWeight: 8,
-// 		ProductHeight: 7,
-// 		ProductWidth:  6,
-// 		ProductLength: 5,
-// 		PackageWeight: 4,
-// 		PackageHeight: 3,
-// 		PackageWidth:  2,
-// 		PackageLength: 1,
-// 		AvailableOn:   generateExampleTimeForTests(),
-// 	}
-// 	exampleRoot := createProductRootFromProduct(exampleProduct)
-// 	exampleProductOption := &ProductOption{
-// 		DBRow: DBRow{
-// 			ID:        123,
-// 			CreatedOn: generateExampleTimeForTests(),
-// 		},
-// 		Name:          "something",
-// 		ProductRootID: 2,
-// 	}
-// 	expectedCreatedProductOption := &ProductOption{
-// 		DBRow: DBRow{
-// 			ID:        exampleProductOption.ID,
-// 			CreatedOn: generateExampleTimeForTests(),
-// 		},
-// 		Name:          "something",
-// 		ProductRootID: exampleProductOption.ProductRootID,
-// 		Values: []ProductOptionValue{
-// 			{
-// 				DBRow: DBRow{
-// 					ID:        128, // == exampleProductOptionValue.ID,
-// 					CreatedOn: generateExampleTimeForTests(),
-// 				},
-// 				ProductOptionID: exampleProductOption.ID,
-// 				Value:           "one",
-// 			}, {
-// 				DBRow: DBRow{
-// 					ID:        256, // == exampleProductOptionValue.ID,
-// 					CreatedOn: generateExampleTimeForTests(),
-// 				},
-// 				ProductOptionID: exampleProductOption.ID,
-// 				Value:           "two",
-// 			}, {
-// 				DBRow: DBRow{
-// 					ID:        512, // == exampleProductOptionValue.ID,
-// 					CreatedOn: generateExampleTimeForTests(),
-// 				},
-// 				ProductOptionID: exampleProductOption.ID,
-// 				Value:           "three",
-// 			},
-// 		},
-// 	}
-
-// 	exampleProductCreationInputWithOptions := fmt.Sprintf(`
-// 		{
-// 			"sku": "skateboard",
-// 			"name": "Skateboard",
-// 			"upc": "1234567890",
-// 			"quantity": 123,
-// 			"price": 99.99,
-// 			"cost": 50,
-// 			"description": "This is a skateboard. Please wear a helmet.",
-// 			"product_weight": 8,
-// 			"product_height": 7,
-// 			"product_width": 6,
-// 			"product_length": 5,
-// 			"package_weight": 4,
-// 			"package_height": 3,
-// 			"package_width": 2,
-// 			"package_length": 1,
-// 			"available_on": "%s",
-// 			"options": [{
-// 				"name": "something",
-// 				"values": [
-// 					"one",
-// 					"two",
-// 					"three"
-// 				]
-// 			}]
-// 		}
-// 	`, exampleTimeAvailableString)
-
-// 	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleProduct.SKU, false, nil)
-// 	testUtil.Mock.ExpectBegin()
-// 	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, nil)
-// 	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleRoot.ID, generateArbitraryError())
-// 	testUtil.Mock.ExpectRollback()
-
-// 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
-// 	assert.Nil(t, err)
-// 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-// 	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-// 	ensureExpectationsWereMet(t, testUtil.Mock)
-// }
-
-// func TestProductCreationHandlerWhereProductCreationFails(t *testing.T) {
-// 	t.Parallel()
-// 	testUtil := setupTestVariables(t)
-// 	exampleProductCreationInput := `
-// 		{
-// 			"sku": "skateboard",
-// 			"name": "Skateboard",
-// 			"upc": "1234567890",
-// 			"quantity": 123,
-// 			"price": 12.34,
-// 			"cost": 5,
-// 			"description": "This is a skateboard. Please wear a helmet.",
-// 			"taxable": true,
-// 			"product_weight": 8,
-// 			"product_height": 7,
-// 			"product_width": 6,
-// 			"product_length": 5,
-// 			"package_weight": 4,
-// 			"package_height": 3,
-// 			"package_width": 2,
-// 			"package_length": 1
-// 		}
-// 	`
-// 	exampleProduct := &models.Product{
-// 		DBRow: DBRow{
-// 			ID:        2,
-// 			CreatedOn: generateExampleTimeForTests(),
-// 		},
-// 		Name:          "Skateboard",
-// 		SKU:           "skateboard",
-// 		Price:         12.34,
-// 		Cost:          5,
-// 		Description:   "This is a skateboard. Please wear a helmet.",
-// 		Taxable:       true,
-// 		ProductWeight: 8,
-// 		ProductHeight: 7,
-// 		ProductWidth:  6,
-// 		ProductLength: 5,
-// 		PackageWeight: 4,
-// 		PackageHeight: 3,
-// 		PackageWidth:  2,
-// 		PackageLength: 1,
-// 		UPC:           "1234567890",
-// 		Quantity:      123,
-// 	}
-// 	exampleRoot := createProductRootFromProduct(exampleProduct)
-
-// 	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleProduct.SKU, false, nil)
-// 	testUtil.Mock.ExpectBegin()
-// 	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, nil)
-// 	setExpectationsForProductCreation(testUtil.Mock, exampleProduct, generateArbitraryError())
-// 	testUtil.Mock.ExpectRollback()
-
-// 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInput))
-// 	assert.Nil(t, err)
-// 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-// 	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-// 	ensureExpectationsWereMet(t, testUtil.Mock)
-// }
-
-// func TestProductCreationHandlerWithErrorCreatingOptionProducts(t *testing.T) {
-// 	t.Parallel()
-// 	testUtil := setupTestVariables(t)
-// 	exampleProduct := &models.Product{
-// 		DBRow: DBRow{
-// 			ID:        2,
-// 			CreatedOn: generateExampleTimeForTests(),
-// 		},
-// 		SKU:           "skateboard",
-// 		Name:          "Skateboard",
-// 		UPC:           "1234567890",
-// 		Quantity:      123,
-// 		Price:         12.34,
-// 		Cost:          5,
-// 		Taxable:       true,
-// 		Description:   "This is a skateboard. Please wear a helmet.",
-// 		ProductWeight: 8,
-// 		ProductHeight: 7,
-// 		ProductWidth:  6,
-// 		ProductLength: 5,
-// 		PackageWeight: 4,
-// 		PackageHeight: 3,
-// 		PackageWidth:  2,
-// 		PackageLength: 1,
-// 	}
-// 	exampleRoot := createProductRootFromProduct(exampleProduct)
-
-// 	expectedFirstOption := &models.Product{}
-// 	expectedSecondOption := &models.Product{}
-// 	expectedThirdOption := &models.Product{}
-
-// 	*expectedFirstOption = *exampleProduct
-// 	*expectedSecondOption = *exampleProduct
-// 	*expectedThirdOption = *exampleProduct
-
-// 	expectedFirstOption.OptionSummary = "something: one"
-// 	expectedFirstOption.SKU = "skateboard_one"
-// 	expectedSecondOption.OptionSummary = "something: two"
-// 	expectedSecondOption.SKU = "skateboard_two"
-// 	expectedThirdOption.OptionSummary = "something: three"
-// 	expectedThirdOption.SKU = "skateboard_three"
-
-// 	expectedCreatedProducts := []*Product{expectedFirstOption, expectedSecondOption, expectedThirdOption}
-// 	exampleProductOption := &ProductOption{
-// 		DBRow: DBRow{
-// 			ID:        123,
-// 			CreatedOn: generateExampleTimeForTests(),
-// 		},
-// 		Name:          "something",
-// 		ProductRootID: 2,
-// 	}
-// 	expectedCreatedProductOption := &ProductOption{
-// 		DBRow: DBRow{
-// 			ID:        exampleProductOption.ID,
-// 			CreatedOn: generateExampleTimeForTests(),
-// 		},
-// 		Name:          "something",
-// 		ProductRootID: exampleProductOption.ProductRootID,
-// 		Values: []ProductOptionValue{
-// 			{
-// 				DBRow: DBRow{
-// 					ID:        128, // == exampleProductOptionValue.ID,
-// 					CreatedOn: generateExampleTimeForTests(),
-// 				},
-// 				ProductOptionID: exampleProductOption.ID,
-// 				Value:           "one",
-// 			}, {
-// 				DBRow: DBRow{
-// 					ID:        256, // == exampleProductOptionValue.ID,
-// 					CreatedOn: generateExampleTimeForTests(),
-// 				},
-// 				ProductOptionID: exampleProductOption.ID,
-// 				Value:           "two",
-// 			}, {
-// 				DBRow: DBRow{
-// 					ID:        512, // == exampleProductOptionValue.ID,
-// 					CreatedOn: generateExampleTimeForTests(),
-// 				},
-// 				ProductOptionID: exampleProductOption.ID,
-// 				Value:           "three",
-// 			},
-// 		},
-// 	}
-
-// 	exampleProductCreationInputWithOptions := `
-// 		{
-// 			"sku": "skateboard",
-// 			"name": "Skateboard",
-// 			"upc": "1234567890",
-// 			"quantity": 123,
-// 			"price": 12.34,
-// 			"cost": 5,
-// 			"description": "This is a skateboard. Please wear a helmet.",
-// 			"taxable": true,
-// 			"product_weight": 8,
-// 			"product_height": 7,
-// 			"product_width": 6,
-// 			"product_length": 5,
-// 			"package_weight": 4,
-// 			"package_height": 3,
-// 			"package_width": 2,
-// 			"package_length": 1,
-// 			"options": [{
-// 				"name": "something",
-// 				"values": [
-// 					"one",
-// 					"two",
-// 					"three"
-// 				]
-// 			}]
-// 		}
-// 	`
-
-// 	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleProduct.SKU, false, nil)
-// 	testUtil.Mock.ExpectBegin()
-// 	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, nil)
-// 	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleRoot.ID, nil)
-// 	setExpectationsForMultipleProductOptionValuesCreation(testUtil.Mock, expectedCreatedProductOption.Values, nil, -1)
-// 	setExpectationsForProductCreationFromOptions(testUtil.Mock, expectedCreatedProducts, 1, generateArbitraryError(), false, 0)
-// 	testUtil.Mock.ExpectRollback()
-
-// 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
-// 	assert.Nil(t, err)
-// 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-// 	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-// 	ensureExpectationsWereMet(t, testUtil.Mock)
-// }
-
-// func TestProductCreationHandlerWithErrorCreatingBridgeEntries(t *testing.T) {
-// 	t.Parallel()
-// 	testUtil := setupTestVariables(t)
-// 	exampleProduct := &models.Product{
-// 		DBRow: DBRow{
-// 			ID:        2,
-// 			CreatedOn: generateExampleTimeForTests(),
-// 		},
-// 		SKU:           "skateboard",
-// 		Name:          "Skateboard",
-// 		UPC:           "1234567890",
-// 		Quantity:      123,
-// 		Price:         12.34,
-// 		Cost:          5,
-// 		Taxable:       true,
-// 		Description:   "This is a skateboard. Please wear a helmet.",
-// 		ProductWeight: 8,
-// 		ProductHeight: 7,
-// 		ProductWidth:  6,
-// 		ProductLength: 5,
-// 		PackageWeight: 4,
-// 		PackageHeight: 3,
-// 		PackageWidth:  2,
-// 		PackageLength: 1,
-// 	}
-// 	exampleRoot := createProductRootFromProduct(exampleProduct)
-
-// 	expectedFirstOption := &models.Product{}
-// 	expectedSecondOption := &models.Product{}
-// 	expectedThirdOption := &models.Product{}
-
-// 	*expectedFirstOption = *exampleProduct
-// 	*expectedSecondOption = *exampleProduct
-// 	*expectedThirdOption = *exampleProduct
-
-// 	expectedFirstOption.OptionSummary = "something: one"
-// 	expectedFirstOption.SKU = "skateboard_one"
-// 	expectedSecondOption.OptionSummary = "something: two"
-// 	expectedSecondOption.SKU = "skateboard_two"
-// 	expectedThirdOption.OptionSummary = "something: three"
-// 	expectedThirdOption.SKU = "skateboard_three"
-
-// 	expectedCreatedProducts := []*Product{expectedFirstOption, expectedSecondOption, expectedThirdOption}
-// 	exampleProductOption := &ProductOption{
-// 		DBRow: DBRow{
-// 			ID:        123,
-// 			CreatedOn: generateExampleTimeForTests(),
-// 		},
-// 		Name:          "something",
-// 		ProductRootID: 2,
-// 	}
-// 	expectedCreatedProductOption := &ProductOption{
-// 		DBRow: DBRow{
-// 			ID:        exampleProductOption.ID,
-// 			CreatedOn: generateExampleTimeForTests(),
-// 		},
-// 		Name:          "something",
-// 		ProductRootID: exampleProductOption.ProductRootID,
-// 		Values: []ProductOptionValue{
-// 			{
-// 				DBRow: DBRow{
-// 					ID:        128, // == exampleProductOptionValue.ID,
-// 					CreatedOn: generateExampleTimeForTests(),
-// 				},
-// 				ProductOptionID: exampleProductOption.ID,
-// 				Value:           "one",
-// 			}, {
-// 				DBRow: DBRow{
-// 					ID:        256, // == exampleProductOptionValue.ID,
-// 					CreatedOn: generateExampleTimeForTests(),
-// 				},
-// 				ProductOptionID: exampleProductOption.ID,
-// 				Value:           "two",
-// 			}, {
-// 				DBRow: DBRow{
-// 					ID:        512, // == exampleProductOptionValue.ID,
-// 					CreatedOn: generateExampleTimeForTests(),
-// 				},
-// 				ProductOptionID: exampleProductOption.ID,
-// 				Value:           "three",
-// 			},
-// 		},
-// 	}
-
-// 	exampleProductCreationInputWithOptions := `
-// 		{
-// 			"sku": "skateboard",
-// 			"name": "Skateboard",
-// 			"upc": "1234567890",
-// 			"quantity": 123,
-// 			"price": 12.34,
-// 			"cost": 5,
-// 			"description": "This is a skateboard. Please wear a helmet.",
-// 			"taxable": true,
-// 			"product_weight": 8,
-// 			"product_height": 7,
-// 			"product_width": 6,
-// 			"product_length": 5,
-// 			"package_weight": 4,
-// 			"package_height": 3,
-// 			"package_width": 2,
-// 			"package_length": 1,
-// 			"options": [{
-// 				"name": "something",
-// 				"values": [
-// 					"one",
-// 					"two",
-// 					"three"
-// 				]
-// 			}]
-// 		}
-// 	`
-
-// 	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleProduct.SKU, false, nil)
-// 	testUtil.Mock.ExpectBegin()
-// 	setExpectationsForProductRootCreation(testUtil.Mock, exampleRoot, nil)
-// 	setExpectationsForProductOptionCreation(testUtil.Mock, expectedCreatedProductOption, exampleRoot.ID, nil)
-// 	setExpectationsForMultipleProductOptionValuesCreation(testUtil.Mock, expectedCreatedProductOption.Values, nil, -1)
-// 	setExpectationsForProductCreationFromOptions(testUtil.Mock, expectedCreatedProducts, 1, generateArbitraryError(), true, 0)
-// 	testUtil.Mock.ExpectRollback()
-
-// 	req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
-// 	assert.Nil(t, err)
-// 	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-// 	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-// 	ensureExpectationsWereMet(t, testUtil.Mock)
-// }
