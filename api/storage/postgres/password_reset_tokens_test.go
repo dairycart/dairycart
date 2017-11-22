@@ -30,11 +30,11 @@ func TestPasswordResetTokenExists(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
+	client := Postgres{}
 
 	t.Run("existing", func(t *testing.T) {
 		setPasswordResetTokenExistenceQueryExpectation(t, mock, exampleID, true, nil)
-		client := Postgres{DB: mockDB}
-		actual, err := client.PasswordResetTokenExists(exampleID)
+		actual, err := client.PasswordResetTokenExists(mockDB, exampleID)
 
 		require.Nil(t, err)
 		require.True(t, actual)
@@ -42,8 +42,7 @@ func TestPasswordResetTokenExists(t *testing.T) {
 	})
 	t.Run("with no rows found", func(t *testing.T) {
 		setPasswordResetTokenExistenceQueryExpectation(t, mock, exampleID, true, sql.ErrNoRows)
-		client := Postgres{DB: mockDB}
-		actual, err := client.PasswordResetTokenExists(exampleID)
+		actual, err := client.PasswordResetTokenExists(mockDB, exampleID)
 
 		require.Nil(t, err)
 		require.False(t, actual)
@@ -51,8 +50,7 @@ func TestPasswordResetTokenExists(t *testing.T) {
 	})
 	t.Run("with a database error", func(t *testing.T) {
 		setPasswordResetTokenExistenceQueryExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
-		client := Postgres{DB: mockDB}
-		actual, err := client.PasswordResetTokenExists(exampleID)
+		actual, err := client.PasswordResetTokenExists(mockDB, exampleID)
 
 		require.NotNil(t, err)
 		require.False(t, actual)
@@ -82,19 +80,18 @@ func setPasswordResetTokenReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmoc
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
-func TestGetPasswordResetTokenByID(t *testing.T) {
+func TestGetPasswordResetToken(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
 	require.Nil(t, err)
 	defer mockDB.Close()
-
 	exampleID := uint64(1)
 	expected := &models.PasswordResetToken{ID: exampleID}
+	client := Postgres{}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setPasswordResetTokenReadQueryExpectation(t, mock, exampleID, expected, nil)
-		client := Postgres{DB: mockDB}
-		actual, err := client.GetPasswordResetToken(exampleID)
+		actual, err := client.GetPasswordResetToken(mockDB, exampleID)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected passwordresettoken did not match actual passwordresettoken")
@@ -124,12 +121,12 @@ func TestCreatePasswordResetToken(t *testing.T) {
 	defer mockDB.Close()
 	expectedID := uint64(1)
 	exampleInput := &models.PasswordResetToken{ID: expectedID}
+	client := Postgres{}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setPasswordResetTokenCreationQueryExpectation(t, mock, exampleInput, nil)
 		expected := generateExampleTimeForTests(t)
-		client := Postgres{DB: mockDB}
-		actualID, actualCreationDate, err := client.CreatePasswordResetToken(exampleInput)
+		actualID, actualCreationDate, err := client.CreatePasswordResetToken(mockDB, exampleInput)
 
 		require.Nil(t, err)
 		require.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
@@ -161,12 +158,12 @@ func TestUpdatePasswordResetTokenByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleInput := &models.PasswordResetToken{ID: uint64(1)}
+	client := Postgres{}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setPasswordResetTokenUpdateQueryExpectation(t, mock, exampleInput, nil)
 		expected := generateExampleTimeForTests(t)
-		client := Postgres{DB: mockDB}
-		actual, err := client.UpdatePasswordResetToken(exampleInput)
+		actual, err := client.UpdatePasswordResetToken(mockDB, exampleInput)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
@@ -187,12 +184,12 @@ func TestDeletePasswordResetTokenByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
+	client := Postgres{}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setPasswordResetTokenDeletionQueryExpectation(t, mock, exampleID, nil)
 		expected := generateExampleTimeForTests(t)
-		client := Postgres{DB: mockDB}
-		actual, err := client.DeletePasswordResetToken(exampleID, nil)
+		actual, err := client.DeletePasswordResetToken(mockDB, exampleID)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
@@ -205,8 +202,7 @@ func TestDeletePasswordResetTokenByID(t *testing.T) {
 		expected := generateExampleTimeForTests(t)
 		tx, err := mockDB.Begin()
 		require.Nil(t, err, "no error should be returned setting up a transaction in the mock DB")
-		client := Postgres{DB: mockDB}
-		actual, err := client.DeletePasswordResetToken(exampleID, tx)
+		actual, err := client.DeletePasswordResetToken(tx, exampleID)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")

@@ -4,15 +4,16 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairycart/api/storage/models"
 )
 
 const passwordResetTokenExistenceQuery = `SELECT EXISTS(SELECT id FROM password_reset_tokens WHERE id = $1 and archived_on IS NULL);`
 
-func (pg *Postgres) PasswordResetTokenExists(id uint64) (bool, error) {
+func (pg *Postgres) PasswordResetTokenExists(db storage.Querier, id uint64) (bool, error) {
 	var exists string
 
-	err := pg.DB.QueryRow(passwordResetTokenExistenceQuery, id).Scan(&exists)
+	err := db.QueryRow(passwordResetTokenExistenceQuery, id).Scan(&exists)
 	if err == sql.ErrNoRows {
 		return false, nil
 	} else if err != nil {
@@ -38,10 +39,10 @@ const passwordResetTokenSelectionQuery = `
         id = $1
 `
 
-func (pg *Postgres) GetPasswordResetToken(id uint64) (*models.PasswordResetToken, error) {
+func (pg *Postgres) GetPasswordResetToken(db storage.Querier, id uint64) (*models.PasswordResetToken, error) {
 	p := &models.PasswordResetToken{}
 
-	err := pg.DB.QueryRow(passwordResetTokenSelectionQuery, id).Scan(&p.ID, &p.UserID, &p.Token, &p.CreatedOn, &p.ExpiresOn, &p.PasswordResetOn)
+	err := db.QueryRow(passwordResetTokenSelectionQuery, id).Scan(&p.ID, &p.UserID, &p.Token, &p.CreatedOn, &p.ExpiresOn, &p.PasswordResetOn)
 
 	return p, err
 }
@@ -59,12 +60,12 @@ const passwordresettokenCreationQuery = `
         id, created_on;
 `
 
-func (pg *Postgres) CreatePasswordResetToken(nu *models.PasswordResetToken) (uint64, time.Time, error) {
+func (pg *Postgres) CreatePasswordResetToken(db storage.Querier, nu *models.PasswordResetToken) (uint64, time.Time, error) {
 	var (
 		createdID uint64
 		createdAt time.Time
 	)
-	err := pg.DB.QueryRow(passwordresettokenCreationQuery, &nu.UserID, &nu.Token, &nu.ExpiresOn, &nu.PasswordResetOn).Scan(&createdID, &createdAt)
+	err := db.QueryRow(passwordresettokenCreationQuery, &nu.UserID, &nu.Token, &nu.ExpiresOn, &nu.PasswordResetOn).Scan(&createdID, &createdAt)
 
 	return createdID, createdAt, err
 }
@@ -80,9 +81,9 @@ const passwordResetTokenUpdateQuery = `
     RETURNING updated_on;
 `
 
-func (pg *Postgres) UpdatePasswordResetToken(updated *models.PasswordResetToken) (time.Time, error) {
+func (pg *Postgres) UpdatePasswordResetToken(db storage.Querier, updated *models.PasswordResetToken) (time.Time, error) {
 	var t time.Time
-	err := pg.DB.QueryRow(passwordResetTokenUpdateQuery, &updated.UserID, &updated.Token, &updated.ExpiresOn, &updated.PasswordResetOn, &updated.ID).Scan(&t)
+	err := db.QueryRow(passwordResetTokenUpdateQuery, &updated.UserID, &updated.Token, &updated.ExpiresOn, &updated.PasswordResetOn, &updated.ID).Scan(&t)
 	return t, err
 }
 
@@ -93,11 +94,7 @@ const passwordResetTokenDeletionQuery = `
     RETURNING archived_on
 `
 
-func (pg *Postgres) DeletePasswordResetToken(id uint64, tx *sql.Tx) (t time.Time, err error) {
-	if tx != nil {
-		err = tx.QueryRow(passwordResetTokenDeletionQuery, id).Scan(&t)
-	} else {
-		err = pg.DB.QueryRow(passwordResetTokenDeletionQuery, id).Scan(&t)
-	}
-	return
+func (pg *Postgres) DeletePasswordResetToken(db storage.Querier, id uint64) (t time.Time, err error) {
+	err = db.QueryRow(passwordResetTokenDeletionQuery, id).Scan(&t)
+	return t, err
 }

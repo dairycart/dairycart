@@ -30,11 +30,11 @@ func TestUserExists(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
+	client := Postgres{}
 
 	t.Run("existing", func(t *testing.T) {
 		setUserExistenceQueryExpectation(t, mock, exampleID, true, nil)
-		client := Postgres{DB: mockDB}
-		actual, err := client.UserExists(exampleID)
+		actual, err := client.UserExists(mockDB, exampleID)
 
 		require.Nil(t, err)
 		require.True(t, actual)
@@ -42,8 +42,7 @@ func TestUserExists(t *testing.T) {
 	})
 	t.Run("with no rows found", func(t *testing.T) {
 		setUserExistenceQueryExpectation(t, mock, exampleID, true, sql.ErrNoRows)
-		client := Postgres{DB: mockDB}
-		actual, err := client.UserExists(exampleID)
+		actual, err := client.UserExists(mockDB, exampleID)
 
 		require.Nil(t, err)
 		require.False(t, actual)
@@ -51,8 +50,7 @@ func TestUserExists(t *testing.T) {
 	})
 	t.Run("with a database error", func(t *testing.T) {
 		setUserExistenceQueryExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
-		client := Postgres{DB: mockDB}
-		actual, err := client.UserExists(exampleID)
+		actual, err := client.UserExists(mockDB, exampleID)
 
 		require.NotNil(t, err)
 		require.False(t, actual)
@@ -94,19 +92,18 @@ func setUserReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, 
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
-func TestGetUserByID(t *testing.T) {
+func TestGetUser(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
 	require.Nil(t, err)
 	defer mockDB.Close()
-
 	exampleID := uint64(1)
 	expected := &models.User{ID: exampleID}
+	client := Postgres{}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setUserReadQueryExpectation(t, mock, exampleID, expected, nil)
-		client := Postgres{DB: mockDB}
-		actual, err := client.GetUser(exampleID)
+		actual, err := client.GetUser(mockDB, exampleID)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected user did not match actual user")
@@ -140,12 +137,12 @@ func TestCreateUser(t *testing.T) {
 	defer mockDB.Close()
 	expectedID := uint64(1)
 	exampleInput := &models.User{ID: expectedID}
+	client := Postgres{}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setUserCreationQueryExpectation(t, mock, exampleInput, nil)
 		expected := generateExampleTimeForTests(t)
-		client := Postgres{DB: mockDB}
-		actualID, actualCreationDate, err := client.CreateUser(exampleInput)
+		actualID, actualCreationDate, err := client.CreateUser(mockDB, exampleInput)
 
 		require.Nil(t, err)
 		require.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
@@ -181,12 +178,12 @@ func TestUpdateUserByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleInput := &models.User{ID: uint64(1)}
+	client := Postgres{}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setUserUpdateQueryExpectation(t, mock, exampleInput, nil)
 		expected := generateExampleTimeForTests(t)
-		client := Postgres{DB: mockDB}
-		actual, err := client.UpdateUser(exampleInput)
+		actual, err := client.UpdateUser(mockDB, exampleInput)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
@@ -207,12 +204,12 @@ func TestDeleteUserByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
+	client := Postgres{}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setUserDeletionQueryExpectation(t, mock, exampleID, nil)
 		expected := generateExampleTimeForTests(t)
-		client := Postgres{DB: mockDB}
-		actual, err := client.DeleteUser(exampleID, nil)
+		actual, err := client.DeleteUser(mockDB, exampleID)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
@@ -225,8 +222,7 @@ func TestDeleteUserByID(t *testing.T) {
 		expected := generateExampleTimeForTests(t)
 		tx, err := mockDB.Begin()
 		require.Nil(t, err, "no error should be returned setting up a transaction in the mock DB")
-		client := Postgres{DB: mockDB}
-		actual, err := client.DeleteUser(exampleID, tx)
+		actual, err := client.DeleteUser(tx, exampleID)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")

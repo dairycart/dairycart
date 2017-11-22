@@ -4,15 +4,16 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairycart/api/storage/models"
 )
 
 const productVariantBridgeExistenceQuery = `SELECT EXISTS(SELECT id FROM product_variant_bridge WHERE id = $1 and archived_on IS NULL);`
 
-func (pg *Postgres) ProductVariantBridgeExists(id uint64) (bool, error) {
+func (pg *Postgres) ProductVariantBridgeExists(db storage.Querier, id uint64) (bool, error) {
 	var exists string
 
-	err := pg.DB.QueryRow(productVariantBridgeExistenceQuery, id).Scan(&exists)
+	err := db.QueryRow(productVariantBridgeExistenceQuery, id).Scan(&exists)
 	if err == sql.ErrNoRows {
 		return false, nil
 	} else if err != nil {
@@ -37,10 +38,10 @@ const productVariantBridgeSelectionQuery = `
         id = $1
 `
 
-func (pg *Postgres) GetProductVariantBridge(id uint64) (*models.ProductVariantBridge, error) {
+func (pg *Postgres) GetProductVariantBridge(db storage.Querier, id uint64) (*models.ProductVariantBridge, error) {
 	p := &models.ProductVariantBridge{}
 
-	err := pg.DB.QueryRow(productVariantBridgeSelectionQuery, id).Scan(&p.ID, &p.ProductID, &p.ProductOptionValueID, &p.CreatedOn, &p.ArchivedOn)
+	err := db.QueryRow(productVariantBridgeSelectionQuery, id).Scan(&p.ID, &p.ProductID, &p.ProductOptionValueID, &p.CreatedOn, &p.ArchivedOn)
 
 	return p, err
 }
@@ -58,12 +59,12 @@ const productvariantbridgeCreationQuery = `
         id, created_on;
 `
 
-func (pg *Postgres) CreateProductVariantBridge(nu *models.ProductVariantBridge) (uint64, time.Time, error) {
+func (pg *Postgres) CreateProductVariantBridge(db storage.Querier, nu *models.ProductVariantBridge) (uint64, time.Time, error) {
 	var (
 		createdID uint64
 		createdAt time.Time
 	)
-	err := pg.DB.QueryRow(productvariantbridgeCreationQuery, &nu.ProductID, &nu.ProductOptionValueID).Scan(&createdID, &createdAt)
+	err := db.QueryRow(productvariantbridgeCreationQuery, &nu.ProductID, &nu.ProductOptionValueID).Scan(&createdID, &createdAt)
 
 	return createdID, createdAt, err
 }
@@ -77,9 +78,9 @@ const productVariantBridgeUpdateQuery = `
     RETURNING updated_on;
 `
 
-func (pg *Postgres) UpdateProductVariantBridge(updated *models.ProductVariantBridge) (time.Time, error) {
+func (pg *Postgres) UpdateProductVariantBridge(db storage.Querier, updated *models.ProductVariantBridge) (time.Time, error) {
 	var t time.Time
-	err := pg.DB.QueryRow(productVariantBridgeUpdateQuery, &updated.ProductID, &updated.ProductOptionValueID, &updated.ID).Scan(&t)
+	err := db.QueryRow(productVariantBridgeUpdateQuery, &updated.ProductID, &updated.ProductOptionValueID, &updated.ID).Scan(&t)
 	return t, err
 }
 
@@ -90,11 +91,16 @@ const productVariantBridgeDeletionQuery = `
     RETURNING archived_on
 `
 
-func (pg *Postgres) DeleteProductVariantBridge(id uint64, tx *sql.Tx) (t time.Time, err error) {
-	if tx != nil {
-		err = tx.QueryRow(productVariantBridgeDeletionQuery, id).Scan(&t)
-	} else {
-		err = pg.DB.QueryRow(productVariantBridgeDeletionQuery, id).Scan(&t)
-	}
-	return
+func (pg *Postgres) DeleteProductVariantBridge(db storage.Querier, id uint64) (t time.Time, err error) {
+	err = db.QueryRow(productVariantBridgeDeletionQuery, id).Scan(&t)
+	return t, err
+}
+
+const productVariantBridgeDeletionQueryByProductID = `
+    UPDATE product_variant_bridge SET archived_on = NOW() WHERE product_id = $1 AND archived_on IS NULL RETURNING archived_on
+`
+
+func (pg *Postgres) DeleteProductVariantBridgeByProductID(db storage.Querier, productID uint64) (t time.Time, err error) {
+	err = db.QueryRow(productVariantBridgeDeletionQueryByProductID, productID).Scan(&t)
+	return t, err
 }

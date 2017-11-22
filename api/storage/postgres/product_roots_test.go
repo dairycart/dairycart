@@ -30,11 +30,11 @@ func TestProductRootExists(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
+	client := Postgres{}
 
 	t.Run("existing", func(t *testing.T) {
 		setProductRootExistenceQueryExpectation(t, mock, exampleID, true, nil)
-		client := Postgres{DB: mockDB}
-		actual, err := client.ProductRootExists(exampleID)
+		actual, err := client.ProductRootExists(mockDB, exampleID)
 
 		require.Nil(t, err)
 		require.True(t, actual)
@@ -42,8 +42,7 @@ func TestProductRootExists(t *testing.T) {
 	})
 	t.Run("with no rows found", func(t *testing.T) {
 		setProductRootExistenceQueryExpectation(t, mock, exampleID, true, sql.ErrNoRows)
-		client := Postgres{DB: mockDB}
-		actual, err := client.ProductRootExists(exampleID)
+		actual, err := client.ProductRootExists(mockDB, exampleID)
 
 		require.Nil(t, err)
 		require.False(t, actual)
@@ -51,8 +50,7 @@ func TestProductRootExists(t *testing.T) {
 	})
 	t.Run("with a database error", func(t *testing.T) {
 		setProductRootExistenceQueryExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
-		client := Postgres{DB: mockDB}
-		actual, err := client.ProductRootExists(exampleID)
+		actual, err := client.ProductRootExists(mockDB, exampleID)
 
 		require.NotNil(t, err)
 		require.False(t, actual)
@@ -114,19 +112,18 @@ func setProductRootReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id u
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
-func TestGetProductRootByID(t *testing.T) {
+func TestGetProductRoot(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
 	require.Nil(t, err)
 	defer mockDB.Close()
-
 	exampleID := uint64(1)
 	expected := &models.ProductRoot{ID: exampleID}
+	client := Postgres{}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductRootReadQueryExpectation(t, mock, exampleID, expected, nil)
-		client := Postgres{DB: mockDB}
-		actual, err := client.GetProductRoot(exampleID)
+		actual, err := client.GetProductRoot(mockDB, exampleID)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected productroot did not match actual productroot")
@@ -170,12 +167,12 @@ func TestCreateProductRoot(t *testing.T) {
 	defer mockDB.Close()
 	expectedID := uint64(1)
 	exampleInput := &models.ProductRoot{ID: expectedID}
+	client := Postgres{}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductRootCreationQueryExpectation(t, mock, exampleInput, nil)
 		expected := generateExampleTimeForTests(t)
-		client := Postgres{DB: mockDB}
-		actualID, actualCreationDate, err := client.CreateProductRoot(exampleInput)
+		actualID, actualCreationDate, err := client.CreateProductRoot(mockDB, exampleInput)
 
 		require.Nil(t, err)
 		require.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
@@ -221,12 +218,12 @@ func TestUpdateProductRootByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleInput := &models.ProductRoot{ID: uint64(1)}
+	client := Postgres{}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductRootUpdateQueryExpectation(t, mock, exampleInput, nil)
 		expected := generateExampleTimeForTests(t)
-		client := Postgres{DB: mockDB}
-		actual, err := client.UpdateProductRoot(exampleInput)
+		actual, err := client.UpdateProductRoot(mockDB, exampleInput)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
@@ -247,12 +244,12 @@ func TestDeleteProductRootByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
+	client := Postgres{}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductRootDeletionQueryExpectation(t, mock, exampleID, nil)
 		expected := generateExampleTimeForTests(t)
-		client := Postgres{DB: mockDB}
-		actual, err := client.DeleteProductRoot(exampleID, nil)
+		actual, err := client.DeleteProductRoot(mockDB, exampleID)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
@@ -265,8 +262,7 @@ func TestDeleteProductRootByID(t *testing.T) {
 		expected := generateExampleTimeForTests(t)
 		tx, err := mockDB.Begin()
 		require.Nil(t, err, "no error should be returned setting up a transaction in the mock DB")
-		client := Postgres{DB: mockDB}
-		actual, err := client.DeleteProductRoot(exampleID, tx)
+		actual, err := client.DeleteProductRoot(tx, exampleID)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")

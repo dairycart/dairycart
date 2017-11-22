@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -25,7 +26,7 @@ func buildRoute(routeVersion string, routeParts ...string) string {
 }
 
 // SetupAPIRoutes takes a mux router and a database connection and creates all the API routes for the API
-func SetupAPIRoutes(router *chi.Mux, dbxReplaceMePlz *sqlx.DB, store *sessions.CookieStore, db storage.Storage) {
+func SetupAPIRoutes(router *chi.Mux, db *sql.DB, dbxReplaceMePlz *sqlx.DB, store *sessions.CookieStore, client storage.Storer) {
 	// Auth
 	router.Post("/login", buildUserLoginHandler(dbxReplaceMePlz, store))
 	router.Post("/logout", buildUserLogoutHandler(store))
@@ -49,9 +50,9 @@ func SetupAPIRoutes(router *chi.Mux, dbxReplaceMePlz *sqlx.DB, store *sessions.C
 		specificProductRoute := fmt.Sprintf("/product/{sku:%s}", ValidURLCharactersPattern)
 		r.Post("/product", buildProductCreationHandler(dbxReplaceMePlz))
 		r.Get("/products", buildProductListHandler(dbxReplaceMePlz))
-		r.Get(specificProductRoute, buildSingleProductHandler(db))
+		r.Get(specificProductRoute, buildSingleProductHandler(db, client))
 		r.Patch(specificProductRoute, buildProductUpdateHandler(dbxReplaceMePlz))
-		r.Head(specificProductRoute, buildProductExistenceHandler(db))
+		r.Head(specificProductRoute, buildProductExistenceHandler(db, client))
 		r.Delete(specificProductRoute, buildProductDeletionHandler(dbxReplaceMePlz))
 
 		// Product Options

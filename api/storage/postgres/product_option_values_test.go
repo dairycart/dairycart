@@ -30,11 +30,11 @@ func TestProductOptionValueExists(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
+	client := Postgres{}
 
 	t.Run("existing", func(t *testing.T) {
 		setProductOptionValueExistenceQueryExpectation(t, mock, exampleID, true, nil)
-		client := Postgres{DB: mockDB}
-		actual, err := client.ProductOptionValueExists(exampleID)
+		actual, err := client.ProductOptionValueExists(mockDB, exampleID)
 
 		require.Nil(t, err)
 		require.True(t, actual)
@@ -42,8 +42,7 @@ func TestProductOptionValueExists(t *testing.T) {
 	})
 	t.Run("with no rows found", func(t *testing.T) {
 		setProductOptionValueExistenceQueryExpectation(t, mock, exampleID, true, sql.ErrNoRows)
-		client := Postgres{DB: mockDB}
-		actual, err := client.ProductOptionValueExists(exampleID)
+		actual, err := client.ProductOptionValueExists(mockDB, exampleID)
 
 		require.Nil(t, err)
 		require.False(t, actual)
@@ -51,8 +50,7 @@ func TestProductOptionValueExists(t *testing.T) {
 	})
 	t.Run("with a database error", func(t *testing.T) {
 		setProductOptionValueExistenceQueryExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
-		client := Postgres{DB: mockDB}
-		actual, err := client.ProductOptionValueExists(exampleID)
+		actual, err := client.ProductOptionValueExists(mockDB, exampleID)
 
 		require.NotNil(t, err)
 		require.False(t, actual)
@@ -82,19 +80,18 @@ func setProductOptionValueReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmoc
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
-func TestGetProductOptionValueByID(t *testing.T) {
+func TestGetProductOptionValue(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
 	require.Nil(t, err)
 	defer mockDB.Close()
-
 	exampleID := uint64(1)
 	expected := &models.ProductOptionValue{ID: exampleID}
+	client := Postgres{}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductOptionValueReadQueryExpectation(t, mock, exampleID, expected, nil)
-		client := Postgres{DB: mockDB}
-		actual, err := client.GetProductOptionValue(exampleID)
+		actual, err := client.GetProductOptionValue(mockDB, exampleID)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected productoptionvalue did not match actual productoptionvalue")
@@ -122,12 +119,12 @@ func TestCreateProductOptionValue(t *testing.T) {
 	defer mockDB.Close()
 	expectedID := uint64(1)
 	exampleInput := &models.ProductOptionValue{ID: expectedID}
+	client := Postgres{}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductOptionValueCreationQueryExpectation(t, mock, exampleInput, nil)
 		expected := generateExampleTimeForTests(t)
-		client := Postgres{DB: mockDB}
-		actualID, actualCreationDate, err := client.CreateProductOptionValue(exampleInput)
+		actualID, actualCreationDate, err := client.CreateProductOptionValue(mockDB, exampleInput)
 
 		require.Nil(t, err)
 		require.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
@@ -157,12 +154,12 @@ func TestUpdateProductOptionValueByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleInput := &models.ProductOptionValue{ID: uint64(1)}
+	client := Postgres{}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductOptionValueUpdateQueryExpectation(t, mock, exampleInput, nil)
 		expected := generateExampleTimeForTests(t)
-		client := Postgres{DB: mockDB}
-		actual, err := client.UpdateProductOptionValue(exampleInput)
+		actual, err := client.UpdateProductOptionValue(mockDB, exampleInput)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
@@ -183,12 +180,12 @@ func TestDeleteProductOptionValueByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
+	client := Postgres{}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductOptionValueDeletionQueryExpectation(t, mock, exampleID, nil)
 		expected := generateExampleTimeForTests(t)
-		client := Postgres{DB: mockDB}
-		actual, err := client.DeleteProductOptionValue(exampleID, nil)
+		actual, err := client.DeleteProductOptionValue(mockDB, exampleID)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
@@ -201,8 +198,7 @@ func TestDeleteProductOptionValueByID(t *testing.T) {
 		expected := generateExampleTimeForTests(t)
 		tx, err := mockDB.Begin()
 		require.Nil(t, err, "no error should be returned setting up a transaction in the mock DB")
-		client := Postgres{DB: mockDB}
-		actual, err := client.DeleteProductOptionValue(exampleID, tx)
+		actual, err := client.DeleteProductOptionValue(tx, exampleID)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")

@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-var _ storage.Storage = (*MockDB)(nil)
+var _ storage.Storer = (*MockDB)(nil)
 
 type MockDB struct {
 	mock.Mock

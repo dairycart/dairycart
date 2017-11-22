@@ -7,22 +7,24 @@ import (
 	"github.com/dairycart/dairycart/api/storage/models"
 )
 
-type Storage interface {
-	// Basic Database Stuff
-	Begin() (*sql.Tx, error)
+type Querier interface {
+    Exec(query string, args ...interface{}) (sql.Result, error)
+    QueryRow(query string, args ...interface{}) *sql.Row
+}
 
+type Storer interface {
     {{ range .Schema.Tables }}
     {{- $modelName := pascal (trimSuffix .Name "s") }}
     {{- $isProduct := eq $modelName "Product" }}
     {{- $isDiscount := eq $modelName "Discount" }}
     // {{ pascal .Name }}
-    Get{{ $modelName }}(uint64) (*models.{{ $modelName }}, error)
-    {{ $modelName }}Exists(uint64) (bool, error)
-    Create{{ $modelName }}(*models.{{ $modelName }}) (uint64, time.Time, {{ if $isProduct }}time.Time, {{ end }}error)
-    Update{{ $modelName }}(*models.{{ $modelName }}) (time.Time, error)
-    Delete{{ $modelName }}(uint64, *sql.Tx) (time.Time, error)
-    {{ if $isProduct }}Get{{ $modelName }}BySKU(string) (*models.{{ $modelName }}, error)
-    {{ $modelName }}WithSKUExists(string) (bool, error){{- end -}}
-    {{ if $isDiscount }}Get{{ $modelName }}ByCode(string) (*models.{{ $modelName }}, error){{- end }}
+    Get{{ $modelName }}(Querier, uint64) (*models.{{ $modelName }}, error)
+    {{ $modelName }}Exists(Querier, uint64) (bool, error)
+    Create{{ $modelName }}(Querier, *models.{{ $modelName }}) (uint64, time.Time, {{ if $isProduct }}time.Time, {{ end }}error)
+    Update{{ $modelName }}(Querier, *models.{{ $modelName }}) (time.Time, error)
+    Delete{{ $modelName }}(Querier, uint64) (time.Time, error)
+    {{ if $isProduct }}Get{{ $modelName }}BySKU(Querier, string) (*models.{{ $modelName }}, error)
+    {{ $modelName }}WithSKUExists(Querier, string) (bool, error){{- end -}}
+    {{ if $isDiscount }}Get{{ $modelName }}ByCode(Querier, string) (*models.{{ $modelName }}, error){{- end }}
     {{ end }}
 }

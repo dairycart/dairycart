@@ -13,6 +13,7 @@ import (
 	"github.com/dairycart/dairycart/api/storage/models"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
@@ -520,8 +521,8 @@ func TestProductExistenceHandler(t *testing.T) {
 	exampleSKU := "example"
 	t.Run("with existent product", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
-		testUtil.MockDB.On("ProductWithSKUExists", exampleSKU).Return(true, nil)
-		SetupAPIRoutes(testUtil.Router, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		testUtil.MockDB.On("ProductWithSKUExists", mock.Anything, exampleSKU).Return(true, nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest("HEAD", "/v1/product/example", nil)
 		assert.Nil(t, err)
@@ -531,8 +532,8 @@ func TestProductExistenceHandler(t *testing.T) {
 	})
 	t.Run("with nonexistent product", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
-		testUtil.MockDB.On("ProductWithSKUExists", exampleSKU).Return(false, nil)
-		SetupAPIRoutes(testUtil.Router, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		testUtil.MockDB.On("ProductWithSKUExists", mock.Anything, exampleSKU).Return(false, nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest("HEAD", "/v1/product/example", nil)
 		assert.Nil(t, err)
@@ -542,8 +543,8 @@ func TestProductExistenceHandler(t *testing.T) {
 	})
 	t.Run("with error performing check", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
-		testUtil.MockDB.On("ProductWithSKUExists", exampleSKU).Return(false, generateArbitraryError())
-		SetupAPIRoutes(testUtil.Router, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		testUtil.MockDB.On("ProductWithSKUExists", mock.Anything, exampleSKU).Return(false, generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest("HEAD", "/v1/product/example", nil)
 		assert.Nil(t, err)
@@ -578,8 +579,8 @@ func TestProductRetrievalHandler(t *testing.T) {
 	t.Run("optimal conditions", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 
-		testUtil.MockDB.On("GetProductBySKU", exampleProduct.SKU).Return(exampleProduct, nil)
-		SetupAPIRoutes(testUtil.Router, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).Return(exampleProduct, nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), nil)
 		assert.Nil(t, err)
@@ -591,8 +592,8 @@ func TestProductRetrievalHandler(t *testing.T) {
 	t.Run("with DB error", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 
-		testUtil.MockDB.On("GetProductBySKU", exampleProduct.SKU).Return(exampleProduct, generateArbitraryError())
-		SetupAPIRoutes(testUtil.Router, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).Return(exampleProduct, generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), nil)
 		assert.Nil(t, err)
@@ -604,8 +605,8 @@ func TestProductRetrievalHandler(t *testing.T) {
 	t.Run("with nonexistent product", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 
-		testUtil.MockDB.On("GetProductBySKU", exampleProduct.SKU).Return(exampleProduct, sql.ErrNoRows)
-		SetupAPIRoutes(testUtil.Router, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).Return(exampleProduct, sql.ErrNoRows)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), nil)
 		assert.Nil(t, err)

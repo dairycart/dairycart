@@ -1,11 +1,13 @@
 package postgres
 
 import (
-	"database/sql"
-
 	"github.com/dairycart/dairycart/api/storage"
 )
 
-var _ storage.Storage = (*Postgres)(nil)
+var _ storage.Storer = (*Postgres)(nil)
 
-type Postgres struct{ *sql.DB }
+type Postgres struct{}
+
+func NewPostgres() *Postgres {
+	return &Postgres{}
+}

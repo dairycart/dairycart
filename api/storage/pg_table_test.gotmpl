@@ -19,6 +19,7 @@ import(
 
 {{- $isProduct := eq $modelName "Product" }}
 {{- $isDiscount := eq $modelName "Discount" }}
+{{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
 
 {{ $readQueryVarName := printf "%sSelectionQuery" ( camel $modelName ) -}}
 {{ $creationQueryVarName := printf "%sCreationQuery" ( toLower $modelName ) -}}
@@ -46,14 +47,14 @@ func TestGet{{ $modelName }}BySKU(t *testing.T) {
 	mockDB, mock, err := sqlmock.New()
     require.Nil(t, err)
     defer mockDB.Close()
+    client := Postgres{}
 
     exampleSKU := "hello"
     expected := &models.{{ $modelName }}{SKU: exampleSKU}
 
     t.Run("optimal behavior", func(t *testing.T) {
         set{{ $modelName }}ReadQueryExpectationBySKU(t, mock, exampleSKU, expected, nil)
-        client := Postgres{DB: mockDB}
-        actual, err := client.Get{{ $modelName }}BySKU(exampleSKU)
+        actual, err := client.Get{{ $modelName }}BySKU(mockDB, exampleSKU)
 
         require.Nil(t, err)
         require.Equal(t, expected, actual, "expected {{ toLower $modelName }} did not match actual {{ toLower $modelName }}")
@@ -83,14 +84,14 @@ func TestGet{{ $modelName }}ByCode(t *testing.T) {
 	mockDB, mock, err := sqlmock.New()
     require.Nil(t, err)
     defer mockDB.Close()
+    client := Postgres{}
 
     exampleCode := "welcome"
     expected := &models.{{ $modelName }}{Code: exampleCode}
 
     t.Run("optimal behavior", func(t *testing.T) {
         set{{ $modelName }}ReadQueryExpectationByCode(t, mock, exampleCode, expected, nil)
-        client := Postgres{DB: mockDB}
-        actual, err := client.Get{{ $modelName }}ByCode(exampleCode)
+        actual, err := client.Get{{ $modelName }}ByCode(mockDB, exampleCode)
 
         require.Nil(t, err)
         require.Equal(t, expected, actual, "expected {{ toLower $modelName }} did not match actual {{ toLower $modelName }}")
@@ -118,11 +119,11 @@ func Test{{ $modelName }}WithSKUExists(t *testing.T) {
     require.Nil(t, err)
     defer mockDB.Close()
     exampleSKU := "example"
+    client := Postgres{}
 
     t.Run("existing", func(t *testing.T) {
         set{{ $modelName }}WithSKUExistenceQueryExpectation(t, mock, exampleSKU, true, nil)
-        client := Postgres{DB: mockDB}
-        actual, err := client.{{ $modelName }}WithSKUExists(exampleSKU)
+        actual, err := client.{{ $modelName }}WithSKUExists(mockDB, exampleSKU)
 
         require.Nil(t, err)
         require.True(t, actual)
@@ -130,8 +131,7 @@ func Test{{ $modelName }}WithSKUExists(t *testing.T) {
     })
     t.Run("with no rows found", func(t *testing.T) {
         set{{ $modelName }}WithSKUExistenceQueryExpectation(t, mock, exampleSKU, true, sql.ErrNoRows)
-        client := Postgres{DB: mockDB}
-        actual, err := client.{{ $modelName }}WithSKUExists(exampleSKU)
+        actual, err := client.{{ $modelName }}WithSKUExists(mockDB, exampleSKU)
 
         require.Nil(t, err)
         require.False(t, actual)
@@ -139,8 +139,7 @@ func Test{{ $modelName }}WithSKUExists(t *testing.T) {
     })
     t.Run("with a database error", func(t *testing.T) {
         set{{ $modelName }}WithSKUExistenceQueryExpectation(t, mock, exampleSKU, true, errors.New("pineapple on pizza"))
-        client := Postgres{DB: mockDB}
-        actual, err := client.{{ $modelName }}WithSKUExists(exampleSKU)
+        actual, err := client.{{ $modelName }}WithSKUExists(mockDB, exampleSKU)
 
         require.NotNil(t, err)
         require.False(t, actual)
@@ -166,11 +165,11 @@ func Test{{ $modelName }}Exists(t *testing.T) {
     require.Nil(t, err)
     defer mockDB.Close()
     exampleID := uint64(1)
+    client := Postgres{}
 
     t.Run("existing", func(t *testing.T) {
         set{{ $modelName }}ExistenceQueryExpectation(t, mock, exampleID, true, nil)
-        client := Postgres{DB: mockDB}
-        actual, err := client.{{ $modelName }}Exists(exampleID)
+        actual, err := client.{{ $modelName }}Exists(mockDB, exampleID)
 
         require.Nil(t, err)
         require.True(t, actual)
@@ -178,8 +177,7 @@ func Test{{ $modelName }}Exists(t *testing.T) {
     })
     t.Run("with no rows found", func(t *testing.T) {
         set{{ $modelName }}ExistenceQueryExpectation(t, mock, exampleID, true, sql.ErrNoRows)
-        client := Postgres{DB: mockDB}
-        actual, err := client.{{ $modelName }}Exists(exampleID)
+        actual, err := client.{{ $modelName }}Exists(mockDB, exampleID)
 
         require.Nil(t, err)
         require.False(t, actual)
@@ -187,8 +185,7 @@ func Test{{ $modelName }}Exists(t *testing.T) {
     })
     t.Run("with a database error", func(t *testing.T) {
         set{{ $modelName }}ExistenceQueryExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
-        client := Postgres{DB: mockDB}
-        actual, err := client.{{ $modelName }}Exists(exampleID)
+        actual, err := client.{{ $modelName }}Exists(mockDB, exampleID)
 
         require.NotNil(t, err)
         require.False(t, actual)
@@ -210,19 +207,18 @@ func set{{ $modelName }}ReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock,
     mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
-func TestGet{{ $modelName }}ByID(t *testing.T) {
+func TestGet{{ $modelName }}(t *testing.T) {
     t.Parallel()
 	mockDB, mock, err := sqlmock.New()
     require.Nil(t, err)
     defer mockDB.Close()
-
     exampleID := uint64(1)
     expected := &models.{{ $modelName }}{ID: exampleID}
+    client := Postgres{}
 
     t.Run("optimal behavior", func(t *testing.T) {
         set{{ $modelName }}ReadQueryExpectation(t, mock, exampleID, expected, nil)
-        client := Postgres{DB: mockDB}
-        actual, err := client.Get{{ $modelName }}(exampleID)
+        actual, err := client.Get{{ $modelName }}(mockDB, exampleID)
 
         require.Nil(t, err)
         require.Equal(t, expected, actual, "expected {{ toLower $modelName }} did not match actual {{ toLower $modelName }}")
@@ -253,12 +249,12 @@ func TestCreate{{ $modelName }}(t *testing.T) {
     defer mockDB.Close()
     expectedID := uint64(1)
     exampleInput := &models.{{ $modelName }}{ID: expectedID}
+        client := Postgres{}
 
     t.Run("optimal behavior", func(t *testing.T) {
         set{{ $modelName }}CreationQueryExpectation(t, mock, exampleInput, nil)
         expected := generateExampleTimeForTests(t)
-        client := Postgres{DB: mockDB}
-        actualID, actualCreationDate,{{- if $isProduct }} actualAvailableOn, {{ end }}err := client.Create{{ $modelName }}(exampleInput)
+        actualID, actualCreationDate,{{- if $isProduct }} actualAvailableOn, {{ end }}err := client.Create{{ $modelName }}(mockDB, exampleInput)
 
         require.Nil(t, err)
         require.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
@@ -291,12 +287,12 @@ func TestUpdate{{ $modelName }}ByID(t *testing.T) {
     require.Nil(t, err)
     defer mockDB.Close()
     exampleInput := &models.{{ $modelName }}{ID: uint64(1)}
+    client := Postgres{}
 
     t.Run("optimal behavior", func(t *testing.T) {
         set{{ $modelName }}UpdateQueryExpectation(t, mock, exampleInput, nil)
         expected := generateExampleTimeForTests(t)
-        client := Postgres{DB: mockDB}
-        actual, err := client.Update{{ $modelName }}(exampleInput)
+        actual, err := client.Update{{ $modelName }}(mockDB, exampleInput)
 
         require.Nil(t, err)
         require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
@@ -318,12 +314,12 @@ func TestDelete{{ $modelName }}ByID(t *testing.T) {
     require.Nil(t, err)
     defer mockDB.Close()
     exampleID := uint64(1)
+    client := Postgres{}
 
     t.Run("optimal behavior", func(t *testing.T) {
         set{{ $modelName }}DeletionQueryExpectation(t, mock, exampleID, nil)
         expected := generateExampleTimeForTests(t)
-        client := Postgres{DB: mockDB}
-        actual, err := client.Delete{{ $modelName }}(exampleID, nil)
+        actual, err := client.Delete{{ $modelName }}(mockDB, exampleID)
 
         require.Nil(t, err)
         require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
@@ -336,11 +332,53 @@ func TestDelete{{ $modelName }}ByID(t *testing.T) {
         expected := generateExampleTimeForTests(t)
         tx, err := mockDB.Begin()
         require.Nil(t, err, "no error should be returned setting up a transaction in the mock DB")
-        client := Postgres{DB: mockDB}
-        actual, err := client.Delete{{ $modelName }}(exampleID, tx)
+        actual, err := client.Delete{{ $modelName }}(tx, exampleID)
 
         require.Nil(t, err)
         require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
         require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
 }
+
+{{ if $isProductVariantBridge }}
+{{ $pvbDeletionQueryVarName := printf "%sDeletionQueryByProductID" ( camel $modelName ) -}}
+
+func set{{ $modelName }}DeletionByProductIDQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
+    t.Helper()
+    query := formatQueryForSQLMock({{ $pvbDeletionQueryVarName }})
+    exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
+    mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
+}
+
+func TestDelete{{ $modelName }}ByProductID(t *testing.T) {
+    t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+    require.Nil(t, err)
+    defer mockDB.Close()
+    exampleID := uint64(1)
+    client := Postgres{}
+
+    t.Run("optimal behavior", func(t *testing.T) {
+        set{{ $modelName }}DeletionByProductIDQueryExpectation(t, mock, exampleID, nil)
+        expected := generateExampleTimeForTests(t)
+        actual, err := client.Delete{{ $modelName }}ByProductID(mockDB, exampleID)
+
+        require.Nil(t, err)
+        require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+
+    t.Run("with transaction", func(t *testing.T) {
+        mock.ExpectBegin()
+        set{{ $modelName }}DeletionByProductIDQueryExpectation(t, mock, exampleID, nil)
+        expected := generateExampleTimeForTests(t)
+        tx, err := mockDB.Begin()
+        require.Nil(t, err, "no error should be returned setting up a transaction in the mock DB")
+        actual, err := client.Delete{{ $modelName }}ByProductID(tx, exampleID)
+
+        require.Nil(t, err)
+        require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+}
+{{- end }}

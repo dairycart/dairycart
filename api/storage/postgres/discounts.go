@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairycart/api/storage/models"
 )
 
@@ -31,19 +32,19 @@ const discountQueryByCode = `
         sku = $1
 `
 
-func (pg *Postgres) GetDiscountByCode(code string) (*models.Discount, error) {
+func (pg *Postgres) GetDiscountByCode(db storage.Querier, code string) (*models.Discount, error) {
 	d := &models.Discount{}
 
-	err := pg.DB.QueryRow(discountQueryByCode, code).Scan(&d.ID, &d.Name, &d.DiscountType, &d.Amount, &d.StartsOn, &d.ExpiresOn, &d.RequiresCode, &d.Code, &d.LimitedUse, &d.NumberOfUses, &d.LoginRequired, &d.CreatedOn, &d.UpdatedOn, &d.ArchivedOn)
+	err := db.QueryRow(discountQueryByCode, code).Scan(&d.ID, &d.Name, &d.DiscountType, &d.Amount, &d.StartsOn, &d.ExpiresOn, &d.RequiresCode, &d.Code, &d.LimitedUse, &d.NumberOfUses, &d.LoginRequired, &d.CreatedOn, &d.UpdatedOn, &d.ArchivedOn)
 	return d, err
 }
 
 const discountExistenceQuery = `SELECT EXISTS(SELECT id FROM discounts WHERE id = $1 and archived_on IS NULL);`
 
-func (pg *Postgres) DiscountExists(id uint64) (bool, error) {
+func (pg *Postgres) DiscountExists(db storage.Querier, id uint64) (bool, error) {
 	var exists string
 
-	err := pg.DB.QueryRow(discountExistenceQuery, id).Scan(&exists)
+	err := db.QueryRow(discountExistenceQuery, id).Scan(&exists)
 	if err == sql.ErrNoRows {
 		return false, nil
 	} else if err != nil {
@@ -77,10 +78,10 @@ const discountSelectionQuery = `
         id = $1
 `
 
-func (pg *Postgres) GetDiscount(id uint64) (*models.Discount, error) {
+func (pg *Postgres) GetDiscount(db storage.Querier, id uint64) (*models.Discount, error) {
 	d := &models.Discount{}
 
-	err := pg.DB.QueryRow(discountSelectionQuery, id).Scan(&d.ID, &d.Name, &d.DiscountType, &d.Amount, &d.StartsOn, &d.ExpiresOn, &d.RequiresCode, &d.Code, &d.LimitedUse, &d.NumberOfUses, &d.LoginRequired, &d.CreatedOn, &d.UpdatedOn, &d.ArchivedOn)
+	err := db.QueryRow(discountSelectionQuery, id).Scan(&d.ID, &d.Name, &d.DiscountType, &d.Amount, &d.StartsOn, &d.ExpiresOn, &d.RequiresCode, &d.Code, &d.LimitedUse, &d.NumberOfUses, &d.LoginRequired, &d.CreatedOn, &d.UpdatedOn, &d.ArchivedOn)
 
 	return d, err
 }
@@ -98,12 +99,12 @@ const discountCreationQuery = `
         id, created_on;
 `
 
-func (pg *Postgres) CreateDiscount(nu *models.Discount) (uint64, time.Time, error) {
+func (pg *Postgres) CreateDiscount(db storage.Querier, nu *models.Discount) (uint64, time.Time, error) {
 	var (
 		createdID uint64
 		createdAt time.Time
 	)
-	err := pg.DB.QueryRow(discountCreationQuery, &nu.Name, &nu.DiscountType, &nu.Amount, &nu.StartsOn, &nu.ExpiresOn, &nu.RequiresCode, &nu.Code, &nu.LimitedUse, &nu.NumberOfUses, &nu.LoginRequired).Scan(&createdID, &createdAt)
+	err := db.QueryRow(discountCreationQuery, &nu.Name, &nu.DiscountType, &nu.Amount, &nu.StartsOn, &nu.ExpiresOn, &nu.RequiresCode, &nu.Code, &nu.LimitedUse, &nu.NumberOfUses, &nu.LoginRequired).Scan(&createdID, &createdAt)
 
 	return createdID, createdAt, err
 }
@@ -126,9 +127,9 @@ const discountUpdateQuery = `
     RETURNING updated_on;
 `
 
-func (pg *Postgres) UpdateDiscount(updated *models.Discount) (time.Time, error) {
+func (pg *Postgres) UpdateDiscount(db storage.Querier, updated *models.Discount) (time.Time, error) {
 	var t time.Time
-	err := pg.DB.QueryRow(discountUpdateQuery, &updated.Name, &updated.DiscountType, &updated.Amount, &updated.StartsOn, &updated.ExpiresOn, &updated.RequiresCode, &updated.Code, &updated.LimitedUse, &updated.NumberOfUses, &updated.LoginRequired, &updated.ID).Scan(&t)
+	err := db.QueryRow(discountUpdateQuery, &updated.Name, &updated.DiscountType, &updated.Amount, &updated.StartsOn, &updated.ExpiresOn, &updated.RequiresCode, &updated.Code, &updated.LimitedUse, &updated.NumberOfUses, &updated.LoginRequired, &updated.ID).Scan(&t)
 	return t, err
 }
 
@@ -139,11 +140,7 @@ const discountDeletionQuery = `
     RETURNING archived_on
 `
 
-func (pg *Postgres) DeleteDiscount(id uint64, tx *sql.Tx) (t time.Time, err error) {
-	if tx != nil {
-		err = tx.QueryRow(discountDeletionQuery, id).Scan(&t)
-	} else {
-		err = pg.DB.QueryRow(discountDeletionQuery, id).Scan(&t)
-	}
-	return
+func (pg *Postgres) DeleteDiscount(db storage.Querier, id uint64) (t time.Time, err error) {
+	err = db.QueryRow(discountDeletionQuery, id).Scan(&t)
+	return t, err
 }

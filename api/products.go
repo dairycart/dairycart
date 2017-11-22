@@ -130,12 +130,12 @@ type ProductCreationInput struct {
 	Options []*ProductOptionCreationInput `json:"options"`
 }
 
-func buildProductExistenceHandler(db storage.Storage) http.HandlerFunc {
+func buildProductExistenceHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
 	// ProductExistenceHandler handles requests to check if a sku exists
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := chi.URLParam(req, "sku")
 
-		productExists, err := db.ProductWithSKUExists(sku)
+		productExists, err := client.ProductWithSKUExists(db, sku)
 		if err != nil {
 			respondThatRowDoesNotExist(req, res, "product", sku)
 			return
@@ -156,12 +156,12 @@ func retrieveProductFromDB(db *sqlx.DB, sku string) (Product, error) {
 	return p, err
 }
 
-func buildSingleProductHandler(db storage.Storage) http.HandlerFunc {
+func buildSingleProductHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
 	// SingleProductHandler is a request handler that returns a single Product
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := chi.URLParam(req, "sku")
 
-		product, err := db.GetProductBySKU(sku)
+		product, err := client.GetProductBySKU(db, sku)
 		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "product", sku)
 			return

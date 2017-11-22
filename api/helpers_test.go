@@ -49,6 +49,7 @@ func init() {
 //                                                   //
 ///////////////////////////////////////////////////////
 
+// TODO: Rename much of these fields as well as this entire struct
 type TestUtil struct {
 	Response *httptest.ResponseRecorder
 	Router   *chi.Mux
@@ -102,7 +103,7 @@ func setupTestVariables(t *testing.T) *TestUtil {
 	store := sessions.NewCookieStore([]byte(secret))
 
 	router := chi.NewRouter()
-	SetupAPIRoutes(router, dbx, store, dairymockDB)
+	SetupAPIRoutes(router, mockDB, dbx, store, dairymockDB)
 
 	return &TestUtil{
 		Response: httptest.NewRecorder(),
@@ -116,26 +117,12 @@ func setupTestVariables(t *testing.T) *TestUtil {
 
 func setupTestVariablesWithMock(t *testing.T) *TestUtil {
 	t.Helper()
-	mockDB, _, err := sqlmock.New()
-	assert.Nil(t, err)
-	dbx := sqlx.NewDb(mockDB, "postgres")
-	dbx.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
-	dairymockDB := &dairymock.MockDB{}
-
-	secret := os.Getenv("DAIRYSECRET")
-	if len(secret) < 32 {
-		log.Fatalf("Something is up with your app secret: `%s`", secret)
-	}
-	store := sessions.NewCookieStore([]byte(secret))
-
-	router := chi.NewRouter()
-
 	return &TestUtil{
 		Response: httptest.NewRecorder(),
-		Router:   router,
-		MockDB:   dairymockDB,
-		DB:       dbx,
-		Store:    store,
+		Router:   chi.NewRouter(),
+		PlainDB:  &sql.DB{},
+		MockDB:   &dairymock.MockDB{},
+		Store:    sessions.NewCookieStore([]byte(os.Getenv("DAIRYSECRET"))),
 	}
 }
 

@@ -30,11 +30,11 @@ func TestProductVariantBridgeExists(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
+	client := Postgres{}
 
 	t.Run("existing", func(t *testing.T) {
 		setProductVariantBridgeExistenceQueryExpectation(t, mock, exampleID, true, nil)
-		client := Postgres{DB: mockDB}
-		actual, err := client.ProductVariantBridgeExists(exampleID)
+		actual, err := client.ProductVariantBridgeExists(mockDB, exampleID)
 
 		require.Nil(t, err)
 		require.True(t, actual)
@@ -42,8 +42,7 @@ func TestProductVariantBridgeExists(t *testing.T) {
 	})
 	t.Run("with no rows found", func(t *testing.T) {
 		setProductVariantBridgeExistenceQueryExpectation(t, mock, exampleID, true, sql.ErrNoRows)
-		client := Postgres{DB: mockDB}
-		actual, err := client.ProductVariantBridgeExists(exampleID)
+		actual, err := client.ProductVariantBridgeExists(mockDB, exampleID)
 
 		require.Nil(t, err)
 		require.False(t, actual)
@@ -51,8 +50,7 @@ func TestProductVariantBridgeExists(t *testing.T) {
 	})
 	t.Run("with a database error", func(t *testing.T) {
 		setProductVariantBridgeExistenceQueryExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
-		client := Postgres{DB: mockDB}
-		actual, err := client.ProductVariantBridgeExists(exampleID)
+		actual, err := client.ProductVariantBridgeExists(mockDB, exampleID)
 
 		require.NotNil(t, err)
 		require.False(t, actual)
@@ -80,19 +78,18 @@ func setProductVariantBridgeReadQueryExpectation(t *testing.T, mock sqlmock.Sqlm
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
-func TestGetProductVariantBridgeByID(t *testing.T) {
+func TestGetProductVariantBridge(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
 	require.Nil(t, err)
 	defer mockDB.Close()
-
 	exampleID := uint64(1)
 	expected := &models.ProductVariantBridge{ID: exampleID}
+	client := Postgres{}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductVariantBridgeReadQueryExpectation(t, mock, exampleID, expected, nil)
-		client := Postgres{DB: mockDB}
-		actual, err := client.GetProductVariantBridge(exampleID)
+		actual, err := client.GetProductVariantBridge(mockDB, exampleID)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected productvariantbridge did not match actual productvariantbridge")
@@ -120,12 +117,12 @@ func TestCreateProductVariantBridge(t *testing.T) {
 	defer mockDB.Close()
 	expectedID := uint64(1)
 	exampleInput := &models.ProductVariantBridge{ID: expectedID}
+	client := Postgres{}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductVariantBridgeCreationQueryExpectation(t, mock, exampleInput, nil)
 		expected := generateExampleTimeForTests(t)
-		client := Postgres{DB: mockDB}
-		actualID, actualCreationDate, err := client.CreateProductVariantBridge(exampleInput)
+		actualID, actualCreationDate, err := client.CreateProductVariantBridge(mockDB, exampleInput)
 
 		require.Nil(t, err)
 		require.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
@@ -155,12 +152,12 @@ func TestUpdateProductVariantBridgeByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleInput := &models.ProductVariantBridge{ID: uint64(1)}
+	client := Postgres{}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductVariantBridgeUpdateQueryExpectation(t, mock, exampleInput, nil)
 		expected := generateExampleTimeForTests(t)
-		client := Postgres{DB: mockDB}
-		actual, err := client.UpdateProductVariantBridge(exampleInput)
+		actual, err := client.UpdateProductVariantBridge(mockDB, exampleInput)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
@@ -181,12 +178,12 @@ func TestDeleteProductVariantBridgeByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
+	client := Postgres{}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductVariantBridgeDeletionQueryExpectation(t, mock, exampleID, nil)
 		expected := generateExampleTimeForTests(t)
-		client := Postgres{DB: mockDB}
-		actual, err := client.DeleteProductVariantBridge(exampleID, nil)
+		actual, err := client.DeleteProductVariantBridge(mockDB, exampleID)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
@@ -199,8 +196,46 @@ func TestDeleteProductVariantBridgeByID(t *testing.T) {
 		expected := generateExampleTimeForTests(t)
 		tx, err := mockDB.Begin()
 		require.Nil(t, err, "no error should be returned setting up a transaction in the mock DB")
-		client := Postgres{DB: mockDB}
-		actual, err := client.DeleteProductVariantBridge(exampleID, tx)
+		actual, err := client.DeleteProductVariantBridge(tx, exampleID)
+
+		require.Nil(t, err)
+		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
+
+func setProductVariantBridgeDeletionByProductIDQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
+	t.Helper()
+	query := formatQueryForSQLMock(productVariantBridgeDeletionQueryByProductID)
+	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
+	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
+}
+
+func TestDeleteProductVariantBridgeByProductID(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	require.Nil(t, err)
+	defer mockDB.Close()
+	exampleID := uint64(1)
+	client := Postgres{}
+
+	t.Run("optimal behavior", func(t *testing.T) {
+		setProductVariantBridgeDeletionByProductIDQueryExpectation(t, mock, exampleID, nil)
+		expected := generateExampleTimeForTests(t)
+		actual, err := client.DeleteProductVariantBridgeByProductID(mockDB, exampleID)
+
+		require.Nil(t, err)
+		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+
+	t.Run("with transaction", func(t *testing.T) {
+		mock.ExpectBegin()
+		setProductVariantBridgeDeletionByProductIDQueryExpectation(t, mock, exampleID, nil)
+		expected := generateExampleTimeForTests(t)
+		tx, err := mockDB.Begin()
+		require.Nil(t, err, "no error should be returned setting up a transaction in the mock DB")
+		actual, err := client.DeleteProductVariantBridgeByProductID(tx, exampleID)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")

@@ -96,10 +96,10 @@ func main() {
 	logrus.SetLevel(logrus.InfoLevel)
 
 	var (
-		db    storage.Storage
-		dbx   *sqlx.DB
-		rawDB *sql.DB
-		err   error
+		storageClient storage.Storer
+		dbx           *sqlx.DB
+		rawDB         *sql.DB
+		err           error
 	)
 
 	// Connect to the database
@@ -111,7 +111,7 @@ func main() {
 		if err != nil {
 			logrus.Fatalf("error encountered connecting to database: %v", err)
 		}
-		db = &postgres.Postgres{DB: rawDB}
+		storageClient = &postgres.Postgres{}
 		dbx = sqlx.NewDb(rawDB, "postgres")
 		dbx.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
 
@@ -134,7 +134,7 @@ func main() {
 	v1APIRouter.Use(middleware.RequestID)
 	v1APIRouter.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{Logger: log.New(os.Stdout, "", log.LstdFlags)}))
 
-	SetupAPIRoutes(v1APIRouter, dbx, store, db)
+	SetupAPIRoutes(v1APIRouter, rawDB, dbx, store, storageClient)
 
 	// serve 'em up a lil' sauce
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "healthy!") })

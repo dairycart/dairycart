@@ -1,9 +1,9 @@
 package dairymock
 
 import (
-    "database/sql"
     "time"
 
+	"github.com/dairycart/dairycart/api/storage"
     "github.com/dairycart/dairycart/api/storage/models"
 )
 
@@ -12,47 +12,47 @@ import (
 {{- $isDiscount := eq $modelName "Discount" }}
 
 {{- if $isProduct }}
-func (m *MockDB) Get{{ $modelName }}BySKU(sku string) (*models.{{ $modelName }}, error) {
-    args := m.Called(sku)
+func (m *MockDB) Get{{ $modelName }}BySKU(db storage.Querier, sku string) (*models.{{ $modelName }}, error) {
+    args := m.Called(db, sku)
 	return args.Get(0).(*models.{{ $modelName }}), args.Error(1)
 }
 {{- end }}
 
 {{- if $isDiscount }}
-func (m *MockDB) Get{{ $modelName }}ByCode(code string) (*models.{{ $modelName }}, error) {
-    args := m.Called(code)
+func (m *MockDB) Get{{ $modelName }}ByCode(db storage.Querier, code string) (*models.{{ $modelName }}, error) {
+    args := m.Called(db, code)
 	return args.Get(0).(*models.{{ $modelName }}), args.Error(1)
 }
 {{- end }}
 
 {{- if $isProduct }}
-func (m *MockDB) {{ $modelName }}WithSKUExists(sku string) (bool, error) {
-    args := m.Called(sku)
+func (m *MockDB) {{ $modelName }}WithSKUExists(db storage.Querier, sku string) (bool, error) {
+    args := m.Called(db, sku)
 	return args.Bool(0), args.Error(1)
 }
 {{- end }}
 
-func (m *MockDB) {{ $modelName }}Exists(id uint64) (bool, error) {
-    args := m.Called(id)
+func (m *MockDB) {{ $modelName }}Exists(db storage.Querier, id uint64) (bool, error) {
+    args := m.Called(db, id)
 	return args.Bool(0), args.Error(1)
 }
 
-func (m *MockDB) Get{{ $modelName }}(id uint64) (*models.{{ $modelName }}, error) {
-    args := m.Called(id)
+func (m *MockDB) Get{{ $modelName }}(db storage.Querier, id uint64) (*models.{{ $modelName }}, error) {
+    args := m.Called(db, id)
 	return args.Get(0).(*models.{{ $modelName }}), args.Error(1)
 }
 
-func (m *MockDB) Create{{ $modelName }}(nu *models.{{ $modelName }}) (uint64, time.Time, {{- if $isProduct }}time.Time, {{ end }}error) {
-    args := m.Called(nu)
+func (m *MockDB) Create{{ $modelName }}(db storage.Querier, nu *models.{{ $modelName }}) (uint64, time.Time, {{- if $isProduct }}time.Time, {{ end }}error) {
+    args := m.Called(db, nu)
 	return args.Get(0).(uint64), args.Get(1).(time.Time), {{ if $isProduct -}}args.Get(2).(time.Time), args.Error(3){{ else }}args.Error(2){{ end -}}
 }
 
-func (m *MockDB) Update{{ $modelName }}(updated *models.{{ $modelName }}) (time.Time, error) {
-    args := m.Called(updated)
+func (m *MockDB) Update{{ $modelName }}(db storage.Querier, updated *models.{{ $modelName }}) (time.Time, error) {
+    args := m.Called(db, updated)
 	return args.Get(0).(time.Time), args.Error(1)
 }
 
-func (m *MockDB) Delete{{ $modelName }}(id uint64, tx *sql.Tx) (time.Time, error) {
-    args := m.Called(id, tx)
+func (m *MockDB) Delete{{ $modelName }}(db storage.Querier, id uint64) (time.Time, error) {
+    args := m.Called(db, id)
 	return args.Get(0).(time.Time), args.Error(1)
 }

@@ -7,73 +7,76 @@ import (
 	"github.com/dairycart/dairycart/api/storage/models"
 )
 
-type Storage interface {
-	// Basic Database Stuff
-	Begin() (*sql.Tx, error)
+type Querier interface {
+	Exec(query string, args ...interface{}) (sql.Result, error)
+	QueryRow(query string, args ...interface{}) *sql.Row
+}
 
-	// LoginAttempts
-	GetLoginAttempt(uint64) (*models.LoginAttempt, error)
-	LoginAttemptExists(uint64) (bool, error)
-	CreateLoginAttempt(*models.LoginAttempt) (uint64, time.Time, error)
-	UpdateLoginAttempt(*models.LoginAttempt) (time.Time, error)
-	DeleteLoginAttempt(uint64, *sql.Tx) (time.Time, error)
-
-	// ProductRoots
-	GetProductRoot(uint64) (*models.ProductRoot, error)
-	ProductRootExists(uint64) (bool, error)
-	CreateProductRoot(*models.ProductRoot) (uint64, time.Time, error)
-	UpdateProductRoot(*models.ProductRoot) (time.Time, error)
-	DeleteProductRoot(uint64, *sql.Tx) (time.Time, error)
-
-	// ProductVariantBridge
-	GetProductVariantBridge(uint64) (*models.ProductVariantBridge, error)
-	ProductVariantBridgeExists(uint64) (bool, error)
-	CreateProductVariantBridge(*models.ProductVariantBridge) (uint64, time.Time, error)
-	UpdateProductVariantBridge(*models.ProductVariantBridge) (time.Time, error)
-	DeleteProductVariantBridge(uint64, *sql.Tx) (time.Time, error)
-
-	// Users
-	GetUser(uint64) (*models.User, error)
-	UserExists(uint64) (bool, error)
-	CreateUser(*models.User) (uint64, time.Time, error)
-	UpdateUser(*models.User) (time.Time, error)
-	DeleteUser(uint64, *sql.Tx) (time.Time, error)
-
-	// ProductOptions
-	GetProductOption(uint64) (*models.ProductOption, error)
-	ProductOptionExists(uint64) (bool, error)
-	CreateProductOption(*models.ProductOption) (uint64, time.Time, error)
-	UpdateProductOption(*models.ProductOption) (time.Time, error)
-	DeleteProductOption(uint64, *sql.Tx) (time.Time, error)
-
-	// Products
-	GetProduct(uint64) (*models.Product, error)
-	ProductExists(uint64) (bool, error)
-	CreateProduct(*models.Product) (uint64, time.Time, time.Time, error)
-	UpdateProduct(*models.Product) (time.Time, error)
-	DeleteProduct(uint64, *sql.Tx) (time.Time, error)
-	GetProductBySKU(string) (*models.Product, error)
-	ProductWithSKUExists(string) (bool, error)
-
-	// Discounts
-	GetDiscount(uint64) (*models.Discount, error)
-	DiscountExists(uint64) (bool, error)
-	CreateDiscount(*models.Discount) (uint64, time.Time, error)
-	UpdateDiscount(*models.Discount) (time.Time, error)
-	DeleteDiscount(uint64, *sql.Tx) (time.Time, error)
-	GetDiscountByCode(string) (*models.Discount, error)
+type Storer interface {
 
 	// PasswordResetTokens
-	GetPasswordResetToken(uint64) (*models.PasswordResetToken, error)
-	PasswordResetTokenExists(uint64) (bool, error)
-	CreatePasswordResetToken(*models.PasswordResetToken) (uint64, time.Time, error)
-	UpdatePasswordResetToken(*models.PasswordResetToken) (time.Time, error)
-	DeletePasswordResetToken(uint64, *sql.Tx) (time.Time, error)
+	GetPasswordResetToken(Querier, uint64) (*models.PasswordResetToken, error)
+	PasswordResetTokenExists(Querier, uint64) (bool, error)
+	CreatePasswordResetToken(Querier, *models.PasswordResetToken) (uint64, time.Time, error)
+	UpdatePasswordResetToken(Querier, *models.PasswordResetToken) (time.Time, error)
+	DeletePasswordResetToken(Querier, uint64) (time.Time, error)
+
+	// ProductRoots
+	GetProductRoot(Querier, uint64) (*models.ProductRoot, error)
+	ProductRootExists(Querier, uint64) (bool, error)
+	CreateProductRoot(Querier, *models.ProductRoot) (uint64, time.Time, error)
+	UpdateProductRoot(Querier, *models.ProductRoot) (time.Time, error)
+	DeleteProductRoot(Querier, uint64) (time.Time, error)
 
 	// ProductOptionValues
-	GetProductOptionValue(uint64) (*models.ProductOptionValue, error)
-	ProductOptionValueExists(uint64) (bool, error)
-	CreateProductOptionValue(*models.ProductOptionValue) (uint64, time.Time, error)
-	UpdateProductOptionValue(*models.ProductOptionValue) (time.Time, error)
-	DeleteProductOptionValue(uint64, *sql.Tx) (time.Time, error)
+	GetProductOptionValue(Querier, uint64) (*models.ProductOptionValue, error)
+	ProductOptionValueExists(Querier, uint64) (bool, error)
+	CreateProductOptionValue(Querier, *models.ProductOptionValue) (uint64, time.Time, error)
+	UpdateProductOptionValue(Querier, *models.ProductOptionValue) (time.Time, error)
+	DeleteProductOptionValue(Querier, uint64) (time.Time, error)
+
+	// Users
+	GetUser(Querier, uint64) (*models.User, error)
+	UserExists(Querier, uint64) (bool, error)
+	CreateUser(Querier, *models.User) (uint64, time.Time, error)
+	UpdateUser(Querier, *models.User) (time.Time, error)
+	DeleteUser(Querier, uint64) (time.Time, error)
+
+	// Products
+	GetProduct(Querier, uint64) (*models.Product, error)
+	ProductExists(Querier, uint64) (bool, error)
+	CreateProduct(Querier, *models.Product) (uint64, time.Time, time.Time, error)
+	UpdateProduct(Querier, *models.Product) (time.Time, error)
+	DeleteProduct(Querier, uint64) (time.Time, error)
+	GetProductBySKU(Querier, string) (*models.Product, error)
+	ProductWithSKUExists(Querier, string) (bool, error)
+
+	// LoginAttempts
+	GetLoginAttempt(Querier, uint64) (*models.LoginAttempt, error)
+	LoginAttemptExists(Querier, uint64) (bool, error)
+	CreateLoginAttempt(Querier, *models.LoginAttempt) (uint64, time.Time, error)
+	UpdateLoginAttempt(Querier, *models.LoginAttempt) (time.Time, error)
+	DeleteLoginAttempt(Querier, uint64) (time.Time, error)
+
+	// ProductOptions
+	GetProductOption(Querier, uint64) (*models.ProductOption, error)
+	ProductOptionExists(Querier, uint64) (bool, error)
+	CreateProductOption(Querier, *models.ProductOption) (uint64, time.Time, error)
+	UpdateProductOption(Querier, *models.ProductOption) (time.Time, error)
+	DeleteProductOption(Querier, uint64) (time.Time, error)
+
+	// ProductVariantBridge
+	GetProductVariantBridge(Querier, uint64) (*models.ProductVariantBridge, error)
+	ProductVariantBridgeExists(Querier, uint64) (bool, error)
+	CreateProductVariantBridge(Querier, *models.ProductVariantBridge) (uint64, time.Time, error)
+	UpdateProductVariantBridge(Querier, *models.ProductVariantBridge) (time.Time, error)
+	DeleteProductVariantBridge(Querier, uint64) (time.Time, error)
+
+	// Discounts
+	GetDiscount(Querier, uint64) (*models.Discount, error)
+	DiscountExists(Querier, uint64) (bool, error)
+	CreateDiscount(Querier, *models.Discount) (uint64, time.Time, error)
+	UpdateDiscount(Querier, *models.Discount) (time.Time, error)
+	DeleteDiscount(Querier, uint64) (time.Time, error)
+	GetDiscountByCode(Querier, string) (*models.Discount, error)
 }

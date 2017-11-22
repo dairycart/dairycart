@@ -57,14 +57,14 @@ func TestGetDiscountByCode(t *testing.T) {
 	mockDB, mock, err := sqlmock.New()
 	require.Nil(t, err)
 	defer mockDB.Close()
+	client := Postgres{}
 
 	exampleCode := "welcome"
 	expected := &models.Discount{Code: exampleCode}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setDiscountReadQueryExpectationByCode(t, mock, exampleCode, expected, nil)
-		client := Postgres{DB: mockDB}
-		actual, err := client.GetDiscountByCode(exampleCode)
+		actual, err := client.GetDiscountByCode(mockDB, exampleCode)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected discount did not match actual discount")
@@ -88,11 +88,11 @@ func TestDiscountExists(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
+	client := Postgres{}
 
 	t.Run("existing", func(t *testing.T) {
 		setDiscountExistenceQueryExpectation(t, mock, exampleID, true, nil)
-		client := Postgres{DB: mockDB}
-		actual, err := client.DiscountExists(exampleID)
+		actual, err := client.DiscountExists(mockDB, exampleID)
 
 		require.Nil(t, err)
 		require.True(t, actual)
@@ -100,8 +100,7 @@ func TestDiscountExists(t *testing.T) {
 	})
 	t.Run("with no rows found", func(t *testing.T) {
 		setDiscountExistenceQueryExpectation(t, mock, exampleID, true, sql.ErrNoRows)
-		client := Postgres{DB: mockDB}
-		actual, err := client.DiscountExists(exampleID)
+		actual, err := client.DiscountExists(mockDB, exampleID)
 
 		require.Nil(t, err)
 		require.False(t, actual)
@@ -109,8 +108,7 @@ func TestDiscountExists(t *testing.T) {
 	})
 	t.Run("with a database error", func(t *testing.T) {
 		setDiscountExistenceQueryExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
-		client := Postgres{DB: mockDB}
-		actual, err := client.DiscountExists(exampleID)
+		actual, err := client.DiscountExists(mockDB, exampleID)
 
 		require.NotNil(t, err)
 		require.False(t, actual)
@@ -156,19 +154,18 @@ func setDiscountReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
-func TestGetDiscountByID(t *testing.T) {
+func TestGetDiscount(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
 	require.Nil(t, err)
 	defer mockDB.Close()
-
 	exampleID := uint64(1)
 	expected := &models.Discount{ID: exampleID}
+	client := Postgres{}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setDiscountReadQueryExpectation(t, mock, exampleID, expected, nil)
-		client := Postgres{DB: mockDB}
-		actual, err := client.GetDiscount(exampleID)
+		actual, err := client.GetDiscount(mockDB, exampleID)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected discount did not match actual discount")
@@ -204,12 +201,12 @@ func TestCreateDiscount(t *testing.T) {
 	defer mockDB.Close()
 	expectedID := uint64(1)
 	exampleInput := &models.Discount{ID: expectedID}
+	client := Postgres{}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setDiscountCreationQueryExpectation(t, mock, exampleInput, nil)
 		expected := generateExampleTimeForTests(t)
-		client := Postgres{DB: mockDB}
-		actualID, actualCreationDate, err := client.CreateDiscount(exampleInput)
+		actualID, actualCreationDate, err := client.CreateDiscount(mockDB, exampleInput)
 
 		require.Nil(t, err)
 		require.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
@@ -247,12 +244,12 @@ func TestUpdateDiscountByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleInput := &models.Discount{ID: uint64(1)}
+	client := Postgres{}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setDiscountUpdateQueryExpectation(t, mock, exampleInput, nil)
 		expected := generateExampleTimeForTests(t)
-		client := Postgres{DB: mockDB}
-		actual, err := client.UpdateDiscount(exampleInput)
+		actual, err := client.UpdateDiscount(mockDB, exampleInput)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
@@ -273,12 +270,12 @@ func TestDeleteDiscountByID(t *testing.T) {
 	require.Nil(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
+	client := Postgres{}
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setDiscountDeletionQueryExpectation(t, mock, exampleID, nil)
 		expected := generateExampleTimeForTests(t)
-		client := Postgres{DB: mockDB}
-		actual, err := client.DeleteDiscount(exampleID, nil)
+		actual, err := client.DeleteDiscount(mockDB, exampleID)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
@@ -291,8 +288,7 @@ func TestDeleteDiscountByID(t *testing.T) {
 		expected := generateExampleTimeForTests(t)
 		tx, err := mockDB.Begin()
 		require.Nil(t, err, "no error should be returned setting up a transaction in the mock DB")
-		client := Postgres{DB: mockDB}
-		actual, err := client.DeleteDiscount(exampleID, tx)
+		actual, err := client.DeleteDiscount(tx, exampleID)
 
 		require.Nil(t, err)
 		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
