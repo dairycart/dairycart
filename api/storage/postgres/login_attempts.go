@@ -6,6 +6,8 @@ import (
 
 	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairycart/api/storage/models"
+
+	"github.com/Masterminds/squirrel"
 )
 
 const loginAttemptExistenceQuery = `SELECT EXISTS(SELECT id FROM login_attempts WHERE id = $1 and archived_on IS NULL);`
@@ -43,6 +45,56 @@ func (pg *postgres) GetLoginAttempt(db storage.Querier, id uint64) (*models.Logi
 	err := db.QueryRow(loginAttemptSelectionQuery, id).Scan(&l.ID, &l.Username, &l.Successful, &l.CreatedOn)
 
 	return l, err
+}
+
+func buildLoginAttemptListRetrievalQuery(qf *models.QueryFilter) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		Select(
+			"id",
+			"username",
+			"successful",
+			"created_on",
+		).
+		From("login_attempts").
+		Where(squirrel.Eq{"archived_on": nil}).
+		Limit(uint64(qf.Limit))
+
+	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, qf, true)
+
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}
+
+func (pg *postgres) GetLoginAttemptList(db storage.Querier, qf *models.QueryFilter) ([]models.LoginAttempt, error) {
+	var list []models.LoginAttempt
+
+	query, args := buildLoginAttemptListRetrievalQuery(qf)
+
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var l models.LoginAttempt
+		err := rows.Scan(
+			&l.ID,
+			&l.Username,
+			&l.Successful,
+			&l.CreatedOn,
+		)
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, l)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return list, err
 }
 
 const loginattemptCreationQuery = `

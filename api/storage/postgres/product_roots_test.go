@@ -176,6 +176,159 @@ func TestGetProductRoot(t *testing.T) {
 	})
 }
 
+func setProductRootListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.ProductRoot, rowErr error, err error) {
+	exampleRows := sqlmock.NewRows([]string{
+		"id",
+		"name",
+		"subtitle",
+		"description",
+		"sku_prefix",
+		"manufacturer",
+		"brand",
+		"taxable",
+		"cost",
+		"product_weight",
+		"product_height",
+		"product_width",
+		"product_length",
+		"package_weight",
+		"package_height",
+		"package_width",
+		"package_length",
+		"quantity_per_package",
+		"available_on",
+		"created_on",
+		"updated_on",
+		"archived_on",
+	}).AddRow(
+		example.ID,
+		example.Name,
+		example.Subtitle,
+		example.Description,
+		example.SKUPrefix,
+		example.Manufacturer,
+		example.Brand,
+		example.Taxable,
+		example.Cost,
+		example.ProductWeight,
+		example.ProductHeight,
+		example.ProductWidth,
+		example.ProductLength,
+		example.PackageWeight,
+		example.PackageHeight,
+		example.PackageWidth,
+		example.PackageLength,
+		example.QuantityPerPackage,
+		example.AvailableOn,
+		example.CreatedOn,
+		example.UpdatedOn,
+		example.ArchivedOn,
+	).AddRow(
+		example.ID,
+		example.Name,
+		example.Subtitle,
+		example.Description,
+		example.SKUPrefix,
+		example.Manufacturer,
+		example.Brand,
+		example.Taxable,
+		example.Cost,
+		example.ProductWeight,
+		example.ProductHeight,
+		example.ProductWidth,
+		example.ProductLength,
+		example.PackageWeight,
+		example.PackageHeight,
+		example.PackageWidth,
+		example.PackageLength,
+		example.QuantityPerPackage,
+		example.AvailableOn,
+		example.CreatedOn,
+		example.UpdatedOn,
+		example.ArchivedOn,
+	).AddRow(
+		example.ID,
+		example.Name,
+		example.Subtitle,
+		example.Description,
+		example.SKUPrefix,
+		example.Manufacturer,
+		example.Brand,
+		example.Taxable,
+		example.Cost,
+		example.ProductWeight,
+		example.ProductHeight,
+		example.ProductWidth,
+		example.ProductLength,
+		example.PackageWeight,
+		example.PackageHeight,
+		example.PackageWidth,
+		example.PackageLength,
+		example.QuantityPerPackage,
+		example.AvailableOn,
+		example.CreatedOn,
+		example.UpdatedOn,
+		example.ArchivedOn,
+	).RowError(1, rowErr)
+
+	query, _ := buildProductRootListRetrievalQuery(qf)
+
+	mock.ExpectQuery(formatQueryForSQLMock(query)).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
+func TestGetProductRootList(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	require.Nil(t, err)
+	defer mockDB.Close()
+	exampleID := uint64(1)
+	example := &models.ProductRoot{ID: exampleID}
+	client := NewPostgres()
+	exampleQF := &models.QueryFilter{
+		Limit: 25,
+		Page:  1,
+	}
+
+	t.Run("optimal behavior", func(t *testing.T) {
+		setProductRootListReadQueryExpectation(t, mock, exampleQF, example, nil, nil)
+		actual, err := client.GetProductRootList(mockDB, exampleQF)
+
+		require.Nil(t, err)
+		require.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with error executing query", func(t *testing.T) {
+		setProductRootListReadQueryExpectation(t, mock, exampleQF, example, nil, errors.New("pineapple on pizza"))
+		actual, err := client.GetProductRootList(mockDB, exampleQF)
+
+		require.NotNil(t, err)
+		require.Nil(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with error scanning values", func(t *testing.T) {
+		exampleRows := sqlmock.NewRows([]string{"things"}).AddRow("stuff")
+		query, _ := buildProductRootListRetrievalQuery(exampleQF)
+		mock.ExpectQuery(formatQueryForSQLMock(query)).
+			WillReturnRows(exampleRows)
+
+		actual, err := client.GetProductRootList(mockDB, exampleQF)
+
+		require.NotNil(t, err)
+		require.Nil(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with with row errors", func(t *testing.T) {
+		setProductRootListReadQueryExpectation(t, mock, exampleQF, example, errors.New("pineapple on pizza"), nil)
+		actual, err := client.GetProductRootList(mockDB, exampleQF)
+
+		require.NotNil(t, err)
+		require.Nil(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
+
 func setProductRootCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.ProductRoot, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productrootCreationQuery)

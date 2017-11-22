@@ -273,6 +273,79 @@ func TestGet{{ $modelName }}(t *testing.T) {
     })
 }
 
+func set{{ $modelName }}ListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.{{ $modelName }}, rowErr error, err error) {
+    exampleRows := sqlmock.NewRows([]string{
+        {{ range $_, $x := .Table.Columns.DBNames }}{{ printf "\"%s\"" $x }},
+        {{ end }}
+    }).AddRow(
+        {{ range $_, $x := .Table.Columns.DBNames }}example.{{ if or (eq (toLower $x) "sku") (eq (toLower $x) "upc") }}{{ toUpper $x }}{{ else if eq (toLower $x) "sku_prefix" }}SKUPrefix{{ else }}{{ pascal $x }}{{ end }},
+        {{ end }}
+    ).AddRow(
+        {{ range $_, $x := .Table.Columns.DBNames }}example.{{ if or (eq (toLower $x) "sku") (eq (toLower $x) "upc") }}{{ toUpper $x }}{{ else if eq (toLower $x) "sku_prefix" }}SKUPrefix{{ else }}{{ pascal $x }}{{ end }},
+        {{ end }}
+    ).AddRow(
+        {{ range $_, $x := .Table.Columns.DBNames }}example.{{ if or (eq (toLower $x) "sku") (eq (toLower $x) "upc") }}{{ toUpper $x }}{{ else if eq (toLower $x) "sku_prefix" }}SKUPrefix{{ else }}{{ pascal $x }}{{ end }},
+        {{ end }}
+    ).RowError(1, rowErr)
+
+    query, _ := build{{ $modelName }}ListRetrievalQuery(qf)
+
+	mock.ExpectQuery(formatQueryForSQLMock(query)).
+        WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
+func TestGet{{ $modelName }}List(t *testing.T) {
+    t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+    require.Nil(t, err)
+    defer mockDB.Close()
+    exampleID := uint64(1)
+    example := &models.{{ $modelName }}{ID: exampleID}
+    client := NewPostgres()
+        exampleQF := &models.QueryFilter{
+            Limit: 25,
+            Page: 1,
+        }
+
+    t.Run("optimal behavior", func(t *testing.T) {
+        set{{ $modelName }}ListReadQueryExpectation(t, mock, exampleQF, example, nil, nil)
+        actual, err := client.Get{{ $modelName }}List(mockDB, exampleQF)
+
+        require.Nil(t, err)
+        require.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+    t.Run("with error executing query", func(t *testing.T) {
+        set{{ $modelName }}ListReadQueryExpectation(t, mock, exampleQF, example, nil, errors.New("pineapple on pizza"))
+        actual, err := client.Get{{ $modelName }}List(mockDB, exampleQF)
+
+        require.NotNil(t, err)
+        require.Nil(t, actual)
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+    t.Run("with error scanning values", func(t *testing.T) {
+        exampleRows := sqlmock.NewRows([]string{"things"}).AddRow("stuff")
+        query, _ := build{{ $modelName }}ListRetrievalQuery(exampleQF)
+        mock.ExpectQuery(formatQueryForSQLMock(query)).
+            WillReturnRows(exampleRows)
+
+        actual, err := client.Get{{ $modelName }}List(mockDB, exampleQF)
+
+        require.NotNil(t, err)
+        require.Nil(t, actual)
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+    t.Run("with with row errors", func(t *testing.T) {
+        set{{ $modelName }}ListReadQueryExpectation(t, mock, exampleQF, example, errors.New("pineapple on pizza"), nil)
+        actual, err := client.Get{{ $modelName }}List(mockDB, exampleQF)
+
+        require.NotNil(t, err)
+        require.Nil(t, actual)
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+}
+
 {{ $creationColumns := .Table.Columns.Names.Except (makeSlice "id" "created_on" "archived_on" "updated_on") -}}
 func set{{ $modelName }}CreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.{{ $modelName }}, err error) {
     t.Helper()

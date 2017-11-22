@@ -100,6 +100,95 @@ func TestGetPasswordResetToken(t *testing.T) {
 	})
 }
 
+func setPasswordResetTokenListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.PasswordResetToken, rowErr error, err error) {
+	exampleRows := sqlmock.NewRows([]string{
+		"id",
+		"user_id",
+		"token",
+		"created_on",
+		"expires_on",
+		"password_reset_on",
+	}).AddRow(
+		example.ID,
+		example.UserID,
+		example.Token,
+		example.CreatedOn,
+		example.ExpiresOn,
+		example.PasswordResetOn,
+	).AddRow(
+		example.ID,
+		example.UserID,
+		example.Token,
+		example.CreatedOn,
+		example.ExpiresOn,
+		example.PasswordResetOn,
+	).AddRow(
+		example.ID,
+		example.UserID,
+		example.Token,
+		example.CreatedOn,
+		example.ExpiresOn,
+		example.PasswordResetOn,
+	).RowError(1, rowErr)
+
+	query, _ := buildPasswordResetTokenListRetrievalQuery(qf)
+
+	mock.ExpectQuery(formatQueryForSQLMock(query)).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
+func TestGetPasswordResetTokenList(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	require.Nil(t, err)
+	defer mockDB.Close()
+	exampleID := uint64(1)
+	example := &models.PasswordResetToken{ID: exampleID}
+	client := NewPostgres()
+	exampleQF := &models.QueryFilter{
+		Limit: 25,
+		Page:  1,
+	}
+
+	t.Run("optimal behavior", func(t *testing.T) {
+		setPasswordResetTokenListReadQueryExpectation(t, mock, exampleQF, example, nil, nil)
+		actual, err := client.GetPasswordResetTokenList(mockDB, exampleQF)
+
+		require.Nil(t, err)
+		require.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with error executing query", func(t *testing.T) {
+		setPasswordResetTokenListReadQueryExpectation(t, mock, exampleQF, example, nil, errors.New("pineapple on pizza"))
+		actual, err := client.GetPasswordResetTokenList(mockDB, exampleQF)
+
+		require.NotNil(t, err)
+		require.Nil(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with error scanning values", func(t *testing.T) {
+		exampleRows := sqlmock.NewRows([]string{"things"}).AddRow("stuff")
+		query, _ := buildPasswordResetTokenListRetrievalQuery(exampleQF)
+		mock.ExpectQuery(formatQueryForSQLMock(query)).
+			WillReturnRows(exampleRows)
+
+		actual, err := client.GetPasswordResetTokenList(mockDB, exampleQF)
+
+		require.NotNil(t, err)
+		require.Nil(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with with row errors", func(t *testing.T) {
+		setPasswordResetTokenListReadQueryExpectation(t, mock, exampleQF, example, errors.New("pineapple on pizza"), nil)
+		actual, err := client.GetPasswordResetTokenList(mockDB, exampleQF)
+
+		require.NotNil(t, err)
+		require.Nil(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
+
 func setPasswordResetTokenCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.PasswordResetToken, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(passwordresettokenCreationQuery)

@@ -6,6 +6,8 @@ import (
 
 	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairycart/api/storage/models"
+
+	"github.com/Masterminds/squirrel"
 )
 
 const discountQueryByCode = `
@@ -84,6 +86,76 @@ func (pg *postgres) GetDiscount(db storage.Querier, id uint64) (*models.Discount
 	err := db.QueryRow(discountSelectionQuery, id).Scan(&d.ID, &d.Name, &d.DiscountType, &d.Amount, &d.StartsOn, &d.ExpiresOn, &d.RequiresCode, &d.Code, &d.LimitedUse, &d.NumberOfUses, &d.LoginRequired, &d.CreatedOn, &d.UpdatedOn, &d.ArchivedOn)
 
 	return d, err
+}
+
+func buildDiscountListRetrievalQuery(qf *models.QueryFilter) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		Select(
+			"id",
+			"name",
+			"discount_type",
+			"amount",
+			"starts_on",
+			"expires_on",
+			"requires_code",
+			"code",
+			"limited_use",
+			"number_of_uses",
+			"login_required",
+			"created_on",
+			"updated_on",
+			"archived_on",
+		).
+		From("discounts").
+		Where(squirrel.Eq{"archived_on": nil}).
+		Limit(uint64(qf.Limit))
+
+	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, qf, true)
+
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}
+
+func (pg *postgres) GetDiscountList(db storage.Querier, qf *models.QueryFilter) ([]models.Discount, error) {
+	var list []models.Discount
+
+	query, args := buildDiscountListRetrievalQuery(qf)
+
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var d models.Discount
+		err := rows.Scan(
+			&d.ID,
+			&d.Name,
+			&d.DiscountType,
+			&d.Amount,
+			&d.StartsOn,
+			&d.ExpiresOn,
+			&d.RequiresCode,
+			&d.Code,
+			&d.LimitedUse,
+			&d.NumberOfUses,
+			&d.LoginRequired,
+			&d.CreatedOn,
+			&d.UpdatedOn,
+			&d.ArchivedOn,
+		)
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, d)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return list, err
 }
 
 const discountCreationQuery = `

@@ -17,6 +17,11 @@ func (m *MockDB) GetPasswordResetToken(db storage.Querier, id uint64) (*models.P
 	return args.Get(0).(*models.PasswordResetToken), args.Error(1)
 }
 
+func (m *MockDB) GetPasswordResetTokenList(db storage.Querier, qf *models.QueryFilter) ([]models.PasswordResetToken, error) {
+	args := m.Called(db, qf)
+	return args.Get(0).([]models.PasswordResetToken), args.Error(1)
+}
+
 func (m *MockDB) CreatePasswordResetToken(db storage.Querier, nu *models.PasswordResetToken) (uint64, time.Time, error) {
 	args := m.Called(db, nu)
 	return args.Get(0).(uint64), args.Get(1).(time.Time), args.Error(2)

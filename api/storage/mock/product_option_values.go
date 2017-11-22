@@ -17,6 +17,11 @@ func (m *MockDB) GetProductOptionValue(db storage.Querier, id uint64) (*models.P
 	return args.Get(0).(*models.ProductOptionValue), args.Error(1)
 }
 
+func (m *MockDB) GetProductOptionValueList(db storage.Querier, qf *models.QueryFilter) ([]models.ProductOptionValue, error) {
+	args := m.Called(db, qf)
+	return args.Get(0).([]models.ProductOptionValue), args.Error(1)
+}
+
 func (m *MockDB) CreateProductOptionValue(db storage.Querier, nu *models.ProductOptionValue) (uint64, time.Time, error) {
 	args := m.Called(db, nu)
 	return args.Get(0).(uint64), args.Get(1).(time.Time), args.Error(2)

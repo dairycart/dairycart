@@ -6,6 +6,8 @@ import (
 
 	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairycart/api/storage/models"
+
+	"github.com/Masterminds/squirrel"
 )
 
 const userExistenceQuery = `SELECT EXISTS(SELECT id FROM users WHERE id = $1 and archived_on IS NULL);`
@@ -51,6 +53,72 @@ func (pg *postgres) GetUser(db storage.Querier, id uint64) (*models.User, error)
 	err := db.QueryRow(userSelectionQuery, id).Scan(&u.ID, &u.FirstName, &u.LastName, &u.Username, &u.Email, &u.Password, &u.Salt, &u.IsAdmin, &u.PasswordLastChangedOn, &u.CreatedOn, &u.UpdatedOn, &u.ArchivedOn)
 
 	return u, err
+}
+
+func buildUserListRetrievalQuery(qf *models.QueryFilter) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		Select(
+			"id",
+			"first_name",
+			"last_name",
+			"username",
+			"email",
+			"password",
+			"salt",
+			"is_admin",
+			"password_last_changed_on",
+			"created_on",
+			"updated_on",
+			"archived_on",
+		).
+		From("users").
+		Where(squirrel.Eq{"archived_on": nil}).
+		Limit(uint64(qf.Limit))
+
+	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, qf, true)
+
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}
+
+func (pg *postgres) GetUserList(db storage.Querier, qf *models.QueryFilter) ([]models.User, error) {
+	var list []models.User
+
+	query, args := buildUserListRetrievalQuery(qf)
+
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var u models.User
+		err := rows.Scan(
+			&u.ID,
+			&u.FirstName,
+			&u.LastName,
+			&u.Username,
+			&u.Email,
+			&u.Password,
+			&u.Salt,
+			&u.IsAdmin,
+			&u.PasswordLastChangedOn,
+			&u.CreatedOn,
+			&u.UpdatedOn,
+			&u.ArchivedOn,
+		)
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, u)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return list, err
 }
 
 const userCreationQuery = `

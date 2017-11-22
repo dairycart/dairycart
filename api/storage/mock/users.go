@@ -17,6 +17,11 @@ func (m *MockDB) GetUser(db storage.Querier, id uint64) (*models.User, error) {
 	return args.Get(0).(*models.User), args.Error(1)
 }
 
+func (m *MockDB) GetUserList(db storage.Querier, qf *models.QueryFilter) ([]models.User, error) {
+	args := m.Called(db, qf)
+	return args.Get(0).([]models.User), args.Error(1)
+}
+
 func (m *MockDB) CreateUser(db storage.Querier, nu *models.User) (uint64, time.Time, error) {
 	args := m.Called(db, nu)
 	return args.Get(0).(uint64), args.Get(1).(time.Time), args.Error(2)

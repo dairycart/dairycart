@@ -9,6 +9,7 @@ import (
 
 type Querier interface {
     Exec(query string, args ...interface{}) (sql.Result, error)
+    Query(query string, args ...interface{}) (*sql.Rows, error)
     QueryRow(query string, args ...interface{}) *sql.Row
 }
 
@@ -21,6 +22,7 @@ type Storer interface {
     {{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
     // {{ pascal .Name }}
     Get{{ $modelName }}(Querier, uint64) (*models.{{ $modelName }}, error)
+    Get{{ $modelName }}List(Querier, *models.QueryFilter) ([]models.{{ $modelName }}, error)
     {{ $modelName }}Exists(Querier, uint64) (bool, error)
     Create{{ $modelName }}(Querier, *models.{{ $modelName }}) (uint64, time.Time, {{ if $isProduct }}time.Time, {{ end }}error)
     Update{{ $modelName }}(Querier, *models.{{ $modelName }}) (time.Time, error)

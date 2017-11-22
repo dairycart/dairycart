@@ -17,6 +17,11 @@ func (m *MockDB) GetLoginAttempt(db storage.Querier, id uint64) (*models.LoginAt
 	return args.Get(0).(*models.LoginAttempt), args.Error(1)
 }
 
+func (m *MockDB) GetLoginAttemptList(db storage.Querier, qf *models.QueryFilter) ([]models.LoginAttempt, error) {
+	args := m.Called(db, qf)
+	return args.Get(0).([]models.LoginAttempt), args.Error(1)
+}
+
 func (m *MockDB) CreateLoginAttempt(db storage.Querier, nu *models.LoginAttempt) (uint64, time.Time, error) {
 	args := m.Called(db, nu)
 	return args.Get(0).(uint64), args.Get(1).(time.Time), args.Error(2)

@@ -100,6 +100,95 @@ func TestGetProductOption(t *testing.T) {
 	})
 }
 
+func setProductOptionListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.ProductOption, rowErr error, err error) {
+	exampleRows := sqlmock.NewRows([]string{
+		"id",
+		"name",
+		"product_root_id",
+		"created_on",
+		"updated_on",
+		"archived_on",
+	}).AddRow(
+		example.ID,
+		example.Name,
+		example.ProductRootID,
+		example.CreatedOn,
+		example.UpdatedOn,
+		example.ArchivedOn,
+	).AddRow(
+		example.ID,
+		example.Name,
+		example.ProductRootID,
+		example.CreatedOn,
+		example.UpdatedOn,
+		example.ArchivedOn,
+	).AddRow(
+		example.ID,
+		example.Name,
+		example.ProductRootID,
+		example.CreatedOn,
+		example.UpdatedOn,
+		example.ArchivedOn,
+	).RowError(1, rowErr)
+
+	query, _ := buildProductOptionListRetrievalQuery(qf)
+
+	mock.ExpectQuery(formatQueryForSQLMock(query)).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
+func TestGetProductOptionList(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	require.Nil(t, err)
+	defer mockDB.Close()
+	exampleID := uint64(1)
+	example := &models.ProductOption{ID: exampleID}
+	client := NewPostgres()
+	exampleQF := &models.QueryFilter{
+		Limit: 25,
+		Page:  1,
+	}
+
+	t.Run("optimal behavior", func(t *testing.T) {
+		setProductOptionListReadQueryExpectation(t, mock, exampleQF, example, nil, nil)
+		actual, err := client.GetProductOptionList(mockDB, exampleQF)
+
+		require.Nil(t, err)
+		require.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with error executing query", func(t *testing.T) {
+		setProductOptionListReadQueryExpectation(t, mock, exampleQF, example, nil, errors.New("pineapple on pizza"))
+		actual, err := client.GetProductOptionList(mockDB, exampleQF)
+
+		require.NotNil(t, err)
+		require.Nil(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with error scanning values", func(t *testing.T) {
+		exampleRows := sqlmock.NewRows([]string{"things"}).AddRow("stuff")
+		query, _ := buildProductOptionListRetrievalQuery(exampleQF)
+		mock.ExpectQuery(formatQueryForSQLMock(query)).
+			WillReturnRows(exampleRows)
+
+		actual, err := client.GetProductOptionList(mockDB, exampleQF)
+
+		require.NotNil(t, err)
+		require.Nil(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with with row errors", func(t *testing.T) {
+		setProductOptionListReadQueryExpectation(t, mock, exampleQF, example, errors.New("pineapple on pizza"), nil)
+		actual, err := client.GetProductOptionList(mockDB, exampleQF)
+
+		require.NotNil(t, err)
+		require.Nil(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
+
 func setProductOptionCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.ProductOption, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productoptionCreationQuery)

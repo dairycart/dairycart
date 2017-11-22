@@ -112,6 +112,119 @@ func TestGetUser(t *testing.T) {
 	})
 }
 
+func setUserListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.User, rowErr error, err error) {
+	exampleRows := sqlmock.NewRows([]string{
+		"id",
+		"first_name",
+		"last_name",
+		"username",
+		"email",
+		"password",
+		"salt",
+		"is_admin",
+		"password_last_changed_on",
+		"created_on",
+		"updated_on",
+		"archived_on",
+	}).AddRow(
+		example.ID,
+		example.FirstName,
+		example.LastName,
+		example.Username,
+		example.Email,
+		example.Password,
+		example.Salt,
+		example.IsAdmin,
+		example.PasswordLastChangedOn,
+		example.CreatedOn,
+		example.UpdatedOn,
+		example.ArchivedOn,
+	).AddRow(
+		example.ID,
+		example.FirstName,
+		example.LastName,
+		example.Username,
+		example.Email,
+		example.Password,
+		example.Salt,
+		example.IsAdmin,
+		example.PasswordLastChangedOn,
+		example.CreatedOn,
+		example.UpdatedOn,
+		example.ArchivedOn,
+	).AddRow(
+		example.ID,
+		example.FirstName,
+		example.LastName,
+		example.Username,
+		example.Email,
+		example.Password,
+		example.Salt,
+		example.IsAdmin,
+		example.PasswordLastChangedOn,
+		example.CreatedOn,
+		example.UpdatedOn,
+		example.ArchivedOn,
+	).RowError(1, rowErr)
+
+	query, _ := buildUserListRetrievalQuery(qf)
+
+	mock.ExpectQuery(formatQueryForSQLMock(query)).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
+func TestGetUserList(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	require.Nil(t, err)
+	defer mockDB.Close()
+	exampleID := uint64(1)
+	example := &models.User{ID: exampleID}
+	client := NewPostgres()
+	exampleQF := &models.QueryFilter{
+		Limit: 25,
+		Page:  1,
+	}
+
+	t.Run("optimal behavior", func(t *testing.T) {
+		setUserListReadQueryExpectation(t, mock, exampleQF, example, nil, nil)
+		actual, err := client.GetUserList(mockDB, exampleQF)
+
+		require.Nil(t, err)
+		require.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with error executing query", func(t *testing.T) {
+		setUserListReadQueryExpectation(t, mock, exampleQF, example, nil, errors.New("pineapple on pizza"))
+		actual, err := client.GetUserList(mockDB, exampleQF)
+
+		require.NotNil(t, err)
+		require.Nil(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with error scanning values", func(t *testing.T) {
+		exampleRows := sqlmock.NewRows([]string{"things"}).AddRow("stuff")
+		query, _ := buildUserListRetrievalQuery(exampleQF)
+		mock.ExpectQuery(formatQueryForSQLMock(query)).
+			WillReturnRows(exampleRows)
+
+		actual, err := client.GetUserList(mockDB, exampleQF)
+
+		require.NotNil(t, err)
+		require.Nil(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with with row errors", func(t *testing.T) {
+		setUserListReadQueryExpectation(t, mock, exampleQF, example, errors.New("pineapple on pizza"), nil)
+		actual, err := client.GetUserList(mockDB, exampleQF)
+
+		require.NotNil(t, err)
+		require.Nil(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
+
 func setUserCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.User, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(userCreationQuery)

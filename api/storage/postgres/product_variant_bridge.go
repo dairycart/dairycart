@@ -7,6 +7,8 @@ import (
 
 	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairycart/api/storage/models"
+
+	"github.com/Masterminds/squirrel"
 )
 
 const productVariantBridgeExistenceQuery = `SELECT EXISTS(SELECT id FROM product_variant_bridge WHERE id = $1 and archived_on IS NULL);`
@@ -45,6 +47,58 @@ func (pg *postgres) GetProductVariantBridge(db storage.Querier, id uint64) (*mod
 	err := db.QueryRow(productVariantBridgeSelectionQuery, id).Scan(&p.ID, &p.ProductID, &p.ProductOptionValueID, &p.CreatedOn, &p.ArchivedOn)
 
 	return p, err
+}
+
+func buildProductVariantBridgeListRetrievalQuery(qf *models.QueryFilter) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		Select(
+			"id",
+			"product_id",
+			"product_option_value_id",
+			"created_on",
+			"archived_on",
+		).
+		From("product_variant_bridge").
+		Where(squirrel.Eq{"archived_on": nil}).
+		Limit(uint64(qf.Limit))
+
+	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, qf, true)
+
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}
+
+func (pg *postgres) GetProductVariantBridgeList(db storage.Querier, qf *models.QueryFilter) ([]models.ProductVariantBridge, error) {
+	var list []models.ProductVariantBridge
+
+	query, args := buildProductVariantBridgeListRetrievalQuery(qf)
+
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var p models.ProductVariantBridge
+		err := rows.Scan(
+			&p.ID,
+			&p.ProductID,
+			&p.ProductOptionValueID,
+			&p.CreatedOn,
+			&p.ArchivedOn,
+		)
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, p)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return list, err
 }
 
 const productvariantbridgeCreationQuery = `

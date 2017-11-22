@@ -6,6 +6,8 @@ import (
 
 	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairycart/api/storage/models"
+
+	"github.com/Masterminds/squirrel"
 )
 
 const productOptionExistenceQuery = `SELECT EXISTS(SELECT id FROM product_options WHERE id = $1 and archived_on IS NULL);`
@@ -45,6 +47,60 @@ func (pg *postgres) GetProductOption(db storage.Querier, id uint64) (*models.Pro
 	err := db.QueryRow(productOptionSelectionQuery, id).Scan(&p.ID, &p.Name, &p.ProductRootID, &p.CreatedOn, &p.UpdatedOn, &p.ArchivedOn)
 
 	return p, err
+}
+
+func buildProductOptionListRetrievalQuery(qf *models.QueryFilter) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		Select(
+			"id",
+			"name",
+			"product_root_id",
+			"created_on",
+			"updated_on",
+			"archived_on",
+		).
+		From("product_options").
+		Where(squirrel.Eq{"archived_on": nil}).
+		Limit(uint64(qf.Limit))
+
+	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, qf, true)
+
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}
+
+func (pg *postgres) GetProductOptionList(db storage.Querier, qf *models.QueryFilter) ([]models.ProductOption, error) {
+	var list []models.ProductOption
+
+	query, args := buildProductOptionListRetrievalQuery(qf)
+
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var p models.ProductOption
+		err := rows.Scan(
+			&p.ID,
+			&p.Name,
+			&p.ProductRootID,
+			&p.CreatedOn,
+			&p.UpdatedOn,
+			&p.ArchivedOn,
+		)
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, p)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return list, err
 }
 
 const productoptionCreationQuery = `

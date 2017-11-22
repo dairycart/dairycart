@@ -17,6 +17,11 @@ func (m *MockDB) GetProductVariantBridge(db storage.Querier, id uint64) (*models
 	return args.Get(0).(*models.ProductVariantBridge), args.Error(1)
 }
 
+func (m *MockDB) GetProductVariantBridgeList(db storage.Querier, qf *models.QueryFilter) ([]models.ProductVariantBridge, error) {
+	args := m.Called(db, qf)
+	return args.Get(0).([]models.ProductVariantBridge), args.Error(1)
+}
+
 func (m *MockDB) CreateProductVariantBridge(db storage.Querier, nu *models.ProductVariantBridge) (uint64, time.Time, error) {
 	args := m.Called(db, nu)
 	return args.Get(0).(uint64), args.Get(1).(time.Time), args.Error(2)

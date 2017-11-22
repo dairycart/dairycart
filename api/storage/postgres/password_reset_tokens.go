@@ -6,6 +6,8 @@ import (
 
 	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairycart/api/storage/models"
+
+	"github.com/Masterminds/squirrel"
 )
 
 const passwordResetTokenExistenceQuery = `SELECT EXISTS(SELECT id FROM password_reset_tokens WHERE id = $1 and archived_on IS NULL);`
@@ -45,6 +47,60 @@ func (pg *postgres) GetPasswordResetToken(db storage.Querier, id uint64) (*model
 	err := db.QueryRow(passwordResetTokenSelectionQuery, id).Scan(&p.ID, &p.UserID, &p.Token, &p.CreatedOn, &p.ExpiresOn, &p.PasswordResetOn)
 
 	return p, err
+}
+
+func buildPasswordResetTokenListRetrievalQuery(qf *models.QueryFilter) (string, []interface{}) {
+	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := sqlBuilder.
+		Select(
+			"id",
+			"user_id",
+			"token",
+			"created_on",
+			"expires_on",
+			"password_reset_on",
+		).
+		From("password_reset_tokens").
+		Where(squirrel.Eq{"archived_on": nil}).
+		Limit(uint64(qf.Limit))
+
+	queryBuilder = applyQueryFilterToQueryBuilder(queryBuilder, qf, true)
+
+	query, args, _ := queryBuilder.ToSql()
+	return query, args
+}
+
+func (pg *postgres) GetPasswordResetTokenList(db storage.Querier, qf *models.QueryFilter) ([]models.PasswordResetToken, error) {
+	var list []models.PasswordResetToken
+
+	query, args := buildPasswordResetTokenListRetrievalQuery(qf)
+
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var p models.PasswordResetToken
+		err := rows.Scan(
+			&p.ID,
+			&p.UserID,
+			&p.Token,
+			&p.CreatedOn,
+			&p.ExpiresOn,
+			&p.PasswordResetOn,
+		)
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, p)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return list, err
 }
 
 const passwordresettokenCreationQuery = `

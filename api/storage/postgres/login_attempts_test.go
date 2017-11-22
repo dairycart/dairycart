@@ -96,6 +96,87 @@ func TestGetLoginAttempt(t *testing.T) {
 	})
 }
 
+func setLoginAttemptListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.LoginAttempt, rowErr error, err error) {
+	exampleRows := sqlmock.NewRows([]string{
+		"id",
+		"username",
+		"successful",
+		"created_on",
+	}).AddRow(
+		example.ID,
+		example.Username,
+		example.Successful,
+		example.CreatedOn,
+	).AddRow(
+		example.ID,
+		example.Username,
+		example.Successful,
+		example.CreatedOn,
+	).AddRow(
+		example.ID,
+		example.Username,
+		example.Successful,
+		example.CreatedOn,
+	).RowError(1, rowErr)
+
+	query, _ := buildLoginAttemptListRetrievalQuery(qf)
+
+	mock.ExpectQuery(formatQueryForSQLMock(query)).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
+func TestGetLoginAttemptList(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	require.Nil(t, err)
+	defer mockDB.Close()
+	exampleID := uint64(1)
+	example := &models.LoginAttempt{ID: exampleID}
+	client := NewPostgres()
+	exampleQF := &models.QueryFilter{
+		Limit: 25,
+		Page:  1,
+	}
+
+	t.Run("optimal behavior", func(t *testing.T) {
+		setLoginAttemptListReadQueryExpectation(t, mock, exampleQF, example, nil, nil)
+		actual, err := client.GetLoginAttemptList(mockDB, exampleQF)
+
+		require.Nil(t, err)
+		require.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with error executing query", func(t *testing.T) {
+		setLoginAttemptListReadQueryExpectation(t, mock, exampleQF, example, nil, errors.New("pineapple on pizza"))
+		actual, err := client.GetLoginAttemptList(mockDB, exampleQF)
+
+		require.NotNil(t, err)
+		require.Nil(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with error scanning values", func(t *testing.T) {
+		exampleRows := sqlmock.NewRows([]string{"things"}).AddRow("stuff")
+		query, _ := buildLoginAttemptListRetrievalQuery(exampleQF)
+		mock.ExpectQuery(formatQueryForSQLMock(query)).
+			WillReturnRows(exampleRows)
+
+		actual, err := client.GetLoginAttemptList(mockDB, exampleQF)
+
+		require.NotNil(t, err)
+		require.Nil(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with with row errors", func(t *testing.T) {
+		setLoginAttemptListReadQueryExpectation(t, mock, exampleQF, example, errors.New("pineapple on pizza"), nil)
+		actual, err := client.GetLoginAttemptList(mockDB, exampleQF)
+
+		require.NotNil(t, err)
+		require.Nil(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
+
 func setLoginAttemptCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.LoginAttempt, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(loginattemptCreationQuery)

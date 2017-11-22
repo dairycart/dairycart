@@ -98,6 +98,91 @@ func TestGetProductVariantBridge(t *testing.T) {
 	})
 }
 
+func setProductVariantBridgeListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.ProductVariantBridge, rowErr error, err error) {
+	exampleRows := sqlmock.NewRows([]string{
+		"id",
+		"product_id",
+		"product_option_value_id",
+		"created_on",
+		"archived_on",
+	}).AddRow(
+		example.ID,
+		example.ProductID,
+		example.ProductOptionValueID,
+		example.CreatedOn,
+		example.ArchivedOn,
+	).AddRow(
+		example.ID,
+		example.ProductID,
+		example.ProductOptionValueID,
+		example.CreatedOn,
+		example.ArchivedOn,
+	).AddRow(
+		example.ID,
+		example.ProductID,
+		example.ProductOptionValueID,
+		example.CreatedOn,
+		example.ArchivedOn,
+	).RowError(1, rowErr)
+
+	query, _ := buildProductVariantBridgeListRetrievalQuery(qf)
+
+	mock.ExpectQuery(formatQueryForSQLMock(query)).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
+func TestGetProductVariantBridgeList(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	require.Nil(t, err)
+	defer mockDB.Close()
+	exampleID := uint64(1)
+	example := &models.ProductVariantBridge{ID: exampleID}
+	client := NewPostgres()
+	exampleQF := &models.QueryFilter{
+		Limit: 25,
+		Page:  1,
+	}
+
+	t.Run("optimal behavior", func(t *testing.T) {
+		setProductVariantBridgeListReadQueryExpectation(t, mock, exampleQF, example, nil, nil)
+		actual, err := client.GetProductVariantBridgeList(mockDB, exampleQF)
+
+		require.Nil(t, err)
+		require.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with error executing query", func(t *testing.T) {
+		setProductVariantBridgeListReadQueryExpectation(t, mock, exampleQF, example, nil, errors.New("pineapple on pizza"))
+		actual, err := client.GetProductVariantBridgeList(mockDB, exampleQF)
+
+		require.NotNil(t, err)
+		require.Nil(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with error scanning values", func(t *testing.T) {
+		exampleRows := sqlmock.NewRows([]string{"things"}).AddRow("stuff")
+		query, _ := buildProductVariantBridgeListRetrievalQuery(exampleQF)
+		mock.ExpectQuery(formatQueryForSQLMock(query)).
+			WillReturnRows(exampleRows)
+
+		actual, err := client.GetProductVariantBridgeList(mockDB, exampleQF)
+
+		require.NotNil(t, err)
+		require.Nil(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with with row errors", func(t *testing.T) {
+		setProductVariantBridgeListReadQueryExpectation(t, mock, exampleQF, example, errors.New("pineapple on pizza"), nil)
+		actual, err := client.GetProductVariantBridgeList(mockDB, exampleQF)
+
+		require.NotNil(t, err)
+		require.Nil(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
+
 func setProductVariantBridgeCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.ProductVariantBridge, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productvariantbridgeCreationQuery)
