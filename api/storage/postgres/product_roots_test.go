@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"database/sql"
+
 	"errors"
 	"strconv"
 	"testing"
@@ -13,6 +14,50 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
+
+func setProductRootWithSKUPrefixExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, skuPrefix string, shouldExist bool, err error) {
+	t.Helper()
+	query := formatQueryForSQLMock(productRootWithSKUPrefixExistenceQuery)
+
+	mock.ExpectQuery(query).
+		WithArgs(skuPrefix).
+		WillReturnRows(sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(shouldExist))).
+		WillReturnError(err)
+}
+
+func TestProductRootWithSKUExists(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	require.Nil(t, err)
+	defer mockDB.Close()
+	exampleSKUPrefix := "example"
+	client := NewPostgres()
+
+	t.Run("existing", func(t *testing.T) {
+		setProductRootWithSKUPrefixExistenceQueryExpectation(t, mock, exampleSKUPrefix, true, nil)
+		actual, err := client.ProductRootWithSKUPrefixExists(mockDB, exampleSKUPrefix)
+
+		require.Nil(t, err)
+		require.True(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with no rows found", func(t *testing.T) {
+		setProductRootWithSKUPrefixExistenceQueryExpectation(t, mock, exampleSKUPrefix, true, sql.ErrNoRows)
+		actual, err := client.ProductRootWithSKUPrefixExists(mockDB, exampleSKUPrefix)
+
+		require.Nil(t, err)
+		require.False(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with a database error", func(t *testing.T) {
+		setProductRootWithSKUPrefixExistenceQueryExpectation(t, mock, exampleSKUPrefix, true, errors.New("pineapple on pizza"))
+		actual, err := client.ProductRootWithSKUPrefixExists(mockDB, exampleSKUPrefix)
+
+		require.NotNil(t, err)
+		require.False(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
 
 func setProductRootExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, shouldExist bool, err error) {
 	t.Helper()
@@ -90,7 +135,7 @@ func setProductRootReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id u
 		toReturn.Name,
 		toReturn.Subtitle,
 		toReturn.Description,
-		toReturn.SkuPrefix,
+		toReturn.SKUPrefix,
 		toReturn.Manufacturer,
 		toReturn.Brand,
 		toReturn.Taxable,
@@ -140,7 +185,7 @@ func setProductRootCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, 
 			toCreate.Name,
 			toCreate.Subtitle,
 			toCreate.Description,
-			toCreate.SkuPrefix,
+			toCreate.SKUPrefix,
 			toCreate.Manufacturer,
 			toCreate.Brand,
 			toCreate.Taxable,
@@ -191,7 +236,7 @@ func setProductRootUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, to
 			toUpdate.Name,
 			toUpdate.Subtitle,
 			toUpdate.Description,
-			toUpdate.SkuPrefix,
+			toUpdate.SKUPrefix,
 			toUpdate.Manufacturer,
 			toUpdate.Brand,
 			toUpdate.Taxable,

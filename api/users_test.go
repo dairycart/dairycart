@@ -10,10 +10,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dairycart/dairycart/api/storage/models"
+
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/bcrypt"
-
-	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
+	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
 var dummySalt []byte
@@ -50,7 +51,7 @@ func setExpectationsForUserExistenceByID(mock sqlmock.Sqlmock, id string, exists
 		WillReturnError(err)
 }
 
-func setExpectationsForUserCreation(mock sqlmock.Sqlmock, u *User, err error) {
+func setExpectationsForUserCreation(mock sqlmock.Sqlmock, u *models.User, err error) {
 	// can't expect args here because we can't predict the salt/hash
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(u.ID, generateExampleTimeForTests())
 	query, _ := buildUserCreationQuery(u)
@@ -81,7 +82,7 @@ func setExpectationsForUserRetrievalByID(mock sqlmock.Sqlmock, userID uint64, er
 		WillReturnError(err)
 }
 
-func setExpectationsForUserUpdate(mock sqlmock.Sqlmock, u *User, passwordChanged bool, err error) {
+func setExpectationsForUserUpdate(mock sqlmock.Sqlmock, u *models.User, passwordChanged bool, err error) {
 	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests())
 	rawQuery, rawArgs := buildUserUpdateQuery(u, passwordChanged)
 	query := formatQueryForSQLMock(rawQuery)
@@ -92,7 +93,7 @@ func setExpectationsForUserUpdate(mock sqlmock.Sqlmock, u *User, passwordChanged
 		WillReturnError(err)
 }
 
-func setExpectationsForUserUpdateWithoutSpecifyingPassword(mock sqlmock.Sqlmock, u *User, passwordChanged bool, err error) {
+func setExpectationsForUserUpdateWithoutSpecifyingPassword(mock sqlmock.Sqlmock, u *models.User, passwordChanged bool, err error) {
 	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests())
 	rawQuery, _ := buildUserUpdateQuery(u, passwordChanged)
 	query := formatQueryForSQLMock(rawQuery)
@@ -293,11 +294,9 @@ func TestCreateUserInDB(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "FirstName",
 		LastName:  "LastName",
 		Email:     "Email",
@@ -317,11 +316,9 @@ func TestCreateUserInDBWhenErrorOccurs(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "FirstName",
 		LastName:  "LastName",
 		Email:     "Email",
@@ -339,11 +336,9 @@ func TestRetrieveUserFromDB(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	expected := User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	expected := models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Username:  "frankzappa",
@@ -365,11 +360,9 @@ func TestRetrieveUserFromDBByID(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	expected := User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	expected := models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Username:  "frankzappa",
@@ -392,7 +385,7 @@ func TestPasswordMatches(t *testing.T) {
 
 	saltedPasswordHash, err := saltAndHashPassword(examplePassword, dummySalt)
 	assert.Nil(t, err)
-	exampleUser := User{
+	exampleUser := models.User{
 		Password: saltedPasswordHash,
 		Salt:     dummySalt,
 	}
@@ -406,7 +399,7 @@ func TestPasswordMatchesFailsWhenPasswordsDoNotMatch(t *testing.T) {
 
 	saltedPasswordHash, err := saltAndHashPassword(examplePassword, dummySalt)
 	assert.Nil(t, err)
-	exampleUser := User{
+	exampleUser := models.User{
 		Password: saltedPasswordHash,
 		Salt:     dummySalt,
 	}
@@ -420,7 +413,7 @@ func TestPasswordMatchesWithVeryLongPassword(t *testing.T) {
 
 	saltedPasswordHash, err := saltAndHashPassword(examplePassword, dummySalt)
 	assert.Nil(t, err)
-	exampleUser := User{
+	exampleUser := models.User{
 		Password: saltedPasswordHash,
 		Salt:     dummySalt,
 	}
@@ -434,11 +427,9 @@ func TestUpdateUserInDatabase(t *testing.T) {
 	testUtil := setupTestVariables(t)
 
 	examplePasswordChanged := false
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Username:  "frankzappa",
@@ -535,11 +526,9 @@ func TestUserCreationHandler(t *testing.T) {
 		}
 	`, examplePassword)
 
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
@@ -655,11 +644,9 @@ func TestUserCreationHandlerWithErrorCreatingUser(t *testing.T) {
 		}
 	`, examplePassword)
 
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
@@ -692,11 +679,9 @@ func TestUserCreationHandlerWhenErrorEncounteredInsertingIntoDB(t *testing.T) {
 		}
 	`, examplePassword)
 
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
@@ -726,11 +711,9 @@ func TestUserLoginHandler(t *testing.T) {
 		}
 	`, examplePassword)
 
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
@@ -775,11 +758,9 @@ func TestUserLoginHandlerWhenLoginAttemptsHaveBeenExhausted(t *testing.T) {
 		}
 	`, examplePassword)
 
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
@@ -809,11 +790,9 @@ func TestUserLoginHandlerWhenErrorOccursCheckingLoginAttempts(t *testing.T) {
 		}
 	`, examplePassword)
 
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
@@ -843,11 +822,9 @@ func TestUserLoginHandlerWithNoMatchingUserInDatabase(t *testing.T) {
 		}
 	`, examplePassword)
 
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
@@ -877,11 +854,9 @@ func TestUserLoginHandlerWithErrorRetrievingUserFromDatabase(t *testing.T) {
 		}
 	`, examplePassword)
 
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
@@ -911,11 +886,9 @@ func TestUserLoginHandlerWithErrorCreatingLoginAttemptRow(t *testing.T) {
 		}
 	`, examplePassword)
 
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
@@ -946,11 +919,9 @@ func TestUserLoginHandlerWithInvalidPassword(t *testing.T) {
 		}
 	`
 
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
@@ -981,11 +952,9 @@ func TestUserLoginHandlerWithInvalidCookie(t *testing.T) {
 		}
 	`, examplePassword)
 
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
@@ -1140,11 +1109,9 @@ func TestUserForgottenPasswordHandler(t *testing.T) {
 		}
 	`, examplePassword)
 
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
@@ -1188,11 +1155,9 @@ func TestUserForgottenPasswordHandlerWithNonexistentUser(t *testing.T) {
 		}
 	`, examplePassword)
 
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
@@ -1221,11 +1186,9 @@ func TestUserForgottenPasswordHandlerWithErrorRetrievingUserFromDB(t *testing.T)
 		}
 	`, examplePassword)
 
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
@@ -1254,11 +1217,9 @@ func TestUserForgottenPasswordHandlerWithAlreadyExistentPasswordResetEntry(t *te
 		}
 	`, examplePassword)
 
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
@@ -1289,11 +1250,9 @@ func TestUserForgottenPasswordHandlerWithErrorCreatingResetToken(t *testing.T) {
 		}
 	`, examplePassword)
 
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
@@ -1356,11 +1315,9 @@ func TestUserUpdateHandler(t *testing.T) {
  	`, examplePassword)
 
 	examplePasswordChanged := false
-	beforeUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	beforeUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Username:  "frankzappa",
@@ -1370,11 +1327,9 @@ func TestUserUpdateHandler(t *testing.T) {
 		Salt:      dummySalt,
 	}
 
-	afterUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	afterUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Username:  "captain_beefheart",
@@ -1437,11 +1392,9 @@ func TestUserUpdateHandlerForNonexistentUser(t *testing.T) {
  		}
  	`, examplePassword)
 
-	beforeUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	beforeUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Username:  "frankzappa",
@@ -1472,11 +1425,9 @@ func TestUserUpdateHandlerWithErrorRetrievingUser(t *testing.T) {
  		}
  	`, examplePassword)
 
-	beforeUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	beforeUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Username:  "frankzappa",
@@ -1507,11 +1458,9 @@ func TestUserUpdateHandlerWhenPasswordDoesNotMatchExpectation(t *testing.T) {
  		}
  	`, fmt.Sprintf("%s!", examplePassword))
 
-	beforeUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	beforeUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Username:  "frankzappa",
@@ -1545,11 +1494,9 @@ func TestUserUpdateHandlerWithNewPassword(t *testing.T) {
  	`, exampleNewPassword, examplePassword)
 
 	examplePasswordChanged := true
-	beforeUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	beforeUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Username:  "frankzappa",
@@ -1559,11 +1506,9 @@ func TestUserUpdateHandlerWithNewPassword(t *testing.T) {
 		Salt:      dummySalt,
 	}
 
-	afterUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	afterUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Username:  "captain_beefheart",
@@ -1596,11 +1541,9 @@ func TestUserUpdateHandlerWithErrorUpdatingUser(t *testing.T) {
  	`, examplePassword)
 
 	examplePasswordChanged := false
-	beforeUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	beforeUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Username:  "frankzappa",
@@ -1610,11 +1553,9 @@ func TestUserUpdateHandlerWithErrorUpdatingUser(t *testing.T) {
 		Salt:      dummySalt,
 	}
 
-	afterUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	afterUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Username:  "captain_beefheart",

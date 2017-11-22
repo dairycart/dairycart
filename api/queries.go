@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/dairycart/dairycart/api/storage/models"
+
 	"github.com/Masterminds/squirrel"
 )
 
-func applyQueryFilterToQueryBuilder(queryBuilder squirrel.SelectBuilder, queryFilter *QueryFilter, includeOffset bool) squirrel.SelectBuilder {
+func applyQueryFilterToQueryBuilder(queryBuilder squirrel.SelectBuilder, queryFilter *models.QueryFilter, includeOffset bool) squirrel.SelectBuilder {
 	if queryFilter == nil {
 		return queryBuilder
 	}
@@ -41,7 +43,7 @@ func applyQueryFilterToQueryBuilder(queryBuilder squirrel.SelectBuilder, queryFi
 	return queryBuilder
 }
 
-func buildCountQuery(table string, queryFilter *QueryFilter) string {
+func buildCountQuery(table string, queryFilter *models.QueryFilter) string {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Select("count(id)").
@@ -61,7 +63,7 @@ func buildCountQuery(table string, queryFilter *QueryFilter) string {
 //                                                    //
 ////////////////////////////////////////////////////////
 
-func buildProductRootListQuery(queryFilter *QueryFilter) (string, []interface{}) {
+func buildProductRootListQuery(queryFilter *models.QueryFilter) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		// note, this has to look ugly and disjointed because otherwise my editor
@@ -99,7 +101,7 @@ func buildProductRootListQuery(queryFilter *QueryFilter) (string, []interface{})
 	return query, args
 }
 
-func buildProductRootCreationQuery(r *ProductRoot) (string, []interface{}) {
+func buildProductRootCreationQuery(r *models.ProductRoot) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Insert("product_roots").
@@ -186,7 +188,7 @@ func getProductCreationColumns() []string {
 	return c
 }
 
-func buildProductListQuery(queryFilter *QueryFilter) (string, []interface{}) {
+func buildProductListQuery(queryFilter *models.QueryFilter) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		// note, this has to look ugly and disjointed because otherwise my editor
@@ -273,7 +275,7 @@ func buildProductAssociatedWithRootListQuery(rootID uint64) (string, []interface
 	return query, args
 }
 
-func buildProductUpdateQuery(p *Product) (string, []interface{}) {
+func buildProductUpdateQuery(p *models.Product) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	productUpdateSetMap := map[string]interface{}{
 		"sku":        p.SKU,
@@ -294,7 +296,7 @@ func buildProductUpdateQuery(p *Product) (string, []interface{}) {
 	return query, args
 }
 
-func buildProductCreationQuery(p *Product) (string, []interface{}) {
+func buildProductCreationQuery(p *models.Product) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 
 	columns := getProductCreationColumns()
@@ -337,7 +339,7 @@ func buildProductCreationQuery(p *Product) (string, []interface{}) {
 	return query, args
 }
 
-func buildMultipleProductCreationQuery(ps []*Product) (string, []interface{}) {
+func buildMultipleProductCreationQuery(ps []*models.Product) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Insert("products").
@@ -385,7 +387,7 @@ func buildMultipleProductCreationQuery(ps []*Product) (string, []interface{}) {
 //                                                    //
 ////////////////////////////////////////////////////////
 
-func buildProductOptionListQuery(productRootID uint64, queryFilter *QueryFilter) (string, []interface{}) {
+func buildProductOptionListQuery(productRootID uint64, queryFilter *models.QueryFilter) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Select(productOptionsHeaders).
@@ -397,7 +399,7 @@ func buildProductOptionListQuery(productRootID uint64, queryFilter *QueryFilter)
 	return query, args
 }
 
-func buildProductOptionUpdateQuery(a *ProductOption) (string, []interface{}) {
+func buildProductOptionUpdateQuery(a *models.ProductOption) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	productOptionUpdateSetMap := map[string]interface{}{
 		"name":       a.Name,
@@ -412,7 +414,7 @@ func buildProductOptionUpdateQuery(a *ProductOption) (string, []interface{}) {
 	return query, args
 }
 
-func buildProductOptionCreationQuery(a *ProductOption, productRootID uint64) (string, []interface{}) {
+func buildProductOptionCreationQuery(a *models.ProductOption, productRootID uint64) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Insert("product_options").
@@ -429,7 +431,7 @@ func buildProductOptionCreationQuery(a *ProductOption, productRootID uint64) (st
 //                                                    //
 ////////////////////////////////////////////////////////
 
-func buildProductOptionValueUpdateQuery(v *ProductOptionValue) (string, []interface{}) {
+func buildProductOptionValueUpdateQuery(v *models.ProductOptionValue) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	productOptionUpdateSetMap := map[string]interface{}{
 		"value":      v.Value,
@@ -444,7 +446,7 @@ func buildProductOptionValueUpdateQuery(v *ProductOptionValue) (string, []interf
 	return query, args
 }
 
-func buildProductOptionValueCreationQuery(v *ProductOptionValue) (string, []interface{}) {
+func buildProductOptionValueCreationQuery(v *models.ProductOptionValue) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Insert("product_option_values").
@@ -477,19 +479,14 @@ func buildProductOptionCombinationExistenceQuery(optionValueIDs []uint64) (strin
 }
 
 func buildProductVariantBridgeCreationQuery(productID uint64, optionValueIDs []uint64) (string, []interface{}) {
-	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	queryBuilder := sqlBuilder.
+	queryBuilder := squirrel.StatementBuilder.
+		PlaceholderFormat(squirrel.Dollar).
 		Insert("product_variant_bridge").
 		Columns("product_id", "product_option_value_id")
 
 	for _, id := range optionValueIDs {
-		values := []interface{}{
-			productID,
-			id,
-		}
-		queryBuilder = queryBuilder.Values(values...)
+		queryBuilder = queryBuilder.Values(productID, id)
 	}
-	queryBuilder = queryBuilder.Suffix(`RETURNING id, created_on`)
 	query, args, _ := queryBuilder.ToSql()
 	return query, args
 }
@@ -500,7 +497,7 @@ func buildProductVariantBridgeCreationQuery(productID uint64, optionValueIDs []u
 //                                                    //
 ////////////////////////////////////////////////////////
 
-func buildDiscountListQuery(queryFilter *QueryFilter) (string, []interface{}) {
+func buildDiscountListQuery(queryFilter *models.QueryFilter) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Select(`id,
@@ -527,7 +524,7 @@ func buildDiscountListQuery(queryFilter *QueryFilter) (string, []interface{}) {
 	return query, args
 }
 
-func buildDiscountCreationQuery(d *Discount) (string, []interface{}) {
+func buildDiscountCreationQuery(d *models.Discount) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Insert("discounts").
@@ -538,7 +535,7 @@ func buildDiscountCreationQuery(d *Discount) (string, []interface{}) {
 	return query, args
 }
 
-func buildDiscountUpdateQuery(d *Discount) (string, []interface{}) {
+func buildDiscountUpdateQuery(d *models.Discount) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	updateSetMap := map[string]interface{}{
 		"name":           d.Name,
@@ -592,7 +589,7 @@ func buildUserSelectionQueryByID(userID uint64) (string, []interface{}) {
 	return query, args
 }
 
-func buildUserCreationQuery(u *User) (string, []interface{}) {
+func buildUserCreationQuery(u *models.User) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Insert("users").
@@ -635,7 +632,7 @@ func buildPasswordResetRowCreationQuery(userID uint64, resetToken string) (strin
 	return query, args
 }
 
-func buildUserUpdateQuery(u *User, passwordChanged bool) (string, []interface{}) {
+func buildUserUpdateQuery(u *models.User, passwordChanged bool) (string, []interface{}) {
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	updateSetMap := map[string]interface{}{
 		"first_name": u.FirstName,

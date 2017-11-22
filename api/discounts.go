@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/dairycart/dairycart/api/storage/models"
+
 	"github.com/go-chi/chi"
 	"github.com/imdario/mergo"
 	"github.com/jmoiron/sqlx"
@@ -112,7 +114,7 @@ func buildDiscountListRetrievalHandler(db *sqlx.DB) http.HandlerFunc {
 	}
 }
 
-func createDiscountInDB(db *sqlx.DB, in *Discount) (uint64, time.Time, error) {
+func createDiscountInDB(db *sqlx.DB, in *models.Discount) (uint64, time.Time, error) {
 	var createdID uint64
 	var createdOn time.Time
 	discountCreationQuery, queryArgs := buildDiscountCreationQuery(in)
@@ -123,7 +125,7 @@ func createDiscountInDB(db *sqlx.DB, in *Discount) (uint64, time.Time, error) {
 func buildDiscountCreationHandler(db *sqlx.DB) http.HandlerFunc {
 	// DiscountCreationHandler is a request handler that creates a Discount from user input
 	return func(res http.ResponseWriter, req *http.Request) {
-		newDiscount := &Discount{}
+		newDiscount := &models.Discount{}
 		err := validateRequestInput(req, newDiscount)
 		if err != nil {
 			notifyOfInvalidRequestBody(res, err)
@@ -168,7 +170,7 @@ func buildDiscountDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 	}
 }
 
-func updateDiscountInDatabase(db *sqlx.DB, up *Discount) (time.Time, error) {
+func updateDiscountInDatabase(db *sqlx.DB, up *models.Discount) (time.Time, error) {
 	var updatedTime time.Time
 	discountUpdateQuery, queryArgs := buildDiscountUpdateQuery(up)
 	err := db.QueryRow(discountUpdateQuery, queryArgs...).Scan(&updatedTime)
@@ -180,7 +182,7 @@ func buildDiscountUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		discountID := chi.URLParam(req, "discount_id")
 
-		updatedDiscount := &Discount{}
+		updatedDiscount := &models.Discount{}
 		err := validateRequestInput(req, updatedDiscount)
 		if err != nil {
 			notifyOfInvalidRequestBody(res, err)
@@ -204,7 +206,7 @@ func buildDiscountUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 			notifyOfInternalIssue(res, err, "update product in database")
 			return
 		}
-		updatedDiscount.UpdatedOn = NullTime{pq.NullTime{Time: updatedOn, Valid: true}}
+		updatedDiscount.UpdatedOn = models.NullTime{NullTime: pq.NullTime{Time: updatedOn, Valid: true}}
 
 		json.NewEncoder(res).Encode(updatedDiscount)
 	}

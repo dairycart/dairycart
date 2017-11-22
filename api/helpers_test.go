@@ -16,6 +16,7 @@ import (
 
 	// local dependencies
 	"github.com/dairycart/dairycart/api/storage/mock"
+	"github.com/dairycart/dairycart/api/storage/models"
 
 	// external dependencies
 	"github.com/go-chi/chi"
@@ -31,7 +32,7 @@ import (
 )
 
 const (
-	exampleSKU               = "example"
+	exampleSKU = "example"
 	//exampleTimeString        = "2016-12-01 12:00:00.000000"
 	exampleGarbageInput      = `{"things": "stuff"}`
 	exampleMarshalTimeString = "2016-12-31T12:00:00.000000Z"
@@ -68,8 +69,8 @@ func generateExampleTimeForTests() time.Time {
 	return out
 }
 
-func genereateDefaultQueryFilter() *QueryFilter {
-	qf := &QueryFilter{
+func genereateDefaultQueryFilter() *models.QueryFilter {
+	qf := &models.QueryFilter{
 		Page:  1,
 		Limit: 25,
 	}
@@ -81,7 +82,7 @@ func generateArbitraryError() error {
 	return err
 }
 
-func setExpectationsForRowCount(mock sqlmock.Sqlmock, table string, queryFilter *QueryFilter, count uint64, err error) {
+func setExpectationsForRowCount(mock sqlmock.Sqlmock, table string, queryFilter *models.QueryFilter, count uint64, err error) {
 	exampleRows := sqlmock.NewRows([]string{"count"}).AddRow(count)
 	mock.ExpectQuery(formatQueryForSQLMock(buildCountQuery(table, queryFilter))).
 		WillReturnRows(exampleRows).
@@ -122,7 +123,7 @@ func setupTestVariablesWithMock(t *testing.T) *TestUtil {
 		Response: httptest.NewRecorder(),
 		Router:   chi.NewRouter(),
 		PlainDB:  mockDB,
-		Mock: mock,
+		Mock:     mock,
 		MockDB:   &dairymock.MockDB{},
 		Store:    sessions.NewCookieStore([]byte(os.Getenv("DAIRYSECRET"))),
 	}
@@ -210,7 +211,7 @@ func TestParseRawFilterParams(t *testing.T) {
 
 	testSuite := []struct {
 		input          string
-		expected       *QueryFilter
+		expected       *models.QueryFilter
 		failureMessage string
 	}{
 		{
@@ -225,7 +226,7 @@ func TestParseRawFilterParams(t *testing.T) {
 		},
 		{
 			input: "https://test.com/example?page=1&limit=500000",
-			expected: &QueryFilter{
+			expected: &models.QueryFilter{
 				Page:  1,
 				Limit: 50,
 			},
@@ -233,7 +234,7 @@ func TestParseRawFilterParams(t *testing.T) {
 		},
 		{
 			input: "https://test.com/example?page=2&limit=40",
-			expected: &QueryFilter{
+			expected: &models.QueryFilter{
 				Page:  2,
 				Limit: 40,
 			},
@@ -241,7 +242,7 @@ func TestParseRawFilterParams(t *testing.T) {
 		},
 		{
 			input: fmt.Sprintf("https://test.com/example?updated_after=%v", exampleUnixStartTime),
-			expected: &QueryFilter{
+			expected: &models.QueryFilter{
 				Page:         1,
 				Limit:        25,
 				UpdatedAfter: exampleFilterStartTime,
@@ -250,7 +251,7 @@ func TestParseRawFilterParams(t *testing.T) {
 		},
 		{
 			input: fmt.Sprintf("https://test.com/example?updated_before=%v", exampleUnixEndTime),
-			expected: &QueryFilter{
+			expected: &models.QueryFilter{
 				Page:          1,
 				Limit:         25,
 				UpdatedBefore: exampleFilterEndTime,
@@ -259,7 +260,7 @@ func TestParseRawFilterParams(t *testing.T) {
 		},
 		{
 			input: fmt.Sprintf("https://test.com/example?updated_after=%v&updated_before=%v", exampleUnixStartTime, exampleUnixEndTime),
-			expected: &QueryFilter{
+			expected: &models.QueryFilter{
 				Page:          1,
 				Limit:         25,
 				UpdatedAfter:  exampleFilterStartTime,
@@ -269,7 +270,7 @@ func TestParseRawFilterParams(t *testing.T) {
 		},
 		{
 			input: fmt.Sprintf("https://test.com/example?page=2&limit=35&updated_after=%v&updated_before=%v", exampleUnixStartTime, exampleUnixEndTime),
-			expected: &QueryFilter{
+			expected: &models.QueryFilter{
 				Page:          2,
 				Limit:         35,
 				UpdatedAfter:  exampleFilterStartTime,
@@ -279,7 +280,7 @@ func TestParseRawFilterParams(t *testing.T) {
 		},
 		{
 			input: fmt.Sprintf("https://test.com/example?page=2&limit=35&created_after=%v&created_before=%v", exampleUnixStartTime, exampleUnixEndTime),
-			expected: &QueryFilter{
+			expected: &models.QueryFilter{
 				Page:          2,
 				Limit:         35,
 				CreatedAfter:  exampleFilterStartTime,

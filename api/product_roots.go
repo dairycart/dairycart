@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/dairycart/dairycart/api/storage/models"
+
 	"github.com/go-chi/chi"
 	"github.com/jmoiron/sqlx"
 )
@@ -53,12 +55,12 @@ type ProductRoot struct {
 	PackageWidth  float32 `json:"package_width"`
 	PackageLength float32 `json:"package_length"`
 
-	Options  []*ProductOption `json:"options"`
-	Products []Product        `json:"products"`
+	Options  []*models.ProductOption `json:"options"`
+	Products []models.Product        `json:"products"`
 }
 
-func createProductRootFromProduct(p *Product) *ProductRoot {
-	r := &ProductRoot{
+func createProductRootFromProduct(p *models.Product) *models.ProductRoot {
+	r := &models.ProductRoot{
 		Name:               p.Name,
 		Subtitle:           p.Subtitle,
 		Description:        p.Description,
@@ -81,7 +83,7 @@ func createProductRootFromProduct(p *Product) *ProductRoot {
 	return r
 }
 
-func createProductRootInDB(tx *sql.Tx, r *ProductRoot) (uint64, time.Time, error) {
+func createProductRootInDB(tx *sql.Tx, r *models.ProductRoot) (uint64, time.Time, error) {
 	var newRootID uint64
 	var createdOn time.Time
 	// using QueryRow instead of Exec because we want it to return the newly created row's ID

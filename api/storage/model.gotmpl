@@ -14,17 +14,35 @@ import(
 // {{ $modelName }} represents a Dairycart {{ toLower $modelName }}
 type {{ $modelName }} struct {
     {{- range .Table.Columns }}
+        {{- if contains (pascal .Name) "Quantity" }}
+            {{ pascal .Name }} uint32 `json:"{{ snake .Name }}"` // {{ .DBName }}
+        {{- else if eq (pascal .Name) "Upc" }}
+            {{ "UPC" }} {{ .Type }} `json:"{{ snake .Name }}"` // {{ .DBName }}
+        {{- else if eq (pascal .Name) "Sku" }}
+            {{ "SKU" }} {{ .Type }} `json:"{{ snake .Name }}"` // {{ .DBName }}
+        {{- else if eq (pascal .Name) "SkuPrefix" }}
+            {{ "SKUPrefix" }} {{ .Type }} `json:"{{ snake .Name }}"` // {{ .DBName }}
+        {{- else if eq .Type "" }}
+            /* putting this here so that go fmt/build/etc will barf when they encounter it and I'll know to fix it */
+            something bad has happened here
+        {{- else }}
+            {{ pascal .Name }} {{ .Type }} `json:"{{ snake .Name }}"` // {{ .DBName }}
+        {{- end }}
+    {{- end -}}
 
-    {{- if (eq (pascal .Name) "Upc") }}
-        {{ "UPC" }} {{ .Type }} `json:"{{ snake .Name }}"` // {{ .DBName }}
-    {{- else if (eq (pascal .Name) "Sku") }}
-        {{ "SKU" }} {{ .Type }} `json:"{{ snake .Name }}"` // {{ .DBName }}
-    {{- else if (eq .Type "") }}
-        /* putting this here so that go fmt/build/etc will barf when they encounter it and I'll know to fix it */
-        something bad has happened here
-    {{- else }}
-        {{ pascal .Name }} {{ .Type }} `json:"{{ snake .Name }}"` // {{ .DBName }}
-    {{- end }}
-
-    {{- end }}
+    {{ if eq $modelName "ProductRoot" -}}
+    {{ "\n" }}
+    // useful for responses
+    // TODO: make this a slice of non-pointers
+	Options  []*ProductOption `json:"options"`
+	Products []Product        `json:"products"`
+    {{ else if eq $modelName "ProductOption" -}}
+    {{ "\n" }}
+    // useful for responses
+	Values        []ProductOptionValue `json:"values"`
+    {{ else if eq $modelName "Product" -}}
+    {{ "\n" }}
+    // useful for responses
+	ApplicableOptionValues []ProductOptionValue `json:"applicable_options,omitempty"`
+    {{ end }}
 }

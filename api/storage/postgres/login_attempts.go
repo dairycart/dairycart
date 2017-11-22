@@ -63,6 +63,7 @@ func (pg *postgres) CreateLoginAttempt(db storage.Querier, nu *models.LoginAttem
 		createdID uint64
 		createdAt time.Time
 	)
+
 	err := db.QueryRow(loginattemptCreationQuery, &nu.Username, &nu.Successful).Scan(&createdID, &createdAt)
 
 	return createdID, createdAt, err

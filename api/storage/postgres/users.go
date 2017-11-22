@@ -71,6 +71,7 @@ func (pg *postgres) CreateUser(db storage.Querier, nu *models.User) (uint64, tim
 		createdID uint64
 		createdAt time.Time
 	)
+
 	err := db.QueryRow(userCreationQuery, &nu.FirstName, &nu.LastName, &nu.Username, &nu.Email, &nu.Password, &nu.Salt, &nu.IsAdmin, &nu.PasswordLastChangedOn).Scan(&createdID, &createdAt)
 
 	return createdID, createdAt, err

@@ -1,7 +1,14 @@
 package postgres
 
+{{- $modelName := pascal (trimSuffix .Table.Name "s")}}
+{{- $isProduct := eq $modelName "Product" }}
+{{- $isProductRoot := eq $modelName "ProductRoot" }}
+{{- $isDiscount := eq $modelName "Discount" }}
+{{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
+
 import(
     "database/sql"
+    {{ if $isProductVariantBridge }}"database/sql/driver"{{ end }}
     "errors"
     "strconv"
     "testing"
@@ -14,13 +21,7 @@ import(
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
-{{- $modelName := pascal (trimSuffix .Table.Name "s")}}
 {{- $shortVarName := toLower (sliceString $modelName 0 1) }}
-
-{{- $isProduct := eq $modelName "Product" }}
-{{- $isDiscount := eq $modelName "Discount" }}
-{{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
-
 {{ $readQueryVarName := printf "%sSelectionQuery" ( camel $modelName ) -}}
 {{ $creationQueryVarName := printf "%sCreationQuery" ( toLower $modelName ) -}}
 {{ $updateQueryVarName := printf "%sUpdateQuery" ( camel $modelName ) -}}
@@ -101,7 +102,6 @@ func TestGet{{ $modelName }}ByCode(t *testing.T) {
 {{ end }}
 
 {{- if $isProduct }}
-
 {{ $existenceWithSKUQueryVarName := printf "%sWithSKUExistenceQuery" ( camel $modelName ) -}}
 func set{{ $modelName }}WithSKUExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, sku string, shouldExist bool, err error) {
     t.Helper()
@@ -140,6 +140,53 @@ func Test{{ $modelName }}WithSKUExists(t *testing.T) {
     t.Run("with a database error", func(t *testing.T) {
         set{{ $modelName }}WithSKUExistenceQueryExpectation(t, mock, exampleSKU, true, errors.New("pineapple on pizza"))
         actual, err := client.{{ $modelName }}WithSKUExists(mockDB, exampleSKU)
+
+        require.NotNil(t, err)
+        require.False(t, actual)
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+}
+{{- end }}
+
+{{- if $isProductRoot }}
+{{ $existenceWithSKUPrefixQueryVarName := printf "%sWithSKUPrefixExistenceQuery" ( camel $modelName ) -}}
+func set{{ $modelName }}WithSKUPrefixExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, skuPrefix string, shouldExist bool, err error) {
+    t.Helper()
+    query := formatQueryForSQLMock({{ $existenceWithSKUPrefixQueryVarName }})
+
+	mock.ExpectQuery(query).
+		WithArgs(skuPrefix).
+		WillReturnRows(sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(shouldExist))).
+		WillReturnError(err)
+}
+
+func Test{{ $modelName }}WithSKUExists(t *testing.T) {
+    t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+    require.Nil(t, err)
+    defer mockDB.Close()
+    exampleSKUPrefix := "example"
+    client := NewPostgres()
+
+    t.Run("existing", func(t *testing.T) {
+        set{{ $modelName }}WithSKUPrefixExistenceQueryExpectation(t, mock, exampleSKUPrefix, true, nil)
+        actual, err := client.{{ $modelName }}WithSKUPrefixExists(mockDB, exampleSKUPrefix)
+
+        require.Nil(t, err)
+        require.True(t, actual)
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+    t.Run("with no rows found", func(t *testing.T) {
+        set{{ $modelName }}WithSKUPrefixExistenceQueryExpectation(t, mock, exampleSKUPrefix, true, sql.ErrNoRows)
+        actual, err := client.{{ $modelName }}WithSKUPrefixExists(mockDB, exampleSKUPrefix)
+
+        require.Nil(t, err)
+        require.False(t, actual)
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+    t.Run("with a database error", func(t *testing.T) {
+        set{{ $modelName }}WithSKUPrefixExistenceQueryExpectation(t, mock, exampleSKUPrefix, true, errors.New("pineapple on pizza"))
+        actual, err := client.{{ $modelName }}WithSKUPrefixExists(mockDB, exampleSKUPrefix)
 
         require.NotNil(t, err)
         require.False(t, actual)
@@ -201,7 +248,7 @@ func set{{ $modelName }}ReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock,
         {{ range $_, $x := .Table.Columns.DBNames }}{{ printf "\"%s\"" $x }},
         {{ end }}
     }).AddRow(
-        {{ range $_, $x := .Table.Columns.DBNames }}{{ if or (eq (toLower $x) "sku") (eq (toLower $x) "upc") }}toReturn.{{ toUpper $x }},{{ else }}toReturn.{{ pascal $x }},{{ end }}
+        {{ range $_, $x := .Table.Columns.DBNames }}toReturn.{{ if or (eq (toLower $x) "sku") (eq (toLower $x) "upc") }}{{ toUpper $x }}{{ else if eq (toLower $x) "sku_prefix" }}SKUPrefix{{ else }}{{ pascal $x }}{{ end }},
         {{ end }}
     )
     mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
@@ -235,7 +282,7 @@ func set{{ $modelName }}CreationQueryExpectation(t *testing.T, mock sqlmock.Sqlm
         WithArgs(
             {{ $lastCol := dec (len $creationColumns) -}}
             {{ range $x, $col := $creationColumns -}}
-            toCreate.{{ if or (eq (toLower $col) "sku") (eq (toLower $col) "upc") }}{{ toUpper $col }}{{ else }}{{ pascal $col }}{{ end }},
+            toCreate.{{ if or (eq (toLower $col) "sku") (eq (toLower $col) "upc") }}{{ toUpper $col }}{{ else if eq (toLower $col) "sku_prefix" }}SKUPrefix{{ else }}{{ pascal $col }}{{ end }},
             {{ end }}
         ).
         WillReturnRows(exampleRows).
@@ -264,6 +311,74 @@ func TestCreate{{ $modelName }}(t *testing.T) {
     })
 }
 
+{{ if $isProductVariantBridge }}
+func TestBuildMulti{{ $modelName }}CreationQuery(t *testing.T){
+    expectedQuery := `
+        INSERT INTO product_variant_bridge
+            (
+                product_id, product_option_value_id
+            )
+        VALUES
+            (
+                ($1, $2),
+                ($1, $3),
+                ($1, $4),
+                ($1, $5),
+                ($1, $6)
+            )
+        RETURNING
+            id, created_on;
+    `
+    expectedValues := []interface{}{
+        uint64(1),
+        uint64(2),
+        uint64(3),
+        uint64(4),
+        uint64(5),
+        uint64(6),
+    }
+
+    exampleInput := []uint64{2, 3, 4, 5, 6}
+    actualQuery, actualValues := buildMulti{{ $modelName }}CreationQuery(1, exampleInput)
+
+    require.Equal(t, expectedQuery, actualQuery)
+    require.Equal(t, actualValues, expectedValues)
+}
+
+func setMultiple{{ $modelName }}CreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, productID uint64, optionValueIDs []uint64, err error) {
+    t.Helper()
+    query, args := buildMulti{{ $modelName }}CreationQuery(productID, optionValueIDs)
+    queryToExpect := formatQueryForSQLMock(query)
+
+    var argsToExpect []driver.Value
+	for _, x := range args {
+		argsToExpect = append(argsToExpect, x)
+	}
+
+    mock.ExpectExec(queryToExpect).
+        WithArgs(argsToExpect...).
+        WillReturnResult(sqlmock.NewResult(1, 1)).
+        WillReturnError(err)
+}
+
+func TestCreateMultiple{{ $modelName }}sForProductID(t *testing.T) {
+    t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+    require.Nil(t, err)
+    defer mockDB.Close()
+    client := NewPostgres()
+
+    t.Run("optimal behavior", func(t *testing.T) {
+    exampleProductID := uint64(1)
+    exampleOptionValueIDs := []uint64{2, 3, 4, 5, 6}
+    setMultiple{{ $modelName }}CreationQueryExpectation(t, mock, exampleProductID, exampleOptionValueIDs, nil)
+        err := client.CreateMultiple{{ $modelName }}sForProductID(mockDB, exampleProductID, exampleOptionValueIDs)
+
+        require.Nil(t, err)
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+}
+{{- end }}
 
 {{ $updateColumns := .Table.Columns.Names.Except (makeSlice "id" "created_on" "archived_on") -}}
 func set{{ $modelName }}UpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate *models.{{ $modelName }}, err error) {
@@ -274,7 +389,7 @@ func set{{ $modelName }}UpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmoc
         WithArgs(
             {{ $lastCol := dec (len $updateColumns) -}}
             {{ range $x, $col := $updateColumns -}}
-            {{ if eq $col "updated_on"}}{{ else }}toUpdate.{{ if or (eq (toLower $col) "sku") (eq (toLower $col) "upc") }}{{ toUpper $col }}{{ else }}{{ pascal $col }}{{ end }},
+            {{ if eq $col "updated_on"}}{{ else }}toUpdate.{{ if or (eq (toLower $col) "sku") (eq (toLower $col) "upc") }}{{ toUpper $col }}{{ else if eq (toLower $col) "sku_prefix" }}SKUPrefix{{ else }}{{ pascal $col }}{{ end }},
             {{ end }}{{ end }}toUpdate.ID,
         ).
         WillReturnRows(exampleRows).

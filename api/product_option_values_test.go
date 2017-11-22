@@ -8,8 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/dairycart/dairycart/api/storage/models"
 
+	"github.com/stretchr/testify/assert"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
@@ -18,7 +19,7 @@ const (
 	exampleProductOptionValueUpdateBody   = `{"value": "something else"}`
 )
 
-func setExpectationsForProductOptionValueExistence(mock sqlmock.Sqlmock, v *ProductOptionValue, exists bool, err error) {
+func setExpectationsForProductOptionValueExistence(mock sqlmock.Sqlmock, v *models.ProductOptionValue, exists bool, err error) {
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
 	query := formatQueryForSQLMock(productOptionValueExistenceQuery)
 	stringID := strconv.Itoa(int(v.ID))
@@ -28,7 +29,7 @@ func setExpectationsForProductOptionValueExistence(mock sqlmock.Sqlmock, v *Prod
 		WillReturnError(err)
 }
 
-func setExpectationsForProductOptionValueRetrievalByOptionID(mock sqlmock.Sqlmock, a *ProductOption, err error) {
+func setExpectationsForProductOptionValueRetrievalByOptionID(mock sqlmock.Sqlmock, a *models.ProductOption, err error) {
 	productOptionValueData := []driver.Value{
 		256,
 		123,
@@ -45,7 +46,7 @@ func setExpectationsForProductOptionValueRetrievalByOptionID(mock sqlmock.Sqlmoc
 		WillReturnError(err)
 }
 
-func setExpectationsForProductOptionValueRetrieval(mock sqlmock.Sqlmock, v *ProductOptionValue, err error) {
+func setExpectationsForProductOptionValueRetrieval(mock sqlmock.Sqlmock, v *models.ProductOptionValue, err error) {
 	productOptionValueData := []driver.Value{
 		256,
 		123,
@@ -62,7 +63,7 @@ func setExpectationsForProductOptionValueRetrieval(mock sqlmock.Sqlmock, v *Prod
 		WillReturnError(err)
 }
 
-func setExpectationsForMultipleProductOptionValuesCreation(mock sqlmock.Sqlmock, vs []ProductOptionValue, err error, errorIndex int) {
+func setExpectationsForMultipleProductOptionValuesCreation(mock sqlmock.Sqlmock, vs []models.ProductOptionValue, err error, errorIndex int) {
 	for i, v := range vs {
 		var errToUse error = nil
 		if i == errorIndex && err != nil {
@@ -81,7 +82,7 @@ func setExpectationsForProductValueBridgeEntryCreation(mock sqlmock.Sqlmock, pro
 		WillReturnError(err)
 }
 
-func setExpectationsForProductOptionValueCreation(mock sqlmock.Sqlmock, v *ProductOptionValue, err error) {
+func setExpectationsForProductOptionValueCreation(mock sqlmock.Sqlmock, v *models.ProductOptionValue, err error) {
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(v.ID, generateExampleTimeForTests())
 	query, _ := buildProductOptionValueCreationQuery(v)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
@@ -90,7 +91,7 @@ func setExpectationsForProductOptionValueCreation(mock sqlmock.Sqlmock, v *Produ
 		WillReturnError(err)
 }
 
-func setExpectationsForProductOptionValueUpdate(mock sqlmock.Sqlmock, v *ProductOptionValue, err error) {
+func setExpectationsForProductOptionValueUpdate(mock sqlmock.Sqlmock, v *models.ProductOptionValue, err error) {
 	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests())
 	query, args := buildProductOptionValueUpdateQuery(v)
 	queryArgs := argsToDriverValues(args)
@@ -100,7 +101,7 @@ func setExpectationsForProductOptionValueUpdate(mock sqlmock.Sqlmock, v *Product
 		WillReturnError(err)
 }
 
-func setExpectationsForProductOptionValueForOptionExistence(mock sqlmock.Sqlmock, a *ProductOption, v *ProductOptionValue, exists bool, err error) {
+func setExpectationsForProductOptionValueForOptionExistence(mock sqlmock.Sqlmock, a *models.ProductOption, v *models.ProductOptionValue, exists bool, err error) {
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
 	query := formatQueryForSQLMock(productOptionValueExistenceForOptionIDQuery)
 	mock.ExpectQuery(query).
@@ -119,11 +120,9 @@ func setExpectationsForProductOptionValueDeletion(mock sqlmock.Sqlmock, id uint6
 func TestRetrieveProductOptionValueFromDB(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductOptionValue := &ProductOptionValue{
-		DBRow: DBRow{
-			ID:        256,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOptionValue := &models.ProductOptionValue{
+		ID:              256,
+		CreatedOn:       generateExampleTimeForTests(),
 		ProductOptionID: 123,
 		Value:           "something",
 	}
@@ -139,11 +138,9 @@ func TestRetrieveProductOptionValueFromDB(t *testing.T) {
 func TestRetrieveProductOptionValueFromDBThatDoesNotExist(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductOptionValue := &ProductOptionValue{
-		DBRow: DBRow{
-			ID:        256,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOptionValue := &models.ProductOptionValue{
+		ID:              256,
+		CreatedOn:       generateExampleTimeForTests(),
 		ProductOptionID: 123,
 		Value:           "something",
 	}
@@ -158,11 +155,9 @@ func TestRetrieveProductOptionValueFromDBThatDoesNotExist(t *testing.T) {
 func TestCreateProductOptionValue(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductOptionValue := &ProductOptionValue{
-		DBRow: DBRow{
-			ID:        256,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOptionValue := &models.ProductOptionValue{
+		ID:              256,
+		CreatedOn:       generateExampleTimeForTests(),
 		ProductOptionID: 123,
 		Value:           "something",
 	}
@@ -187,11 +182,9 @@ func TestCreateProductOptionValue(t *testing.T) {
 func TestUpdateProductOptionValueInDB(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductOptionValue := &ProductOptionValue{
-		DBRow: DBRow{
-			ID:        256,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOptionValue := &models.ProductOptionValue{
+		ID:              256,
+		CreatedOn:       generateExampleTimeForTests(),
 		ProductOptionID: 123,
 		Value:           "something",
 	}
@@ -224,19 +217,15 @@ func TestArchiveProductOptionValue(t *testing.T) {
 func TestProductOptionValueCreationHandler(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductOptionValue := &ProductOptionValue{
-		DBRow: DBRow{
-			ID:        256,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOptionValue := &models.ProductOptionValue{
+		ID:              256,
+		CreatedOn:       generateExampleTimeForTests(),
 		ProductOptionID: 123,
 		Value:           "something",
 	}
-	exampleProductOption := &ProductOption{
-		DBRow: DBRow{
-			ID:        123,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOption := &models.ProductOption{
+		ID:            123,
+		CreatedOn:     generateExampleTimeForTests(),
 		Name:          "something",
 		ProductRootID: 2,
 	}
@@ -259,19 +248,15 @@ func TestProductOptionValueCreationHandler(t *testing.T) {
 func TestProductOptionValueCreationHandlerWhenTransactionFailsToBegin(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductOptionValue := &ProductOptionValue{
-		DBRow: DBRow{
-			ID:        256,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOptionValue := &models.ProductOptionValue{
+		ID:              256,
+		CreatedOn:       generateExampleTimeForTests(),
 		ProductOptionID: 123,
 		Value:           "something",
 	}
-	exampleProductOption := &ProductOption{
-		DBRow: DBRow{
-			ID:        123,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOption := &models.ProductOption{
+		ID:            123,
+		CreatedOn:     generateExampleTimeForTests(),
 		Name:          "something",
 		ProductRootID: 2,
 	}
@@ -292,19 +277,15 @@ func TestProductOptionValueCreationHandlerWhenTransactionFailsToBegin(t *testing
 func TestProductOptionValueCreationHandlerWhenTransactionFailsToCommit(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductOptionValue := &ProductOptionValue{
-		DBRow: DBRow{
-			ID:        256,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOptionValue := &models.ProductOptionValue{
+		ID:              256,
+		CreatedOn:       generateExampleTimeForTests(),
 		ProductOptionID: 123,
 		Value:           "something",
 	}
-	exampleProductOption := &ProductOption{
-		DBRow: DBRow{
-			ID:        123,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOption := &models.ProductOption{
+		ID:            123,
+		CreatedOn:     generateExampleTimeForTests(),
 		Name:          "something",
 		ProductRootID: 2,
 	}
@@ -327,11 +308,9 @@ func TestProductOptionValueCreationHandlerWhenTransactionFailsToCommit(t *testin
 func TestProductOptionValueCreationHandlerWithNonexistentProductOption(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductOption := &ProductOption{
-		DBRow: DBRow{
-			ID:        123,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOption := &models.ProductOption{
+		ID:            123,
+		CreatedOn:     generateExampleTimeForTests(),
 		Name:          "something",
 		ProductRootID: 2,
 	}
@@ -350,19 +329,15 @@ func TestProductOptionValueCreationHandlerWithNonexistentProductOption(t *testin
 func TestProductOptionValueCreationHandlerWhenValueAlreadyExistsForOption(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductOptionValue := &ProductOptionValue{
-		DBRow: DBRow{
-			ID:        256,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOptionValue := &models.ProductOptionValue{
+		ID:              256,
+		CreatedOn:       generateExampleTimeForTests(),
 		ProductOptionID: 123,
 		Value:           "something",
 	}
-	exampleProductOption := &ProductOption{
-		DBRow: DBRow{
-			ID:        123,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOption := &models.ProductOption{
+		ID:            123,
+		CreatedOn:     generateExampleTimeForTests(),
 		Name:          "something",
 		ProductRootID: 2,
 	}
@@ -382,19 +357,15 @@ func TestProductOptionValueCreationHandlerWhenValueAlreadyExistsForOption(t *tes
 func TestProductOptionValueCreationHandlerWhenValueExistenceCheckReturnsNoRows(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductOptionValue := &ProductOptionValue{
-		DBRow: DBRow{
-			ID:        256,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOptionValue := &models.ProductOptionValue{
+		ID:              256,
+		CreatedOn:       generateExampleTimeForTests(),
 		ProductOptionID: 123,
 		Value:           "something",
 	}
-	exampleProductOption := &ProductOption{
-		DBRow: DBRow{
-			ID:        123,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOption := &models.ProductOption{
+		ID:            123,
+		CreatedOn:     generateExampleTimeForTests(),
 		Name:          "something",
 		ProductRootID: 2,
 	}
@@ -417,19 +388,15 @@ func TestProductOptionValueCreationHandlerWhenValueExistenceCheckReturnsNoRows(t
 func TestProductOptionValueCreationHandlerWhenValueExistenceCheckReturnsError(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductOptionValue := &ProductOptionValue{
-		DBRow: DBRow{
-			ID:        256,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOptionValue := &models.ProductOptionValue{
+		ID:              256,
+		CreatedOn:       generateExampleTimeForTests(),
 		ProductOptionID: 123,
 		Value:           "something",
 	}
-	exampleProductOption := &ProductOption{
-		DBRow: DBRow{
-			ID:        123,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOption := &models.ProductOption{
+		ID:            123,
+		CreatedOn:     generateExampleTimeForTests(),
 		Name:          "something",
 		ProductRootID: 2,
 	}
@@ -449,11 +416,9 @@ func TestProductOptionValueCreationHandlerWhenValueExistenceCheckReturnsError(t 
 func TestProductOptionValueCreationHandlerWithInvalidValueBody(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductOption := &ProductOption{
-		DBRow: DBRow{
-			ID:        123,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOption := &models.ProductOption{
+		ID:            123,
+		CreatedOn:     generateExampleTimeForTests(),
 		Name:          "something",
 		ProductRootID: 2,
 	}
@@ -472,19 +437,15 @@ func TestProductOptionValueCreationHandlerWithInvalidValueBody(t *testing.T) {
 func TestProductOptionValueCreationHandlerWithRowCreationError(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductOptionValue := &ProductOptionValue{
-		DBRow: DBRow{
-			ID:        256,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOptionValue := &models.ProductOptionValue{
+		ID:              256,
+		CreatedOn:       generateExampleTimeForTests(),
 		ProductOptionID: 123,
 		Value:           "something",
 	}
-	exampleProductOption := &ProductOption{
-		DBRow: DBRow{
-			ID:        123,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOption := &models.ProductOption{
+		ID:            123,
+		CreatedOn:     generateExampleTimeForTests(),
 		Name:          "something",
 		ProductRootID: 2,
 	}
@@ -507,19 +468,15 @@ func TestProductOptionValueCreationHandlerWithRowCreationError(t *testing.T) {
 func TestProductOptionValueUpdateHandler(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductOptionValue := &ProductOptionValue{
-		DBRow: DBRow{
-			ID:        256,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOptionValue := &models.ProductOptionValue{
+		ID:              256,
+		CreatedOn:       generateExampleTimeForTests(),
 		ProductOptionID: 123,
 		Value:           "something",
 	}
-	exampleUpdatedProductOptionValue := &ProductOptionValue{
-		DBRow: DBRow{
-			ID:        256,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleUpdatedProductOptionValue := &models.ProductOptionValue{
+		ID:              256,
+		CreatedOn:       generateExampleTimeForTests(),
 		ProductOptionID: 123,
 		Value:           "something else",
 	}
@@ -542,11 +499,9 @@ func TestProductOptionValueUpdateHandler(t *testing.T) {
 func TestProductOptionValueUpdateHandlerWhereOptionValueDoesNotExist(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductOptionValue := &ProductOptionValue{
-		DBRow: DBRow{
-			ID:        256,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOptionValue := &models.ProductOptionValue{
+		ID:              256,
+		CreatedOn:       generateExampleTimeForTests(),
 		ProductOptionID: 123,
 		Value:           "something",
 	}
@@ -567,11 +522,9 @@ func TestProductOptionValueUpdateHandlerWhereOptionValueDoesNotExist(t *testing.
 func TestProductOptionValueUpdateHandlerWhereInputIsInvalid(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductOptionValue := &ProductOptionValue{
-		DBRow: DBRow{
-			ID:        256,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOptionValue := &models.ProductOptionValue{
+		ID:              256,
+		CreatedOn:       generateExampleTimeForTests(),
 		ProductOptionID: 123,
 		Value:           "something",
 	}
@@ -592,11 +545,9 @@ func TestProductOptionValueUpdateHandlerWhereInputIsInvalid(t *testing.T) {
 func TestProductOptionValueUpdateHandlerWhereErrorEncounteredRetrievingOption(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductOptionValue := &ProductOptionValue{
-		DBRow: DBRow{
-			ID:        256,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOptionValue := &models.ProductOptionValue{
+		ID:              256,
+		CreatedOn:       generateExampleTimeForTests(),
 		ProductOptionID: 123,
 		Value:           "something",
 	}
@@ -618,19 +569,15 @@ func TestProductOptionValueUpdateHandlerWhereErrorEncounteredRetrievingOption(t 
 func TestProductOptionValueUpdateHandlerWhereErrorEncounteredUpdatingOption(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductOptionValue := &ProductOptionValue{
-		DBRow: DBRow{
-			ID:        256,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOptionValue := &models.ProductOptionValue{
+		ID:              256,
+		CreatedOn:       generateExampleTimeForTests(),
 		ProductOptionID: 123,
 		Value:           "something",
 	}
-	exampleUpdatedProductOptionValue := &ProductOptionValue{
-		DBRow: DBRow{
-			ID:        256,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleUpdatedProductOptionValue := &models.ProductOptionValue{
+		ID:              256,
+		CreatedOn:       generateExampleTimeForTests(),
 		ProductOptionID: 123,
 		Value:           "something else",
 	}
@@ -659,7 +606,7 @@ func TestProductOptionValueDeletionHandler(t *testing.T) {
 	req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "product_option_values", exampleIDString), nil)
 	assert.Nil(t, err)
 
-	setExpectationsForProductOptionValueExistence(testUtil.Mock, &ProductOptionValue{DBRow: DBRow{ID: exampleID}}, true, nil)
+	setExpectationsForProductOptionValueExistence(testUtil.Mock, &models.ProductOptionValue{ID: exampleID}, true, nil)
 	setExpectationsForProductOptionValueDeletion(testUtil.Mock, exampleID, nil)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
@@ -676,7 +623,7 @@ func TestProductOptionValueDeletionHandlerWithNonexistentOption(t *testing.T) {
 	req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "product_option_values", exampleIDString), nil)
 	assert.Nil(t, err)
 
-	setExpectationsForProductOptionValueExistence(testUtil.Mock, &ProductOptionValue{DBRow: DBRow{ID: exampleID}}, false, nil)
+	setExpectationsForProductOptionValueExistence(testUtil.Mock, &models.ProductOptionValue{ID: exampleID}, false, nil)
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 	assertStatusCode(t, testUtil, http.StatusNotFound)
@@ -692,7 +639,7 @@ func TestProductOptionValueDeletionHandlerWithErrorDeletingValue(t *testing.T) {
 	req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "product_option_values", exampleIDString), nil)
 	assert.Nil(t, err)
 
-	setExpectationsForProductOptionValueExistence(testUtil.Mock, &ProductOptionValue{DBRow: DBRow{ID: exampleID}}, true, nil)
+	setExpectationsForProductOptionValueExistence(testUtil.Mock, &models.ProductOptionValue{ID: exampleID}, true, nil)
 	setExpectationsForProductOptionValueDeletion(testUtil.Mock, exampleID, generateArbitraryError())
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 

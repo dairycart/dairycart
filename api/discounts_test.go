@@ -10,10 +10,11 @@ import (
 	"testing"
 	"time"
 
-	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
+	"github.com/dairycart/dairycart/api/storage/models"
 
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
 const (
@@ -63,7 +64,7 @@ func setExpectationsForDiscountRetrievalByID(mock sqlmock.Sqlmock, id string, er
 		WillReturnError(err)
 }
 
-func setExpectationsForDiscountCountQuery(mock sqlmock.Sqlmock, queryFilter *QueryFilter, err error) {
+func setExpectationsForDiscountCountQuery(mock sqlmock.Sqlmock, queryFilter *models.QueryFilter, err error) {
 	exampleRows := sqlmock.NewRows([]string{"count"}).AddRow(3)
 
 	discountListRetrievalQuery := buildCountQuery("discounts", queryFilter)
@@ -103,7 +104,7 @@ func setExpectationsForDiscountListQuery(mock sqlmock.Sqlmock, err error) {
 		WillReturnError(err)
 }
 
-func setExpectationsForDiscountCreation(mock sqlmock.Sqlmock, d *Discount, err error) {
+func setExpectationsForDiscountCreation(mock sqlmock.Sqlmock, d *models.Discount, err error) {
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(d.ID, d.CreatedOn)
 	discountCreationQuery, args := buildDiscountCreationQuery(d)
 	queryArgs := argsToDriverValues(args)
@@ -128,7 +129,7 @@ func setExpectationsForDiscountExistence(mock sqlmock.Sqlmock, discountID string
 		WillReturnError(err)
 }
 
-func setExpectationsForDiscountUpdate(mock sqlmock.Sqlmock, d *Discount, err error) {
+func setExpectationsForDiscountUpdate(mock sqlmock.Sqlmock, d *models.Discount, err error) {
 	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests())
 	query, rawArgs := buildDiscountUpdateQuery(d)
 	args := argsToDriverValues(rawArgs)
@@ -202,16 +203,14 @@ func TestRetrieveDiscountFromDBWhenDBReturnsError(t *testing.T) {
 func TestCreateDiscountInDB(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleDiscount := &Discount{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleDiscount := &models.Discount{
+		ID:           1,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "Example Discount",
 		DiscountType: "flat_amount",
 		Amount:       12.34,
 		StartsOn:     generateExampleTimeForTests(),
-		ExpiresOn:    NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
+		ExpiresOn:    models.NullTime{NullTime: pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
 	}
 
 	setExpectationsForDiscountCreation(testUtil.Mock, exampleDiscount, nil)
@@ -251,16 +250,14 @@ func TestArchiveDiscountReturnsError(t *testing.T) {
 func TestUpdateDiscountInDB(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleDiscount := &Discount{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleDiscount := &models.Discount{
+		ID:           1,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "Example Discount",
 		DiscountType: "flat_amount",
 		Amount:       12.34,
 		StartsOn:     generateExampleTimeForTests(),
-		ExpiresOn:    NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
+		ExpiresOn:    models.NullTime{NullTime: pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
 	}
 
 	setExpectationsForDiscountUpdate(testUtil.Mock, exampleDiscount, nil)
@@ -386,11 +383,9 @@ func TestDiscountCreationHandler(t *testing.T) {
 	testUtil := setupTestVariables(t)
 
 	dummyTime, _ := time.Parse("2006-01-02T15:04:05-07:00", exampleDiscountStartTime)
-	exampleCreatedDiscount := &Discount{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleCreatedDiscount := &models.Discount{
+		ID:           1,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "Test",
 		DiscountType: "flat_amount",
 		Amount:       12.34,
@@ -433,16 +428,14 @@ func TestDiscountCreationHandlerWithInvalidInput(t *testing.T) {
 func TestDiscountCreationHandlerWithDatabaseErrorUponCreation(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleDiscount := &Discount{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleDiscount := &models.Discount{
+		ID:           1,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "Example Discount",
 		DiscountType: "flat_amount",
 		Amount:       12.34,
 		StartsOn:     generateExampleTimeForTests(),
-		ExpiresOn:    NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
+		ExpiresOn:    models.NullTime{NullTime: pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
 	}
 
 	setExpectationsForDiscountCreation(testUtil.Mock, exampleDiscount, generateArbitraryError())
@@ -505,11 +498,9 @@ func TestDiscountUpdateHandler(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	updateInput := &Discount{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	updateInput := &models.Discount{
+		ID:           1,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "New Name",
 		DiscountType: "flat_amount",
 		Amount:       12.34,
@@ -587,11 +578,9 @@ func TestDiscountUpdateHandlerWithErrorUpdatingDiscount(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	updateInput := &Discount{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	updateInput := &models.Discount{
+		ID:           1,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "New Name",
 		DiscountType: "flat_amount",
 		Amount:       12.34,

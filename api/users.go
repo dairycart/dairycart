@@ -9,7 +9,7 @@ import (
 	"time"
 	"unicode"
 
-	"golang.org/x/crypto/bcrypt"
+	"github.com/dairycart/dairycart/api/storage/models"
 
 	"github.com/dchest/uniuri"
 	"github.com/go-chi/chi"
@@ -18,6 +18,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
+	"golang.org/x/crypto/bcrypt"
 )
 
 const (
@@ -29,10 +30,10 @@ const (
 	sessionUserIDKeyName     = "user_id"
 	sessionAuthorizedKeyName = "authenticated"
 
-	usersTableHeaders       = `id, first_name, last_name, username, email, password, salt, is_admin, password_last_changed_on, created_on, updated_on, archived_on`
-	userExistenceQuery      = `SELECT EXISTS(SELECT 1 FROM users WHERE username = $1 AND archived_on IS NULL)`
-	userExistenceQueryByID  = `SELECT EXISTS(SELECT 1 FROM users WHERE id = $1 AND archived_on IS NULL)`
-	userDeletionQuery       = `UPDATE users SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
+	usersTableHeaders      = `id, first_name, last_name, username, email, password, salt, is_admin, password_last_changed_on, created_on, updated_on, archived_on`
+	userExistenceQuery     = `SELECT EXISTS(SELECT 1 FROM users WHERE username = $1 AND archived_on IS NULL)`
+	userExistenceQueryByID = `SELECT EXISTS(SELECT 1 FROM users WHERE id = $1 AND archived_on IS NULL)`
+	userDeletionQuery      = `UPDATE users SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
 
 	passwordResetExistenceQueryForUserID = `SELECT EXISTS(SELECT 1 FROM password_reset_tokens WHERE user_id = $1 AND NOW() < expires_on)`
 	passwordResetExistenceQuery          = `SELECT EXISTS(SELECT 1 FROM password_reset_tokens WHERE token = $1 AND NOW() < expires_on)`
@@ -125,7 +126,7 @@ func passwordIsValid(s string) bool {
 	return len(s) >= 64 && hasNumber && hasUpper && hasSpecial
 }
 
-func createUserFromInput(in *UserCreationInput) (*User, error) {
+func createUserFromInput(in *UserCreationInput) (*models.User, error) {
 	salt, err := generateSalt()
 	// COVERAGE NOTE: I cannot seem to synthesize this error for the sake of testing, so if you're
 	// seeing this in a coverage report and the line below is red, just know that I tried. :(
@@ -139,7 +140,7 @@ func createUserFromInput(in *UserCreationInput) (*User, error) {
 		return nil, err
 	}
 
-	user := &User{
+	user := &models.User{
 		FirstName: in.FirstName,
 		LastName:  in.LastName,
 		Email:     in.Email,
@@ -151,8 +152,8 @@ func createUserFromInput(in *UserCreationInput) (*User, error) {
 	return user, nil
 }
 
-func createUserFromUpdateInput(in *UserUpdateInput, hashedPassword string) *User {
-	out := &User{
+func createUserFromUpdateInput(in *UserUpdateInput, hashedPassword string) *models.User {
+	out := &models.User{
 		FirstName: in.FirstName,
 		LastName:  in.LastName,
 		Username:  in.Username,
@@ -174,7 +175,7 @@ func saltAndHashPassword(password string, salt []byte) (string, error) {
 	return string(saltedAndHashedPassword), err
 }
 
-func createUserInDB(db *sqlx.DB, u *User) (uint64, time.Time, error) {
+func createUserInDB(db *sqlx.DB, u *models.User) (uint64, time.Time, error) {
 	var newUserID uint64
 	var createdOn time.Time
 	query, args := buildUserCreationQuery(u)
@@ -182,27 +183,27 @@ func createUserInDB(db *sqlx.DB, u *User) (uint64, time.Time, error) {
 	return newUserID, createdOn, err
 }
 
-func retrieveUserFromDB(db *sqlx.DB, username string) (User, error) {
-	var u User
+func retrieveUserFromDB(db *sqlx.DB, username string) (models.User, error) {
+	var u models.User
 	query, args := buildUserSelectionQuery(username)
 	err := db.Get(&u, query, args...)
 	return u, err
 }
 
-func retrieveUserFromDBByID(db *sqlx.DB, userID uint64) (User, error) {
-	var u User
+func retrieveUserFromDBByID(db *sqlx.DB, userID uint64) (models.User, error) {
+	var u models.User
 	query, args := buildUserSelectionQueryByID(userID)
 	err := db.Get(&u, query, args...)
 	return u, err
 }
 
-func passwordMatches(password string, u User) bool {
+func passwordMatches(password string, u models.User) bool {
 	saltedInputPassword := append(u.Salt, password...)
 	err := bcrypt.CompareHashAndPassword([]byte(u.Password), saltedInputPassword)
 	return err == nil
 }
 
-func updateUserInDatabase(db *sqlx.DB, u *User, passwordChanged bool) (time.Time, error) {
+func updateUserInDatabase(db *sqlx.DB, u *models.User, passwordChanged bool) (time.Time, error) {
 	var updatedOn time.Time
 	userUpdateQuery, queryArgs := buildUserUpdateQuery(u, passwordChanged)
 	err := db.QueryRow(userUpdateQuery, queryArgs...).Scan(&updatedOn)
@@ -534,7 +535,7 @@ func buildUserInfoUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 			notifyOfInternalIssue(res, err, "update user")
 			return
 		}
-		updatedUser.UpdatedOn = NullTime{pq.NullTime{Time: updatedOn, Valid: true}}
+		updatedUser.UpdatedOn = models.NullTime{NullTime: pq.NullTime{Time: updatedOn, Valid: true}}
 
 		json.NewEncoder(res).Encode(updatedUser)
 	}

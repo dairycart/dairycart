@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dairycart/dairycart/api/storage/models"
+
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 )
@@ -22,11 +24,9 @@ const (
 
 func TestBuildProductRootCreationQuery(t *testing.T) {
 	t.Parallel()
-	exampleRoot := &ProductRoot{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleRoot := &models.ProductRoot{
+		ID:            2,
+		CreatedOn:     generateExampleTimeForTests(),
 		Name:          "Skateboard",
 		Description:   "This is a skateboard. Please wear a helmet.",
 		Cost:          50.00,
@@ -113,7 +113,7 @@ func TestBuildProductListQuery(t *testing.T) {
 
 func TestBuildProductListQueryAndPartiallyCustomQueryFilter(t *testing.T) {
 	t.Parallel()
-	queryFilter := &QueryFilter{
+	queryFilter := &models.QueryFilter{
 		Page:          3,
 		Limit:         25,
 		UpdatedBefore: time.Unix(int64(aTimestamp), 0),
@@ -158,7 +158,7 @@ func TestBuildProductListQueryAndPartiallyCustomQueryFilter(t *testing.T) {
 
 func TestBuildProductListQueryAndCompletelyCustomQueryFilter(t *testing.T) {
 	t.Parallel()
-	queryFilter := &QueryFilter{
+	queryFilter := &models.QueryFilter{
 		Page:          3,
 		Limit:         46,
 		UpdatedBefore: time.Unix(int64(aTimestamp), 0),
@@ -243,11 +243,9 @@ func TestBuildProductAssociatedWithRootListQuery(t *testing.T) {
 
 func TestBuildProductUpdateQuery(t *testing.T) {
 	t.Parallel()
-	exampleProduct := &Product{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProduct := &models.Product{
+		ID:            2,
+		CreatedOn:     generateExampleTimeForTests(),
 		SKU:           "skateboard",
 		Name:          "Skateboard",
 		UPC:           "1234567890",
@@ -275,11 +273,9 @@ func TestBuildProductUpdateQuery(t *testing.T) {
 
 func TestBuildProductCreationQuery(t *testing.T) {
 	t.Parallel()
-	exampleProduct := &Product{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProduct := &models.Product{
+		ID:            2,
+		CreatedOn:     generateExampleTimeForTests(),
 		SKU:           "skateboard",
 		Name:          "Skateboard",
 		UPC:           "1234567890",
@@ -306,12 +302,10 @@ func TestBuildProductCreationQuery(t *testing.T) {
 
 func TestBuildMultipleProductCreationQuery(t *testing.T) {
 	t.Parallel()
-	exampleProducts := []*Product{
+	exampleProducts := []*models.Product{
 		{
-			DBRow: DBRow{
-				ID:        2,
-				CreatedOn: generateExampleTimeForTests(),
-			},
+			ID:            2,
+			CreatedOn:     generateExampleTimeForTests(),
 			SKU:           "skateboard",
 			Name:          "SKU ONE",
 			UPC:           "1234567890",
@@ -330,10 +324,8 @@ func TestBuildMultipleProductCreationQuery(t *testing.T) {
 			AvailableOn:   generateExampleTimeForTests(),
 		},
 		{
-			DBRow: DBRow{
-				ID:        2,
-				CreatedOn: generateExampleTimeForTests(),
-			},
+			ID:            2,
+			CreatedOn:     generateExampleTimeForTests(),
 			SKU:           "skateboard",
 			Name:          "SKU TWO",
 			UPC:           "1234567890",
@@ -368,7 +360,7 @@ func TestBuildProductOptionListQuery(t *testing.T) {
 		updated_on,
 		archived_on
 	 FROM product_options WHERE product_root_id = $1 AND archived_on IS NULL LIMIT 25`
-	actualQuery, actualArgs := buildProductOptionListQuery(existingID, &QueryFilter{})
+	actualQuery, actualArgs := buildProductOptionListQuery(existingID, &models.QueryFilter{})
 
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 1, len(actualArgs), argsEqualityErrorMessage)
@@ -377,7 +369,7 @@ func TestBuildProductOptionListQuery(t *testing.T) {
 func TestBuildProductOptionUpdateQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `UPDATE product_options SET name = $1, updated_on = NOW() WHERE id = $2 RETURNING updated_on`
-	actualQuery, actualArgs := buildProductOptionUpdateQuery(&ProductOption{})
+	actualQuery, actualArgs := buildProductOptionUpdateQuery(&models.ProductOption{})
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
 }
@@ -385,7 +377,7 @@ func TestBuildProductOptionUpdateQuery(t *testing.T) {
 func TestBuildProductOptionCreationQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `INSERT INTO product_options (name,product_root_id) VALUES ($1,$2) RETURNING id, created_on`
-	actualQuery, actualArgs := buildProductOptionCreationQuery(&ProductOption{}, exampleProductID)
+	actualQuery, actualArgs := buildProductOptionCreationQuery(&models.ProductOption{}, exampleProductID)
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
 }
@@ -393,7 +385,7 @@ func TestBuildProductOptionCreationQuery(t *testing.T) {
 func TestBuildProductOptionValueUpdateQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `UPDATE product_option_values SET updated_on = NOW(), value = $1 WHERE id = $2 RETURNING updated_on`
-	actualQuery, actualArgs := buildProductOptionValueUpdateQuery(&ProductOptionValue{})
+	actualQuery, actualArgs := buildProductOptionValueUpdateQuery(&models.ProductOptionValue{})
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
 }
@@ -401,7 +393,7 @@ func TestBuildProductOptionValueUpdateQuery(t *testing.T) {
 func TestBuildProductOptionValueCreationQuery(t *testing.T) {
 	t.Parallel()
 	expectedQuery := `INSERT INTO product_option_values (product_option_id,value) VALUES ($1,$2) RETURNING id, created_on`
-	actualQuery, actualArgs := buildProductOptionValueCreationQuery(&ProductOptionValue{})
+	actualQuery, actualArgs := buildProductOptionValueCreationQuery(&models.ProductOptionValue{})
 	assert.Equal(t, expectedQuery, actualQuery, queryEqualityErrorMessage)
 	assert.Equal(t, 2, len(actualArgs), argsEqualityErrorMessage)
 }
@@ -439,16 +431,14 @@ func TestBuildDiscountListQuery(t *testing.T) {
 
 func TestBuildDiscountCreationQuery(t *testing.T) {
 	t.Parallel()
-	exampleDiscount := &Discount{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleDiscount := &models.Discount{
+		ID:           1,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "Example Discount",
 		DiscountType: "flat_amount",
 		Amount:       12.34,
 		StartsOn:     generateExampleTimeForTests(),
-		ExpiresOn:    NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
+		ExpiresOn:    models.NullTime{NullTime: pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
 	}
 
 	expectedQuery := `INSERT INTO discounts (name,discount_type,amount,starts_on,expires_on,requires_code,code,limited_use,number_of_uses,login_required) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id, created_on`
@@ -459,16 +449,14 @@ func TestBuildDiscountCreationQuery(t *testing.T) {
 
 func TestBuildDiscountUpdateQuery(t *testing.T) {
 	t.Parallel()
-	exampleDiscount := &Discount{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleDiscount := &models.Discount{
+		ID:           1,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "Example Discount",
 		DiscountType: "flat_amount",
 		Amount:       12.34,
 		StartsOn:     generateExampleTimeForTests(),
-		ExpiresOn:    NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
+		ExpiresOn:    models.NullTime{NullTime: pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
 	}
 
 	expectedQuery := `UPDATE discounts SET amount = $1, code = $2, discount_type = $3, expires_on = $4, limited_use = $5, login_required = $6, name = $7, number_of_uses = $8, requires_code = $9, starts_on = $10, updated_on = NOW() WHERE id = $11 RETURNING updated_on`
@@ -497,7 +485,7 @@ func TestBuildUserSelectionQueryByID(t *testing.T) {
 
 func TestBuildUserCreationQuery(t *testing.T) {
 	t.Parallel()
-	user := &User{
+	user := &models.User{
 		FirstName: "FirstName",
 		LastName:  "LastName",
 		Email:     "Email",
@@ -525,7 +513,7 @@ func TestBuildPasswordResetRowCreationQuery(t *testing.T) {
 func TestBuildUserUpdateQueryWithoutPasswordChange(t *testing.T) {
 	t.Parallel()
 
-	user := &User{
+	user := &models.User{
 		FirstName: "FirstName",
 		LastName:  "LastName",
 		Email:     "Email",
@@ -543,7 +531,7 @@ func TestBuildUserUpdateQueryWithoutPasswordChange(t *testing.T) {
 func TestBuildUserUpdateQueryWithPasswordChange(t *testing.T) {
 	t.Parallel()
 
-	user := &User{
+	user := &models.User{
 		FirstName: "FirstName",
 		LastName:  "LastName",
 		Email:     "Email",

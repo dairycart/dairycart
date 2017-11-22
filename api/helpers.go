@@ -12,8 +12,9 @@ import (
 	"strconv"
 	"time"
 
-	validator "github.com/asaskevich/govalidator"
+	"github.com/dairycart/dairycart/api/storage/models"
 
+	validator "github.com/asaskevich/govalidator"
 	"github.com/fatih/structs"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
@@ -96,8 +97,8 @@ type QueryFilter struct {
 	UpdatedBefore time.Time
 }
 
-func parseRawFilterParams(rawFilterParams url.Values) *QueryFilter {
-	qf := &QueryFilter{
+func parseRawFilterParams(rawFilterParams url.Values) *models.QueryFilter {
+	qf := &models.QueryFilter{
 		Page:  1,
 		Limit: 25,
 	}
@@ -174,7 +175,7 @@ func restrictedStringIsValid(input string) bool {
 	return matches
 }
 
-func getRowCount(db *sqlx.DB, table string, queryFilter *QueryFilter) (uint64, error) {
+func getRowCount(db *sqlx.DB, table string, queryFilter *models.QueryFilter) (uint64, error) {
 	var count uint64
 	query := buildCountQuery(table, queryFilter)
 	err := db.Get(&count, query)

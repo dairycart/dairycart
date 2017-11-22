@@ -16,6 +16,7 @@ type Storer interface {
     {{ range .Schema.Tables }}
     {{- $modelName := pascal (trimSuffix .Name "s") }}
     {{- $isProduct := eq $modelName "Product" }}
+    {{- $isProductRoot := eq $modelName "ProductRoot" }}
     {{- $isDiscount := eq $modelName "Discount" }}
     {{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
     // {{ pascal .Name }}
@@ -24,9 +25,11 @@ type Storer interface {
     Create{{ $modelName }}(Querier, *models.{{ $modelName }}) (uint64, time.Time, {{ if $isProduct }}time.Time, {{ end }}error)
     Update{{ $modelName }}(Querier, *models.{{ $modelName }}) (time.Time, error)
     Delete{{ $modelName }}(Querier, uint64) (time.Time, error)
-    {{ if $isProductVariantBridge }}Delete{{ $modelName }}ByProductID(Querier, uint64) (time.Time, error){{ end }}
+    {{ if $isProductVariantBridge }}Delete{{ $modelName }}ByProductID(Querier, uint64) (time.Time, error)
+    CreateMultiple{{ $modelName }}sForProductID(Querier, uint64, []uint64) error{{- end -}}
     {{ if $isProduct }}Get{{ $modelName }}BySKU(Querier, string) (*models.{{ $modelName }}, error)
     {{ $modelName }}WithSKUExists(Querier, string) (bool, error){{- end -}}
+    {{ if $isProductRoot }}{{ $modelName }}WithSKUPrefixExists(Querier, string) (bool, error){{- end -}}
     {{ if $isDiscount }}Get{{ $modelName }}ByCode(Querier, string) (*models.{{ $modelName }}, error){{- end }}
     {{ end }}
 }

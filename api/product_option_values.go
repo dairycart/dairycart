@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/dairycart/dairycart/api/storage/models"
+
 	"github.com/go-chi/chi"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
@@ -15,11 +17,11 @@ import (
 )
 
 const (
-	productOptionValueExistenceQuery                 = `SELECT EXISTS(SELECT 1 FROM product_option_values WHERE id = $1 AND archived_on IS NULL)`
-	productOptionValueExistenceForOptionIDQuery      = `SELECT EXISTS(SELECT 1 FROM product_option_values WHERE product_option_id = $1 AND value = $2 AND archived_on IS NULL)`
-	productOptionValueRetrievalQuery                 = `SELECT id, product_option_id, value, created_on, updated_on, archived_on FROM product_option_values WHERE id = $1`
-	productOptionValueRetrievalForOptionIDQuery      = `SELECT id, product_option_id, value, created_on, updated_on, archived_on FROM product_option_values WHERE product_option_id = $1 AND archived_on IS NULL`
-	productOptionValueDeletionQuery                  = `UPDATE product_option_values SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
+	productOptionValueExistenceQuery            = `SELECT EXISTS(SELECT 1 FROM product_option_values WHERE id = $1 AND archived_on IS NULL)`
+	productOptionValueExistenceForOptionIDQuery = `SELECT EXISTS(SELECT 1 FROM product_option_values WHERE product_option_id = $1 AND value = $2 AND archived_on IS NULL)`
+	productOptionValueRetrievalQuery            = `SELECT id, product_option_id, value, created_on, updated_on, archived_on FROM product_option_values WHERE id = $1`
+	productOptionValueRetrievalForOptionIDQuery = `SELECT id, product_option_id, value, created_on, updated_on, archived_on FROM product_option_values WHERE product_option_id = $1 AND archived_on IS NULL`
+	productOptionValueDeletionQuery             = `UPDATE product_option_values SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
 )
 
 // ProductOptionValue represents a product's option values. If you have a t-shirt that comes in three colors
@@ -38,8 +40,8 @@ func createBridgeEntryForProductValues(tx *sql.Tx, productID uint64, ids []uint6
 }
 
 // retrieveProductOptionValue retrieves a ProductOptionValue with a given ID from the database
-func retrieveProductOptionValueFromDB(db *sqlx.DB, id uint64) (*ProductOptionValue, error) {
-	v := &ProductOptionValue{}
+func retrieveProductOptionValueFromDB(db *sqlx.DB, id uint64) (*models.ProductOptionValue, error) {
+	v := &models.ProductOptionValue{}
 	err := db.QueryRowx(productOptionValueRetrievalQuery, id).StructScan(v)
 	if err == sql.ErrNoRows {
 		return v, errors.Wrap(err, "Error querying for product option values")
@@ -48,8 +50,8 @@ func retrieveProductOptionValueFromDB(db *sqlx.DB, id uint64) (*ProductOptionVal
 }
 
 // retrieveProductOptionValuesForOptionFromDB retrieves a list of ProductOptionValue with a given product_option_id from the database
-func retrieveProductOptionValuesForOptionFromDB(db *sqlx.DB, optionID uint64) ([]ProductOptionValue, error) {
-	var values []ProductOptionValue
+func retrieveProductOptionValuesForOptionFromDB(db *sqlx.DB, optionID uint64) ([]models.ProductOptionValue, error) {
+	var values []models.ProductOptionValue
 	err := db.Select(&values, productOptionValueRetrievalForOptionIDQuery, optionID)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error encountered querying for products")
@@ -57,7 +59,7 @@ func retrieveProductOptionValuesForOptionFromDB(db *sqlx.DB, optionID uint64) ([
 	return values, nil
 }
 
-func updateProductOptionValueInDB(db *sqlx.DB, v *ProductOptionValue) (time.Time, error) {
+func updateProductOptionValueInDB(db *sqlx.DB, v *models.ProductOptionValue) (time.Time, error) {
 	var updatedOn time.Time
 	valueUpdateQuery, queryArgs := buildProductOptionValueUpdateQuery(v)
 	err := db.QueryRow(valueUpdateQuery, queryArgs...).Scan(&updatedOn)
@@ -97,14 +99,14 @@ func buildProductOptionValueUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 			notifyOfInternalIssue(res, err, "update product option value in the database")
 			return
 		}
-		existingOptionValue.UpdatedOn = NullTime{pq.NullTime{Time: updatedOn, Valid: true}}
+		existingOptionValue.UpdatedOn = models.NullTime{NullTime: pq.NullTime{Time: updatedOn, Valid: true}}
 
 		json.NewEncoder(res).Encode(existingOptionValue)
 	}
 }
 
 // createProductOptionValueInDB creates a ProductOptionValue tied to a ProductOption
-func createProductOptionValueInDB(tx *sql.Tx, v *ProductOptionValue) (uint64, time.Time, error) {
+func createProductOptionValueInDB(tx *sql.Tx, v *models.ProductOptionValue) (uint64, time.Time, error) {
 	var newOptionValueID uint64
 	var createdOn time.Time
 	query, args := buildProductOptionValueCreationQuery(v)
@@ -138,7 +140,7 @@ func buildProductOptionValueCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		newProductOptionValue := &ProductOptionValue{}
+		newProductOptionValue := &models.ProductOptionValue{}
 		err = validateRequestInput(req, newProductOptionValue)
 		if err != nil {
 			notifyOfInvalidRequestBody(res, err)

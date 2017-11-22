@@ -65,6 +65,7 @@ func (pg *postgres) CreatePasswordResetToken(db storage.Querier, nu *models.Pass
 		createdID uint64
 		createdAt time.Time
 	)
+
 	err := db.QueryRow(passwordresettokenCreationQuery, &nu.UserID, &nu.Token, &nu.ExpiresOn, &nu.PasswordResetOn).Scan(&createdID, &createdAt)
 
 	return createdID, createdAt, err

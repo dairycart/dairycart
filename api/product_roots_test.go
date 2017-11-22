@@ -8,12 +8,13 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/dairycart/dairycart/api/storage/models"
 
-	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
+	"github.com/stretchr/testify/assert"
+	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
-func createExampleHeadersAndDataFromProductRoot(r *ProductRoot) ([]string, []driver.Value) {
+func createExampleHeadersAndDataFromProductRoot(r *models.ProductRoot) ([]string, []driver.Value) {
 	var headers []string
 	var values []driver.Value
 
@@ -67,7 +68,7 @@ func setExpectationsForProductRootExistence(mock sqlmock.Sqlmock, id string, exi
 		WillReturnError(err)
 }
 
-func setExpectationsForProductRootRetrieval(mock sqlmock.Sqlmock, r *ProductRoot, err error) {
+func setExpectationsForProductRootRetrieval(mock sqlmock.Sqlmock, r *models.ProductRoot, err error) {
 	productRootHeaders, exampleProductRootData := createExampleHeadersAndDataFromProductRoot(r)
 
 	exampleRows := sqlmock.NewRows(productRootHeaders).AddRow(exampleProductRootData...)
@@ -78,7 +79,7 @@ func setExpectationsForProductRootRetrieval(mock sqlmock.Sqlmock, r *ProductRoot
 		WillReturnError(err)
 }
 
-func setExpectationsForProductRootListQuery(mock sqlmock.Sqlmock, r *ProductRoot, err error) {
+func setExpectationsForProductRootListQuery(mock sqlmock.Sqlmock, r *models.ProductRoot, err error) {
 	productRootHeaders, exampleProductRootData := createExampleHeadersAndDataFromProductRoot(r)
 
 	exampleRows := sqlmock.NewRows(productRootHeaders).
@@ -92,7 +93,7 @@ func setExpectationsForProductRootListQuery(mock sqlmock.Sqlmock, r *ProductRoot
 		WillReturnError(err)
 }
 
-func setExpectationsForProductRootCreation(mock sqlmock.Sqlmock, r *ProductRoot, err error) {
+func setExpectationsForProductRootCreation(mock sqlmock.Sqlmock, r *models.ProductRoot, err error) {
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(r.ID, generateExampleTimeForTests())
 	query, args := buildProductRootCreationQuery(r)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
@@ -192,7 +193,7 @@ func TestDeleteVariantBridgeEntriesAssociatedWithRoot(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func setupExpectationsForProductRootRetrieval(mock sqlmock.Sqlmock, r *ProductRoot, err error) {
+func setupExpectationsForProductRootRetrieval(mock sqlmock.Sqlmock, r *models.ProductRoot, err error) {
 	exampleProductRootHeaders, exampleProductRootValues := createExampleHeadersAndDataFromProductRoot(r)
 	exampleRows := sqlmock.NewRows(exampleProductRootHeaders).AddRow(exampleProductRootValues...)
 	mock.ExpectQuery(formatQueryForSQLMock(productRootRetrievalQuery)).
@@ -201,7 +202,7 @@ func setupExpectationsForProductRootRetrieval(mock sqlmock.Sqlmock, r *ProductRo
 		WillReturnError(err)
 }
 
-func setExpectationsForProductAssociatedWithRootListQuery(mock sqlmock.Sqlmock, r *ProductRoot, p *Product, err error) {
+func setExpectationsForProductAssociatedWithRootListQuery(mock sqlmock.Sqlmock, r *models.ProductRoot, p *models.Product, err error) {
 	productHeaders, exampleProductData := createExampleHeadersAndDataFromProduct(p)
 	exampleRows := sqlmock.NewRows(productHeaders).
 		AddRow(exampleProductData...).
@@ -230,7 +231,7 @@ func TestDeleteProductRoot(t *testing.T) {
 }
 
 func TestCreateProductRootFromProduct(t *testing.T) {
-	exampleInput := &Product{
+	exampleInput := &models.Product{
 		Name:               "name",
 		Subtitle:           "subtitle",
 		Description:        "description",
@@ -250,7 +251,7 @@ func TestCreateProductRootFromProduct(t *testing.T) {
 		PackageLength:      1,
 		AvailableOn:        generateExampleTimeForTests(),
 	}
-	expected := &ProductRoot{
+	expected := &models.ProductRoot{
 		Name:               "name",
 		Subtitle:           "subtitle",
 		Description:        "description",
@@ -278,11 +279,9 @@ func TestCreateProductRootFromProduct(t *testing.T) {
 func TestCreateProductRootInDB(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleRoot := &ProductRoot{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleRoot := &models.ProductRoot{
+		ID:            2,
+		CreatedOn:     generateExampleTimeForTests(),
 		Name:          "Skateboard",
 		Description:   "This is a skateboard. Please wear a helmet.",
 		Cost:          50.00,
@@ -317,11 +316,9 @@ func TestRetrieveProductRootFromDB(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	exampleRoot := ProductRoot{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleRoot := models.ProductRoot{
+		ID:            2,
+		CreatedOn:     generateExampleTimeForTests(),
 		Name:          "Skateboard",
 		Description:   "This is a skateboard. Please wear a helmet.",
 		Cost:          50.00,
@@ -353,19 +350,15 @@ func TestRetrieveProductRootFromDB(t *testing.T) {
 func TestSingleProductRootRetrievalHandler(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductOption := &ProductOption{
-		DBRow: DBRow{
-			ID:        123,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOption := &models.ProductOption{
+		ID:            123,
+		CreatedOn:     generateExampleTimeForTests(),
 		Name:          "something",
 		ProductRootID: 2,
 	}
-	exampleProductRoot := &ProductRoot{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductRoot := &models.ProductRoot{
+		ID:           2,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "root_name",
 		Subtitle:     "subtitle",
 		Description:  "description",
@@ -373,11 +366,9 @@ func TestSingleProductRootRetrievalHandler(t *testing.T) {
 		Manufacturer: "manufacturer",
 		Brand:        "brand",
 	}
-	exampleProduct := &Product{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProduct := &models.Product{
+		ID:          2,
+		CreatedOn:   generateExampleTimeForTests(),
 		Name:        "Skateboard",
 		Description: "This is a skateboard. Please wear a helmet.",
 	}
@@ -400,11 +391,9 @@ func TestSingleProductRootRetrievalHandler(t *testing.T) {
 func TestSingleProductRootRetrievalHandlerWhenNoSuchRootExists(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductRoot := &ProductRoot{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductRoot := &models.ProductRoot{
+		ID:           2,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "root_name",
 		Subtitle:     "subtitle",
 		Description:  "description",
@@ -426,11 +415,9 @@ func TestSingleProductRootRetrievalHandlerWhenNoSuchRootExists(t *testing.T) {
 func TestSingleProductRootRetrievalHandlerWithErrorQueryingDatabaseForProductRoot(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductRoot := &ProductRoot{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductRoot := &models.ProductRoot{
+		ID:           2,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "root_name",
 		Subtitle:     "subtitle",
 		Description:  "description",
@@ -452,11 +439,9 @@ func TestSingleProductRootRetrievalHandlerWithErrorQueryingDatabaseForProductRoo
 func TestSingleProductRootRetrievalHandlerWithErrorRetrievingAssociatedProducts(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductRoot := &ProductRoot{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductRoot := &models.ProductRoot{
+		ID:           2,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "root_name",
 		Subtitle:     "subtitle",
 		Description:  "description",
@@ -464,11 +449,9 @@ func TestSingleProductRootRetrievalHandlerWithErrorRetrievingAssociatedProducts(
 		Manufacturer: "manufacturer",
 		Brand:        "brand",
 	}
-	exampleProduct := &Product{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProduct := &models.Product{
+		ID:          2,
+		CreatedOn:   generateExampleTimeForTests(),
 		Name:        "Skateboard",
 		Description: "This is a skateboard. Please wear a helmet.",
 	}
@@ -487,19 +470,15 @@ func TestSingleProductRootRetrievalHandlerWithErrorRetrievingAssociatedProducts(
 func TestSingleProductRootRetrievalHandlerWitherrorRetrievingProductOptions(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductOption := &ProductOption{
-		DBRow: DBRow{
-			ID:        123,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductOption := &models.ProductOption{
+		ID:            123,
+		CreatedOn:     generateExampleTimeForTests(),
 		Name:          "something",
 		ProductRootID: 2,
 	}
-	exampleProductRoot := &ProductRoot{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductRoot := &models.ProductRoot{
+		ID:           2,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "root_name",
 		Subtitle:     "subtitle",
 		Description:  "description",
@@ -507,11 +486,9 @@ func TestSingleProductRootRetrievalHandlerWitherrorRetrievingProductOptions(t *t
 		Manufacturer: "manufacturer",
 		Brand:        "brand",
 	}
-	exampleProduct := &Product{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProduct := &models.Product{
+		ID:          2,
+		CreatedOn:   generateExampleTimeForTests(),
 		Name:        "Skateboard",
 		Description: "This is a skateboard. Please wear a helmet.",
 	}
@@ -531,11 +508,9 @@ func TestSingleProductRootRetrievalHandlerWitherrorRetrievingProductOptions(t *t
 func TestProductRootListRetrievalHandler(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductRoot := &ProductRoot{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductRoot := &models.ProductRoot{
+		ID:           2,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "root_name",
 		Subtitle:     "subtitle",
 		Description:  "description",
@@ -543,11 +518,9 @@ func TestProductRootListRetrievalHandler(t *testing.T) {
 		Manufacturer: "manufacturer",
 		Brand:        "brand",
 	}
-	exampleProduct := &Product{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProduct := &models.Product{
+		ID:          2,
+		CreatedOn:   generateExampleTimeForTests(),
 		SKU:         "skateboard",
 		Name:        "Skateboard",
 		UPC:         "1234567890",
@@ -589,11 +562,9 @@ func TestProductRootListRetrievalHandlerWithErrorGettingRowCount(t *testing.T) {
 func TestProductRootListRetrievalHandlerWithErrorRetrievingProductRoots(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductRoot := &ProductRoot{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductRoot := &models.ProductRoot{
+		ID:           2,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "root_name",
 		Subtitle:     "subtitle",
 		Description:  "description",
@@ -616,11 +587,9 @@ func TestProductRootListRetrievalHandlerWithErrorRetrievingProductRoots(t *testi
 func TestProductRootListRetrievalHandlerWithErrorRetrivingAssociatedProducts(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductRoot := &ProductRoot{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductRoot := &models.ProductRoot{
+		ID:           2,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "root_name",
 		Subtitle:     "subtitle",
 		Description:  "description",
@@ -628,11 +597,9 @@ func TestProductRootListRetrievalHandlerWithErrorRetrivingAssociatedProducts(t *
 		Manufacturer: "manufacturer",
 		Brand:        "brand",
 	}
-	exampleProduct := &Product{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProduct := &models.Product{
+		ID:          2,
+		CreatedOn:   generateExampleTimeForTests(),
 		SKU:         "skateboard",
 		Name:        "Skateboard",
 		UPC:         "1234567890",
@@ -658,11 +625,9 @@ func TestProductRootListRetrievalHandlerWithErrorRetrivingAssociatedProducts(t *
 func TestProductRootDeletionHandler(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductRoot := &ProductRoot{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductRoot := &models.ProductRoot{
+		ID:           2,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "root_name",
 		Subtitle:     "subtitle",
 		Description:  "description",
@@ -691,11 +656,9 @@ func TestProductRootDeletionHandler(t *testing.T) {
 func TestProductRootDeletionHandlerWithNonexistentProductRoot(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductRoot := &ProductRoot{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductRoot := &models.ProductRoot{
+		ID:           2,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "root_name",
 		Subtitle:     "subtitle",
 		Description:  "description",
@@ -717,11 +680,9 @@ func TestProductRootDeletionHandlerWithNonexistentProductRoot(t *testing.T) {
 func TestProductRootDeletionHandlerWithErrorRetrievingProductRoot(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductRoot := &ProductRoot{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductRoot := &models.ProductRoot{
+		ID:           2,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "root_name",
 		Subtitle:     "subtitle",
 		Description:  "description",
@@ -743,11 +704,9 @@ func TestProductRootDeletionHandlerWithErrorRetrievingProductRoot(t *testing.T) 
 func TestProductRootDeletionHandlerWithErrorBeginningTransaction(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductRoot := &ProductRoot{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductRoot := &models.ProductRoot{
+		ID:           2,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "root_name",
 		Subtitle:     "subtitle",
 		Description:  "description",
@@ -770,11 +729,9 @@ func TestProductRootDeletionHandlerWithErrorBeginningTransaction(t *testing.T) {
 func TestProductRootDeletionHandlerWithErrorDeletingBridgeEntries(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductRoot := &ProductRoot{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductRoot := &models.ProductRoot{
+		ID:           2,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "root_name",
 		Subtitle:     "subtitle",
 		Description:  "description",
@@ -799,11 +756,9 @@ func TestProductRootDeletionHandlerWithErrorDeletingBridgeEntries(t *testing.T) 
 func TestProductRootDeletionHandlerWithErrorDeletingOptionValues(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductRoot := &ProductRoot{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductRoot := &models.ProductRoot{
+		ID:           2,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "root_name",
 		Subtitle:     "subtitle",
 		Description:  "description",
@@ -829,11 +784,9 @@ func TestProductRootDeletionHandlerWithErrorDeletingOptionValues(t *testing.T) {
 func TestProductRootDeletionHandlerWithErrorDeletingOptions(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductRoot := &ProductRoot{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductRoot := &models.ProductRoot{
+		ID:           2,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "root_name",
 		Subtitle:     "subtitle",
 		Description:  "description",
@@ -860,11 +813,9 @@ func TestProductRootDeletionHandlerWithErrorDeletingOptions(t *testing.T) {
 func TestProductRootDeletionHandlerWithErrorDeletingProducts(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductRoot := &ProductRoot{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductRoot := &models.ProductRoot{
+		ID:           2,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "root_name",
 		Subtitle:     "subtitle",
 		Description:  "description",
@@ -892,11 +843,9 @@ func TestProductRootDeletionHandlerWithErrorDeletingProducts(t *testing.T) {
 func TestProductRootDeletionHandlerWithErrorDeletingProductRoot(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductRoot := &ProductRoot{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductRoot := &models.ProductRoot{
+		ID:           2,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "root_name",
 		Subtitle:     "subtitle",
 		Description:  "description",
@@ -925,11 +874,9 @@ func TestProductRootDeletionHandlerWithErrorDeletingProductRoot(t *testing.T) {
 func TestProductRootDeletionHandlerWithErrorCommittingTransaction(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
-	exampleProductRoot := &ProductRoot{
-		DBRow: DBRow{
-			ID:        2,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleProductRoot := &models.ProductRoot{
+		ID:           2,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "root_name",
 		Subtitle:     "subtitle",
 		Description:  "description",

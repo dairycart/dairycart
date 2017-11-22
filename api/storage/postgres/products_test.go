@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"database/sql"
+
 	"errors"
 	"strconv"
 	"testing"

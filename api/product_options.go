@@ -9,6 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dairycart/dairycart/api/storage"
+	"github.com/dairycart/dairycart/api/storage/models"
+
 	"github.com/go-chi/chi"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
@@ -34,9 +37,9 @@ const (
 // and three sizes, then there are two ProductOptions for that base_product, color and size.
 type ProductOption struct {
 	DBRow
-	ProductRootID uint64               `json:"product_root_id"`
-	Name          string               `json:"name"`
-	Values        []ProductOptionValue `json:"values"`
+	ProductRootID uint64                      `json:"product_root_id"`
+	Name          string                      `json:"name"`
+	Values        []models.ProductOptionValue `json:"values"`
 }
 
 // ProductOptionUpdateInput is a struct to use for updating product options
@@ -54,17 +57,18 @@ type simpleProductOption struct {
 	IDs            []uint64
 	OptionSummary  string
 	SKUPostfix     string
-	OriginalValues []ProductOptionValue
+	OriginalValues []models.ProductOptionValue
 }
 
 type optionPlaceholder struct {
 	ID            uint64
 	Summary       string
 	Value         string
-	OriginalValue ProductOptionValue
+	OriginalValue models.ProductOptionValue
 }
 
-func generateCartesianProductForOptions(inputOptions []*ProductOption) []simpleProductOption {
+// FIXME: don't use pointers here
+func generateCartesianProductForOptions(inputOptions []*models.ProductOption) []simpleProductOption {
 	/*
 		Some notes about this function:
 
@@ -110,7 +114,7 @@ func generateCartesianProductForOptions(inputOptions []*ProductOption) []simpleP
 		var ids []uint64
 		var skuPrefixParts []string
 		var optionSummaryParts []string
-		var originalValues []ProductOptionValue
+		var originalValues []models.ProductOptionValue
 		for j, k := range ix {
 			ids = append(ids, optionData[j][k].ID)
 			optionSummaryParts = append(optionSummaryParts, optionData[j][k].Summary)
@@ -141,8 +145,8 @@ func productOptionAlreadyExistsForProduct(db *sqlx.DB, in *ProductOptionCreation
 }
 
 // retrieveProductOptionFromDB retrieves a ProductOption with a given ID from the database
-func retrieveProductOptionFromDB(db *sqlx.DB, id uint64) (*ProductOption, error) {
-	option := &ProductOption{}
+func retrieveProductOptionFromDB(db *sqlx.DB, id uint64) (*models.ProductOption, error) {
+	option := &models.ProductOption{}
 	err := db.QueryRowx(productOptionRetrievalQuery, id).StructScan(option)
 	if err == sql.ErrNoRows {
 		return option, errors.Wrap(err, "Error querying for product")
@@ -150,8 +154,8 @@ func retrieveProductOptionFromDB(db *sqlx.DB, id uint64) (*ProductOption, error)
 	return option, err
 }
 
-func getProductOptionsForProductRoot(db *sqlx.DB, productRootID uint64, queryFilter *QueryFilter) ([]*ProductOption, error) {
-	var options []*ProductOption
+func getProductOptionsForProductRoot(db *sqlx.DB, productRootID uint64, queryFilter *models.QueryFilter) ([]*models.ProductOption, error) {
+	var options []*models.ProductOption
 
 	query, args := buildProductOptionListQuery(productRootID, queryFilter)
 	err := db.Select(&options, query, args...)
@@ -198,7 +202,7 @@ func buildProductOptionListHandler(db *sqlx.DB) http.HandlerFunc {
 	}
 }
 
-func updateProductOptionInDB(db *sqlx.DB, a *ProductOption) (time.Time, error) {
+func updateProductOptionInDB(db *sqlx.DB, a *models.ProductOption) (time.Time, error) {
 	var updatedOn time.Time
 	optionUpdateQuery, queryArgs := buildProductOptionUpdateQuery(a)
 	err := db.QueryRow(optionUpdateQuery, queryArgs...).Scan(&updatedOn)
@@ -238,7 +242,7 @@ func buildProductOptionUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 			notifyOfInternalIssue(res, err, "update product option in the database")
 			return
 		}
-		existingOption.UpdatedOn = NullTime{pq.NullTime{Time: optionUpdatedOn, Valid: true}}
+		existingOption.UpdatedOn = models.NullTime{NullTime: pq.NullTime{Time: optionUpdatedOn, Valid: true}}
 
 		existingOption.Values, err = retrieveProductOptionValuesForOptionFromDB(db, existingOption.ID)
 		if err != nil {
@@ -250,32 +254,29 @@ func buildProductOptionUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 	}
 }
 
-func createProductOptionInDB(tx *sql.Tx, o *ProductOption, productRootID uint64) (uint64, time.Time, error) {
+func createProductOptionInDB(tx *sql.Tx, o *models.ProductOption, productRootID uint64) (uint64, time.Time, error) {
 	var newOptionID uint64
 	var createdOn time.Time
-	// using QueryRow instead of Exec because we want it to return the newly created row's ID
-	// Exec normally returns a sql.Result, which has a LastInsertedID() method, but when I tested
-	// this locally, it never worked. ¯\_(ツ)_/¯
 	query, queryArgs := buildProductOptionCreationQuery(o, productRootID)
 	err := tx.QueryRow(query, queryArgs...).Scan(&newOptionID, &createdOn)
 
 	return newOptionID, createdOn, err
 }
 
-func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in *ProductOptionCreationInput, productRootID uint64) (*ProductOption, error) {
+func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in *ProductOptionCreationInput, productRootID uint64, client storage.Storer) (*models.ProductOption, error) {
 	var err error
-	newProductOption := &ProductOption{Name: in.Name, ProductRootID: productRootID}
-	newProductOption.ID, newProductOption.CreatedOn, err = createProductOptionInDB(tx, newProductOption, productRootID)
+	newProductOption := &models.ProductOption{Name: in.Name, ProductRootID: productRootID}
+	newProductOption.ID, newProductOption.CreatedOn, err = client.CreateProductOption(tx, newProductOption)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, value := range in.Values {
-		newOptionValue := ProductOptionValue{
+		newOptionValue := models.ProductOptionValue{
 			ProductOptionID: newProductOption.ID,
 			Value:           value,
 		}
-		newOptionValueID, optionCreatedOn, err := createProductOptionValueInDB(tx, &newOptionValue)
+		newOptionValueID, optionCreatedOn, err := client.CreateProductOptionValue(tx, &newOptionValue)
 		if err != nil {
 			return nil, err
 		}
@@ -287,7 +288,7 @@ func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in *ProductOptionCrea
 	return newProductOption, nil
 }
 
-func buildProductOptionCreationHandler(db *sqlx.DB) http.HandlerFunc {
+func buildProductOptionCreationHandler(db *sqlx.DB, client storage.Storer) http.HandlerFunc {
 	// ProductOptionCreationHandler is a request handler that can create product options
 	return func(res http.ResponseWriter, req *http.Request) {
 		productRootID := chi.URLParam(req, "product_root_id")
@@ -322,7 +323,7 @@ func buildProductOptionCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		newProductOption, err := createProductOptionAndValuesInDBFromInput(tx, newOptionData, productRootIDInt)
+		newProductOption, err := createProductOptionAndValuesInDBFromInput(tx, newOptionData, productRootIDInt, client)
 		if err != nil {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "create product option in the database")

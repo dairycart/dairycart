@@ -34,22 +34,22 @@ type Product struct {
 
 	// Pricing Fields
 	Taxable   bool    `json:"taxable"`
-	Price     float32 `json:"price"`
+	Price     float64 `json:"price"`
 	OnSale    bool    `json:"on_sale"`
-	SalePrice float32 `json:"sale_price"`
-	Cost      float32 `json:"cost"`
+	SalePrice float64 `json:"sale_price"`
+	Cost      float64 `json:"cost"`
 
 	// Product Dimensions
-	ProductWeight float32 `json:"product_weight"`
-	ProductHeight float32 `json:"product_height"`
-	ProductWidth  float32 `json:"product_width"`
-	ProductLength float32 `json:"product_length"`
+	ProductWeight float64 `json:"product_weight"`
+	ProductHeight float64 `json:"product_height"`
+	ProductWidth  float64 `json:"product_width"`
+	ProductLength float64 `json:"product_length"`
 
 	// Package dimensions
-	PackageWeight float32 `json:"package_weight"`
-	PackageHeight float32 `json:"package_height"`
-	PackageWidth  float32 `json:"package_width"`
-	PackageLength float32 `json:"package_length"`
+	PackageWeight float64 `json:"package_weight"`
+	PackageHeight float64 `json:"package_height"`
+	PackageWidth  float64 `json:"package_width"`
+	PackageLength float64 `json:"package_length"`
 
 	ApplicableOptionValues []ProductOptionValue `json:"applicable_options,omitempty"`
 
@@ -57,8 +57,8 @@ type Product struct {
 }
 
 // newProductFromCreationInput creates a new product from a ProductCreationInput
-func newProductFromCreationInput(in *ProductCreationInput) *Product {
-	np := &Product{
+func newProductFromCreationInput(in *ProductCreationInput) *models.Product {
+	np := &models.Product{
 		Name:               in.Name,
 		Subtitle:           in.Subtitle,
 		Description:        in.Description,
@@ -100,22 +100,22 @@ type ProductCreationInput struct {
 
 	// Pricing Fields
 	Taxable   bool    `json:"taxable"`
-	Price     float32 `json:"price"`
+	Price     float64 `json:"price"`
 	OnSale    bool    `json:"on_sale"`
-	SalePrice float32 `json:"sale_price"`
-	Cost      float32 `json:"cost"`
+	SalePrice float64 `json:"sale_price"`
+	Cost      float64 `json:"cost"`
 
 	// Product Dimensions
-	ProductWeight float32 `json:"product_weight"`
-	ProductHeight float32 `json:"product_height"`
-	ProductWidth  float32 `json:"product_width"`
-	ProductLength float32 `json:"product_length"`
+	ProductWeight float64 `json:"product_weight"`
+	ProductHeight float64 `json:"product_height"`
+	ProductWidth  float64 `json:"product_width"`
+	ProductLength float64 `json:"product_length"`
 
 	// Package dimensions
-	PackageWeight      float32 `json:"package_weight"`
-	PackageHeight      float32 `json:"package_height"`
-	PackageWidth       float32 `json:"package_width"`
-	PackageLength      float32 `json:"package_length"`
+	PackageWeight      float64 `json:"package_weight"`
+	PackageHeight      float64 `json:"package_height"`
+	PackageWidth       float64 `json:"package_width"`
+	PackageLength      float64 `json:"package_length"`
 	QuantityPerPackage uint32  `json:"quantity_per_package"`
 
 	AvailableOn time.Time `json:"available_on"`
@@ -276,7 +276,7 @@ func buildProductUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerFu
 }
 
 // createProductInDB takes a marshaled Product object and creates an entry for it and a base_product in the database
-func createProductInDB(tx *sql.Tx, np *Product) (uint64, time.Time, time.Time, error) {
+func createProductInDB(tx *sql.Tx, np *models.Product) (uint64, time.Time, time.Time, error) {
 	var newProductID uint64
 	var availableOn time.Time
 	var createdOn time.Time
@@ -285,11 +285,11 @@ func createProductInDB(tx *sql.Tx, np *Product) (uint64, time.Time, time.Time, e
 	return newProductID, availableOn, createdOn, err
 }
 
-func createProductsInDBFromOptionRows(tx *sql.Tx, r *ProductRoot, np *Product) ([]Product, error) {
-	createdProducts := []Product{}
+func createProductsInDBFromOptionRows(client storage.Storer, tx *sql.Tx, r *models.ProductRoot, np *models.Product) ([]models.Product, error) {
+	createdProducts := []models.Product{}
 	productOptionData := generateCartesianProductForOptions(r.Options)
 	for _, option := range productOptionData {
-		p := &Product{}
+		p := &models.Product{}
 		*p = *np // solved: http://www.claymath.org/millennium-problems/p-vs-np-problem
 
 		p.ProductRootID = r.ID
@@ -298,12 +298,13 @@ func createProductsInDBFromOptionRows(tx *sql.Tx, r *ProductRoot, np *Product) (
 		p.SKU = fmt.Sprintf("%s_%s", r.SKUPrefix, option.SKUPostfix)
 
 		var err error
-		p.ID, p.AvailableOn, p.CreatedOn, err = createProductInDB(tx, p)
+		p.ID, p.AvailableOn, p.CreatedOn, err = client.CreateProduct(tx, p)
 		if err != nil {
 			return nil, err
 		}
 
-		err = createBridgeEntryForProductValues(tx, p.ID, option.IDs)
+		err = client.CreateMultipleProductVariantBridgesForProductID(tx, p.ID, option.IDs)
+		// err = createBridgeEntryForProductValues(tx, p.ID, option.IDs)
 		if err != nil {
 			return nil, err
 		}
@@ -312,7 +313,8 @@ func createProductsInDBFromOptionRows(tx *sql.Tx, r *ProductRoot, np *Product) (
 	return createdProducts, nil
 }
 
-func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
+func buildProductCreationHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+	// func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		productInput := &ProductCreationInput{}
 		err := validateRequestInput(req, productInput)
@@ -326,7 +328,8 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 
 		// can't create a product with a sku that already exists!
-		exists, err := rowExistsInDB(db, productRootSkuExistenceQuery, productInput.SKU)
+		exists, err := client.ProductRootWithSKUPrefixExists(db, productInput.SKU)
+		// exists, err := rowExistsInDB(db, productRootSkuExistenceQuery, productInput.SKU)
 		if err != nil || exists {
 			notifyOfInvalidRequestBody(res, fmt.Errorf("product with sku '%s' already exists", productInput.SKU))
 			return
@@ -340,7 +343,8 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 
 		newProduct := newProductFromCreationInput(productInput)
 		productRoot := createProductRootFromProduct(newProduct)
-		productRoot.ID, productRoot.CreatedOn, err = createProductRootInDB(tx, productRoot)
+		productRoot.ID, productRoot.CreatedOn, err = client.CreateProductRoot(tx, productRoot)
+		// productRoot.ID, productRoot.CreatedOn, err = createProductRootInDB(tx, productRoot)
 		if err != nil {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "insert product options and values in database")
@@ -348,7 +352,7 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 
 		for _, optionAndValues := range productInput.Options {
-			o, err := createProductOptionAndValuesInDBFromInput(tx, optionAndValues, productRoot.ID)
+			o, err := createProductOptionAndValuesInDBFromInput(tx, optionAndValues, productRoot.ID, client)
 			if err != nil {
 				tx.Rollback()
 				notifyOfInternalIssue(res, err, "insert product options and values in database")
@@ -359,16 +363,16 @@ func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 
 		if len(productInput.Options) == 0 {
 			newProduct.ProductRootID = productRoot.ID
-			newProduct.ID, newProduct.AvailableOn, newProduct.CreatedOn, err = createProductInDB(tx, newProduct)
+			newProduct.ID, newProduct.AvailableOn, newProduct.CreatedOn, err = client.CreateProduct(tx, newProduct)
 			if err != nil {
 				tx.Rollback()
 				notifyOfInternalIssue(res, err, "insert product in database")
 				return
 			}
-			productRoot.Options = []*ProductOption{} // so this won't be Marshaled as null
-			productRoot.Products = []Product{*newProduct}
+			productRoot.Options = []*models.ProductOption{} // so this won't be Marshaled as null
+			productRoot.Products = []models.Product{*newProduct}
 		} else {
-			productRoot.Products, err = createProductsInDBFromOptionRows(tx, productRoot, newProduct)
+			productRoot.Products, err = createProductsInDBFromOptionRows(client, tx, productRoot, newProduct)
 			if err != nil {
 				tx.Rollback()
 				notifyOfInternalIssue(res, err, "insert products in database")

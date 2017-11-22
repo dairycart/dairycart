@@ -104,6 +104,7 @@ func (pg *postgres) CreateDiscount(db storage.Querier, nu *models.Discount) (uin
 		createdID uint64
 		createdAt time.Time
 	)
+
 	err := db.QueryRow(discountCreationQuery, &nu.Name, &nu.DiscountType, &nu.Amount, &nu.StartsOn, &nu.ExpiresOn, &nu.RequiresCode, &nu.Code, &nu.LimitedUse, &nu.NumberOfUses, &nu.LoginRequired).Scan(&createdID, &createdAt)
 
 	return createdID, createdAt, err

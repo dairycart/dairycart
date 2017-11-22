@@ -9,6 +9,7 @@ import (
 
 {{- $modelName := pascal (trimSuffix .Table.Name "s") }}
 {{- $isProduct := eq $modelName "Product" }}
+{{- $isProductRoot := eq $modelName "ProductRoot" }}
 {{- $isDiscount := eq $modelName "Discount" }}
 {{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
 
@@ -33,6 +34,13 @@ func (m *MockDB) {{ $modelName }}WithSKUExists(db storage.Querier, sku string) (
 }
 {{- end }}
 
+{{- if $isProductRoot }}
+func (m *MockDB) {{ $modelName }}WithSKUPrefixExists(db storage.Querier, skuPrefix string) (bool, error) {
+    args := m.Called(db, skuPrefix)
+	return args.Bool(0), args.Error(1)
+}
+{{- end }}
+
 func (m *MockDB) {{ $modelName }}Exists(db storage.Querier, id uint64) (bool, error) {
     args := m.Called(db, id)
 	return args.Bool(0), args.Error(1)
@@ -47,6 +55,13 @@ func (m *MockDB) Create{{ $modelName }}(db storage.Querier, nu *models.{{ $model
     args := m.Called(db, nu)
 	return args.Get(0).(uint64), args.Get(1).(time.Time), {{ if $isProduct -}}args.Get(2).(time.Time), args.Error(3){{ else }}args.Error(2){{ end -}}
 }
+
+{{ if $isProductVariantBridge }}
+func (m *MockDB) CreateMultiple{{ $modelName }}sForProductID(db storage.Querier, productID uint64, optionValueIDs []uint64) error {
+    args := m.Called(db, productID, optionValueIDs)
+	return args.Error(0)
+}
+{{- end }}
 
 func (m *MockDB) Update{{ $modelName }}(db storage.Querier, updated *models.{{ $modelName }}) (time.Time, error) {
     args := m.Called(db, updated)

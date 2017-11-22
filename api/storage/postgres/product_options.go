@@ -65,6 +65,7 @@ func (pg *postgres) CreateProductOption(db storage.Querier, nu *models.ProductOp
 		createdID uint64
 		createdAt time.Time
 	)
+
 	err := db.QueryRow(productoptionCreationQuery, &nu.Name, &nu.ProductRootID).Scan(&createdID, &createdAt)
 
 	return createdID, createdAt, err

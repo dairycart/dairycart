@@ -1,18 +1,21 @@
 package postgres
 
+
+{{- $modelName := pascal (trimSuffix .Table.Name "s") }}
+{{- $shortVarName := toLower (sliceString $modelName 0 1) }}
+{{- $isProduct := eq $modelName "Product" }}
+{{- $isDiscount := eq $modelName "Discount" }}
+{{- $isProductRoot := eq $modelName "ProductRoot" }}
+{{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
+
 import (
+    {{- if $isProductVariantBridge}}"fmt"{{ end }}
     "time"
     "database/sql"
 
 	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairycart/api/storage/models"
 )
-
-{{- $modelName := pascal (trimSuffix .Table.Name "s") }}
-{{- $shortVarName := toLower (sliceString $modelName 0 1) }}
-{{- $isProduct := eq $modelName "Product" }}
-{{- $isDiscount := eq $modelName "Discount" }}
-{{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
 
 {{- if $isProduct }}
 {{ $bySKUVarName := printf "%sQueryBySKU" ( camel $modelName ) -}}
@@ -79,6 +82,24 @@ func (pg *postgres) {{ $modelName }}WithSKUExists(db storage.Querier, sku string
 }
 {{- end }}
 
+{{- if $isProductRoot }}
+{{ $existenceBySKUPrefixQueryVarName := printf "%sWithSKUPrefixExistenceQuery" ( camel $modelName ) -}}
+const {{ $existenceBySKUPrefixQueryVarName }} = `SELECT EXISTS(SELECT id FROM {{ .Table.Name }} WHERE sku_prefix = $1 and archived_on IS NULL);`
+
+func (pg *postgres) {{ $modelName }}WithSKUPrefixExists(db storage.Querier, skuPrefix string) (bool, error) {
+    var exists string
+
+	err := db.QueryRow({{ $existenceBySKUPrefixQueryVarName }}, skuPrefix).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return exists == "true", err
+}
+{{- end }}
+
 {{ $existenceQueryVarName := printf "%sExistenceQuery" ( camel $modelName ) -}}
 const {{ $existenceQueryVarName }} = `SELECT EXISTS(SELECT id FROM {{ .Table.Name }} WHERE id = $1 and archived_on IS NULL);`
 
@@ -112,7 +133,7 @@ const {{ $readQueryVarName }} = `
 func (pg *postgres) Get{{ $modelName }}(db storage.Querier, id uint64) (*models.{{ $modelName }}, error) {
 	{{ $shortVarName }} := &models.{{ $modelName }}{}
 
-    err := db.QueryRow({{ $readQueryVarName }}, id).Scan({{ $lastCol := dec (len .Table.Columns.DBNames) -}}{{ range $x, $col := .Table.Columns.DBNames }}&{{ $shortVarName }}.{{ if or (eq (toLower $col) "sku") (eq (toLower $col) "upc") }}{{ toUpper $col }}{{ else }}{{ pascal $col }}{{ end }}{{ if ne $x $lastCol }},{{ end }}{{ end }})
+    err := db.QueryRow({{ $readQueryVarName }}, id).Scan({{ $lastCol := dec (len .Table.Columns.DBNames) -}}{{ range $x, $col := .Table.Columns.DBNames }}&{{ $shortVarName }}.{{ if or (eq (toLower $col) "sku") (eq (toLower $col) "upc") }}{{ toUpper $col }}{{ else if eq (toLower $col) "sku_prefix"}}SKUPrefix{{ else }}{{ pascal $col }}{{ end }}{{ if ne $x $lastCol }},{{ end }}{{ end }})
 
 	return {{ $shortVarName }}, err
 }
@@ -142,10 +163,52 @@ func (pg *postgres) Create{{ $modelName }}(db storage.Querier, nu *models.{{ $mo
         createdAt time.Time
         {{ if $isProduct -}}availableOn time.Time{{ end -}}
     )
-    err := db.QueryRow({{ $creationQueryVarName }}, {{ range $x, $col := $creationColumns -}}&nu.{{- if and (ne $col "upc") (ne $col "sku") -}}{{ pascal $col -}}{{ else }}{{ toUpper $col }}{{ end }}{{ if ne $lastCol $x }}, {{ end }}{{ end }}).Scan(&createdID, &createdAt{{- if $isProduct }}, &availableOn{{ end }})
+
+    err := db.QueryRow({{ $creationQueryVarName }}, {{ range $x, $col := $creationColumns -}}&nu.{{- if or (eq $col "upc") (eq $col "sku") -}}{{ toUpper $col }}{{ else if eq $col "sku_prefix" }}SKUPrefix{{ else }}{{ pascal $col -}}{{ end }}{{ if ne $lastCol $x }},{{ end }}{{ end }}).Scan(&createdID, &createdAt{{- if $isProduct }}, &availableOn{{ end }})
 
     return createdID, createdAt, {{- if $isProduct }}availableOn, {{ end }}err
 }
+
+{{- if $isProductVariantBridge }}
+func buildMulti{{ $modelName }}CreationQuery(productID uint64, optionValueIDs []uint64) (query string, values []interface{}) {
+    values = append(values, productID)
+    var valueString string
+	for ix, id := range optionValueIDs {
+		if ix == 0 {
+            valueString = fmt.Sprintf("($1, $%d)", ix+2)
+            values = append(values, id)
+        } else {
+            valueString = fmt.Sprintf(`%s
+                ($1, $%d)`, valueString, ix+2)
+            values = append(values, id)
+        }
+        if len(optionValueIDs)-1 != ix {
+            valueString = fmt.Sprintf("%s,", valueString)
+        }
+	}
+
+    query = fmt.Sprintf(`
+        INSERT INTO {{ .Table.Name }}
+            (
+                product_id, product_option_value_id
+            )
+        VALUES
+            (
+                %s
+            )
+        RETURNING
+            id, created_on;
+    `, valueString)
+
+	return query, values
+}
+
+func (pg *postgres) CreateMultiple{{ $modelName }}sForProductID(db storage.Querier, productID uint64, optionValueIDs []uint64) error {
+    query, args := buildMulti{{ $modelName }}CreationQuery(productID, optionValueIDs)
+    _, err := db.Exec(query, args...)
+    return err
+}
+{{- end }}
 
 {{ $updateColumns := .Table.Columns.Names.Except (makeSlice "id" "created_on" "archived_on") -}}
 {{ $updateQueryVarName := printf "%sUpdateQuery" ( camel $modelName ) -}}
@@ -160,7 +223,7 @@ const {{ $updateQueryVarName }} = `
 
 func (pg *postgres) Update{{ $modelName }}(db storage.Querier, updated *models.{{ $modelName }}) (time.Time, error) {
     var t time.Time
-	err := db.QueryRow({{ $updateQueryVarName }}, {{ $lastCol := dec (len $updateColumns) -}}{{ range $x, $col := $updateColumns }}{{ if and (ne $col "updated_on") (ne $col "id")}}&updated.{{ if or (eq (toLower $col) "sku") (eq (toLower $col) "upc") }}{{ toUpper $col }}{{ else }}{{ pascal $col }}{{ end }}, {{ end }}{{ end }}&updated.ID).Scan(&t)
+	err := db.QueryRow({{ $updateQueryVarName }}, {{ $lastCol := dec (len $updateColumns) -}}{{ range $x, $col := $updateColumns }}{{ if and (ne $col "updated_on") (ne $col "id")}}&updated.{{ if or (eq (toLower $col) "sku") (eq (toLower $col) "upc") }}{{ toUpper $col }}{{ else if eq (toLower $col) "sku_prefix"}}SKUPrefix{{ else }}{{ pascal $col }}{{ end }}, {{ end }}{{ end }}&updated.ID).Scan(&t)
     return t, err
 }
 

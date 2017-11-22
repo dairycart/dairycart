@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/dairycart/dairycart/api/storage"
@@ -64,9 +65,48 @@ func (pg *postgres) CreateProductVariantBridge(db storage.Querier, nu *models.Pr
 		createdID uint64
 		createdAt time.Time
 	)
+
 	err := db.QueryRow(productvariantbridgeCreationQuery, &nu.ProductID, &nu.ProductOptionValueID).Scan(&createdID, &createdAt)
 
 	return createdID, createdAt, err
+}
+func buildMultiProductVariantBridgeCreationQuery(productID uint64, optionValueIDs []uint64) (query string, values []interface{}) {
+	values = append(values, productID)
+	var valueString string
+	for ix, id := range optionValueIDs {
+		if ix == 0 {
+			valueString = fmt.Sprintf("($1, $%d)", ix+2)
+			values = append(values, id)
+		} else {
+			valueString = fmt.Sprintf(`%s
+                ($1, $%d)`, valueString, ix+2)
+			values = append(values, id)
+		}
+		if len(optionValueIDs)-1 != ix {
+			valueString = fmt.Sprintf("%s,", valueString)
+		}
+	}
+
+	query = fmt.Sprintf(`
+        INSERT INTO product_variant_bridge
+            (
+                product_id, product_option_value_id
+            )
+        VALUES
+            (
+                %s
+            )
+        RETURNING
+            id, created_on;
+    `, valueString)
+
+	return query, values
+}
+
+func (pg *postgres) CreateMultipleProductVariantBridgesForProductID(db storage.Querier, productID uint64, optionValueIDs []uint64) error {
+	query, args := buildMultiProductVariantBridgeCreationQuery(productID, optionValueIDs)
+	_, err := db.Exec(query, args...)
+	return err
 }
 
 const productVariantBridgeUpdateQuery = `

@@ -10,7 +10,7 @@ type ProductRoot struct {
 	Name               string    `json:"name"`                 // name
 	Subtitle           string    `json:"subtitle"`             // subtitle
 	Description        string    `json:"description"`          // description
-	SkuPrefix          string    `json:"sku_prefix"`           // sku_prefix
+	SKUPrefix          string    `json:"sku_prefix"`           // sku_prefix
 	Manufacturer       string    `json:"manufacturer"`         // manufacturer
 	Brand              string    `json:"brand"`                // brand
 	Taxable            bool      `json:"taxable"`              // taxable
@@ -23,9 +23,14 @@ type ProductRoot struct {
 	PackageHeight      float64   `json:"package_height"`       // package_height
 	PackageWidth       float64   `json:"package_width"`        // package_width
 	PackageLength      float64   `json:"package_length"`       // package_length
-	QuantityPerPackage int       `json:"quantity_per_package"` // quantity_per_package
+	QuantityPerPackage uint32    `json:"quantity_per_package"` // quantity_per_package
 	AvailableOn        time.Time `json:"available_on"`         // available_on
 	CreatedOn          time.Time `json:"created_on"`           // created_on
 	UpdatedOn          NullTime  `json:"updated_on"`           // updated_on
 	ArchivedOn         NullTime  `json:"archived_on"`          // archived_on
+
+	// useful for responses
+	// TODO: make this a slice of non-pointers
+	Options  []*ProductOption `json:"options"`
+	Products []Product        `json:"products"`
 }

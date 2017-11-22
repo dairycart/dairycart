@@ -16,7 +16,7 @@ type Product struct {
 	UPC                string    `json:"upc"`                  // upc
 	Manufacturer       string    `json:"manufacturer"`         // manufacturer
 	Brand              string    `json:"brand"`                // brand
-	Quantity           int       `json:"quantity"`             // quantity
+	Quantity           uint32    `json:"quantity"`             // quantity
 	Taxable            bool      `json:"taxable"`              // taxable
 	Price              float64   `json:"price"`                // price
 	OnSale             bool      `json:"on_sale"`              // on_sale
@@ -30,9 +30,12 @@ type Product struct {
 	PackageHeight      float64   `json:"package_height"`       // package_height
 	PackageWidth       float64   `json:"package_width"`        // package_width
 	PackageLength      float64   `json:"package_length"`       // package_length
-	QuantityPerPackage int       `json:"quantity_per_package"` // quantity_per_package
+	QuantityPerPackage uint32    `json:"quantity_per_package"` // quantity_per_package
 	AvailableOn        time.Time `json:"available_on"`         // available_on
 	CreatedOn          time.Time `json:"created_on"`           // created_on
 	UpdatedOn          NullTime  `json:"updated_on"`           // updated_on
 	ArchivedOn         NullTime  `json:"archived_on"`          // archived_on
+
+	// useful for responses
+	ApplicableOptionValues []ProductOptionValue `json:"applicable_options,omitempty"`
 }

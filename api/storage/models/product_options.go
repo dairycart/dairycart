@@ -12,4 +12,7 @@ type ProductOption struct {
 	CreatedOn     time.Time `json:"created_on"`      // created_on
 	UpdatedOn     NullTime  `json:"updated_on"`      // updated_on
 	ArchivedOn    NullTime  `json:"archived_on"`     // archived_on
+
+	// useful for responses
+	Values []ProductOptionValue `json:"values"`
 }

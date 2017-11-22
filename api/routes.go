@@ -48,8 +48,8 @@ func SetupAPIRoutes(router *chi.Mux, db *sql.DB, dbxReplaceMePlz *sqlx.DB, store
 
 		// Products
 		specificProductRoute := fmt.Sprintf("/product/{sku:%s}", ValidURLCharactersPattern)
-		r.Post("/product", buildProductCreationHandler(dbxReplaceMePlz))
 		r.Get("/products", buildProductListHandler(dbxReplaceMePlz))
+		r.Post("/product", buildProductCreationHandler(db, client))
 		r.Get(specificProductRoute, buildSingleProductHandler(db, client))
 		r.Patch(specificProductRoute, buildProductUpdateHandler(db, client))
 		r.Head(specificProductRoute, buildProductExistenceHandler(db, client))
@@ -59,7 +59,7 @@ func SetupAPIRoutes(router *chi.Mux, db *sql.DB, dbxReplaceMePlz *sqlx.DB, store
 		optionsListRoute := fmt.Sprintf("/product/{product_root_id:%s}/options", NumericPattern)
 		specificOptionRoute := fmt.Sprintf("/product_options/{option_id:%s}", NumericPattern)
 		r.Get(optionsListRoute, buildProductOptionListHandler(dbxReplaceMePlz))
-		r.Post(optionsListRoute, buildProductOptionCreationHandler(dbxReplaceMePlz))
+		r.Post(optionsListRoute, buildProductOptionCreationHandler(dbxReplaceMePlz, client))
 		r.Patch(specificOptionRoute, buildProductOptionUpdateHandler(dbxReplaceMePlz))
 		r.Delete(specificOptionRoute, buildProductOptionDeletionHandler(dbxReplaceMePlz))
 
