@@ -52,20 +52,6 @@ type Discount struct {
 	LoginRequired bool      `json:"login_required"`
 }
 
-// DiscountCreationInput represents user input for creating new discounts
-type DiscountCreationInput struct {
-	Name          string    `json:"name"`
-	Type          string    `json:"type"`
-	Amount        float32   `json:"amount"`
-	StartsOn      time.Time `json:"starts_on"`
-	ExpiresOn     NullTime  `json:"expires_on"`
-	RequiresCode  bool      `json:"requires_code"`
-	Code          string    `json:"code"`
-	LimitedUse    bool      `json:"limited_use"`
-	NumberOfUses  int64     `json:"number_of_uses"`
-	LoginRequired bool      `json:"login_required"`
-}
-
 func (d *Discount) discountTypeIsValid() bool {
 	// Because Go doesn't have typed enums (https://github.com/golang/go/issues/19814),
 	// this is my only real line of defense against a user attempting to load an invalid

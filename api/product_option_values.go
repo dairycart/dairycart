@@ -20,7 +20,6 @@ const (
 	productOptionValueRetrievalQuery                 = `SELECT id, product_option_id, value, created_on, updated_on, archived_on FROM product_option_values WHERE id = $1`
 	productOptionValueRetrievalForOptionIDQuery      = `SELECT id, product_option_id, value, created_on, updated_on, archived_on FROM product_option_values WHERE product_option_id = $1 AND archived_on IS NULL`
 	productOptionValueDeletionQuery                  = `UPDATE product_option_values SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
-	productVariantBridgeDeletionQueryByProductID     = `UPDATE product_variant_bridge SET archived_on = NOW() WHERE product_id = $1 AND archived_on IS NULL`
 )
 
 // ProductOptionValue represents a product's option values. If you have a t-shirt that comes in three colors

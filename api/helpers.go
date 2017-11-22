@@ -23,8 +23,6 @@ import (
 const (
 	// DefaultLimit is the number of results we will return per page if the user doesn't specify another amount
 	DefaultLimit = 25
-	// DefaultLimitString is DefaultLimit but in string form because types are a thing
-	DefaultLimitString = "25"
 	// MaxLimit is the maximum number of objects Dairycart will return in a response
 	MaxLimit = 50
 
@@ -120,7 +118,7 @@ func parseRawFilterParams(rawFilterParams url.Values) *QueryFilter {
 		if err != nil {
 			log.Printf("encountered error when trying to parse query filter param %s: %v", `Limit`, err)
 		} else {
-			qf.Limit = uint8(math.Min(i, MaxLimit))
+			qf.Limit = uint8(math.Max(math.Min(i, MaxLimit), DefaultLimit))
 		}
 	}
 

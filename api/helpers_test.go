@@ -32,7 +32,7 @@ import (
 
 const (
 	exampleSKU               = "example"
-	exampleTimeString        = "2016-12-01 12:00:00.000000"
+	//exampleTimeString        = "2016-12-01 12:00:00.000000"
 	exampleGarbageInput      = `{"things": "stuff"}`
 	exampleMarshalTimeString = "2016-12-31T12:00:00.000000Z"
 )

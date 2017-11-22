@@ -16,13 +16,6 @@ import (
 	"github.com/lib/pq"
 )
 
-const (
-	skuExistenceQuery             = `SELECT EXISTS(SELECT 1 FROM products WHERE sku = $1 AND archived_on IS NULL)`
-	productExistenceQuery         = `SELECT EXISTS(SELECT 1 FROM products WHERE id = $1 AND archived_on IS NULL)`
-	productDeletionQuery          = `UPDATE products SET archived_on = NOW() WHERE sku = $1 AND archived_on IS NULL`
-	completeProductRetrievalQuery = `SELECT * FROM products WHERE sku = $1`
-)
-
 // Product describes something a user can buy
 type Product struct {
 	DBRow
@@ -150,13 +143,6 @@ func buildProductExistenceHandler(db *sql.DB, client storage.Storer) http.Handle
 	}
 }
 
-// retrieveProductFromDB retrieves a product with a given SKU from the database
-func retrieveProductFromDB(db *sqlx.DB, sku string) (Product, error) {
-	var p Product
-	err := db.Get(&p, completeProductRetrievalQuery, sku)
-	return p, err
-}
-
 func buildSingleProductHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
 	// SingleProductHandler is a request handler that returns a single Product
 	return func(res http.ResponseWriter, req *http.Request) {
@@ -211,7 +197,6 @@ func buildProductDeletionHandler(db *sql.DB, client storage.Storer) http.Handler
 
 		// can't delete a product that doesn't exist!
 		existingProduct, err := client.GetProductBySKU(db, sku)
-		// existingProduct, err := retrieveProductFromDB(db, sku)
 		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "product", sku)
 			return
