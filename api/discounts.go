@@ -39,28 +39,6 @@ const (
 	discountDeletionQuery  = `UPDATE discounts SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
 )
 
-// Discount represents pricing changes that apply temporarily to products
-type Discount struct {
-	DBRow
-	Name          string    `json:"name"`
-	DiscountType  string    `json:"discount_type"`
-	Amount        float32   `json:"amount"`
-	StartsOn      time.Time `json:"starts_on"`
-	ExpiresOn     NullTime  `json:"expires_on"`
-	RequiresCode  bool      `json:"requires_code"`
-	Code          string    `json:"code,omitempty"`
-	LimitedUse    bool      `json:"limited_use"`
-	NumberOfUses  int64     `json:"number_of_uses,omitempty"`
-	LoginRequired bool      `json:"login_required"`
-}
-
-func (d *Discount) discountTypeIsValid() bool {
-	// Because Go doesn't have typed enums (https://github.com/golang/go/issues/19814),
-	// this is my only real line of defense against a user attempting to load an invalid
-	// discount type into the database. It's lame, type enums aren't, here's hoping.
-	return d.DiscountType == "percentage" || d.DiscountType == "flat_amount"
-}
-
 func retrieveDiscountFromDB(db *sqlx.DB, discountID string) (models.Discount, error) {
 	var d models.Discount
 	err := db.Get(&d, discountRetrievalQuery, discountID)
@@ -96,7 +74,7 @@ func buildDiscountListRetrievalHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		var discounts []Discount
+		var discounts []models.Discount
 		query, args := buildDiscountListQuery(queryFilter)
 		err = retrieveListOfRowsFromDB(db, query, args, &discounts)
 		if err != nil {
@@ -201,7 +179,7 @@ func buildDiscountUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 		// eating the error here because we've already validated input
 		mergo.Merge(updatedDiscount, &existingDiscount)
 
-		use := func(...interface{}){}
+		use := func(...interface{}) {}
 
 		updatedOn, err := updateDiscountInDatabase(db, updatedDiscount)
 		if err != nil {

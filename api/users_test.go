@@ -234,7 +234,7 @@ func TestCreateUserFromInput(t *testing.T) {
 		Password:  examplePassword,
 		IsAdmin:   true,
 	}
-	expected := &User{
+	expected := &models.User{
 		FirstName: "FirstName",
 		LastName:  "LastName",
 		Email:     "Email",

@@ -25,40 +25,6 @@ const (
 	productVariantBridgeDeletionQueryByRootID = `UPDATE product_variant_bridge SET archived_on = NOW() WHERE product_id IN (SELECT id FROM products WHERE product_root_id = $1)`
 )
 
-// ProductRoot represents the object that products inherit from
-type ProductRoot struct {
-	DBRow
-
-	// Basic Info
-	Name               string    `json:"name"`
-	Subtitle           string    `json:"subtitle"`
-	Description        string    `json:"description"`
-	SKUPrefix          string    `json:"sku_prefix"`
-	Manufacturer       string    `json:"manufacturer"`
-	Brand              string    `json:"brand"`
-	AvailableOn        time.Time `json:"available_on"`
-	QuantityPerPackage uint32    `json:"quantity_per_package"`
-
-	// Pricing Fields
-	Taxable bool    `json:"taxable"`
-	Cost    float32 `json:"cost"`
-
-	// Product Dimensions
-	ProductWeight float32 `json:"product_weight"`
-	ProductHeight float32 `json:"product_height"`
-	ProductWidth  float32 `json:"product_width"`
-	ProductLength float32 `json:"product_length"`
-
-	// Package dimensions
-	PackageWeight float32 `json:"package_weight"`
-	PackageHeight float32 `json:"package_height"`
-	PackageWidth  float32 `json:"package_width"`
-	PackageLength float32 `json:"package_length"`
-
-	Options  []*models.ProductOption `json:"options"`
-	Products []models.Product        `json:"products"`
-}
-
 func createProductRootFromProduct(p *models.Product) *models.ProductRoot {
 	r := &models.ProductRoot{
 		Name:               p.Name,
@@ -113,7 +79,7 @@ func buildProductRootListHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		var productRoots []ProductRoot
+		var productRoots []models.ProductRoot
 		query, args := buildProductRootListQuery(queryFilter)
 		err = retrieveListOfRowsFromDB(db, query, args, &productRoots)
 		if err != nil {

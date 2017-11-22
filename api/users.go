@@ -47,19 +47,6 @@ const (
 	`
 )
 
-// User represents a Dairycart user
-type User struct {
-	DBRow
-	FirstName             string   `json:"first_name"`
-	LastName              string   `json:"last_name"`
-	Username              string   `json:"username"`
-	Email                 string   `json:"email"`
-	Password              string   `json:"password"`
-	Salt                  []byte   `json:"salt"`
-	IsAdmin               bool     `json:"is_admin"`
-	PasswordLastChangedOn NullTime `json:"password_last_changed_on,omitempty"`
-}
-
 // DisplayUser represents a Dairycart user we can return in responses
 type DisplayUser struct {
 	DBRow

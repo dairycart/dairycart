@@ -24,15 +24,6 @@ const (
 	productOptionValueDeletionQuery             = `UPDATE product_option_values SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
 )
 
-// ProductOptionValue represents a product's option values. If you have a t-shirt that comes in three colors
-// and three sizes, then there are two ProductOptions for that base_product, color and size, and six ProductOptionValues,
-// One for each color and one for each size.
-type ProductOptionValue struct {
-	DBRow
-	ProductOptionID uint64 `json:"product_option_id"`
-	Value           string `json:"value"`
-}
-
 // retrieveProductOptionValue retrieves a ProductOptionValue with a given ID from the database
 func retrieveProductOptionValueFromDB(db *sqlx.DB, id uint64) (*models.ProductOptionValue, error) {
 	v := &models.ProductOptionValue{}
@@ -74,7 +65,7 @@ func buildProductOptionValueUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		updatedValueData := &ProductOptionValue{}
+		updatedValueData := &models.ProductOptionValue{}
 		err = validateRequestInput(req, updatedValueData)
 		if err != nil {
 			notifyOfInvalidRequestBody(res, err)

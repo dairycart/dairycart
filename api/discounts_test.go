@@ -139,18 +139,6 @@ func setExpectationsForDiscountUpdate(mock sqlmock.Sqlmock, d *models.Discount, 
 		WillReturnError(err)
 }
 
-func TestDiscountTypeIsValidWithValidInput(t *testing.T) {
-	t.Parallel()
-	d := &Discount{DiscountType: "invalid_type"}
-	assert.False(t, d.discountTypeIsValid())
-}
-
-func TestDiscountTypeIsValidWithInvalidInput(t *testing.T) {
-	t.Parallel()
-	d := &Discount{DiscountType: "this is nonsense"}
-	assert.False(t, d.discountTypeIsValid())
-}
-
 func TestRetrieveDiscountFromDB(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
@@ -159,8 +147,8 @@ func TestRetrieveDiscountFromDB(t *testing.T) {
 	setExpectationsForDiscountRetrievalByID(testUtil.Mock, discountIDString, nil)
 
 	expectedDiscount := &models.Discount{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
+		ID:           1,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "Example Discount",
 		DiscountType: "flat_amount",
 		Amount:       12.34,
@@ -549,11 +537,9 @@ func TestDiscountUpdateHandlerWithErrorRetrievingDiscount(t *testing.T) {
 	t.Parallel()
 	testUtil := setupTestVariables(t)
 
-	updateInput := &Discount{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	updateInput := &models.Discount{
+		ID:           1,
+		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "New Name",
 		DiscountType: "flat_amount",
 		Amount:       12.34,
