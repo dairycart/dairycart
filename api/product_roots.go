@@ -96,8 +96,8 @@ func createProductRootInDB(tx *sql.Tx, r *models.ProductRoot) (uint64, time.Time
 }
 
 // retrieveProductRootFromDB retrieves a product root with a given ID from the database
-func retrieveProductRootFromDB(db *sqlx.DB, id uint64) (ProductRoot, error) {
-	var root ProductRoot
+func retrieveProductRootFromDB(db *sqlx.DB, id uint64) (models.ProductRoot, error) {
+	var root models.ProductRoot
 	err := db.QueryRowx(productRootRetrievalQuery, id).StructScan(&root)
 	return root, err
 }

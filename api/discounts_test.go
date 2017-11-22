@@ -158,16 +158,14 @@ func TestRetrieveDiscountFromDB(t *testing.T) {
 	discountIDString := strconv.Itoa(int(exampleDiscountID))
 	setExpectationsForDiscountRetrievalByID(testUtil.Mock, discountIDString, nil)
 
-	expectedDiscount := &Discount{
-		DBRow: DBRow{
+	expectedDiscount := &models.Discount{
 			ID:        1,
 			CreatedOn: generateExampleTimeForTests(),
-		},
 		Name:         "Example Discount",
 		DiscountType: "flat_amount",
 		Amount:       12.34,
 		StartsOn:     generateExampleTimeForTests(),
-		ExpiresOn:    NullTime{pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
+		ExpiresOn:    models.NullTime{NullTime: pq.NullTime{Time: generateExampleTimeForTests().Add(30 * (24 * time.Hour)), Valid: true}},
 	}
 
 	actual, err := retrieveDiscountFromDB(testUtil.DB, discountIDString)
@@ -401,7 +399,7 @@ func TestDiscountCreationHandler(t *testing.T) {
 	testUtil.Router.ServeHTTP(testUtil.Response, req)
 	assertStatusCode(t, testUtil, http.StatusCreated)
 
-	actual := &Discount{}
+	actual := &models.Discount{}
 	bodyStr := testUtil.Response.Body.String()
 	err = json.NewDecoder(strings.NewReader(bodyStr)).Decode(actual)
 	assert.Nil(t, err)

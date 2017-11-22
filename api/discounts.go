@@ -61,8 +61,8 @@ func (d *Discount) discountTypeIsValid() bool {
 	return d.DiscountType == "percentage" || d.DiscountType == "flat_amount"
 }
 
-func retrieveDiscountFromDB(db *sqlx.DB, discountID string) (Discount, error) {
-	var d Discount
+func retrieveDiscountFromDB(db *sqlx.DB, discountID string) (models.Discount, error) {
+	var d models.Discount
 	err := db.Get(&d, discountRetrievalQuery, discountID)
 	return d, err
 }
@@ -201,8 +201,12 @@ func buildDiscountUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 		// eating the error here because we've already validated input
 		mergo.Merge(updatedDiscount, &existingDiscount)
 
+		use := func(...interface{}){}
+
 		updatedOn, err := updateDiscountInDatabase(db, updatedDiscount)
 		if err != nil {
+			errStr := err.Error()
+			use(errStr)
 			notifyOfInternalIssue(res, err, "update product in database")
 			return
 		}

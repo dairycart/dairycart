@@ -261,7 +261,7 @@ func TestCreateUserFromUpdateInput(t *testing.T) {
 		Username:  "Username",
 		Email:     "Email",
 	}
-	expected := &User{
+	expected := &models.User{
 		FirstName: "FirstName",
 		LastName:  "LastName",
 		Username:  "Username",
