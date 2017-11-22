@@ -33,12 +33,6 @@ type ProductOptionValue struct {
 	Value           string `json:"value"`
 }
 
-func createBridgeEntryForProductValues(tx *sql.Tx, productID uint64, ids []uint64) error {
-	query, queryArgs := buildProductVariantBridgeCreationQuery(productID, ids)
-	_, err := tx.Exec(query, queryArgs...)
-	return err
-}
-
 // retrieveProductOptionValue retrieves a ProductOptionValue with a given ID from the database
 func retrieveProductOptionValueFromDB(db *sqlx.DB, id uint64) (*models.ProductOptionValue, error) {
 	v := &models.ProductOptionValue{}

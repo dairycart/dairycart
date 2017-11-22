@@ -16,46 +16,6 @@ import (
 	"github.com/lib/pq"
 )
 
-// Product describes something a user can buy
-type Product struct {
-	DBRow
-	// Basic Info
-	ProductRootID      uint64 `json:"product_root_id"`
-	Name               string `json:"name"`
-	Subtitle           string `json:"subtitle"`
-	Description        string `json:"description"`
-	OptionSummary      string `json:"option_summary"`
-	SKU                string `json:"sku"`
-	UPC                string `json:"upc"`
-	Manufacturer       string `json:"manufacturer"`
-	Brand              string `json:"brand"`
-	Quantity           uint32 `json:"quantity"`
-	QuantityPerPackage uint32 `json:"quantity_per_package"`
-
-	// Pricing Fields
-	Taxable   bool    `json:"taxable"`
-	Price     float64 `json:"price"`
-	OnSale    bool    `json:"on_sale"`
-	SalePrice float64 `json:"sale_price"`
-	Cost      float64 `json:"cost"`
-
-	// Product Dimensions
-	ProductWeight float64 `json:"product_weight"`
-	ProductHeight float64 `json:"product_height"`
-	ProductWidth  float64 `json:"product_width"`
-	ProductLength float64 `json:"product_length"`
-
-	// Package dimensions
-	PackageWeight float64 `json:"package_weight"`
-	PackageHeight float64 `json:"package_height"`
-	PackageWidth  float64 `json:"package_width"`
-	PackageLength float64 `json:"package_length"`
-
-	ApplicableOptionValues []ProductOptionValue `json:"applicable_options,omitempty"`
-
-	AvailableOn time.Time `json:"available_on"`
-}
-
 // newProductFromCreationInput creates a new product from a ProductCreationInput
 func newProductFromCreationInput(in *ProductCreationInput) *models.Product {
 	np := &models.Product{
@@ -172,7 +132,7 @@ func buildProductListHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		var products []Product
+		var products []models.Product
 		query, args := buildProductListQuery(queryFilter)
 		err = retrieveListOfRowsFromDB(db, query, args, &products)
 		if err != nil {

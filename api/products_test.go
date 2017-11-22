@@ -18,9 +18,8 @@ import (
 )
 
 const (
-	exampleTimeAvailableString = "2016-12-31T12:00:00Z"
-	exampleProductID           = uint64(2)
-	badSKUUpdateJSON           = `{"sku": "pooƃ ou sᴉ nʞs sᴉɥʇ"}`
+	exampleProductID = uint64(2)
+	badSKUUpdateJSON = `{"sku": "pooƃ ou sᴉ nʞs sᴉɥʇ"}`
 )
 
 func createExampleHeadersAndDataFromProduct(p *models.Product) ([]string, []driver.Value) {
@@ -88,23 +87,6 @@ func setExpectationsForProductCreation(mock sqlmock.Sqlmock, p *models.Product, 
 		WithArgs(queryArgs...).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
-}
-
-func setExpectationsForProductCreationFromOptions(mock sqlmock.Sqlmock, ps []*models.Product, optionCount uint, err error, errorOnBridgeEntries bool, errorIndex int) {
-	for i, p := range ps {
-		p.ID = uint64(i + 1)
-		if i == errorIndex && err != nil {
-			if errorOnBridgeEntries {
-				setExpectationsForProductCreation(mock, p, nil)
-				setExpectationsForProductValueBridgeEntryCreation(mock, p.ID, make([]uint64, optionCount), err)
-			} else {
-				setExpectationsForProductCreation(mock, p, err)
-			}
-			return
-		}
-		setExpectationsForProductCreation(mock, p, nil)
-		setExpectationsForProductValueBridgeEntryCreation(mock, p.ID, make([]uint64, optionCount), nil)
-	}
 }
 
 func TestCreateProductInDB(t *testing.T) {

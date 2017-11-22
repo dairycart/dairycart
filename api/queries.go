@@ -478,19 +478,6 @@ func buildProductOptionCombinationExistenceQuery(optionValueIDs []uint64) (strin
 	return query, subargs
 }
 
-func buildProductVariantBridgeCreationQuery(productID uint64, optionValueIDs []uint64) (string, []interface{}) {
-	queryBuilder := squirrel.StatementBuilder.
-		PlaceholderFormat(squirrel.Dollar).
-		Insert("product_variant_bridge").
-		Columns("product_id", "product_option_value_id")
-
-	for _, id := range optionValueIDs {
-		queryBuilder = queryBuilder.Values(productID, id)
-	}
-	query, args, _ := queryBuilder.ToSql()
-	return query, args
-}
-
 ////////////////////////////////////////////////////////
 //                                                    //
 //                     Discounts                      //

@@ -33,15 +33,6 @@ const (
 	productOptionValuesDeletionQueryByOptionID  = `UPDATE product_option_values SET archived_on = NOW() WHERE product_option_id = $1 AND archived_on IS NULL`
 )
 
-// ProductOption represents a products variant options. If you have a t-shirt that comes in three colors
-// and three sizes, then there are two ProductOptions for that base_product, color and size.
-type ProductOption struct {
-	DBRow
-	ProductRootID uint64                      `json:"product_root_id"`
-	Name          string                      `json:"name"`
-	Values        []models.ProductOptionValue `json:"values"`
-}
-
 // ProductOptionUpdateInput is a struct to use for updating product options
 type ProductOptionUpdateInput struct {
 	Name string `json:"name"`

@@ -87,16 +87,6 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
-// QueryFilter represents a query filter
-type QueryFilter struct {
-	Page          uint64
-	Limit         uint8
-	CreatedAfter  time.Time
-	CreatedBefore time.Time
-	UpdatedAfter  time.Time
-	UpdatedBefore time.Time
-}
-
 func parseRawFilterParams(rawFilterParams url.Values) *models.QueryFilter {
 	qf := &models.QueryFilter{
 		Page:  1,
