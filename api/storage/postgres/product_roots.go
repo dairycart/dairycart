@@ -115,7 +115,6 @@ func buildProductRootListRetrievalQuery(qf *models.QueryFilter) (string, []inter
 
 func (pg *postgres) GetProductRootList(db storage.Querier, qf *models.QueryFilter) ([]models.ProductRoot, error) {
 	var list []models.ProductRoot
-
 	query, args := buildProductRootListRetrievalQuery(qf)
 
 	rows, err := db.Query(query, args...)
@@ -163,8 +162,7 @@ func (pg *postgres) GetProductRootList(db storage.Querier, qf *models.QueryFilte
 }
 
 func buildProductRootCountRetrievalQuery(qf *models.QueryFilter) (string, []interface{}) {
-	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	queryBuilder := sqlBuilder.
+	queryBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar).
 		Select("count(id)").
 		From("product_roots")
 
@@ -199,7 +197,6 @@ func (pg *postgres) CreateProductRoot(db storage.Querier, nu *models.ProductRoot
 	)
 
 	err := db.QueryRow(productrootCreationQuery, &nu.Name, &nu.Subtitle, &nu.Description, &nu.SKUPrefix, &nu.Manufacturer, &nu.Brand, &nu.Taxable, &nu.Cost, &nu.ProductWeight, &nu.ProductHeight, &nu.ProductWidth, &nu.ProductLength, &nu.PackageWeight, &nu.PackageHeight, &nu.PackageWidth, &nu.PackageLength, &nu.QuantityPerPackage, &nu.AvailableOn).Scan(&createdID, &createdAt)
-
 	return createdID, createdAt, err
 }
 

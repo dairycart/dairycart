@@ -64,7 +64,6 @@ func buildLoginAttemptListRetrievalQuery(qf *models.QueryFilter) (string, []inte
 
 func (pg *postgres) GetLoginAttemptList(db storage.Querier, qf *models.QueryFilter) ([]models.LoginAttempt, error) {
 	var list []models.LoginAttempt
-
 	query, args := buildLoginAttemptListRetrievalQuery(qf)
 
 	rows, err := db.Query(query, args...)
@@ -94,8 +93,7 @@ func (pg *postgres) GetLoginAttemptList(db storage.Querier, qf *models.QueryFilt
 }
 
 func buildLoginAttemptCountRetrievalQuery(qf *models.QueryFilter) (string, []interface{}) {
-	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	queryBuilder := sqlBuilder.
+	queryBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar).
 		Select("count(id)").
 		From("login_attempts")
 
@@ -130,7 +128,6 @@ func (pg *postgres) CreateLoginAttempt(db storage.Querier, nu *models.LoginAttem
 	)
 
 	err := db.QueryRow(loginattemptCreationQuery, &nu.Username, &nu.Successful).Scan(&createdID, &createdAt)
-
 	return createdID, createdAt, err
 }
 

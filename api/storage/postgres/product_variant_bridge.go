@@ -67,7 +67,6 @@ func buildProductVariantBridgeListRetrievalQuery(qf *models.QueryFilter) (string
 
 func (pg *postgres) GetProductVariantBridgeList(db storage.Querier, qf *models.QueryFilter) ([]models.ProductVariantBridge, error) {
 	var list []models.ProductVariantBridge
-
 	query, args := buildProductVariantBridgeListRetrievalQuery(qf)
 
 	rows, err := db.Query(query, args...)
@@ -98,8 +97,7 @@ func (pg *postgres) GetProductVariantBridgeList(db storage.Querier, qf *models.Q
 }
 
 func buildProductVariantBridgeCountRetrievalQuery(qf *models.QueryFilter) (string, []interface{}) {
-	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	queryBuilder := sqlBuilder.
+	queryBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar).
 		Select("count(id)").
 		From("product_variant_bridge")
 
@@ -134,7 +132,6 @@ func (pg *postgres) CreateProductVariantBridge(db storage.Querier, nu *models.Pr
 	)
 
 	err := db.QueryRow(productvariantbridgeCreationQuery, &nu.ProductID, &nu.ProductOptionValueID).Scan(&createdID, &createdAt)
-
 	return createdID, createdAt, err
 }
 func buildMultiProductVariantBridgeCreationQuery(productID uint64, optionValueIDs []uint64) (query string, values []interface{}) {

@@ -36,7 +36,6 @@ const discountQueryByCode = `
 
 func (pg *postgres) GetDiscountByCode(db storage.Querier, code string) (*models.Discount, error) {
 	d := &models.Discount{}
-
 	err := db.QueryRow(discountQueryByCode, code).Scan(&d.ID, &d.Name, &d.DiscountType, &d.Amount, &d.StartsOn, &d.ExpiresOn, &d.RequiresCode, &d.Code, &d.LimitedUse, &d.NumberOfUses, &d.LoginRequired, &d.CreatedOn, &d.UpdatedOn, &d.ArchivedOn)
 	return d, err
 }
@@ -115,7 +114,6 @@ func buildDiscountListRetrievalQuery(qf *models.QueryFilter) (string, []interfac
 
 func (pg *postgres) GetDiscountList(db storage.Querier, qf *models.QueryFilter) ([]models.Discount, error) {
 	var list []models.Discount
-
 	query, args := buildDiscountListRetrievalQuery(qf)
 
 	rows, err := db.Query(query, args...)
@@ -155,8 +153,7 @@ func (pg *postgres) GetDiscountList(db storage.Querier, qf *models.QueryFilter) 
 }
 
 func buildDiscountCountRetrievalQuery(qf *models.QueryFilter) (string, []interface{}) {
-	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	queryBuilder := sqlBuilder.
+	queryBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar).
 		Select("count(id)").
 		From("discounts")
 
@@ -191,7 +188,6 @@ func (pg *postgres) CreateDiscount(db storage.Querier, nu *models.Discount) (uin
 	)
 
 	err := db.QueryRow(discountCreationQuery, &nu.Name, &nu.DiscountType, &nu.Amount, &nu.StartsOn, &nu.ExpiresOn, &nu.RequiresCode, &nu.Code, &nu.LimitedUse, &nu.NumberOfUses, &nu.LoginRequired).Scan(&createdID, &createdAt)
-
 	return createdID, createdAt, err
 }
 

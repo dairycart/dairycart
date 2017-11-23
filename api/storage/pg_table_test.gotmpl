@@ -1,9 +1,10 @@
 package postgres
 
 {{- $modelName := pascal (trimSuffix .Table.Name "s")}}
+{{- $isUser := eq $modelName "User" }}
 {{- $isProduct := eq $modelName "Product" }}
-{{- $isProductRoot := eq $modelName "ProductRoot" }}
 {{- $isDiscount := eq $modelName "Discount" }}
+{{- $isProductRoot := eq $modelName "ProductRoot" }}
 {{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
 
 import(
@@ -32,7 +33,6 @@ import(
 func set{{ $modelName }}ReadQueryExpectationBySKU(t *testing.T, mock sqlmock.Sqlmock, sku string, toReturn *models.{{ $modelName }}, err error) {
     t.Helper()
     query := formatQueryForSQLMock({{ $bySKUVarName }})
-
     exampleRows := sqlmock.NewRows([]string{
         {{ range $_, $x := .Table.Columns.DBNames }}{{ printf "\"%s\"" $x }},
         {{ end }}
@@ -59,6 +59,87 @@ func TestGet{{ $modelName }}BySKU(t *testing.T) {
 
         require.Nil(t, err)
         require.Equal(t, expected, actual, "expected {{ toLower $modelName }} did not match actual {{ toLower $modelName }}")
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+}
+{{ end }}
+
+{{ if $isUser }}
+{{ $byUsernameVarName := printf "%sQueryByUsername" ( camel $modelName ) -}}
+func set{{ $modelName }}ReadQueryExpectationByUsername(t *testing.T, mock sqlmock.Sqlmock, username string, toReturn *models.{{ $modelName }}, err error) {
+    t.Helper()
+    query := formatQueryForSQLMock({{ $byUsernameVarName }})
+    exampleRows := sqlmock.NewRows([]string{
+        {{ range $_, $x := .Table.Columns.DBNames }}{{ printf "\"%s\"" $x }},
+        {{ end }}
+    }).AddRow(
+        {{ range $_, $x := .Table.Columns.DBNames }}toReturn.{{ pascal $x }},
+        {{ end }}
+    )
+    mock.ExpectQuery(query).WithArgs(username).WillReturnRows(exampleRows).WillReturnError(err)
+}
+
+func TestGet{{ $modelName }}ByUsername(t *testing.T) {
+    t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+    require.Nil(t, err)
+    defer mockDB.Close()
+    client := NewPostgres()
+
+    exampleUsername := "username"
+    expected := &models.{{ $modelName }}{Username: exampleUsername}
+
+    t.Run("optimal behavior", func(t *testing.T) {
+        set{{ $modelName }}ReadQueryExpectationByUsername(t, mock, exampleUsername, expected, nil)
+        actual, err := client.Get{{ $modelName }}ByUsername(mockDB, exampleUsername)
+
+        require.Nil(t, err)
+        require.Equal(t, expected, actual, "expected {{ toLower $modelName }} did not match actual {{ toLower $modelName }}")
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+}
+
+{{ $existenceWithUsernameQueryVarName := printf "%sWithUsernameExistenceQuery" ( camel $modelName ) -}}
+func set{{ $modelName }}WithUsernameExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, username string, shouldExist bool, err error) {
+    t.Helper()
+    query := formatQueryForSQLMock({{ $existenceWithUsernameQueryVarName }})
+
+	mock.ExpectQuery(query).
+		WithArgs(username).
+		WillReturnRows(sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(shouldExist))).
+		WillReturnError(err)
+}
+
+func Test{{ $modelName }}WithUsernameExists(t *testing.T) {
+    t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+    require.Nil(t, err)
+    defer mockDB.Close()
+    exampleUsername := "username"
+    client := NewPostgres()
+
+    t.Run("existing", func(t *testing.T) {
+        set{{ $modelName }}WithUsernameExistenceQueryExpectation(t, mock, exampleUsername, true, nil)
+        actual, err := client.{{ $modelName }}WithUsernameExists(mockDB, exampleUsername)
+
+        require.Nil(t, err)
+        require.True(t, actual)
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+    t.Run("with no rows found", func(t *testing.T) {
+        set{{ $modelName }}WithUsernameExistenceQueryExpectation(t, mock, exampleUsername, true, sql.ErrNoRows)
+        actual, err := client.{{ $modelName }}WithUsernameExists(mockDB, exampleUsername)
+
+        require.Nil(t, err)
+        require.False(t, actual)
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+    t.Run("with a database error", func(t *testing.T) {
+        set{{ $modelName }}WithUsernameExistenceQueryExpectation(t, mock, exampleUsername, true, errors.New("pineapple on pizza"))
+        actual, err := client.{{ $modelName }}WithUsernameExists(mockDB, exampleUsername)
+
+        require.NotNil(t, err)
+        require.False(t, actual)
         require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
 }

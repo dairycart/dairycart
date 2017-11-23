@@ -176,7 +176,6 @@ func buildProductListRetrievalQuery(qf *models.QueryFilter) (string, []interface
 
 func (pg *postgres) GetProductList(db storage.Querier, qf *models.QueryFilter) ([]models.Product, error) {
 	var list []models.Product
-
 	query, args := buildProductListRetrievalQuery(qf)
 
 	rows, err := db.Query(query, args...)
@@ -231,8 +230,7 @@ func (pg *postgres) GetProductList(db storage.Querier, qf *models.QueryFilter) (
 }
 
 func buildProductCountRetrievalQuery(qf *models.QueryFilter) (string, []interface{}) {
-	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	queryBuilder := sqlBuilder.
+	queryBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar).
 		Select("count(id)").
 		From("products")
 
@@ -268,7 +266,6 @@ func (pg *postgres) CreateProduct(db storage.Querier, nu *models.Product) (uint6
 	)
 
 	err := db.QueryRow(productCreationQuery, &nu.ProductRootID, &nu.Name, &nu.Subtitle, &nu.Description, &nu.OptionSummary, &nu.SKU, &nu.UPC, &nu.Manufacturer, &nu.Brand, &nu.Quantity, &nu.Taxable, &nu.Price, &nu.OnSale, &nu.SalePrice, &nu.Cost, &nu.ProductWeight, &nu.ProductHeight, &nu.ProductWidth, &nu.ProductLength, &nu.PackageWeight, &nu.PackageHeight, &nu.PackageWidth, &nu.PackageLength, &nu.QuantityPerPackage, &nu.AvailableOn).Scan(&createdID, &createdAt, &availableOn)
-
 	return createdID, createdAt, availableOn, err
 }
 

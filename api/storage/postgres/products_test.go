@@ -18,7 +18,6 @@ import (
 func setProductReadQueryExpectationBySKU(t *testing.T, mock sqlmock.Sqlmock, sku string, toReturn *models.Product, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productQueryBySKU)
-
 	exampleRows := sqlmock.NewRows([]string{
 		"id",
 		"product_root_id",

@@ -15,6 +15,103 @@ import (
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
+func setUserReadQueryExpectationByUsername(t *testing.T, mock sqlmock.Sqlmock, username string, toReturn *models.User, err error) {
+	t.Helper()
+	query := formatQueryForSQLMock(userQueryByUsername)
+	exampleRows := sqlmock.NewRows([]string{
+		"id",
+		"first_name",
+		"last_name",
+		"username",
+		"email",
+		"password",
+		"salt",
+		"is_admin",
+		"password_last_changed_on",
+		"created_on",
+		"updated_on",
+		"archived_on",
+	}).AddRow(
+		toReturn.ID,
+		toReturn.FirstName,
+		toReturn.LastName,
+		toReturn.Username,
+		toReturn.Email,
+		toReturn.Password,
+		toReturn.Salt,
+		toReturn.IsAdmin,
+		toReturn.PasswordLastChangedOn,
+		toReturn.CreatedOn,
+		toReturn.UpdatedOn,
+		toReturn.ArchivedOn,
+	)
+	mock.ExpectQuery(query).WithArgs(username).WillReturnRows(exampleRows).WillReturnError(err)
+}
+
+func TestGetUserByUsername(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	require.Nil(t, err)
+	defer mockDB.Close()
+	client := NewPostgres()
+
+	exampleUsername := "username"
+	expected := &models.User{Username: exampleUsername}
+
+	t.Run("optimal behavior", func(t *testing.T) {
+		setUserReadQueryExpectationByUsername(t, mock, exampleUsername, expected, nil)
+		actual, err := client.GetUserByUsername(mockDB, exampleUsername)
+
+		require.Nil(t, err)
+		require.Equal(t, expected, actual, "expected user did not match actual user")
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
+
+func setUserWithUsernameExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, username string, shouldExist bool, err error) {
+	t.Helper()
+	query := formatQueryForSQLMock(userWithUsernameExistenceQuery)
+
+	mock.ExpectQuery(query).
+		WithArgs(username).
+		WillReturnRows(sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(shouldExist))).
+		WillReturnError(err)
+}
+
+func TestUserWithUsernameExists(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	require.Nil(t, err)
+	defer mockDB.Close()
+	exampleUsername := "username"
+	client := NewPostgres()
+
+	t.Run("existing", func(t *testing.T) {
+		setUserWithUsernameExistenceQueryExpectation(t, mock, exampleUsername, true, nil)
+		actual, err := client.UserWithUsernameExists(mockDB, exampleUsername)
+
+		require.Nil(t, err)
+		require.True(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with no rows found", func(t *testing.T) {
+		setUserWithUsernameExistenceQueryExpectation(t, mock, exampleUsername, true, sql.ErrNoRows)
+		actual, err := client.UserWithUsernameExists(mockDB, exampleUsername)
+
+		require.Nil(t, err)
+		require.False(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with a database error", func(t *testing.T) {
+		setUserWithUsernameExistenceQueryExpectation(t, mock, exampleUsername, true, errors.New("pineapple on pizza"))
+		actual, err := client.UserWithUsernameExists(mockDB, exampleUsername)
+
+		require.NotNil(t, err)
+		require.False(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
+
 func setUserExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, shouldExist bool, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(userExistenceQuery)

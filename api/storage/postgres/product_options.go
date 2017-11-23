@@ -68,7 +68,6 @@ func buildProductOptionListRetrievalQuery(qf *models.QueryFilter) (string, []int
 
 func (pg *postgres) GetProductOptionList(db storage.Querier, qf *models.QueryFilter) ([]models.ProductOption, error) {
 	var list []models.ProductOption
-
 	query, args := buildProductOptionListRetrievalQuery(qf)
 
 	rows, err := db.Query(query, args...)
@@ -100,8 +99,7 @@ func (pg *postgres) GetProductOptionList(db storage.Querier, qf *models.QueryFil
 }
 
 func buildProductOptionCountRetrievalQuery(qf *models.QueryFilter) (string, []interface{}) {
-	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	queryBuilder := sqlBuilder.
+	queryBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar).
 		Select("count(id)").
 		From("product_options")
 
@@ -136,7 +134,6 @@ func (pg *postgres) CreateProductOption(db storage.Querier, nu *models.ProductOp
 	)
 
 	err := db.QueryRow(productoptionCreationQuery, &nu.Name, &nu.ProductRootID).Scan(&createdID, &createdAt)
-
 	return createdID, createdAt, err
 }
 

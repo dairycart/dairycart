@@ -11,6 +11,7 @@ func (m *MockDB) GetProductBySKU(db storage.Querier, sku string) (*models.Produc
 	args := m.Called(db, sku)
 	return args.Get(0).(*models.Product), args.Error(1)
 }
+
 func (m *MockDB) ProductWithSKUExists(db storage.Querier, sku string) (bool, error) {
 	args := m.Called(db, sku)
 	return args.Bool(0), args.Error(1)

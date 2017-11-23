@@ -68,7 +68,6 @@ func buildPasswordResetTokenListRetrievalQuery(qf *models.QueryFilter) (string, 
 
 func (pg *postgres) GetPasswordResetTokenList(db storage.Querier, qf *models.QueryFilter) ([]models.PasswordResetToken, error) {
 	var list []models.PasswordResetToken
-
 	query, args := buildPasswordResetTokenListRetrievalQuery(qf)
 
 	rows, err := db.Query(query, args...)
@@ -100,8 +99,7 @@ func (pg *postgres) GetPasswordResetTokenList(db storage.Querier, qf *models.Que
 }
 
 func buildPasswordResetTokenCountRetrievalQuery(qf *models.QueryFilter) (string, []interface{}) {
-	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	queryBuilder := sqlBuilder.
+	queryBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar).
 		Select("count(id)").
 		From("password_reset_tokens")
 
@@ -136,7 +134,6 @@ func (pg *postgres) CreatePasswordResetToken(db storage.Querier, nu *models.Pass
 	)
 
 	err := db.QueryRow(passwordresettokenCreationQuery, &nu.UserID, &nu.Token, &nu.ExpiresOn, &nu.PasswordResetOn).Scan(&createdID, &createdAt)
-
 	return createdID, createdAt, err
 }
 

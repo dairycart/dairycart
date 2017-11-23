@@ -10,6 +10,49 @@ import (
 	"github.com/Masterminds/squirrel"
 )
 
+const userQueryByUsername = `
+    SELECT
+        id,
+        first_name,
+        last_name,
+        username,
+        email,
+        password,
+        salt,
+        is_admin,
+        password_last_changed_on,
+        created_on,
+        updated_on,
+        archived_on
+    FROM
+        users
+    WHERE
+        archived_on is null
+    AND
+        username = $1
+`
+
+func (pg *postgres) GetUserByUsername(db storage.Querier, username string) (*models.User, error) {
+	u := &models.User{}
+	err := db.QueryRow(userQueryByUsername, username).Scan(&u.ID, &u.FirstName, &u.LastName, &u.Username, &u.Email, &u.Password, &u.Salt, &u.IsAdmin, &u.PasswordLastChangedOn, &u.CreatedOn, &u.UpdatedOn, &u.ArchivedOn)
+	return u, err
+}
+
+const userWithUsernameExistenceQuery = `SELECT EXISTS(SELECT id FROM users WHERE username = $1 and archived_on IS NULL);`
+
+func (pg *postgres) UserWithUsernameExists(db storage.Querier, sku string) (bool, error) {
+	var exists string
+
+	err := db.QueryRow(userWithUsernameExistenceQuery, sku).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return exists == "true", err
+}
+
 const userExistenceQuery = `SELECT EXISTS(SELECT id FROM users WHERE id = $1 and archived_on IS NULL);`
 
 func (pg *postgres) UserExists(db storage.Querier, id uint64) (bool, error) {
@@ -80,7 +123,6 @@ func buildUserListRetrievalQuery(qf *models.QueryFilter) (string, []interface{})
 
 func (pg *postgres) GetUserList(db storage.Querier, qf *models.QueryFilter) ([]models.User, error) {
 	var list []models.User
-
 	query, args := buildUserListRetrievalQuery(qf)
 
 	rows, err := db.Query(query, args...)
@@ -118,8 +160,7 @@ func (pg *postgres) GetUserList(db storage.Querier, qf *models.QueryFilter) ([]m
 }
 
 func buildUserCountRetrievalQuery(qf *models.QueryFilter) (string, []interface{}) {
-	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	queryBuilder := sqlBuilder.
+	queryBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar).
 		Select("count(id)").
 		From("users")
 
@@ -154,7 +195,6 @@ func (pg *postgres) CreateUser(db storage.Querier, nu *models.User) (uint64, tim
 	)
 
 	err := db.QueryRow(userCreationQuery, &nu.FirstName, &nu.LastName, &nu.Username, &nu.Email, &nu.Password, &nu.Salt, &nu.IsAdmin, &nu.PasswordLastChangedOn).Scan(&createdID, &createdAt)
-
 	return createdID, createdAt, err
 }
 

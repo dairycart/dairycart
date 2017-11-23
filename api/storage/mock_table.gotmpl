@@ -8,9 +8,10 @@ import (
 )
 
 {{- $modelName := pascal (trimSuffix .Table.Name "s") }}
+{{- $isUser := eq $modelName "User" }}
 {{- $isProduct := eq $modelName "Product" }}
-{{- $isProductRoot := eq $modelName "ProductRoot" }}
 {{- $isDiscount := eq $modelName "Discount" }}
+{{- $isProductRoot := eq $modelName "ProductRoot" }}
 {{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
 
 {{- if $isProduct }}
@@ -18,19 +19,29 @@ func (m *MockDB) Get{{ $modelName }}BySKU(db storage.Querier, sku string) (*mode
     args := m.Called(db, sku)
 	return args.Get(0).(*models.{{ $modelName }}), args.Error(1)
 }
+
+func (m *MockDB) {{ $modelName }}WithSKUExists(db storage.Querier, sku string) (bool, error) {
+    args := m.Called(db, sku)
+	return args.Bool(0), args.Error(1)
+}
+{{- end }}
+
+{{- if $isUser }}
+func (m *MockDB) Get{{ $modelName }}ByUsername(db storage.Querier, username string) (*models.{{ $modelName }}, error) {
+    args := m.Called(db, username)
+	return args.Get(0).(*models.{{ $modelName }}), args.Error(1)
+}
+
+func (m *MockDB) {{ $modelName }}WithUsernameExists(db storage.Querier, username string) (bool, error) {
+    args := m.Called(db, username)
+	return args.Bool(0), args.Error(1)
+}
 {{- end }}
 
 {{- if $isDiscount }}
 func (m *MockDB) Get{{ $modelName }}ByCode(db storage.Querier, code string) (*models.{{ $modelName }}, error) {
     args := m.Called(db, code)
 	return args.Get(0).(*models.{{ $modelName }}), args.Error(1)
-}
-{{- end }}
-
-{{- if $isProduct }}
-func (m *MockDB) {{ $modelName }}WithSKUExists(db storage.Querier, sku string) (bool, error) {
-    args := m.Called(db, sku)
-	return args.Bool(0), args.Error(1)
 }
 {{- end }}
 

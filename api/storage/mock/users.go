@@ -7,6 +7,16 @@ import (
 	"github.com/dairycart/dairycart/api/storage/models"
 )
 
+func (m *MockDB) GetUserByUsername(db storage.Querier, username string) (*models.User, error) {
+	args := m.Called(db, username)
+	return args.Get(0).(*models.User), args.Error(1)
+}
+
+func (m *MockDB) UserWithUsernameExists(db storage.Querier, username string) (bool, error) {
+	args := m.Called(db, username)
+	return args.Bool(0), args.Error(1)
+}
+
 func (m *MockDB) UserExists(db storage.Querier, id uint64) (bool, error) {
 	args := m.Called(db, id)
 	return args.Bool(0), args.Error(1)

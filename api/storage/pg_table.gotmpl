@@ -3,6 +3,7 @@ package postgres
 
 {{- $modelName := pascal (trimSuffix .Table.Name "s") }}
 {{- $shortVarName := toLower (sliceString $modelName 0 1) }}
+{{- $isUser := eq $modelName "User" }}
 {{- $isProduct := eq $modelName "Product" }}
 {{- $isDiscount := eq $modelName "Discount" }}
 {{- $isProductRoot := eq $modelName "ProductRoot" }}
@@ -41,6 +42,60 @@ func (pg *postgres) Get{{ $modelName }}BySKU(db storage.Querier, sku string) (*m
 
 	return {{ $shortVarName }}, err
 }
+
+{{ $existenceBySKUQueryVarName := printf "%sWithSKUExistenceQuery" ( camel $modelName ) -}}
+const {{ $existenceBySKUQueryVarName }} = `SELECT EXISTS(SELECT id FROM {{ .Table.Name }} WHERE sku = $1 and archived_on IS NULL);`
+
+func (pg *postgres) {{ $modelName }}WithSKUExists(db storage.Querier, sku string) (bool, error) {
+    var exists string
+
+	err := db.QueryRow({{ $existenceBySKUQueryVarName }}, sku).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return exists == "true", err
+}
+{{- end }}
+
+{{- if $isUser }}
+{{ $byUsernameVarName := printf "%sQueryByUsername" ( camel $modelName ) -}}
+const {{ $byUsernameVarName }} = `
+    SELECT
+    {{ $lastCol := dec (len .Table.Columns.DBNames) -}}
+    {{ range $x, $col := .Table.Columns.DBNames }}    {{ $col }}{{ if ne $x $lastCol }},
+    {{ end }}{{ end }}
+    FROM
+        {{ .Table.Name }}
+    WHERE
+        archived_on is null
+    AND
+        username = $1
+`
+
+func (pg *postgres) Get{{ $modelName }}ByUsername(db storage.Querier, username string) (*models.{{ $modelName }}, error) {
+	{{ $shortVarName }} := &models.{{ $modelName }}{}
+    err := db.QueryRow({{ $byUsernameVarName }}, username).Scan({{ $lastCol := dec (len .Table.Columns.DBNames) -}}{{ range $x, $col := .Table.Columns.DBNames }}&{{ $shortVarName }}.{{ pascal $col }}{{ if ne $x $lastCol }}, {{ end }}{{ end }})
+	return {{ $shortVarName }}, err
+}
+
+{{ $existenceByUsernameQueryVarName := printf "%sWithUsernameExistenceQuery" ( camel $modelName ) -}}
+const {{ $existenceByUsernameQueryVarName }} = `SELECT EXISTS(SELECT id FROM {{ .Table.Name }} WHERE username = $1 and archived_on IS NULL);`
+
+func (pg *postgres) {{ $modelName }}WithUsernameExists(db storage.Querier, sku string) (bool, error) {
+    var exists string
+
+	err := db.QueryRow({{ $existenceByUsernameQueryVarName }}, sku).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return exists == "true", err
+}
 {{- end }}
 
 {{- if $isDiscount }}
@@ -60,27 +115,8 @@ const {{ $byCodeVarName }} = `
 
 func (pg *postgres) Get{{ $modelName }}ByCode(db storage.Querier, code string) (*models.{{ $modelName }}, error) {
 	{{ $shortVarName }} := &models.{{ $modelName }}{}
-
     err := db.QueryRow({{ $byCodeVarName }}, code).Scan({{ $lastCol := dec (len .Table.Columns.DBNames) -}}{{ range $x, $col := .Table.Columns.DBNames }}&{{ $shortVarName }}.{{ pascal $col }}{{ if ne $x $lastCol }}, {{ end }}{{ end }})
 	return {{ $shortVarName }}, err
-}
-{{- end }}
-
-{{- if $isProduct }}
-{{ $existenceBySKUQueryVarName := printf "%sWithSKUExistenceQuery" ( camel $modelName ) -}}
-const {{ $existenceBySKUQueryVarName }} = `SELECT EXISTS(SELECT id FROM {{ .Table.Name }} WHERE sku = $1 and archived_on IS NULL);`
-
-func (pg *postgres) {{ $modelName }}WithSKUExists(db storage.Querier, sku string) (bool, error) {
-    var exists string
-
-	err := db.QueryRow({{ $existenceBySKUQueryVarName }}, sku).Scan(&exists)
-	if err == sql.ErrNoRows {
-		return false, nil
-	} else if err != nil {
-		return false, err
-	}
-
-	return exists == "true", err
 }
 {{- end }}
 
@@ -156,7 +192,6 @@ func build{{ $modelName }}ListRetrievalQuery(qf *models.QueryFilter) (string, []
 
 func (pg *postgres) Get{{ $modelName }}List(db storage.Querier, qf *models.QueryFilter) ([]models.{{ $modelName }}, error) {
 	var list []models.{{ $modelName }}
-
     query, args := build{{ $modelName }}ListRetrievalQuery(qf)
 
     rows, err := db.Query(query, args...)
@@ -185,8 +220,7 @@ func (pg *postgres) Get{{ $modelName }}List(db storage.Querier, qf *models.Query
 }
 
 func build{{ $modelName }}CountRetrievalQuery(qf *models.QueryFilter) (string, []interface{}) {
-	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-	queryBuilder := sqlBuilder.
+	queryBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar).
 		Select("count(id)").
 		From("{{ .Table.Name }}")
 
@@ -228,7 +262,6 @@ func (pg *postgres) Create{{ $modelName }}(db storage.Querier, nu *models.{{ $mo
     )
 
     err := db.QueryRow({{ $creationQueryVarName }}, {{ range $x, $col := $creationColumns -}}&nu.{{- if or (eq $col "upc") (eq $col "sku") -}}{{ toUpper $col }}{{ else if eq $col "sku_prefix" }}SKUPrefix{{ else }}{{ pascal $col -}}{{ end }}{{ if ne $lastCol $x }},{{ end }}{{ end }}).Scan(&createdID, &createdAt{{- if $isProduct }}, &availableOn{{ end }})
-
     return createdID, createdAt, {{- if $isProduct }}availableOn, {{ end }}err
 }
 

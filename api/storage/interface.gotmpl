@@ -16,6 +16,7 @@ type Querier interface {
 type Storer interface {
     {{ range .Schema.Tables }}
     {{- $modelName := pascal (trimSuffix .Name "s") }}
+    {{- $isUser := eq $modelName "User" }}
     {{- $isProduct := eq $modelName "Product" }}
     {{- $isProductRoot := eq $modelName "ProductRoot" }}
     {{- $isDiscount := eq $modelName "Discount" }}
@@ -32,6 +33,8 @@ type Storer interface {
     CreateMultiple{{ $modelName }}sForProductID(Querier, uint64, []uint64) error{{- end -}}
     {{ if $isProduct }}Get{{ $modelName }}BySKU(Querier, string) (*models.{{ $modelName }}, error)
     {{ $modelName }}WithSKUExists(Querier, string) (bool, error){{- end -}}
+    {{ if $isUser }}Get{{ $modelName }}ByUsername(Querier, string) (*models.{{ $modelName }}, error)
+    {{ $modelName }}WithUsernameExists(Querier, string) (bool, error){{ end }}
     {{ if $isProductRoot }}{{ $modelName }}WithSKUPrefixExists(Querier, string) (bool, error){{- end -}}
     {{ if $isDiscount }}Get{{ $modelName }}ByCode(Querier, string) (*models.{{ $modelName }}, error){{- end }}
     {{ end }}
