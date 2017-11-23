@@ -15,6 +15,51 @@ import (
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
+func setExpectationsForLoginAttemptExhaustionQuery(mock sqlmock.Sqlmock, username string, exhausted bool, shouldError bool) {
+	count := 0
+	if exhausted {
+		count = 666
+	}
+
+	var argToReturn interface{} = count
+	if shouldError {
+		argToReturn = "hello"
+	}
+
+	exampleRows := sqlmock.NewRows([]string{""}).AddRow(argToReturn)
+	query := formatQueryForSQLMock(loginAttemptExhaustionQuery)
+	mock.ExpectQuery(query).
+		WithArgs(username).
+		WillReturnRows(exampleRows)
+}
+
+func TestLoginAttemptsHaveBeenExhausted(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	require.Nil(t, err)
+	defer mockDB.Close()
+	client := NewPostgres()
+	exampleUsername := "username"
+
+	t.Run("optimal behavior", func(*testing.T) {
+		expected := false
+		setExpectationsForLoginAttemptExhaustionQuery(mock, exampleUsername, expected, false)
+		actual, err := client.LoginAttemptsHaveBeenExhausted(mockDB, exampleUsername)
+
+		require.Nil(t, err)
+		require.Equal(t, expected, actual)
+	})
+
+	t.Run("with db error", func(*testing.T) {
+		expected := false
+		setExpectationsForLoginAttemptExhaustionQuery(mock, exampleUsername, expected, true)
+		actual, err := client.LoginAttemptsHaveBeenExhausted(mockDB, exampleUsername)
+
+		require.NotNil(t, err)
+		require.Equal(t, expected, actual)
+	})
+}
+
 func setLoginAttemptExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, shouldExist bool, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(loginAttemptExistenceQuery)

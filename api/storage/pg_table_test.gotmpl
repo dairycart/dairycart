@@ -5,6 +5,7 @@ package postgres
 {{- $isProduct := eq $modelName "Product" }}
 {{- $isDiscount := eq $modelName "Discount" }}
 {{- $isProductRoot := eq $modelName "ProductRoot" }}
+{{- $isLoginAttempt := eq $modelName "LoginAttempt" }}
 {{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
 
 import(
@@ -272,6 +273,53 @@ func Test{{ $modelName }}WithSKUExists(t *testing.T) {
         require.NotNil(t, err)
         require.False(t, actual)
         require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+}
+{{- end }}
+
+{{- if $isLoginAttempt }}
+func setExpectationsFor{{ $modelName }}ExhaustionQuery(mock sqlmock.Sqlmock, username string, exhausted bool, shouldError bool) {
+	count := 0
+	if exhausted {
+		count = 666
+	}
+
+    var argToReturn interface{} = count
+    if shouldError {
+        argToReturn = "hello"
+    }
+
+	exampleRows := sqlmock.NewRows([]string{""}).AddRow(argToReturn)
+	query := formatQueryForSQLMock({{ camel $modelName }}ExhaustionQuery)
+	mock.ExpectQuery(query).
+		WithArgs(username).
+		WillReturnRows(exampleRows)
+}
+
+func Test{{ $modelName }}sHaveBeenExhausted(t *testing.T) {
+    t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+    require.Nil(t, err)
+    defer mockDB.Close()
+    client := NewPostgres()
+    exampleUsername := "username"
+
+    t.Run("optimal behavior", func(*testing.T){
+        expected := false
+        setExpectationsFor{{ $modelName }}ExhaustionQuery(mock, exampleUsername, expected, false)
+        actual, err := client.{{ $modelName }}sHaveBeenExhausted(mockDB, exampleUsername)
+
+        require.Nil(t, err)
+        require.Equal(t, expected, actual)
+    })
+
+    t.Run("with db error", func(*testing.T){
+        expected := false
+        setExpectationsFor{{ $modelName }}ExhaustionQuery(mock, exampleUsername, expected, true)
+        actual, err := client.{{ $modelName }}sHaveBeenExhausted(mockDB, exampleUsername)
+
+        require.NotNil(t, err)
+        require.Equal(t, expected, actual)
     })
 }
 {{- end }}

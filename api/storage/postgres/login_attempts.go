@@ -10,6 +10,23 @@ import (
 	"github.com/Masterminds/squirrel"
 )
 
+const loginAttemptExhaustionQuery = `
+    SELECT count(id) FROM login_attempts
+        WHERE username = $1
+        AND created_on < NOW()
+        AND successful IS false
+        AND created_on > (NOW() - (15 * interval '1 minute'))
+`
+
+func (pg *postgres) LoginAttemptsHaveBeenExhausted(db storage.Querier, username string) (bool, error) {
+	var loginCount uint64
+	err := db.QueryRow(loginAttemptExhaustionQuery, username).Scan(&loginCount)
+	if err != nil {
+		return false, err
+	}
+	return loginCount >= 10, err
+}
+
 const loginAttemptExistenceQuery = `SELECT EXISTS(SELECT id FROM login_attempts WHERE id = $1 and archived_on IS NULL);`
 
 func (pg *postgres) LoginAttemptExists(db storage.Querier, id uint64) (bool, error) {

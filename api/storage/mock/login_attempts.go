@@ -7,6 +7,11 @@ import (
 	"github.com/dairycart/dairycart/api/storage/models"
 )
 
+func (m *MockDB) LoginAttemptsHaveBeenExhausted(db storage.Querier, username string) (bool, error) {
+	args := m.Called(db, username)
+	return args.Bool(0), args.Error(1)
+}
+
 func (m *MockDB) LoginAttemptExists(db storage.Querier, id uint64) (bool, error) {
 	args := m.Called(db, id)
 	return args.Bool(0), args.Error(1)

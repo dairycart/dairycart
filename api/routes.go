@@ -28,7 +28,7 @@ func buildRoute(routeVersion string, routeParts ...string) string {
 // SetupAPIRoutes takes a mux router and a database connection and creates all the API routes for the API
 func SetupAPIRoutes(router *chi.Mux, db *sql.DB, dbxReplaceMePlz *sqlx.DB, store *sessions.CookieStore, client storage.Storer) {
 	// Auth
-	router.Post("/login", buildUserLoginHandler(dbxReplaceMePlz, store))
+	router.Post("/login", buildUserLoginHandler(db, client, store))
 	router.Post("/logout", buildUserLogoutHandler(store))
 	router.Post("/user", buildUserCreationHandler(dbxReplaceMePlz, store))
 	router.Patch(fmt.Sprintf("/user/{user_id:%s}", NumericPattern), buildUserInfoUpdateHandler(dbxReplaceMePlz))

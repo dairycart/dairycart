@@ -7,6 +7,7 @@ package postgres
 {{- $isProduct := eq $modelName "Product" }}
 {{- $isDiscount := eq $modelName "Discount" }}
 {{- $isProductRoot := eq $modelName "ProductRoot" }}
+{{- $isLoginAttempt := eq $modelName "LoginAttempt" }}
 {{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
 
 import (
@@ -135,6 +136,25 @@ func (pg *postgres) {{ $modelName }}WithSKUPrefixExists(db storage.Querier, skuP
 	}
 
 	return exists == "true", err
+}
+{{- end }}
+
+{{- if $isLoginAttempt }}
+const {{ camel $modelName }}ExhaustionQuery = `
+    SELECT count(id) FROM {{ .Table.Name }}
+        WHERE username = $1
+        AND created_on < NOW()
+        AND successful IS false
+        AND created_on > (NOW() - (15 * interval '1 minute'))
+`
+
+func (pg *postgres) {{ $modelName }}sHaveBeenExhausted(db storage.Querier, username string) (bool, error) {
+	var loginCount uint64
+	err := db.QueryRow({{ camel $modelName }}ExhaustionQuery, username).Scan(&loginCount)
+	if err != nil {
+		return false, err
+	}
+	return loginCount >= 10, err
 }
 {{- end }}
 

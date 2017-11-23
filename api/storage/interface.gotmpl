@@ -14,12 +14,13 @@ type Querier interface {
 }
 
 type Storer interface {
-    {{ range .Schema.Tables }}
+    {{- range .Schema.Tables }}
     {{- $modelName := pascal (trimSuffix .Name "s") }}
     {{- $isUser := eq $modelName "User" }}
     {{- $isProduct := eq $modelName "Product" }}
-    {{- $isProductRoot := eq $modelName "ProductRoot" }}
     {{- $isDiscount := eq $modelName "Discount" }}
+    {{- $isProductRoot := eq $modelName "ProductRoot" }}
+    {{- $isLoginAttempt := eq $modelName "LoginAttempt" }}
     {{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
     // {{ pascal .Name }}
     Get{{ $modelName }}(Querier, uint64) (*models.{{ $modelName }}, error)
@@ -29,13 +30,15 @@ type Storer interface {
     Create{{ $modelName }}(Querier, *models.{{ $modelName }}) (uint64, time.Time, {{ if $isProduct }}time.Time, {{ end }}error)
     Update{{ $modelName }}(Querier, *models.{{ $modelName }}) (time.Time, error)
     Delete{{ $modelName }}(Querier, uint64) (time.Time, error)
+    {{ if $isProductRoot }}{{ $modelName }}WithSKUPrefixExists(Querier, string) (bool, error){{- end -}}
+    {{ if $isDiscount }}Get{{ $modelName }}ByCode(Querier, string) (*models.{{ $modelName }}, error){{- end -}}
     {{ if $isProductVariantBridge }}Delete{{ $modelName }}ByProductID(Querier, uint64) (time.Time, error)
     CreateMultiple{{ $modelName }}sForProductID(Querier, uint64, []uint64) error{{- end -}}
     {{ if $isProduct }}Get{{ $modelName }}BySKU(Querier, string) (*models.{{ $modelName }}, error)
     {{ $modelName }}WithSKUExists(Querier, string) (bool, error){{- end -}}
     {{ if $isUser }}Get{{ $modelName }}ByUsername(Querier, string) (*models.{{ $modelName }}, error)
-    {{ $modelName }}WithUsernameExists(Querier, string) (bool, error){{ end }}
-    {{ if $isProductRoot }}{{ $modelName }}WithSKUPrefixExists(Querier, string) (bool, error){{- end -}}
-    {{ if $isDiscount }}Get{{ $modelName }}ByCode(Querier, string) (*models.{{ $modelName }}, error){{- end }}
-    {{ end }}
+    {{ $modelName }}WithUsernameExists(Querier, string) (bool, error){{- end -}}
+    {{ if $isLoginAttempt }}{{ $modelName }}sHaveBeenExhausted(Querier, string) (bool, error){{- end -}}
+    {{ "\n" }}
+    {{ end -}}
 }

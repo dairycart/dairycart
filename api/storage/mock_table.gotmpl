@@ -12,6 +12,7 @@ import (
 {{- $isProduct := eq $modelName "Product" }}
 {{- $isDiscount := eq $modelName "Discount" }}
 {{- $isProductRoot := eq $modelName "ProductRoot" }}
+{{- $isLoginAttempt := eq $modelName "LoginAttempt" }}
 {{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
 
 {{- if $isProduct }}
@@ -33,6 +34,13 @@ func (m *MockDB) Get{{ $modelName }}ByUsername(db storage.Querier, username stri
 }
 
 func (m *MockDB) {{ $modelName }}WithUsernameExists(db storage.Querier, username string) (bool, error) {
+    args := m.Called(db, username)
+	return args.Bool(0), args.Error(1)
+}
+{{- end }}
+
+{{- if $isLoginAttempt }}
+func (m *MockDB) {{ $modelName }}sHaveBeenExhausted(db storage.Querier, username string) (bool, error) {
     args := m.Called(db, username)
 	return args.Bool(0), args.Error(1)
 }

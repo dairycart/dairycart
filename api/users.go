@@ -9,6 +9,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairycart/api/storage/models"
 
 	"github.com/dchest/uniuri"
@@ -177,14 +178,14 @@ func retrieveUserFromDB(db *sqlx.DB, username string) (models.User, error) {
 	return u, err
 }
 
-func retrieveUserFromDBByID(db *sqlx.DB, userID uint64) (models.User, error) {
-	var u models.User
+func retrieveUserFromDBByID(db *sqlx.DB, userID uint64) (*models.User, error) {
+	u := &models.User{}
 	query, args := buildUserSelectionQueryByID(userID)
 	err := db.Get(&u, query, args...)
 	return u, err
 }
 
-func passwordMatches(password string, u models.User) bool {
+func passwordMatches(password string, u *models.User) bool {
 	saltedInputPassword := append(u.Salt, password...)
 	err := bcrypt.CompareHashAndPassword([]byte(u.Password), saltedInputPassword)
 	return err == nil
@@ -303,7 +304,7 @@ func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 	}
 }
 
-func buildUserLoginHandler(db *sqlx.DB, store *sessions.CookieStore) http.HandlerFunc {
+func buildUserLoginHandler(db *sql.DB, client storage.Storer, store *sessions.CookieStore) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		loginInput := &UserLoginInput{}
 		err := validateRequestInput(req, loginInput)
@@ -313,7 +314,7 @@ func buildUserLoginHandler(db *sqlx.DB, store *sessions.CookieStore) http.Handle
 		}
 		username := loginInput.Username
 
-		exhaustedAttempts, err := loginAttemptsHaveBeenExhausted(db, username)
+		exhaustedAttempts, err := client.LoginAttemptsHaveBeenExhausted(db, username)
 		if exhaustedAttempts {
 			notifyOfExaustedAuthenticationAttempts(res)
 			return
@@ -322,7 +323,7 @@ func buildUserLoginHandler(db *sqlx.DB, store *sessions.CookieStore) http.Handle
 			return
 		}
 
-		user, err := retrieveUserFromDB(db, username)
+		user, err := client.GetUserByUsername(db, username)
 		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "user", username)
 			return
@@ -332,7 +333,7 @@ func buildUserLoginHandler(db *sqlx.DB, store *sessions.CookieStore) http.Handle
 		}
 
 		loginValid := passwordMatches(loginInput.Password, user)
-		err = createLoginAttemptRowInDatabase(db, username, loginValid)
+		_, _, err = client.CreateLoginAttempt(db, &models.LoginAttempt{Username: username, Successful: loginValid})
 		if err != nil {
 			notifyOfInternalIssue(res, err, "create login attempt entry")
 			return
