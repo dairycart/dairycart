@@ -190,7 +190,7 @@ func build{{ $modelName }}CountRetrievalQuery(qf *models.QueryFilter) (string, [
 		Select("count(id)").
 		From("{{ .Table.Name }}")
 
-	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, true).ToSql()
+	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, false).ToSql()
 	return query, args
 }
 

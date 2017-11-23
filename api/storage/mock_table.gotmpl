@@ -56,6 +56,11 @@ func (m *MockDB) Get{{ $modelName }}List(db storage.Querier, qf *models.QueryFil
     return args.Get(0).([]models.{{ $modelName }}), args.Error(1)
 }
 
+func (m *MockDB) Get{{ $modelName }}Count(db storage.Querier, qf *models.QueryFilter) (uint64, error){
+    args := m.Called(db, qf)
+    return args.Get(0).(uint64), args.Error(1)
+}
+
 func (m *MockDB) Create{{ $modelName }}(db storage.Querier, nu *models.{{ $modelName }}) (uint64, time.Time, {{- if $isProduct }}time.Time, {{ end }}error) {
     args := m.Called(db, nu)
 	return args.Get(0).(uint64), args.Get(1).(time.Time), {{ if $isProduct -}}args.Get(2).(time.Time), args.Error(3){{ else }}args.Error(2){{ end -}}

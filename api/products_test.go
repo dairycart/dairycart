@@ -2,140 +2,22 @@ package main
 
 import (
 	"database/sql"
-	"database/sql/driver"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 	"testing"
-	"time"
+	// "time"
 
 	"github.com/dairycart/dairycart/api/storage/models"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
 const (
 	exampleProductID = uint64(2)
 	badSKUUpdateJSON = `{"sku": "pooƃ ou sᴉ nʞs sᴉɥʇ"}`
 )
-
-func createExampleHeadersAndDataFromProduct(p *models.Product) ([]string, []driver.Value) {
-	var headers []string
-	var values []driver.Value
-
-	productMap := map[string]driver.Value{
-		"id":                   p.ID,
-		"product_root_id":      p.ProductRootID,
-		"name":                 p.Name,
-		"subtitle":             p.Subtitle,
-		"description":          p.Description,
-		"sku":                  p.SKU,
-		"upc":                  p.UPC,
-		"manufacturer":         p.Manufacturer,
-		"brand":                p.Brand,
-		"quantity":             p.Quantity,
-		"quantity_per_package": p.QuantityPerPackage,
-		"taxable":              p.Taxable,
-		"price":                p.Price,
-		"on_sale":              p.OnSale,
-		"sale_price":           p.SalePrice,
-		"cost":                 p.Cost,
-		"product_weight":       p.ProductWeight,
-		"product_height":       p.ProductHeight,
-		"product_width":        p.ProductWidth,
-		"product_length":       p.ProductLength,
-		"package_weight":       p.PackageWeight,
-		"package_height":       p.PackageHeight,
-		"package_width":        p.PackageWidth,
-		"package_length":       p.PackageLength,
-		"available_on":         p.AvailableOn,
-		"created_on":           p.CreatedOn,
-		"updated_on":           p.UpdatedOn,
-		"archived_on":          p.ArchivedOn,
-	}
-
-	for header, value := range productMap {
-		headers = append(headers, header)
-		values = append(values, value)
-	}
-
-	return headers, values
-}
-
-func setExpectationsForProductListQuery(mock sqlmock.Sqlmock, p *models.Product, err error) {
-	productHeaders, exampleProductData := createExampleHeadersAndDataFromProduct(p)
-
-	exampleRows := sqlmock.NewRows(productHeaders).
-		AddRow(exampleProductData...).
-		AddRow(exampleProductData...).
-		AddRow(exampleProductData...)
-
-	allProductsRetrievalQuery, _ := buildProductListQuery(genereateDefaultQueryFilter())
-	mock.ExpectQuery(formatQueryForSQLMock(allProductsRetrievalQuery)).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
-}
-
-func setExpectationsForProductCreation(mock sqlmock.Sqlmock, p *models.Product, err error) {
-	exampleRows := sqlmock.NewRows([]string{"id", "available_on", "created_on"}).AddRow(p.ID, generateExampleTimeForTests(), generateExampleTimeForTests())
-	productCreationQuery, args := buildProductCreationQuery(p)
-	queryArgs := argsToDriverValues(args)
-	mock.ExpectQuery(formatQueryForSQLMock(productCreationQuery)).
-		WithArgs(queryArgs...).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
-}
-
-func TestCreateProductInDB(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-	exampleProduct := &models.Product{
-		ID:            2,
-		CreatedOn:     generateExampleTimeForTests(),
-		SKU:           "skateboard",
-		Name:          "Skateboard",
-		UPC:           "1234567890",
-		Quantity:      123,
-		Price:         99.99,
-		Cost:          50.00,
-		Description:   "This is a skateboard. Please wear a helmet.",
-		ProductWeight: 8,
-		ProductHeight: 7,
-		ProductWidth:  6,
-		ProductLength: 5,
-		PackageWeight: 4,
-		PackageHeight: 3,
-		PackageWidth:  2,
-		PackageLength: 1,
-		AvailableOn:   generateExampleTimeForTests(),
-	}
-
-	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductCreation(testUtil.Mock, exampleProduct, nil)
-	testUtil.Mock.ExpectCommit()
-
-	tx, err := testUtil.DB.Begin()
-	assert.Nil(t, err)
-
-	newID, availableOn, createdOn, err := createProductInDB(tx, exampleProduct)
-	assert.Nil(t, err)
-	assert.Equal(t, exampleProductID, newID, "createProductInDB should return the created ID")
-	assert.Equal(t, generateExampleTimeForTests(), createdOn, "createProductInDB should return the created_on ID")
-	assert.Equal(t, generateExampleTimeForTests(), availableOn, "createProductInDB should return the available_on ID")
-
-	err = tx.Commit()
-	assert.Nil(t, err)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-////////////////////////////////////////////////////////
-//                                                    //
-//                 HTTP Handler Tests                 //
-//                                                    //
-////////////////////////////////////////////////////////
 
 func TestProductExistenceHandler(t *testing.T) {
 	exampleSKU := "example"
@@ -236,9 +118,7 @@ func TestProductRetrievalHandler(t *testing.T) {
 }
 
 func TestProductListHandler(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-	exampleProduct := &models.Product{
+	exampleProduct := models.Product{
 		ID:            2,
 		CreatedOn:     generateExampleTimeForTests(),
 		SKU:           "skateboard",
@@ -258,80 +138,48 @@ func TestProductListHandler(t *testing.T) {
 		PackageLength: 1,
 		AvailableOn:   generateExampleTimeForTests(),
 	}
+	exampleLength := uint64(3)
 
-	setExpectationsForRowCount(testUtil.Mock, "products", genereateDefaultQueryFilter(), 3, nil)
-	setExpectationsForProductListQuery(testUtil.Mock, exampleProduct, nil)
+	t.Run("optimal conditions", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetProductCount", mock.Anything, mock.Anything).
+			Return(exampleLength, nil)
+		testUtil.MockDB.On("GetProductList", mock.Anything, mock.Anything).
+			Return([]models.Product{exampleProduct, exampleProduct, exampleProduct}, nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	req, err := http.NewRequest(http.MethodGet, "/v1/products", nil)
-	assert.Nil(t, err)
+		req, err := http.NewRequest(http.MethodGet, "/v1/products", nil)
+		assert.Nil(t, err)
 
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assertStatusCode(t, testUtil, http.StatusOK)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusOK)
+	})
 
-	expected := &ListResponse{
-		Page:  1,
-		Limit: 25,
-		Count: 3,
-	}
+	t.Run("with error retrieving count", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetProductCount", mock.Anything, mock.Anything).Return(exampleLength, sql.ErrNoRows)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	actual := &ListResponse{}
-	err = json.NewDecoder(strings.NewReader(testUtil.Response.Body.String())).Decode(actual)
-	assert.Nil(t, err)
+		req, err := http.NewRequest(http.MethodGet, "/v1/products", nil)
+		assert.Nil(t, err)
 
-	assert.Equal(t, expected.Page, actual.Page, "expected and actual product pages should be equal")
-	assert.Equal(t, expected.Limit, actual.Limit, "expected and actual product limits should be equal")
-	assert.Equal(t, expected.Count, actual.Count, "expected and actual product counts should be equal")
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
 
-func TestProductListHandlerWithErrorRetrievingCount(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+	t.Run("with database error", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetProductCount", mock.Anything, mock.Anything).Return(exampleLength, nil)
+		testUtil.MockDB.On("GetProductList", mock.Anything, mock.Anything).
+			Return([]models.Product{exampleProduct, exampleProduct, exampleProduct}, generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	setExpectationsForRowCount(testUtil.Mock, "products", genereateDefaultQueryFilter(), 3, generateArbitraryError())
+		req, err := http.NewRequest(http.MethodGet, "/v1/products", nil)
+		assert.Nil(t, err)
 
-	req, err := http.NewRequest(http.MethodGet, "/v1/products", nil)
-	assert.Nil(t, err)
-
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-func TestProductListHandlerWithDBError(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-	exampleProduct := &models.Product{
-		ID:            2,
-		CreatedOn:     generateExampleTimeForTests(),
-		SKU:           "skateboard",
-		Name:          "Skateboard",
-		UPC:           "1234567890",
-		Quantity:      123,
-		Price:         99.99,
-		Cost:          50.00,
-		Description:   "This is a skateboard. Please wear a helmet.",
-		ProductWeight: 8,
-		ProductHeight: 7,
-		ProductWidth:  6,
-		ProductLength: 5,
-		PackageWeight: 4,
-		PackageHeight: 3,
-		PackageWidth:  2,
-		PackageLength: 1,
-		AvailableOn:   generateExampleTimeForTests(),
-	}
-
-	setExpectationsForRowCount(testUtil.Mock, "products", genereateDefaultQueryFilter(), 3, nil)
-	setExpectationsForProductListQuery(testUtil.Mock, exampleProduct, generateArbitraryError())
-
-	req, err := http.NewRequest(http.MethodGet, "/v1/products", nil)
-	assert.Nil(t, err)
-
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-	ensureExpectationsWereMet(t, testUtil.Mock)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
 }
 
 func TestProductUpdateHandler(t *testing.T) {
@@ -452,9 +300,12 @@ func TestProductDeletionHandler(t *testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.Mock.ExpectBegin()
 		testUtil.Mock.ExpectCommit()
-		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).Return(exampleProduct, nil).Once()
-		testUtil.MockDB.On("DeleteProductVariantBridgeByProductID", mock.Anything, exampleProduct.ID).Return(time.Now(), nil).Once()
-		testUtil.MockDB.On("DeleteProduct", mock.Anything, exampleProduct.ID).Return(generateExampleTimeForTests(), nil).Once()
+		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).
+			Return(exampleProduct, nil).Once()
+		testUtil.MockDB.On("DeleteProductVariantBridgeByProductID", mock.Anything, exampleProduct.ID).
+			Return(generateExampleTimeForTests(), nil).Once()
+		testUtil.MockDB.On("DeleteProduct", mock.Anything, exampleProduct.ID).
+			Return(generateExampleTimeForTests(), nil).Once()
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
@@ -466,7 +317,8 @@ func TestProductDeletionHandler(t *testing.T) {
 
 	t.Run("with nonexistent product", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
-		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).Return(exampleProduct, sql.ErrNoRows).Once()
+		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).
+			Return(exampleProduct, sql.ErrNoRows).Once()
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
@@ -478,7 +330,8 @@ func TestProductDeletionHandler(t *testing.T) {
 
 	t.Run("with error retrieving product", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
-		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).Return(exampleProduct, generateArbitraryError()).Once()
+		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).
+			Return(exampleProduct, generateArbitraryError()).Once()
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
@@ -491,7 +344,8 @@ func TestProductDeletionHandler(t *testing.T) {
 	t.Run("with error beginning transaction", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.Mock.ExpectBegin().WillReturnError(generateArbitraryError())
-		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).Return(exampleProduct, nil).Once()
+		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).
+			Return(exampleProduct, nil).Once()
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
@@ -505,8 +359,10 @@ func TestProductDeletionHandler(t *testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.Mock.ExpectBegin()
 		testUtil.Mock.ExpectCommit()
-		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).Return(exampleProduct, nil).Once()
-		testUtil.MockDB.On("DeleteProductVariantBridgeByProductID", mock.Anything, exampleProduct.ID).Return(time.Now(), generateArbitraryError()).Once()
+		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).
+			Return(exampleProduct, nil).Once()
+		testUtil.MockDB.On("DeleteProductVariantBridgeByProductID", mock.Anything, exampleProduct.ID).
+			Return(generateExampleTimeForTests(), generateArbitraryError()).Once()
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
@@ -519,9 +375,15 @@ func TestProductDeletionHandler(t *testing.T) {
 	t.Run("with error encountered deleting product", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.Mock.ExpectBegin()
-		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).Return(exampleProduct, nil).Once()
-		testUtil.MockDB.On("DeleteProductVariantBridgeByProductID", mock.Anything, exampleProduct.ID).Return(time.Now(), nil).Once()
-		testUtil.MockDB.On("DeleteProduct", mock.Anything, exampleProduct.ID).Return(generateExampleTimeForTests(), generateArbitraryError()).Once()
+		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).
+			Return(exampleProduct, nil).
+			Once()
+		testUtil.MockDB.On("DeleteProductVariantBridgeByProductID", mock.Anything, exampleProduct.ID).
+			Return(generateExampleTimeForTests(), nil).
+			Once()
+		testUtil.MockDB.On("DeleteProduct", mock.Anything, exampleProduct.ID).
+			Return(generateExampleTimeForTests(), generateArbitraryError()).
+			Once()
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
@@ -535,9 +397,12 @@ func TestProductDeletionHandler(t *testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.Mock.ExpectBegin()
 		testUtil.Mock.ExpectCommit().WillReturnError(generateArbitraryError())
-		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).Return(exampleProduct, nil).Once()
-		testUtil.MockDB.On("DeleteProductVariantBridgeByProductID", mock.Anything, exampleProduct.ID).Return(time.Now(), nil).Once()
-		testUtil.MockDB.On("DeleteProduct", mock.Anything, exampleProduct.ID).Return(generateExampleTimeForTests(), nil).Once()
+		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).
+			Return(exampleProduct, nil).Once()
+		testUtil.MockDB.On("DeleteProductVariantBridgeByProductID", mock.Anything, exampleProduct.ID).
+			Return(generateExampleTimeForTests(), nil).Once()
+		testUtil.MockDB.On("DeleteProduct", mock.Anything, exampleProduct.ID).
+			Return(generateExampleTimeForTests(), nil).Once()
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)

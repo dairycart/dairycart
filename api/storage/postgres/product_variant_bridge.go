@@ -103,7 +103,7 @@ func buildProductVariantBridgeCountRetrievalQuery(qf *models.QueryFilter) (strin
 		Select("count(id)").
 		From("product_variant_bridge")
 
-	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, true).ToSql()
+	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, false).ToSql()
 	return query, args
 }
 

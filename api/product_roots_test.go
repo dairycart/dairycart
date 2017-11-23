@@ -1,3 +1,5 @@
+// +build !migrated
+
 package main
 
 import (
@@ -200,6 +202,49 @@ func setupExpectationsForProductRootRetrieval(mock sqlmock.Sqlmock, r *models.Pr
 		WithArgs(r.ID).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
+}
+
+func createExampleHeadersAndDataFromProduct(p *models.Product) ([]string, []driver.Value) {
+	var headers []string
+	var values []driver.Value
+
+	productMap := map[string]driver.Value{
+		"id":                   p.ID,
+		"product_root_id":      p.ProductRootID,
+		"name":                 p.Name,
+		"subtitle":             p.Subtitle,
+		"description":          p.Description,
+		"sku":                  p.SKU,
+		"upc":                  p.UPC,
+		"manufacturer":         p.Manufacturer,
+		"brand":                p.Brand,
+		"quantity":             p.Quantity,
+		"quantity_per_package": p.QuantityPerPackage,
+		"taxable":              p.Taxable,
+		"price":                p.Price,
+		"on_sale":              p.OnSale,
+		"sale_price":           p.SalePrice,
+		"cost":                 p.Cost,
+		"product_weight":       p.ProductWeight,
+		"product_height":       p.ProductHeight,
+		"product_width":        p.ProductWidth,
+		"product_length":       p.ProductLength,
+		"package_weight":       p.PackageWeight,
+		"package_height":       p.PackageHeight,
+		"package_width":        p.PackageWidth,
+		"package_length":       p.PackageLength,
+		"available_on":         p.AvailableOn,
+		"created_on":           p.CreatedOn,
+		"updated_on":           p.UpdatedOn,
+		"archived_on":          p.ArchivedOn,
+	}
+
+	for header, value := range productMap {
+		headers = append(headers, header)
+		values = append(values, value)
+	}
+
+	return headers, values
 }
 
 func setExpectationsForProductAssociatedWithRootListQuery(mock sqlmock.Sqlmock, r *models.ProductRoot, p *models.Product, err error) {

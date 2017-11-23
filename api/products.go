@@ -5,14 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairycart/api/storage/models"
 
 	"github.com/go-chi/chi"
 	"github.com/imdario/mergo"
-	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 )
 
@@ -48,39 +46,7 @@ func newProductFromCreationInput(in *ProductCreationInput) *models.Product {
 
 // ProductCreationInput is a struct that represents a product creation body
 type ProductCreationInput struct {
-	// Core Product stuff
-	Name         string `json:"name"`
-	Subtitle     string `json:"subtitle"`
-	Description  string `json:"description"`
-	SKU          string `json:"sku"`
-	UPC          string `json:"upc"`
-	Manufacturer string `json:"manufacturer"`
-	Brand        string `json:"brand"`
-	Quantity     uint32 `json:"quantity"`
-
-	// Pricing Fields
-	Taxable   bool    `json:"taxable"`
-	Price     float64 `json:"price"`
-	OnSale    bool    `json:"on_sale"`
-	SalePrice float64 `json:"sale_price"`
-	Cost      float64 `json:"cost"`
-
-	// Product Dimensions
-	ProductWeight float64 `json:"product_weight"`
-	ProductHeight float64 `json:"product_height"`
-	ProductWidth  float64 `json:"product_width"`
-	ProductLength float64 `json:"product_length"`
-
-	// Package dimensions
-	PackageWeight      float64 `json:"package_weight"`
-	PackageHeight      float64 `json:"package_height"`
-	PackageWidth       float64 `json:"package_width"`
-	PackageLength      float64 `json:"package_length"`
-	QuantityPerPackage uint32  `json:"quantity_per_package"`
-
-	AvailableOn time.Time `json:"available_on"`
-
-	// Other things
+	models.Product
 	Options []*ProductOptionCreationInput `json:"options"`
 }
 
@@ -121,20 +87,18 @@ func buildSingleProductHandler(db *sql.DB, client storage.Storer) http.HandlerFu
 	}
 }
 
-func buildProductListHandler(db *sqlx.DB) http.HandlerFunc {
+func buildProductListHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
 	// productListHandler is a request handler that returns a list of products
 	return func(res http.ResponseWriter, req *http.Request) {
 		rawFilterParams := req.URL.Query()
 		queryFilter := parseRawFilterParams(rawFilterParams)
-		count, err := getRowCount(db, "products", queryFilter)
+		count, err := client.GetProductCount(db, queryFilter)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve count of products from the database")
 			return
 		}
 
-		var products []models.Product
-		query, args := buildProductListQuery(queryFilter)
-		err = retrieveListOfRowsFromDB(db, query, args, &products)
+		products, err := client.GetProductList(db, queryFilter)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve products from the database")
 			return
@@ -235,16 +199,6 @@ func buildProductUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerFu
 	}
 }
 
-// createProductInDB takes a marshaled Product object and creates an entry for it and a base_product in the database
-func createProductInDB(tx *sql.Tx, np *models.Product) (uint64, time.Time, time.Time, error) {
-	var newProductID uint64
-	var availableOn time.Time
-	var createdOn time.Time
-	productCreationQuery, queryArgs := buildProductCreationQuery(np)
-	err := tx.QueryRow(productCreationQuery, queryArgs...).Scan(&newProductID, &availableOn, &createdOn)
-	return newProductID, availableOn, createdOn, err
-}
-
 func createProductsInDBFromOptionRows(client storage.Storer, tx *sql.Tx, r *models.ProductRoot, np *models.Product) ([]models.Product, error) {
 	createdProducts := []models.Product{}
 	productOptionData := generateCartesianProductForOptions(r.Options)
@@ -274,7 +228,6 @@ func createProductsInDBFromOptionRows(client storage.Storer, tx *sql.Tx, r *mode
 }
 
 func buildProductCreationHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
-	// func buildProductCreationHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		productInput := &ProductCreationInput{}
 		err := validateRequestInput(req, productInput)

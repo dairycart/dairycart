@@ -2,7 +2,7 @@ package postgres
 
 import (
 	"database/sql"
-
+	"database/sql/driver"
 	"errors"
 	"strconv"
 	"testing"
@@ -185,6 +185,55 @@ func TestGetProductOptionValueList(t *testing.T) {
 
 		require.NotNil(t, err)
 		require.Nil(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
+
+func TestBuildProductOptionValueCountRetrievalQuery(t *testing.T) {
+	t.Parallel()
+
+	exampleQF := &models.QueryFilter{
+		Limit: 25,
+		Page:  1,
+	}
+	expected := `SELECT count(id) FROM product_option_values WHERE archived_on IS NULL LIMIT 25`
+	actual, _ := buildProductOptionValueCountRetrievalQuery(exampleQF)
+
+	require.Equal(t, expected, actual, "expected and actual queries should match")
+}
+
+func setProductOptionValueCountRetrievalQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, count uint64, err error) {
+	t.Helper()
+	query, args := buildProductOptionValueCountRetrievalQuery(qf)
+	query = formatQueryForSQLMock(query)
+
+	var argsToExpect []driver.Value
+	for _, x := range args {
+		argsToExpect = append(argsToExpect, x)
+	}
+
+	exampleRow := sqlmock.NewRows([]string{"count"}).AddRow(count)
+	mock.ExpectQuery(query).WithArgs(argsToExpect...).WillReturnRows(exampleRow).WillReturnError(err)
+}
+
+func TestGetProductOptionValueCount(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	require.Nil(t, err)
+	defer mockDB.Close()
+	client := NewPostgres()
+	expected := uint64(123)
+	exampleQF := &models.QueryFilter{
+		Limit: 25,
+		Page:  1,
+	}
+
+	t.Run("optimal behavior", func(t *testing.T) {
+		setProductOptionValueCountRetrievalQueryExpectation(t, mock, exampleQF, expected, nil)
+		actual, err := client.GetProductOptionValueCount(mockDB, exampleQF)
+
+		require.Nil(t, err)
+		require.Equal(t, expected, actual, "count retrieval method should return the expected value")
 		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }

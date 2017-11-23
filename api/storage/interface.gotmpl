@@ -23,6 +23,7 @@ type Storer interface {
     // {{ pascal .Name }}
     Get{{ $modelName }}(Querier, uint64) (*models.{{ $modelName }}, error)
     Get{{ $modelName }}List(Querier, *models.QueryFilter) ([]models.{{ $modelName }}, error)
+    Get{{ $modelName }}Count(Querier, *models.QueryFilter) (uint64, error)
     {{ $modelName }}Exists(Querier, uint64) (bool, error)
     Create{{ $modelName }}(Querier, *models.{{ $modelName }}) (uint64, time.Time, {{ if $isProduct }}time.Time, {{ end }}error)
     Update{{ $modelName }}(Querier, *models.{{ $modelName }}) (time.Time, error)

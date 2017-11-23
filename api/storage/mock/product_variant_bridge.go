@@ -22,6 +22,11 @@ func (m *MockDB) GetProductVariantBridgeList(db storage.Querier, qf *models.Quer
 	return args.Get(0).([]models.ProductVariantBridge), args.Error(1)
 }
 
+func (m *MockDB) GetProductVariantBridgeCount(db storage.Querier, qf *models.QueryFilter) (uint64, error) {
+	args := m.Called(db, qf)
+	return args.Get(0).(uint64), args.Error(1)
+}
+
 func (m *MockDB) CreateProductVariantBridge(db storage.Querier, nu *models.ProductVariantBridge) (uint64, time.Time, error) {
 	args := m.Called(db, nu)
 	return args.Get(0).(uint64), args.Get(1).(time.Time), args.Error(2)

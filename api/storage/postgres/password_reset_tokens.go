@@ -105,7 +105,7 @@ func buildPasswordResetTokenCountRetrievalQuery(qf *models.QueryFilter) (string,
 		Select("count(id)").
 		From("password_reset_tokens")
 
-	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, true).ToSql()
+	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, false).ToSql()
 	return query, args
 }
 

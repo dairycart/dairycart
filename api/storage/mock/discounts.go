@@ -27,6 +27,11 @@ func (m *MockDB) GetDiscountList(db storage.Querier, qf *models.QueryFilter) ([]
 	return args.Get(0).([]models.Discount), args.Error(1)
 }
 
+func (m *MockDB) GetDiscountCount(db storage.Querier, qf *models.QueryFilter) (uint64, error) {
+	args := m.Called(db, qf)
+	return args.Get(0).(uint64), args.Error(1)
+}
+
 func (m *MockDB) CreateDiscount(db storage.Querier, nu *models.Discount) (uint64, time.Time, error) {
 	args := m.Called(db, nu)
 	return args.Get(0).(uint64), args.Get(1).(time.Time), args.Error(2)

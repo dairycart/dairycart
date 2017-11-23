@@ -168,7 +168,7 @@ func buildProductRootCountRetrievalQuery(qf *models.QueryFilter) (string, []inte
 		Select("count(id)").
 		From("product_roots")
 
-	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, true).ToSql()
+	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, false).ToSql()
 	return query, args
 }
 

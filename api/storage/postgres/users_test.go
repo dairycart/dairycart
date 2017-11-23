@@ -2,7 +2,7 @@ package postgres
 
 import (
 	"database/sql"
-
+	"database/sql/driver"
 	"errors"
 	"strconv"
 	"testing"
@@ -221,6 +221,55 @@ func TestGetUserList(t *testing.T) {
 
 		require.NotNil(t, err)
 		require.Nil(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
+
+func TestBuildUserCountRetrievalQuery(t *testing.T) {
+	t.Parallel()
+
+	exampleQF := &models.QueryFilter{
+		Limit: 25,
+		Page:  1,
+	}
+	expected := `SELECT count(id) FROM users WHERE archived_on IS NULL LIMIT 25`
+	actual, _ := buildUserCountRetrievalQuery(exampleQF)
+
+	require.Equal(t, expected, actual, "expected and actual queries should match")
+}
+
+func setUserCountRetrievalQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, count uint64, err error) {
+	t.Helper()
+	query, args := buildUserCountRetrievalQuery(qf)
+	query = formatQueryForSQLMock(query)
+
+	var argsToExpect []driver.Value
+	for _, x := range args {
+		argsToExpect = append(argsToExpect, x)
+	}
+
+	exampleRow := sqlmock.NewRows([]string{"count"}).AddRow(count)
+	mock.ExpectQuery(query).WithArgs(argsToExpect...).WillReturnRows(exampleRow).WillReturnError(err)
+}
+
+func TestGetUserCount(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	require.Nil(t, err)
+	defer mockDB.Close()
+	client := NewPostgres()
+	expected := uint64(123)
+	exampleQF := &models.QueryFilter{
+		Limit: 25,
+		Page:  1,
+	}
+
+	t.Run("optimal behavior", func(t *testing.T) {
+		setUserCountRetrievalQueryExpectation(t, mock, exampleQF, expected, nil)
+		actual, err := client.GetUserCount(mockDB, exampleQF)
+
+		require.Nil(t, err)
+		require.Equal(t, expected, actual, "count retrieval method should return the expected value")
 		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }

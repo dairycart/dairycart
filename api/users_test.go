@@ -1,3 +1,5 @@
+// +build !migrated
+
 package main
 
 import (
@@ -22,7 +24,8 @@ var userTableHeaders []string
 var exampleUserData []driver.Value
 
 const (
-	examplePassword       = "Pa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rd"
+	// TODO: this is the real deal
+	// examplePassword       = "Pa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rd"
 	hashedExamplePassword = "$2a$13$hsflIwHM55jooxaTmYahhOO8LdfI.utMBjpHe5Fr311W4PpRxqyXm"
 )
 
@@ -307,8 +310,8 @@ func TestCreateUserInDB(t *testing.T) {
 	newID, createdOn, err := createUserInDB(testUtil.DB, exampleUser)
 
 	assert.Nil(t, err)
-	assert.Equal(t, exampleUser.ID, newID, "createProductInDB should return the created ID")
-	assert.Equal(t, exampleUser.CreatedOn, createdOn, "createProductInDB should return the created ID")
+	assert.Equal(t, exampleUser.ID, newID, "createUserInDB should return the created ID")
+	assert.Equal(t, exampleUser.CreatedOn, createdOn, "createUserInDB should return the created ID")
 	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 

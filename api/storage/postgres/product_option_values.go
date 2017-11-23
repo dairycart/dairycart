@@ -105,7 +105,7 @@ func buildProductOptionValueCountRetrievalQuery(qf *models.QueryFilter) (string,
 		Select("count(id)").
 		From("product_option_values")
 
-	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, true).ToSql()
+	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, false).ToSql()
 	return query, args
 }
 

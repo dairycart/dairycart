@@ -160,7 +160,7 @@ func buildDiscountCountRetrievalQuery(qf *models.QueryFilter) (string, []interfa
 		Select("count(id)").
 		From("discounts")
 
-	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, true).ToSql()
+	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, false).ToSql()
 	return query, args
 }
 

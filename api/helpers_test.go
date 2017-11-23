@@ -36,6 +36,7 @@ const (
 	//exampleTimeString        = "2016-12-01 12:00:00.000000"
 	exampleGarbageInput      = `{"things": "stuff"}`
 	exampleMarshalTimeString = "2016-12-31T12:00:00.000000Z"
+	examplePassword          = "Pa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rd"
 )
 
 func init() {
@@ -78,8 +79,7 @@ func genereateDefaultQueryFilter() *models.QueryFilter {
 }
 
 func generateArbitraryError() error {
-	err := errors.New("pineapple on pizza")
-	return err
+	return errors.New("pineapple on pizza")
 }
 
 func setExpectationsForRowCount(mock sqlmock.Sqlmock, table string, queryFilter *models.QueryFilter, count uint64, err error) {
@@ -416,41 +416,41 @@ func TestNotifyOfInternalIssue(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, w.Code, "status code should be 404")
 }
 
-func TestRowExistsInDBWhenDBThrowsError(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+// func TestRowExistsInDBWhenDBThrowsError(t *testing.T) {
+// 	t.Parallel()
+// 	testUtil := setupTestVariables(t)
 
-	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleSKU, true, sql.ErrNoRows)
-	exists, err := rowExistsInDB(testUtil.DB, productRootSkuExistenceQuery, exampleSKU)
+// 	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleSKU, true, sql.ErrNoRows)
+// 	exists, err := rowExistsInDB(testUtil.DB, productRootSkuExistenceQuery, exampleSKU)
 
-	assert.Nil(t, err)
-	assert.False(t, exists)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+// 	assert.Nil(t, err)
+// 	assert.False(t, exists)
+// 	ensureExpectationsWereMet(t, testUtil.Mock)
+// }
 
-func TestRowExistsInDBForExistingRow(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+// func TestRowExistsInDBForExistingRow(t *testing.T) {
+// 	t.Parallel()
+// 	testUtil := setupTestVariables(t)
 
-	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleSKU, true, nil)
-	exists, err := rowExistsInDB(testUtil.DB, productRootSkuExistenceQuery, exampleSKU)
+// 	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleSKU, true, nil)
+// 	exists, err := rowExistsInDB(testUtil.DB, productRootSkuExistenceQuery, exampleSKU)
 
-	assert.Nil(t, err)
-	assert.True(t, exists)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+// 	assert.Nil(t, err)
+// 	assert.True(t, exists)
+// 	ensureExpectationsWereMet(t, testUtil.Mock)
+// }
 
-func TestRowExistsInDBForNonexistentRow(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+// func TestRowExistsInDBForNonexistentRow(t *testing.T) {
+// 	t.Parallel()
+// 	testUtil := setupTestVariables(t)
 
-	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleSKU, false, nil)
-	exists, err := rowExistsInDB(testUtil.DB, productRootSkuExistenceQuery, exampleSKU)
+// 	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleSKU, false, nil)
+// 	exists, err := rowExistsInDB(testUtil.DB, productRootSkuExistenceQuery, exampleSKU)
 
-	assert.Nil(t, err)
-	assert.False(t, exists)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+// 	assert.Nil(t, err)
+// 	assert.False(t, exists)
+// 	ensureExpectationsWereMet(t, testUtil.Mock)
+// }
 
 func TestValidateRequestInput(t *testing.T) {
 	t.Parallel()

@@ -236,7 +236,7 @@ func buildProductCountRetrievalQuery(qf *models.QueryFilter) (string, []interfac
 		Select("count(id)").
 		From("products")
 
-	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, true).ToSql()
+	query, args, _ := applyQueryFilterToQueryBuilder(queryBuilder, qf, false).ToSql()
 	return query, args
 }
 

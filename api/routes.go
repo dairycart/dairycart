@@ -48,7 +48,7 @@ func SetupAPIRoutes(router *chi.Mux, db *sql.DB, dbxReplaceMePlz *sqlx.DB, store
 
 		// Products
 		specificProductRoute := fmt.Sprintf("/product/{sku:%s}", ValidURLCharactersPattern)
-		r.Get("/products", buildProductListHandler(dbxReplaceMePlz))
+		r.Get("/products", buildProductListHandler(db, client))
 		r.Post("/product", buildProductCreationHandler(db, client))
 		r.Get(specificProductRoute, buildSingleProductHandler(db, client))
 		r.Patch(specificProductRoute, buildProductUpdateHandler(db, client))
