@@ -14,10 +14,9 @@ import (
 )
 
 const (
-	productRootSkuExistenceQuery = `SELECT EXISTS(SELECT 1 FROM product_roots WHERE sku_prefix = $1 AND archived_on IS NULL)`
-	productRootExistenceQuery    = `SELECT EXISTS(SELECT 1 FROM product_roots WHERE id = $1 AND archived_on IS NULL)`
-	productRootRetrievalQuery    = `SELECT id, name, subtitle, description, sku_prefix, manufacturer, brand, taxable, cost, product_weight, product_height, product_width, product_length, package_weight, package_height, package_width, package_length, quantity_per_package, available_on, created_on, updated_on, archived_on FROM product_roots WHERE id = $1`
-	productRootDeletionQuery     = `UPDATE product_roots SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
+	productRootExistenceQuery = `SELECT EXISTS(SELECT 1 FROM product_roots WHERE id = $1 AND archived_on IS NULL)`
+	productRootRetrievalQuery = `SELECT id, name, subtitle, description, sku_prefix, manufacturer, brand, taxable, cost, product_weight, product_height, product_width, product_length, package_weight, package_height, package_width, package_length, quantity_per_package, available_on, created_on, updated_on, archived_on FROM product_roots WHERE id = $1`
+	productRootDeletionQuery  = `UPDATE product_roots SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
 
 	productDeletionQueryByRootID              = `UPDATE products SET archived_on = NOW() WHERE product_root_id = $1 AND archived_on IS NULL`
 	productOptionDeletionQueryByRootID        = `UPDATE product_options SET archived_on = NOW() WHERE product_root_id = $1 AND archived_on IS NULL`

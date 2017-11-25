@@ -31,10 +31,9 @@ func SetupAPIRoutes(router *chi.Mux, db *sql.DB, dbxReplaceMePlz *sqlx.DB, store
 	router.Post("/login", buildUserLoginHandler(db, client, store))
 	router.Post("/logout", buildUserLogoutHandler(store))
 	router.Post("/user", buildUserCreationHandler(db, client, store))
-	router.Patch(fmt.Sprintf("/user/{user_id:%s}", NumericPattern), buildUserInfoUpdateHandler(dbxReplaceMePlz))
+	router.Patch(fmt.Sprintf("/user/{user_id:%s}", NumericPattern), buildUserInfoUpdateHandler(db, client))
 	router.Post("/password_reset", buildUserForgottenPasswordHandler(db, client))
-	router.Head("/password_reset/{reset_token}", buildUserPasswordResetTokenValidationHandler(dbxReplaceMePlz))
-	//router.Head("/password_reset/{reset_token:[a-zA-Z0-9]{}}", buildUserPasswordResetTokenValidationHandler(dbxReplaceMePlz))
+	router.Head("/password_reset/{reset_token}", buildUserPasswordResetTokenValidationHandler(db, client))
 
 	router.Route("/v1", func(r chi.Router) {
 		// Users

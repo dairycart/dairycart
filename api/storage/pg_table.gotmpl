@@ -160,13 +160,30 @@ func (pg *postgres) {{ $modelName }}sHaveBeenExhausted(db storage.Querier, usern
 {{- end }}
 
 {{- if $isPasswordResetToken }}
-{{ $pwtExistenceQueryVarName := printf "%sExistenceQueryByUserID" ( camel $modelName ) -}}
-const {{ $pwtExistenceQueryVarName }} = `SELECT EXISTS(SELECT id FROM {{ .Table.Name }} WHERE user_id = $1 AND NOW() < expires_on);`
+{{ $pwtExistenceByUserIDQueryVarName := printf "%sExistenceQueryByUserID" ( camel $modelName ) -}}
+const {{ $pwtExistenceByUserIDQueryVarName }} = `SELECT EXISTS(SELECT id FROM {{ .Table.Name }} WHERE user_id = $1 AND NOW() < expires_on);`
 
-func (pg *postgres) {{ $modelName }}ExistsForUserID(db storage.Querier, id uint64) (bool, error) {
+func (pg *postgres) {{ $modelName }}ForUserIDExists(db storage.Querier, id uint64) (bool, error) {
     var exists string
 
-	err := db.QueryRow({{ $pwtExistenceQueryVarName }}, id).Scan(&exists)
+	err := db.QueryRow({{ $pwtExistenceByUserIDQueryVarName }}, id).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return exists == "true", err
+}
+
+
+{{ $pwtExistenceByTokenQueryVarName := printf "%sExistenceQueryByToken" ( camel $modelName ) -}}
+const {{ $pwtExistenceByTokenQueryVarName }} = `SELECT EXISTS(SELECT id FROM {{ .Table.Name }} WHERE token = $1 AND NOW() < expires_on);`
+
+func (pg *postgres) {{ $modelName }}WithTokenExists(db storage.Querier, token string) (bool, error) {
+    var exists string
+
+	err := db.QueryRow({{ $pwtExistenceByTokenQueryVarName }}, token).Scan(&exists)
 	if err == sql.ErrNoRows {
 		return false, nil
 	} else if err != nil {

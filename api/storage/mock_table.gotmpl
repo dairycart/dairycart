@@ -62,8 +62,13 @@ func (m *MockDB) {{ $modelName }}WithSKUPrefixExists(db storage.Querier, skuPref
 {{- end }}
 
 {{- if $isPasswordResetToken }}
-func (m *MockDB) {{ $modelName }}ExistsForUserID(db storage.Querier, id uint64) (bool, error) {
+func (m *MockDB) {{ $modelName }}ForUserIDExists(db storage.Querier, id uint64) (bool, error) {
     args := m.Called(db, id)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *MockDB) {{ $modelName }}WithTokenExists(db storage.Querier, token string) (bool, error) {
+    args := m.Called(db, WithTokenExists)
 	return args.Bool(0), args.Error(1)
 }
 {{- end }}

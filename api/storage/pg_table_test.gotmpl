@@ -326,10 +326,10 @@ func Test{{ $modelName }}sHaveBeenExhausted(t *testing.T) {
 {{- end }}
 
 {{- if $isPasswordResetToken }}
-{{ $pwtExistenceQueryVarName := printf "%sExistenceQueryByUserID" ( camel $modelName ) -}}
+{{ $pwtExistenceByUserIDQueryVarName := printf "%sExistenceQueryByUserID" ( camel $modelName ) -}}
 func set{{ $modelName }}ExistenceQueryByUserIDExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, shouldExist bool, err error) {
     t.Helper()
-    query := formatQueryForSQLMock({{ $pwtExistenceQueryVarName }})
+    query := formatQueryForSQLMock({{ $pwtExistenceByUserIDQueryVarName }})
 
 	mock.ExpectQuery(query).
 		WithArgs(id).
@@ -337,7 +337,7 @@ func set{{ $modelName }}ExistenceQueryByUserIDExpectation(t *testing.T, mock sql
 		WillReturnError(err)
 }
 
-func Test{{ $modelName }}ExistsForUserID(t *testing.T) {
+func Test{{ $modelName }}ForUserIDExists(t *testing.T) {
     t.Parallel()
 	mockDB, mock, err := sqlmock.New()
     require.Nil(t, err)
@@ -347,7 +347,7 @@ func Test{{ $modelName }}ExistsForUserID(t *testing.T) {
 
     t.Run("existing", func(t *testing.T) {
         set{{ $modelName }}ExistenceQueryByUserIDExpectation(t, mock, exampleID, true, nil)
-        actual, err := client.{{ $modelName }}ExistsForUserID(mockDB, exampleID)
+        actual, err := client.{{ $modelName }}ForUserIDExists(mockDB, exampleID)
 
         require.Nil(t, err)
         require.True(t, actual)
@@ -355,7 +355,7 @@ func Test{{ $modelName }}ExistsForUserID(t *testing.T) {
     })
     t.Run("with no rows found", func(t *testing.T) {
         set{{ $modelName }}ExistenceQueryByUserIDExpectation(t, mock, exampleID, true, sql.ErrNoRows)
-        actual, err := client.{{ $modelName }}ExistsForUserID(mockDB, exampleID)
+        actual, err := client.{{ $modelName }}ForUserIDExists(mockDB, exampleID)
 
         require.Nil(t, err)
         require.False(t, actual)
@@ -363,7 +363,52 @@ func Test{{ $modelName }}ExistsForUserID(t *testing.T) {
     })
     t.Run("with a database error", func(t *testing.T) {
         set{{ $modelName }}ExistenceQueryByUserIDExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
-        actual, err := client.{{ $modelName }}ExistsForUserID(mockDB, exampleID)
+        actual, err := client.{{ $modelName }}ForUserIDExists(mockDB, exampleID)
+
+        require.NotNil(t, err)
+        require.False(t, actual)
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+}
+
+{{ $pwtExistenceByTokenQueryVarName := printf "%sExistenceQueryByToken" ( camel $modelName ) -}}
+func set{{ $modelName }}ExistenceQueryByTokenExpectation(t *testing.T, mock sqlmock.Sqlmock, token string, shouldExist bool, err error) {
+    t.Helper()
+    query := formatQueryForSQLMock({{ $pwtExistenceByTokenQueryVarName }})
+
+	mock.ExpectQuery(query).
+		WithArgs(token).
+		WillReturnRows(sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(shouldExist))).
+		WillReturnError(err)
+}
+
+func Test{{ $modelName }}WithTokenExists(t *testing.T) {
+    t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+    require.Nil(t, err)
+    defer mockDB.Close()
+    exampleToken := "deadbeef"
+    client := NewPostgres()
+
+    t.Run("existing", func(t *testing.T) {
+        set{{ $modelName }}ExistenceQueryByTokenExpectation(t, mock, exampleToken, true, nil)
+        actual, err := client.{{ $modelName }}WithTokenExists(mockDB, exampleToken)
+
+        require.Nil(t, err)
+        require.True(t, actual)
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+    t.Run("with no rows found", func(t *testing.T) {
+        set{{ $modelName }}ExistenceQueryByTokenExpectation(t, mock, exampleToken, true, sql.ErrNoRows)
+        actual, err := client.{{ $modelName }}WithTokenExists(mockDB, exampleToken)
+
+        require.Nil(t, err)
+        require.False(t, actual)
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+    t.Run("with a database error", func(t *testing.T) {
+        set{{ $modelName }}ExistenceQueryByTokenExpectation(t, mock, exampleToken, true, errors.New("pineapple on pizza"))
+        actual, err := client.{{ $modelName }}WithTokenExists(mockDB, exampleToken)
 
         require.NotNil(t, err)
         require.False(t, actual)

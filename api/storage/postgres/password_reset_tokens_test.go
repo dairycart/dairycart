@@ -25,7 +25,7 @@ func setPasswordResetTokenExistenceQueryByUserIDExpectation(t *testing.T, mock s
 		WillReturnError(err)
 }
 
-func TestPasswordResetTokenExistsForUserID(t *testing.T) {
+func TestPasswordResetTokenForUserIDExists(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
 	require.Nil(t, err)
@@ -35,7 +35,7 @@ func TestPasswordResetTokenExistsForUserID(t *testing.T) {
 
 	t.Run("existing", func(t *testing.T) {
 		setPasswordResetTokenExistenceQueryByUserIDExpectation(t, mock, exampleID, true, nil)
-		actual, err := client.PasswordResetTokenExistsForUserID(mockDB, exampleID)
+		actual, err := client.PasswordResetTokenForUserIDExists(mockDB, exampleID)
 
 		require.Nil(t, err)
 		require.True(t, actual)
@@ -43,7 +43,7 @@ func TestPasswordResetTokenExistsForUserID(t *testing.T) {
 	})
 	t.Run("with no rows found", func(t *testing.T) {
 		setPasswordResetTokenExistenceQueryByUserIDExpectation(t, mock, exampleID, true, sql.ErrNoRows)
-		actual, err := client.PasswordResetTokenExistsForUserID(mockDB, exampleID)
+		actual, err := client.PasswordResetTokenForUserIDExists(mockDB, exampleID)
 
 		require.Nil(t, err)
 		require.False(t, actual)
@@ -51,7 +51,51 @@ func TestPasswordResetTokenExistsForUserID(t *testing.T) {
 	})
 	t.Run("with a database error", func(t *testing.T) {
 		setPasswordResetTokenExistenceQueryByUserIDExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
-		actual, err := client.PasswordResetTokenExistsForUserID(mockDB, exampleID)
+		actual, err := client.PasswordResetTokenForUserIDExists(mockDB, exampleID)
+
+		require.NotNil(t, err)
+		require.False(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
+
+func setPasswordResetTokenExistenceQueryByTokenExpectation(t *testing.T, mock sqlmock.Sqlmock, token string, shouldExist bool, err error) {
+	t.Helper()
+	query := formatQueryForSQLMock(passwordResetTokenExistenceQueryByToken)
+
+	mock.ExpectQuery(query).
+		WithArgs(token).
+		WillReturnRows(sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(shouldExist))).
+		WillReturnError(err)
+}
+
+func TestPasswordResetTokenWithTokenExists(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	require.Nil(t, err)
+	defer mockDB.Close()
+	exampleToken := "deadbeef"
+	client := NewPostgres()
+
+	t.Run("existing", func(t *testing.T) {
+		setPasswordResetTokenExistenceQueryByTokenExpectation(t, mock, exampleToken, true, nil)
+		actual, err := client.PasswordResetTokenWithTokenExists(mockDB, exampleToken)
+
+		require.Nil(t, err)
+		require.True(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with no rows found", func(t *testing.T) {
+		setPasswordResetTokenExistenceQueryByTokenExpectation(t, mock, exampleToken, true, sql.ErrNoRows)
+		actual, err := client.PasswordResetTokenWithTokenExists(mockDB, exampleToken)
+
+		require.Nil(t, err)
+		require.False(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with a database error", func(t *testing.T) {
+		setPasswordResetTokenExistenceQueryByTokenExpectation(t, mock, exampleToken, true, errors.New("pineapple on pizza"))
+		actual, err := client.PasswordResetTokenWithTokenExists(mockDB, exampleToken)
 
 		require.NotNil(t, err)
 		require.False(t, actual)

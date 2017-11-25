@@ -53,14 +53,6 @@ func createExampleHeadersAndDataFromProductRoot(r *models.ProductRoot) ([]string
 	return headers, values
 }
 
-func setExpectationsForProductRootSKUExistence(mock sqlmock.Sqlmock, SKU string, exists bool, err error) {
-	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
-	mock.ExpectQuery(formatQueryForSQLMock(productRootSkuExistenceQuery)).
-		WithArgs(SKU).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
-}
-
 func setExpectationsForProductRootExistence(mock sqlmock.Sqlmock, id string, exists bool, err error) {
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
 	query := formatQueryForSQLMock(productRootExistenceQuery)

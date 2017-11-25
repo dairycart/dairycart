@@ -12,10 +12,25 @@ import (
 
 const passwordResetTokenExistenceQueryByUserID = `SELECT EXISTS(SELECT id FROM password_reset_tokens WHERE user_id = $1 AND NOW() < expires_on);`
 
-func (pg *postgres) PasswordResetTokenExistsForUserID(db storage.Querier, id uint64) (bool, error) {
+func (pg *postgres) PasswordResetTokenForUserIDExists(db storage.Querier, id uint64) (bool, error) {
 	var exists string
 
 	err := db.QueryRow(passwordResetTokenExistenceQueryByUserID, id).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return exists == "true", err
+}
+
+const passwordResetTokenExistenceQueryByToken = `SELECT EXISTS(SELECT id FROM password_reset_tokens WHERE token = $1 AND NOW() < expires_on);`
+
+func (pg *postgres) PasswordResetTokenWithTokenExists(db storage.Querier, token string) (bool, error) {
+	var exists string
+
+	err := db.QueryRow(passwordResetTokenExistenceQueryByToken, token).Scan(&exists)
 	if err == sql.ErrNoRows {
 		return false, nil
 	} else if err != nil {
