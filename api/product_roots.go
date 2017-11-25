@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"time"
 
+	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairycart/api/storage/models"
 
 	"github.com/go-chi/chi"
@@ -48,18 +48,6 @@ func createProductRootFromProduct(p *models.Product) *models.ProductRoot {
 	return r
 }
 
-func createProductRootInDB(tx *sql.Tx, r *models.ProductRoot) (uint64, time.Time, error) {
-	var newRootID uint64
-	var createdOn time.Time
-	// using QueryRow instead of Exec because we want it to return the newly created row's ID
-	// Exec normally returns a sql.Result, which has a LastInsertedID() method, but when I tested
-	// this locally, it never worked. ¯\_(ツ)_/¯
-	query, queryArgs := buildProductRootCreationQuery(r)
-	err := tx.QueryRow(query, queryArgs...).Scan(&newRootID, &createdOn)
-
-	return newRootID, createdOn, err
-}
-
 // retrieveProductRootFromDB retrieves a product root with a given ID from the database
 func retrieveProductRootFromDB(db *sqlx.DB, id uint64) (models.ProductRoot, error) {
 	var root models.ProductRoot
@@ -67,32 +55,30 @@ func retrieveProductRootFromDB(db *sqlx.DB, id uint64) (models.ProductRoot, erro
 	return root, err
 }
 
-func buildProductRootListHandler(db *sqlx.DB) http.HandlerFunc {
+func buildProductRootListHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
 	// productRootListHandler is a request handler that returns a list of product roots
 	return func(res http.ResponseWriter, req *http.Request) {
 		rawFilterParams := req.URL.Query()
 		queryFilter := parseRawFilterParams(rawFilterParams)
-		count, err := getRowCount(db, "product_roots", queryFilter)
+		count, err := client.GetProductRootCount(db, queryFilter)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve count of product roots from the database")
 			return
 		}
 
-		var productRoots []models.ProductRoot
-		query, args := buildProductRootListQuery(queryFilter)
-		err = retrieveListOfRowsFromDB(db, query, args, &productRoots)
+		productRoots, err := client.GetProductRootList(db, queryFilter)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve product roots from the database")
 			return
 		}
 
 		for _, r := range productRoots {
-			query, args := buildProductAssociatedWithRootListQuery(r.ID)
-			err = retrieveListOfRowsFromDB(db, query, args, &r.Products)
+			products, err := client.GetProductsByProductRootID(db, r.ID)
 			if err != nil {
 				notifyOfInternalIssue(res, err, "retrieve products from the database")
 				return
 			}
+			r.Products = products
 		}
 
 		productsResponse := &ListResponse{
@@ -105,13 +91,13 @@ func buildProductRootListHandler(db *sqlx.DB) http.HandlerFunc {
 	}
 }
 
-func buildSingleProductRootHandler(db *sqlx.DB) http.HandlerFunc {
+func buildSingleProductRootHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
 	// SingleProductRootHandler is a request handler that returns a single product root
 	return func(res http.ResponseWriter, req *http.Request) {
 		productRootIDStr := chi.URLParam(req, "product_root_id")
 		productRootID, err := strconv.ParseUint(productRootIDStr, 10, 64)
 
-		productRoot, err := retrieveProductRootFromDB(db, productRootID)
+		productRoot, err := client.GetProductRoot(db, productRootID)
 		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "product_root", productRootIDStr)
 			return
@@ -120,18 +106,19 @@ func buildSingleProductRootHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		query, args := buildProductAssociatedWithRootListQuery(productRoot.ID)
-		err = retrieveListOfRowsFromDB(db, query, args, &productRoot.Products)
+		products, err := client.GetProductsByProductRootID(db, productRoot.ID)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve products from the database")
 			return
 		}
+		productRoot.Products = products
 
-		productRoot.Options, err = getProductOptionsForProductRoot(db, productRoot.ID, nil)
+		options, err := client.GetProductOptionsByProductRootID(db, productRoot.ID)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve product options from the database")
 			return
 		}
+		productRoot.Options = options
 
 		json.NewEncoder(res).Encode(productRoot)
 	}

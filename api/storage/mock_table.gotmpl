@@ -13,6 +13,7 @@ import (
 {{- $isDiscount := eq $modelName "Discount" }}
 {{- $isProductRoot := eq $modelName "ProductRoot" }}
 {{- $isLoginAttempt := eq $modelName "LoginAttempt" }}
+{{- $isProductOption := eq $modelName "ProductOption" }}
 {{- $isPasswordResetToken := eq $modelName "PasswordResetToken" }}
 {{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
 
@@ -25,6 +26,13 @@ func (m *MockDB) Get{{ $modelName }}BySKU(db storage.Querier, sku string) (*mode
 func (m *MockDB) {{ $modelName }}WithSKUExists(db storage.Querier, sku string) (bool, error) {
     args := m.Called(db, sku)
 	return args.Bool(0), args.Error(1)
+}
+{{- end }}
+
+{{- if or $isProductOption $isProduct }}
+func (m *MockDB) Get{{ $modelName }}sByProductRootID(db storage.Querier, productRootID uint64)([]models.{{ $modelName }}, error) {
+    args := m.Called(db, productRootID)
+	return args.Get(0).([]models.{{ $modelName }}), args.Error(1)
 }
 {{- end }}
 
@@ -68,7 +76,7 @@ func (m *MockDB) {{ $modelName }}ForUserIDExists(db storage.Querier, id uint64) 
 }
 
 func (m *MockDB) {{ $modelName }}WithTokenExists(db storage.Querier, token string) (bool, error) {
-    args := m.Called(db, WithTokenExists)
+    args := m.Called(db, token)
 	return args.Bool(0), args.Error(1)
 }
 {{- end }}

@@ -16,6 +16,10 @@ func (m *MockDB) ProductWithSKUExists(db storage.Querier, sku string) (bool, err
 	args := m.Called(db, sku)
 	return args.Bool(0), args.Error(1)
 }
+func (m *MockDB) GetProductsByProductRootID(db storage.Querier, productRootID uint64) ([]models.Product, error) {
+	args := m.Called(db, productRootID)
+	return args.Get(0).([]models.Product), args.Error(1)
+}
 
 func (m *MockDB) ProductExists(db storage.Querier, id uint64) (bool, error) {
 	args := m.Called(db, id)

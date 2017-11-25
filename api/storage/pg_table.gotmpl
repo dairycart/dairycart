@@ -8,6 +8,7 @@ package postgres
 {{- $isDiscount := eq $modelName "Discount" }}
 {{- $isProductRoot := eq $modelName "ProductRoot" }}
 {{- $isLoginAttempt := eq $modelName "LoginAttempt" }}
+{{- $isProductOption := eq $modelName "ProductOption" }}
 {{- $isPasswordResetToken := eq $modelName "PasswordResetToken" }}
 {{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
 
@@ -59,6 +60,48 @@ func (pg *postgres) {{ $modelName }}WithSKUExists(db storage.Querier, sku string
 	}
 
 	return exists == "true", err
+}
+{{- end }}
+
+{{- if or $isProductOption $isProduct }}
+{{ $byProductRootIDVarName := printf "%sQueryByProductRootID" ( camel $modelName ) -}}
+const {{ $byProductRootIDVarName }} = `
+    SELECT
+    {{ $lastCol := dec (len .Table.Columns.DBNames) -}}
+    {{ range $x, $col := .Table.Columns.DBNames }}    {{ $col }}{{ if ne $x $lastCol }},
+    {{ end }}{{ end }}
+    FROM
+        {{ .Table.Name }}
+    WHERE
+        product_root_id = $1
+`
+
+func (pg *postgres) Get{{ $modelName }}sByProductRootID(db storage.Querier, productRootID uint64) ([]models.{{ $modelName }}, error) {
+	var list []models.{{ $modelName }}
+
+    rows, err := db.Query({{ $byProductRootIDVarName }}, productRootID)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+    for rows.Next() {
+        var {{ $shortVarName }} models.{{ $modelName }}
+        err := rows.Scan(
+            {{ $lastCol := dec (len .Table.Columns.DBNames) -}}
+            {{ range $x, $col := .Table.Columns.DBNames }}&{{ $shortVarName }}.{{ if or (eq (toLower $col) "sku") (eq (toLower $col) "upc") }}{{ toUpper $col }}{{ else if eq (toLower $col) "sku_prefix"}}SKUPrefix{{ else }}{{ pascal $col }}{{ end }},
+            {{ end }}
+        )
+        if err != nil {
+            return nil, err
+        }
+        list = append(list, {{ $shortVarName }})
+    }
+    err = rows.Err()
+    if err != nil {
+        return nil, err
+    }
+
+	return list, err
 }
 {{- end }}
 

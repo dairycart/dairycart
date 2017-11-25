@@ -34,7 +34,7 @@ type {{ $modelName }} struct {
     {{ "\n" }}
     // useful for responses
     // TODO: make this a slice of non-pointers
-	Options  []*ProductOption `json:"options"`
+	Options  []ProductOption `json:"options"`
 	Products []Product        `json:"products"`
     {{ else if eq $modelName "ProductOption" -}}
     {{ "\n" }}

@@ -101,6 +101,180 @@ func TestGetProductBySKU(t *testing.T) {
 		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
+func setProductReadQueryExpectationByProductRootID(t *testing.T, mock sqlmock.Sqlmock, example *models.Product, rowErr error, err error) {
+	exampleRows := sqlmock.NewRows([]string{
+		"id",
+		"product_root_id",
+		"name",
+		"subtitle",
+		"description",
+		"option_summary",
+		"sku",
+		"upc",
+		"manufacturer",
+		"brand",
+		"quantity",
+		"taxable",
+		"price",
+		"on_sale",
+		"sale_price",
+		"cost",
+		"product_weight",
+		"product_height",
+		"product_width",
+		"product_length",
+		"package_weight",
+		"package_height",
+		"package_width",
+		"package_length",
+		"quantity_per_package",
+		"available_on",
+		"created_on",
+		"updated_on",
+		"archived_on",
+	}).AddRow(
+		example.ID,
+		example.ProductRootID,
+		example.Name,
+		example.Subtitle,
+		example.Description,
+		example.OptionSummary,
+		example.SKU,
+		example.UPC,
+		example.Manufacturer,
+		example.Brand,
+		example.Quantity,
+		example.Taxable,
+		example.Price,
+		example.OnSale,
+		example.SalePrice,
+		example.Cost,
+		example.ProductWeight,
+		example.ProductHeight,
+		example.ProductWidth,
+		example.ProductLength,
+		example.PackageWeight,
+		example.PackageHeight,
+		example.PackageWidth,
+		example.PackageLength,
+		example.QuantityPerPackage,
+		example.AvailableOn,
+		example.CreatedOn,
+		example.UpdatedOn,
+		example.ArchivedOn,
+	).AddRow(
+		example.ID,
+		example.ProductRootID,
+		example.Name,
+		example.Subtitle,
+		example.Description,
+		example.OptionSummary,
+		example.SKU,
+		example.UPC,
+		example.Manufacturer,
+		example.Brand,
+		example.Quantity,
+		example.Taxable,
+		example.Price,
+		example.OnSale,
+		example.SalePrice,
+		example.Cost,
+		example.ProductWeight,
+		example.ProductHeight,
+		example.ProductWidth,
+		example.ProductLength,
+		example.PackageWeight,
+		example.PackageHeight,
+		example.PackageWidth,
+		example.PackageLength,
+		example.QuantityPerPackage,
+		example.AvailableOn,
+		example.CreatedOn,
+		example.UpdatedOn,
+		example.ArchivedOn,
+	).AddRow(
+		example.ID,
+		example.ProductRootID,
+		example.Name,
+		example.Subtitle,
+		example.Description,
+		example.OptionSummary,
+		example.SKU,
+		example.UPC,
+		example.Manufacturer,
+		example.Brand,
+		example.Quantity,
+		example.Taxable,
+		example.Price,
+		example.OnSale,
+		example.SalePrice,
+		example.Cost,
+		example.ProductWeight,
+		example.ProductHeight,
+		example.ProductWidth,
+		example.ProductLength,
+		example.PackageWeight,
+		example.PackageHeight,
+		example.PackageWidth,
+		example.PackageLength,
+		example.QuantityPerPackage,
+		example.AvailableOn,
+		example.CreatedOn,
+		example.UpdatedOn,
+		example.ArchivedOn,
+	).RowError(1, rowErr)
+
+	mock.ExpectQuery(formatQueryForSQLMock(productQueryByProductRootID)).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
+func TestGetProductsByProductRootID(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	require.Nil(t, err)
+	defer mockDB.Close()
+	client := NewPostgres()
+
+	exampleProductRootID := uint64(1)
+	example := &models.Product{ProductRootID: exampleProductRootID}
+
+	t.Run("optimal behavior", func(t *testing.T) {
+		setProductReadQueryExpectationByProductRootID(t, mock, example, nil, nil)
+		actual, err := client.GetProductsByProductRootID(mockDB, exampleProductRootID)
+
+		require.Nil(t, err)
+		require.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with error executing query", func(t *testing.T) {
+		setProductReadQueryExpectationByProductRootID(t, mock, example, nil, errors.New("pineapple on pizza"))
+		actual, err := client.GetProductsByProductRootID(mockDB, exampleProductRootID)
+
+		require.NotNil(t, err)
+		require.Nil(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with error scanning values", func(t *testing.T) {
+		exampleRows := sqlmock.NewRows([]string{"things"}).AddRow("stuff")
+		mock.ExpectQuery(formatQueryForSQLMock(productQueryByProductRootID)).
+			WillReturnRows(exampleRows)
+
+		actual, err := client.GetProductsByProductRootID(mockDB, exampleProductRootID)
+
+		require.NotNil(t, err)
+		require.Nil(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with with row errors", func(t *testing.T) {
+		setProductReadQueryExpectationByProductRootID(t, mock, example, errors.New("pineapple on pizza"), nil)
+		actual, err := client.GetProductsByProductRootID(mockDB, exampleProductRootID)
+
+		require.NotNil(t, err)
+		require.Nil(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
 
 func setProductWithSKUExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, sku string, shouldExist bool, err error) {
 	t.Helper()

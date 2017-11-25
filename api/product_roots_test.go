@@ -1,4 +1,4 @@
-// +build !migrated
+// +build migrated
 
 package main
 
@@ -13,6 +13,7 @@ import (
 	"github.com/dairycart/dairycart/api/storage/models"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
@@ -51,15 +52,6 @@ func createExampleHeadersAndDataFromProductRoot(r *models.ProductRoot) ([]string
 	}
 
 	return headers, values
-}
-
-func setExpectationsForProductRootExistence(mock sqlmock.Sqlmock, id string, exists bool, err error) {
-	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
-	query := formatQueryForSQLMock(productRootExistenceQuery)
-	mock.ExpectQuery(query).
-		WithArgs(id).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
 }
 
 func setExpectationsForProductRootRetrieval(mock sqlmock.Sqlmock, r *models.ProductRoot, err error) {
@@ -385,9 +377,7 @@ func TestRetrieveProductRootFromDB(t *testing.T) {
 ////////////////////////////////////////////////////////
 
 func TestSingleProductRootRetrievalHandler(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-	exampleProductOption := &models.ProductOption{
+	exampleProductOption := models.ProductOption{
 		ID:            123,
 		CreatedOn:     generateExampleTimeForTests(),
 		Name:          "something",
@@ -403,149 +393,108 @@ func TestSingleProductRootRetrievalHandler(t *testing.T) {
 		Manufacturer: "manufacturer",
 		Brand:        "brand",
 	}
-	exampleProduct := &models.Product{
+	exampleProduct := models.Product{
 		ID:          2,
 		CreatedOn:   generateExampleTimeForTests(),
 		Name:        "Skateboard",
 		Description: "This is a skateboard. Please wear a helmet.",
 	}
 
-	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, nil)
-	setExpectationsForProductAssociatedWithRootListQuery(testUtil.Mock, exampleProductRoot, exampleProduct, nil)
-	setExpectationsForProductOptionListQueryWithoutFilter(testUtil.Mock, exampleProductOption, nil)
-	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
-	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
-	setExpectationsForProductOptionValueRetrievalByOptionID(testUtil.Mock, exampleProductOption, nil)
+	t.Run("optimal conditions", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetProductRoot", mock.Anything, exampleProductRoot.ID).
+			Return(exampleProductRoot, nil)
+		testUtil.MockDB.On("GetProductsByProductRootID", mock.Anything, exampleProductRoot.ID).
+			Return([]models.Product{exampleProduct}, nil)
+		testUtil.MockDB.On("GetProductOptionsByProductRootID", mock.Anything, exampleProductRoot.ID).
+			Return([]models.ProductOption{exampleProductOption}, nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
-	assert.Nil(t, err)
+		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
+		assert.Nil(t, err)
 
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assertStatusCode(t, testUtil, http.StatusOK)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusOK)
+	})
 
-func TestSingleProductRootRetrievalHandlerWhenNoSuchRootExists(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-	exampleProductRoot := &models.ProductRoot{
-		ID:           2,
-		CreatedOn:    generateExampleTimeForTests(),
-		Name:         "root_name",
-		Subtitle:     "subtitle",
-		Description:  "description",
-		SKUPrefix:    "sku_prefix",
-		Manufacturer: "manufacturer",
-		Brand:        "brand",
-	}
+	t.Run("with nonexistent product root", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetProductRoot", mock.Anything, exampleProductRoot.ID).
+			Return(exampleProductRoot, sql.ErrNoRows)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, sql.ErrNoRows)
+		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
+		assert.Nil(t, err)
 
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
-	assert.Nil(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusNotFound)
+	})
 
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assertStatusCode(t, testUtil, http.StatusNotFound)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+	t.Run("with error querying database for product root", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetProductRoot", mock.Anything, exampleProductRoot.ID).
+			Return(exampleProductRoot, generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-func TestSingleProductRootRetrievalHandlerWithErrorQueryingDatabaseForProductRoot(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-	exampleProductRoot := &models.ProductRoot{
-		ID:           2,
-		CreatedOn:    generateExampleTimeForTests(),
-		Name:         "root_name",
-		Subtitle:     "subtitle",
-		Description:  "description",
-		SKUPrefix:    "sku_prefix",
-		Manufacturer: "manufacturer",
-		Brand:        "brand",
-	}
+		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
+		assert.Nil(t, err)
 
-	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, generateArbitraryError())
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
 
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
-	assert.Nil(t, err)
+	t.Run("with error retrieving associated products", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetProductRoot", mock.Anything, exampleProductRoot.ID).
+			Return(exampleProductRoot, nil)
+		testUtil.MockDB.On("GetProductsByProductRootID", mock.Anything, exampleProductRoot.ID).
+			Return([]models.Product{exampleProduct}, generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
+		assert.Nil(t, err)
 
-func TestSingleProductRootRetrievalHandlerWithErrorRetrievingAssociatedProducts(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-	exampleProductRoot := &models.ProductRoot{
-		ID:           2,
-		CreatedOn:    generateExampleTimeForTests(),
-		Name:         "root_name",
-		Subtitle:     "subtitle",
-		Description:  "description",
-		SKUPrefix:    "sku_prefix",
-		Manufacturer: "manufacturer",
-		Brand:        "brand",
-	}
-	exampleProduct := &models.Product{
-		ID:          2,
-		CreatedOn:   generateExampleTimeForTests(),
-		Name:        "Skateboard",
-		Description: "This is a skateboard. Please wear a helmet.",
-	}
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
 
-	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, nil)
-	setExpectationsForProductAssociatedWithRootListQuery(testUtil.Mock, exampleProductRoot, exampleProduct, generateArbitraryError())
+	t.Run("with error retrieving product options", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetProductRoot", mock.Anything, exampleProductRoot.ID).
+			Return(exampleProductRoot, nil)
+		testUtil.MockDB.On("GetProductsByProductRootID", mock.Anything, exampleProductRoot.ID).
+			Return([]models.Product{exampleProduct}, nil)
+		testUtil.MockDB.On("GetProductOptionsByProductRootID", mock.Anything, exampleProductRoot.ID).
+			Return([]models.ProductOption{exampleProductOption}, generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
-	assert.Nil(t, err)
+		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
+		assert.Nil(t, err)
 
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
 
-func TestSingleProductRootRetrievalHandlerWitherrorRetrievingProductOptions(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-	exampleProductOption := &models.ProductOption{
-		ID:            123,
-		CreatedOn:     generateExampleTimeForTests(),
-		Name:          "something",
-		ProductRootID: 2,
-	}
-	exampleProductRoot := &models.ProductRoot{
-		ID:           2,
-		CreatedOn:    generateExampleTimeForTests(),
-		Name:         "root_name",
-		Subtitle:     "subtitle",
-		Description:  "description",
-		SKUPrefix:    "sku_prefix",
-		Manufacturer: "manufacturer",
-		Brand:        "brand",
-	}
-	exampleProduct := &models.Product{
-		ID:          2,
-		CreatedOn:   generateExampleTimeForTests(),
-		Name:        "Skateboard",
-		Description: "This is a skateboard. Please wear a helmet.",
-	}
+	t.Run("optimal conditions", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetProductRoot", mock.Anything, exampleProductRoot.ID).
+			Return(exampleProductRoot, nil)
+		testUtil.MockDB.On("GetProductsByProductRootID", mock.Anything, exampleProductRoot.ID).
+			Return([]models.Product{exampleProduct}, nil)
+		testUtil.MockDB.On("GetProductOptionsByProductRootID", mock.Anything, exampleProductRoot.ID).
+			Return([]models.ProductOption{exampleProductOption}, nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	setExpectationsForProductRootRetrieval(testUtil.Mock, exampleProductRoot, nil)
-	setExpectationsForProductAssociatedWithRootListQuery(testUtil.Mock, exampleProductRoot, exampleProduct, nil)
-	setExpectationsForProductOptionListQueryWithoutFilter(testUtil.Mock, exampleProductOption, generateArbitraryError())
+		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
+		assert.Nil(t, err)
 
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
-	assert.Nil(t, err)
-
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-	ensureExpectationsWereMet(t, testUtil.Mock)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusOK)
+	})
 }
 
 func TestProductRootListRetrievalHandler(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-	exampleProductRoot := &models.ProductRoot{
+	exampleProductRoot := models.ProductRoot{
 		ID:           2,
 		CreatedOn:    generateExampleTimeForTests(),
 		Name:         "root_name",
@@ -555,7 +504,7 @@ func TestProductRootListRetrievalHandler(t *testing.T) {
 		Manufacturer: "manufacturer",
 		Brand:        "brand",
 	}
-	exampleProduct := &models.Product{
+	exampleProduct := models.Product{
 		ID:          2,
 		CreatedOn:   generateExampleTimeForTests(),
 		SKU:         "skateboard",
@@ -568,95 +517,67 @@ func TestProductRootListRetrievalHandler(t *testing.T) {
 		Description: "This is a skateboard. Please wear a helmet.",
 	}
 
-	setExpectationsForRowCount(testUtil.Mock, "product_roots", genereateDefaultQueryFilter(), 3, nil)
-	setExpectationsForProductRootListQuery(testUtil.Mock, exampleProductRoot, nil)
-	setExpectationsForProductAssociatedWithRootListQuery(testUtil.Mock, exampleProductRoot, exampleProduct, nil)
-	setExpectationsForProductAssociatedWithRootListQuery(testUtil.Mock, exampleProductRoot, exampleProduct, nil)
-	setExpectationsForProductAssociatedWithRootListQuery(testUtil.Mock, exampleProductRoot, exampleProduct, nil)
+	t.Run("optimal behavior", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetProductRootCount", mock.Anything, mock.Anything).
+			Return(uint64(3), nil)
+		testUtil.MockDB.On("GetProductRootList", mock.Anything, mock.Anything).
+			Return([]models.ProductRoot{exampleProductRoot}, nil)
+		testUtil.MockDB.On("GetProductsByProductRootID", mock.Anything, exampleProductRoot.ID).
+			Return([]models.Product{exampleProduct}, nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	req, err := http.NewRequest(http.MethodGet, "/v1/product_roots", nil)
-	assert.Nil(t, err)
+		req, err := http.NewRequest(http.MethodGet, "/v1/product_roots", nil)
+		assert.Nil(t, err)
 
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assertStatusCode(t, testUtil, http.StatusOK)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusOK)
+	})
 
-func TestProductRootListRetrievalHandlerWithErrorGettingRowCount(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+	t.Run("with error getting row count", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetProductRootCount", mock.Anything, mock.Anything).
+			Return(uint64(3), generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	setExpectationsForRowCount(testUtil.Mock, "product_roots", genereateDefaultQueryFilter(), 3, generateArbitraryError())
+		req, err := http.NewRequest(http.MethodGet, "/v1/product_roots", nil)
+		assert.Nil(t, err)
 
-	req, err := http.NewRequest(http.MethodGet, "/v1/product_roots", nil)
-	assert.Nil(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
 
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+	t.Run("with error retrieving product root list", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetProductRootCount", mock.Anything, mock.Anything).
+			Return(uint64(3), nil)
+		testUtil.MockDB.On("GetProductRootList", mock.Anything, mock.Anything).
+			Return([]models.ProductRoot{exampleProductRoot}, generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-func TestProductRootListRetrievalHandlerWithErrorRetrievingProductRoots(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-	exampleProductRoot := &models.ProductRoot{
-		ID:           2,
-		CreatedOn:    generateExampleTimeForTests(),
-		Name:         "root_name",
-		Subtitle:     "subtitle",
-		Description:  "description",
-		SKUPrefix:    "sku_prefix",
-		Manufacturer: "manufacturer",
-		Brand:        "brand",
-	}
+		req, err := http.NewRequest(http.MethodGet, "/v1/product_roots", nil)
+		assert.Nil(t, err)
 
-	setExpectationsForRowCount(testUtil.Mock, "product_roots", genereateDefaultQueryFilter(), 3, nil)
-	setExpectationsForProductRootListQuery(testUtil.Mock, exampleProductRoot, generateArbitraryError())
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
 
-	req, err := http.NewRequest(http.MethodGet, "/v1/product_roots", nil)
-	assert.Nil(t, err)
+	t.Run("with error retrieving products", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetProductRootCount", mock.Anything, mock.Anything).
+			Return(uint64(3), nil)
+		testUtil.MockDB.On("GetProductRootList", mock.Anything, mock.Anything).
+			Return([]models.ProductRoot{exampleProductRoot}, nil)
+		testUtil.MockDB.On("GetProductsByProductRootID", mock.Anything, exampleProductRoot.ID).
+			Return([]models.Product{exampleProduct}, generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+		req, err := http.NewRequest(http.MethodGet, "/v1/product_roots", nil)
+		assert.Nil(t, err)
 
-func TestProductRootListRetrievalHandlerWithErrorRetrivingAssociatedProducts(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-	exampleProductRoot := &models.ProductRoot{
-		ID:           2,
-		CreatedOn:    generateExampleTimeForTests(),
-		Name:         "root_name",
-		Subtitle:     "subtitle",
-		Description:  "description",
-		SKUPrefix:    "sku_prefix",
-		Manufacturer: "manufacturer",
-		Brand:        "brand",
-	}
-	exampleProduct := &models.Product{
-		ID:          2,
-		CreatedOn:   generateExampleTimeForTests(),
-		SKU:         "skateboard",
-		Name:        "Skateboard",
-		UPC:         "1234567890",
-		Quantity:    123,
-		Price:       12.34,
-		Cost:        5,
-		Taxable:     true,
-		Description: "This is a skateboard. Please wear a helmet.",
-	}
-
-	setExpectationsForRowCount(testUtil.Mock, "product_roots", genereateDefaultQueryFilter(), 3, nil)
-	setExpectationsForProductRootListQuery(testUtil.Mock, exampleProductRoot, nil)
-	setExpectationsForProductAssociatedWithRootListQuery(testUtil.Mock, exampleProductRoot, exampleProduct, generateArbitraryError())
-
-	req, err := http.NewRequest(http.MethodGet, "/v1/product_roots", nil)
-	assert.Nil(t, err)
-
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-	ensureExpectationsWereMet(t, testUtil.Mock)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
 }
 
 func TestProductRootDeletionHandler(t *testing.T) {

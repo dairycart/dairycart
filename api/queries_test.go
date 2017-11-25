@@ -13,10 +13,7 @@ import (
 )
 
 const (
-	aTimestamp       = 232747200
-	anOlderTimestamp = aTimestamp + 10000
-	existingID       = 1
-
+	existingID                = 1
 	queryEqualityErrorMessage = "Generated SQL query should match expected SQL query"
 	argsEqualityErrorMessage  = "Generated SQL arguments should match expected arguments"
 )

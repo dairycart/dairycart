@@ -35,6 +35,15 @@ const (
 	`
 )
 
+func setExpectationsForProductRootExistence(mock sqlmock.Sqlmock, id string, exists bool, err error) {
+	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
+	query := formatQueryForSQLMock(productRootExistenceQuery)
+	mock.ExpectQuery(query).
+		WithArgs(id).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
 func setExpectationsForProductOptionExistenceByID(mock sqlmock.Sqlmock, a *models.ProductOption, exists bool, err error) {
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
 	query := formatQueryForSQLMock(productOptionExistenceQuery)
@@ -70,17 +79,6 @@ func setExpectationsForProductOptionListQuery(mock sqlmock.Sqlmock, a *models.Pr
 		AddRow([]driver.Value{a.ID, a.Name, a.ProductRootID, generateExampleTimeForTests(), nil, nil}...).
 		AddRow([]driver.Value{a.ID, a.Name, a.ProductRootID, generateExampleTimeForTests(), nil, nil}...)
 	query, _ := buildProductOptionListQuery(exampleProductID, genereateDefaultQueryFilter())
-	mock.ExpectQuery(formatQueryForSQLMock(query)).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
-}
-
-func setExpectationsForProductOptionListQueryWithoutFilter(mock sqlmock.Sqlmock, a *models.ProductOption, err error) {
-	exampleRows := sqlmock.NewRows([]string{"id", "name", "product_root_id", "created_on", "updated_on", "archived_on"}).
-		AddRow([]driver.Value{a.ID, a.Name, a.ProductRootID, generateExampleTimeForTests(), nil, nil}...).
-		AddRow([]driver.Value{a.ID, a.Name, a.ProductRootID, generateExampleTimeForTests(), nil, nil}...).
-		AddRow([]driver.Value{a.ID, a.Name, a.ProductRootID, generateExampleTimeForTests(), nil, nil}...)
-	query, _ := buildProductOptionListQuery(exampleProductID, nil)
 	mock.ExpectQuery(formatQueryForSQLMock(query)).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
@@ -134,12 +132,12 @@ func TestGenerateCartesianProductForOptions(t *testing.T) {
 	cotton := models.ProductOptionValue{ID: 9, Value: "cotton"}
 
 	tt := []struct {
-		in       []*models.ProductOption
+		in       []models.ProductOption
 		expected []simpleProductOption
 		len      int
 	}{
 		{
-			in: []*models.ProductOption{
+			in: []models.ProductOption{
 				{Name: "Size", Values: []models.ProductOptionValue{small, medium, large}},
 				{Name: "Color", Values: []models.ProductOptionValue{red, green, blue}},
 			},
@@ -158,7 +156,7 @@ func TestGenerateCartesianProductForOptions(t *testing.T) {
 		},
 		{
 			// test that name: value pairs can be completely different sizes
-			in: []*models.ProductOption{
+			in: []models.ProductOption{
 				{Name: "Size", Values: []models.ProductOptionValue{small, medium, large, xtraLarge}},
 				{Name: "Color", Values: []models.ProductOptionValue{red, green, blue}},
 				{Name: "Fabric", Values: []models.ProductOptionValue{polyester, cotton}},

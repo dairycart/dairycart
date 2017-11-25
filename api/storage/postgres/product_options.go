@@ -10,6 +10,51 @@ import (
 	"github.com/Masterminds/squirrel"
 )
 
+const productOptionQueryByProductRootID = `
+    SELECT
+        id,
+        name,
+        product_root_id,
+        created_on,
+        updated_on,
+        archived_on
+    FROM
+        product_options
+    WHERE
+        product_root_id = $1
+`
+
+func (pg *postgres) GetProductOptionsByProductRootID(db storage.Querier, productRootID uint64) ([]models.ProductOption, error) {
+	var list []models.ProductOption
+
+	rows, err := db.Query(productOptionQueryByProductRootID, productRootID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var p models.ProductOption
+		err := rows.Scan(
+			&p.ID,
+			&p.Name,
+			&p.ProductRootID,
+			&p.CreatedOn,
+			&p.UpdatedOn,
+			&p.ArchivedOn,
+		)
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, p)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return list, err
+}
+
 const productOptionExistenceQuery = `SELECT EXISTS(SELECT id FROM product_options WHERE id = $1 and archived_on IS NULL);`
 
 func (pg *postgres) ProductOptionExists(db storage.Querier, id uint64) (bool, error) {

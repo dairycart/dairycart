@@ -31,6 +31,6 @@ type ProductRoot struct {
 
 	// useful for responses
 	// TODO: make this a slice of non-pointers
-	Options  []*ProductOption `json:"options"`
-	Products []Product        `json:"products"`
+	Options  []ProductOption `json:"options"`
+	Products []Product       `json:"products"`
 }

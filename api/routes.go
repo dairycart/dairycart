@@ -41,8 +41,8 @@ func SetupAPIRoutes(router *chi.Mux, db *sql.DB, dbxReplaceMePlz *sqlx.DB, store
 
 		// Product Roots
 		specificProductRootRoute := fmt.Sprintf("/product_root/{product_root_id:%s}", NumericPattern)
-		r.Get("/product_roots", buildProductRootListHandler(dbxReplaceMePlz))
-		r.Get(specificProductRootRoute, buildSingleProductRootHandler(dbxReplaceMePlz))
+		r.Get("/product_roots", buildProductRootListHandler(db, client))
+		r.Get(specificProductRootRoute, buildSingleProductRootHandler(db, client))
 		r.Delete(specificProductRootRoute, buildProductRootDeletionHandler(dbxReplaceMePlz))
 
 		// Products

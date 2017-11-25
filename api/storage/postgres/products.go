@@ -72,6 +72,97 @@ func (pg *postgres) ProductWithSKUExists(db storage.Querier, sku string) (bool, 
 	return exists == "true", err
 }
 
+const productQueryByProductRootID = `
+    SELECT
+        id,
+        product_root_id,
+        name,
+        subtitle,
+        description,
+        option_summary,
+        sku,
+        upc,
+        manufacturer,
+        brand,
+        quantity,
+        taxable,
+        price,
+        on_sale,
+        sale_price,
+        cost,
+        product_weight,
+        product_height,
+        product_width,
+        product_length,
+        package_weight,
+        package_height,
+        package_width,
+        package_length,
+        quantity_per_package,
+        available_on,
+        created_on,
+        updated_on,
+        archived_on
+    FROM
+        products
+    WHERE
+        product_root_id = $1
+`
+
+func (pg *postgres) GetProductsByProductRootID(db storage.Querier, productRootID uint64) ([]models.Product, error) {
+	var list []models.Product
+
+	rows, err := db.Query(productQueryByProductRootID, productRootID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var p models.Product
+		err := rows.Scan(
+			&p.ID,
+			&p.ProductRootID,
+			&p.Name,
+			&p.Subtitle,
+			&p.Description,
+			&p.OptionSummary,
+			&p.SKU,
+			&p.UPC,
+			&p.Manufacturer,
+			&p.Brand,
+			&p.Quantity,
+			&p.Taxable,
+			&p.Price,
+			&p.OnSale,
+			&p.SalePrice,
+			&p.Cost,
+			&p.ProductWeight,
+			&p.ProductHeight,
+			&p.ProductWidth,
+			&p.ProductLength,
+			&p.PackageWeight,
+			&p.PackageHeight,
+			&p.PackageWidth,
+			&p.PackageLength,
+			&p.QuantityPerPackage,
+			&p.AvailableOn,
+			&p.CreatedOn,
+			&p.UpdatedOn,
+			&p.ArchivedOn,
+		)
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, p)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return list, err
+}
+
 const productExistenceQuery = `SELECT EXISTS(SELECT id FROM products WHERE id = $1 and archived_on IS NULL);`
 
 func (pg *postgres) ProductExists(db storage.Querier, id uint64) (bool, error) {

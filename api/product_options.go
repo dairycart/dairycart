@@ -59,7 +59,7 @@ type optionPlaceholder struct {
 }
 
 // FIXME: don't use pointers here
-func generateCartesianProductForOptions(inputOptions []*models.ProductOption) []simpleProductOption {
+func generateCartesianProductForOptions(inputOptions []models.ProductOption) []simpleProductOption {
 	/*
 		Some notes about this function:
 
@@ -254,12 +254,12 @@ func createProductOptionInDB(tx *sql.Tx, o *models.ProductOption, productRootID 
 	return newOptionID, createdOn, err
 }
 
-func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in *ProductOptionCreationInput, productRootID uint64, client storage.Storer) (*models.ProductOption, error) {
+func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in *ProductOptionCreationInput, productRootID uint64, client storage.Storer) (models.ProductOption, error) {
 	var err error
 	newProductOption := &models.ProductOption{Name: in.Name, ProductRootID: productRootID}
 	newProductOption.ID, newProductOption.CreatedOn, err = client.CreateProductOption(tx, newProductOption)
 	if err != nil {
-		return nil, err
+		return models.ProductOption{}, err
 	}
 
 	for _, value := range in.Values {
@@ -269,14 +269,14 @@ func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in *ProductOptionCrea
 		}
 		newOptionValueID, optionCreatedOn, err := client.CreateProductOptionValue(tx, &newOptionValue)
 		if err != nil {
-			return nil, err
+			return models.ProductOption{}, err
 		}
 		newOptionValue.ID = newOptionValueID
 		newOptionValue.CreatedOn = optionCreatedOn
 		newProductOption.Values = append(newProductOption.Values, newOptionValue)
 	}
 
-	return newProductOption, nil
+	return *newProductOption, nil
 }
 
 func buildProductOptionCreationHandler(db *sqlx.DB, client storage.Storer) http.HandlerFunc {

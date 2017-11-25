@@ -21,6 +21,7 @@ type Storer interface {
     {{- $isDiscount := eq $modelName "Discount" }}
     {{- $isProductRoot := eq $modelName "ProductRoot" }}
     {{- $isLoginAttempt := eq $modelName "LoginAttempt" }}
+    {{- $isProductOption := eq $modelName "ProductOption" }}
     {{- $isPasswordResetToken := eq $modelName "PasswordResetToken" }}
     {{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
     // {{ pascal .Name }}
@@ -38,9 +39,10 @@ type Storer interface {
     {{ if $isPasswordResetToken }}{{ $modelName }}ForUserIDExists(Querier, uint64) (bool, error)
     {{ $modelName }}WithTokenExists(Querier, string) (bool, error){{- end -}}
     {{ if $isProduct }}Get{{ $modelName }}BySKU(Querier, string) (*models.{{ $modelName }}, error)
-    {{ $modelName }}WithSKUExists(Querier, string) (bool, error){{- end -}}
+    {{ $modelName }}WithSKUExists(Querier, string) (bool, error){{ "\n" }}{{- end -}}
     {{ if $isUser }}Get{{ $modelName }}ByUsername(Querier, string) (*models.{{ $modelName }}, error)
     {{ $modelName }}WithUsernameExists(Querier, string) (bool, error){{- end -}}
+    {{ if or $isProduct $isProductOption }}Get{{ $modelName }}sByProductRootID(Querier, uint64) ([]models.{{ $modelName }}, error){{"\n"}}{{- end -}}
     {{ if $isLoginAttempt }}{{ $modelName }}sHaveBeenExhausted(Querier, string) (bool, error){{- end -}}
     {{ "\n" }}
     {{ end -}}

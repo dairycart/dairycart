@@ -7,6 +7,11 @@ import (
 	"github.com/dairycart/dairycart/api/storage/models"
 )
 
+func (m *MockDB) GetProductOptionsByProductRootID(db storage.Querier, productRootID uint64) ([]models.ProductOption, error) {
+	args := m.Called(db, productRootID)
+	return args.Get(0).([]models.ProductOption), args.Error(1)
+}
+
 func (m *MockDB) ProductOptionExists(db storage.Querier, id uint64) (bool, error) {
 	args := m.Called(db, id)
 	return args.Bool(0), args.Error(1)

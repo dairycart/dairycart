@@ -6,6 +6,7 @@ package postgres
 {{- $isDiscount := eq $modelName "Discount" }}
 {{- $isProductRoot := eq $modelName "ProductRoot" }}
 {{- $isLoginAttempt := eq $modelName "LoginAttempt" }}
+{{- $isProductOption := eq $modelName "ProductOption" }}
 {{- $isPasswordResetToken := eq $modelName "PasswordResetToken" }}
 {{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
 
@@ -64,10 +65,80 @@ func TestGet{{ $modelName }}BySKU(t *testing.T) {
         require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
 }
-{{ end }}
+{{- end }}
 
-{{ if $isUser }}
-{{ $byUsernameVarName := printf "%sQueryByUsername" ( camel $modelName ) -}}
+{{- if or $isProductOption $isProduct }}
+{{ $byProductRootIDVarName := printf "%sQueryByProductRootID" ( camel $modelName ) -}}
+func set{{ $modelName }}ReadQueryExpectationByProductRootID(t *testing.T, mock sqlmock.Sqlmock, example *models.{{ $modelName }}, rowErr error, err error) {
+    exampleRows := sqlmock.NewRows([]string{
+        {{ range $_, $x := .Table.Columns.DBNames }}{{ printf "\"%s\"" $x }},
+        {{ end }}
+    }).AddRow(
+        {{ range $_, $x := .Table.Columns.DBNames }}example.{{ if or (eq (toLower $x) "sku") (eq (toLower $x) "upc") }}{{ toUpper $x }}{{ else }}{{ pascal $x }}{{ end }},
+        {{ end }}
+    ).AddRow(
+        {{ range $_, $x := .Table.Columns.DBNames }}example.{{ if or (eq (toLower $x) "sku") (eq (toLower $x) "upc") }}{{ toUpper $x }}{{ else }}{{ pascal $x }}{{ end }},
+        {{ end }}
+    ).AddRow(
+        {{ range $_, $x := .Table.Columns.DBNames }}example.{{ if or (eq (toLower $x) "sku") (eq (toLower $x) "upc") }}{{ toUpper $x }}{{ else }}{{ pascal $x }}{{ end }},
+        {{ end }}
+    ).RowError(1, rowErr)
+
+	mock.ExpectQuery(formatQueryForSQLMock({{ $byProductRootIDVarName }})).
+        WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
+func TestGet{{ $modelName }}sByProductRootID(t *testing.T) {
+    t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+    require.Nil(t, err)
+    defer mockDB.Close()
+    client := NewPostgres()
+
+    exampleProductRootID := uint64(1)
+    example := &models.{{ $modelName }}{ProductRootID: exampleProductRootID}
+
+    t.Run("optimal behavior", func(t *testing.T) {
+        set{{ $modelName }}ReadQueryExpectationByProductRootID(t, mock, example, nil, nil)
+        actual, err := client.Get{{ $modelName }}sByProductRootID(mockDB, exampleProductRootID)
+
+        require.Nil(t, err)
+        require.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+    t.Run("with error executing query", func(t *testing.T) {
+        set{{ $modelName }}ReadQueryExpectationByProductRootID(t, mock, example, nil, errors.New("pineapple on pizza"))
+        actual, err := client.Get{{ $modelName }}sByProductRootID(mockDB, exampleProductRootID)
+
+        require.NotNil(t, err)
+        require.Nil(t, actual)
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+    t.Run("with error scanning values", func(t *testing.T) {
+        exampleRows := sqlmock.NewRows([]string{"things"}).AddRow("stuff")
+        mock.ExpectQuery(formatQueryForSQLMock({{ $byProductRootIDVarName }})).
+            WillReturnRows(exampleRows)
+
+        actual, err := client.Get{{ $modelName }}sByProductRootID(mockDB, exampleProductRootID)
+
+        require.NotNil(t, err)
+        require.Nil(t, actual)
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+    t.Run("with with row errors", func(t *testing.T) {
+        set{{ $modelName }}ReadQueryExpectationByProductRootID(t, mock, example, errors.New("pineapple on pizza"), nil)
+        actual, err := client.Get{{ $modelName }}sByProductRootID(mockDB, exampleProductRootID)
+
+        require.NotNil(t, err)
+        require.Nil(t, actual)
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+}
+{{- end }}
+
+{{- if $isUser }}
+{{- $byUsernameVarName := printf "%sQueryByUsername" ( camel $modelName ) -}}
 func set{{ $modelName }}ReadQueryExpectationByUsername(t *testing.T, mock sqlmock.Sqlmock, username string, toReturn *models.{{ $modelName }}, err error) {
     t.Helper()
     query := formatQueryForSQLMock({{ $byUsernameVarName }})
