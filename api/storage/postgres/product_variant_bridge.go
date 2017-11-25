@@ -200,6 +200,18 @@ func (pg *postgres) DeleteProductVariantBridge(db storage.Querier, id uint64) (t
 	return t, err
 }
 
+const productVariantBridgeWithProductRootIDDeletionQuery = `
+    UPDATE product_variant_bridge
+    SET archived_on = NOW()
+    WHERE product_root_id = $1
+    RETURNING archived_on
+`
+
+func (pg *postgres) ArchiveProductVariantBridgesWithProductRootID(db storage.Querier, id uint64) (t time.Time, err error) {
+	err = db.QueryRow(productVariantBridgeWithProductRootIDDeletionQuery, id).Scan(&t)
+	return t, err
+}
+
 const productVariantBridgeDeletionQueryByProductID = `
     UPDATE product_variant_bridge SET archived_on = NOW() WHERE product_id = $1 AND archived_on IS NULL RETURNING archived_on
 `

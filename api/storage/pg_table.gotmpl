@@ -9,6 +9,7 @@ package postgres
 {{- $isProductRoot := eq $modelName "ProductRoot" }}
 {{- $isLoginAttempt := eq $modelName "LoginAttempt" }}
 {{- $isProductOption := eq $modelName "ProductOption" }}
+{{- $isProductOptionValue := eq $modelName "ProductOptionValue" }}
 {{- $isPasswordResetToken := eq $modelName "PasswordResetToken" }}
 {{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
 
@@ -434,6 +435,21 @@ func (pg *postgres) Delete{{ $modelName }}(db storage.Querier, id uint64) (t tim
     err = db.QueryRow({{ $deletionQueryVarName }}, id).Scan(&t)
     return t, err
 }
+
+{{- if or (or $isProductVariantBridge $isProductOptionValue) (or $isProductOption $isProduct) }}
+{{ $withRootDeletionQueryVarName := printf "%sWithProductRootIDDeletionQuery" ( camel $modelName ) -}}
+const {{ $withRootDeletionQueryVarName }} = `
+    UPDATE {{ toLower .Table.Name }}
+    SET archived_on = NOW()
+    WHERE product_root_id = $1
+    RETURNING archived_on
+`
+
+func (pg *postgres) Archive{{ $modelName }}sWithProductRootID(db storage.Querier, id uint64) (t time.Time, err error) {
+    err = db.QueryRow({{ $withRootDeletionQueryVarName }}, id).Scan(&t)
+    return t, err
+}
+{{- end }}
 
 {{ if $isProductVariantBridge }}
 {{ $pvbDeletionQueryVarName := printf "%sDeletionQueryByProductID" ( camel $modelName ) -}}

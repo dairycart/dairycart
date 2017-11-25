@@ -41,3 +41,7 @@ func (m *MockDB) DeleteProductOptionValue(db storage.Querier, id uint64) (time.T
 	args := m.Called(db, id)
 	return args.Get(0).(time.Time), args.Error(1)
 }
+func (m *MockDB) ArchiveProductOptionValuesWithProductRootID(db storage.Querier, id uint64) (t time.Time, err error) {
+	args := m.Called(db, id)
+	return args.Get(0).(time.Time), args.Error(1)
+}

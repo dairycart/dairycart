@@ -405,6 +405,44 @@ func TestDeleteProductVariantBridgeByID(t *testing.T) {
 		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
+func setProductVariantBridgeWithProductRootIDDeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
+	t.Helper()
+	query := formatQueryForSQLMock(productVariantBridgeWithProductRootIDDeletionQuery)
+	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
+	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
+}
+
+func TestArchiveProductVariantBridgesWithProductRootID(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	require.Nil(t, err)
+	defer mockDB.Close()
+	exampleID := uint64(1)
+	client := NewPostgres()
+
+	t.Run("optimal behavior", func(t *testing.T) {
+		setProductVariantBridgeWithProductRootIDDeletionQueryExpectation(t, mock, exampleID, nil)
+		expected := generateExampleTimeForTests(t)
+		actual, err := client.ArchiveProductVariantBridgesWithProductRootID(mockDB, exampleID)
+
+		require.Nil(t, err)
+		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+
+	t.Run("with transaction", func(t *testing.T) {
+		mock.ExpectBegin()
+		setProductVariantBridgeWithProductRootIDDeletionQueryExpectation(t, mock, exampleID, nil)
+		expected := generateExampleTimeForTests(t)
+		tx, err := mockDB.Begin()
+		require.Nil(t, err, "no error should be returned setting up a transaction in the mock DB")
+		actual, err := client.ArchiveProductVariantBridgesWithProductRootID(tx, exampleID)
+
+		require.Nil(t, err)
+		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
 
 func setProductVariantBridgeDeletionByProductIDQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
 	t.Helper()

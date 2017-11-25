@@ -1,12 +1,13 @@
 package postgres
 
-{{- $modelName := pascal (trimSuffix .Table.Name "s")}}
+{{- $modelName := pascal (trimSuffix .Table.Name "s") }}
 {{- $isUser := eq $modelName "User" }}
 {{- $isProduct := eq $modelName "Product" }}
 {{- $isDiscount := eq $modelName "Discount" }}
 {{- $isProductRoot := eq $modelName "ProductRoot" }}
 {{- $isLoginAttempt := eq $modelName "LoginAttempt" }}
 {{- $isProductOption := eq $modelName "ProductOption" }}
+{{- $isProductOptionValue := eq $modelName "ProductOptionValue" }}
 {{- $isPasswordResetToken := eq $modelName "PasswordResetToken" }}
 {{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
 
@@ -830,7 +831,6 @@ func TestUpdate{{ $modelName }}ByID(t *testing.T) {
     })
 }
 
-
 func set{{ $modelName }}DeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
     t.Helper()
     query := formatQueryForSQLMock({{ $deletionQueryVarName }})
@@ -869,6 +869,48 @@ func TestDelete{{ $modelName }}ByID(t *testing.T) {
         require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
 }
+
+{{- if or (or $isProductVariantBridge $isProductOptionValue) (or $isProductOption $isProduct) }}
+{{ $withRootDeletionQueryVarName := printf "%sWithProductRootIDDeletionQuery" ( camel $modelName ) -}}
+func set{{ $modelName }}WithProductRootIDDeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
+    t.Helper()
+    query := formatQueryForSQLMock({{ $withRootDeletionQueryVarName }})
+    exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
+    mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
+}
+
+func TestArchive{{ $modelName }}sWithProductRootID(t *testing.T) {
+    t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+    require.Nil(t, err)
+    defer mockDB.Close()
+    exampleID := uint64(1)
+    client := NewPostgres()
+
+    t.Run("optimal behavior", func(t *testing.T) {
+        set{{ $modelName }}WithProductRootIDDeletionQueryExpectation(t, mock, exampleID, nil)
+        expected := generateExampleTimeForTests(t)
+        actual, err := client.Archive{{ $modelName }}sWithProductRootID(mockDB, exampleID)
+
+        require.Nil(t, err)
+        require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+
+    t.Run("with transaction", func(t *testing.T) {
+        mock.ExpectBegin()
+        set{{ $modelName }}WithProductRootIDDeletionQueryExpectation(t, mock, exampleID, nil)
+        expected := generateExampleTimeForTests(t)
+        tx, err := mockDB.Begin()
+        require.Nil(t, err, "no error should be returned setting up a transaction in the mock DB")
+        actual, err := client.Archive{{ $modelName }}sWithProductRootID(tx, exampleID)
+
+        require.Nil(t, err)
+        require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+}
+{{- end }}
 
 {{ if $isProductVariantBridge }}
 {{ $pvbDeletionQueryVarName := printf "%sDeletionQueryByProductID" ( camel $modelName ) -}}

@@ -14,6 +14,7 @@ import (
 {{- $isProductRoot := eq $modelName "ProductRoot" }}
 {{- $isLoginAttempt := eq $modelName "LoginAttempt" }}
 {{- $isProductOption := eq $modelName "ProductOption" }}
+{{- $isProductOptionValue := eq $modelName "ProductOptionValue" }}
 {{- $isPasswordResetToken := eq $modelName "PasswordResetToken" }}
 {{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
 
@@ -122,6 +123,13 @@ func (m *MockDB) Delete{{ $modelName }}(db storage.Querier, id uint64) (time.Tim
     args := m.Called(db, id)
 	return args.Get(0).(time.Time), args.Error(1)
 }
+
+{{- if or (or $isProductVariantBridge $isProductOptionValue) (or $isProductOption $isProduct) }}
+func (m *MockDB) Archive{{ $modelName }}sWithProductRootID(db storage.Querier, id uint64) (t time.Time, err error) {
+    args := m.Called(db, id)
+	return args.Get(0).(time.Time), args.Error(1)
+}
+{{- end }}
 
 {{ if $isProductVariantBridge }}
 func (m *MockDB) Delete{{ $modelName }}ByProductID(db storage.Querier, productID uint64) (t time.Time, err error) {

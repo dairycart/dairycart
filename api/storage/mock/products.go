@@ -55,3 +55,7 @@ func (m *MockDB) DeleteProduct(db storage.Querier, id uint64) (time.Time, error)
 	args := m.Called(db, id)
 	return args.Get(0).(time.Time), args.Error(1)
 }
+func (m *MockDB) ArchiveProductsWithProductRootID(db storage.Querier, id uint64) (t time.Time, err error) {
+	args := m.Called(db, id)
+	return args.Get(0).(time.Time), args.Error(1)
+}

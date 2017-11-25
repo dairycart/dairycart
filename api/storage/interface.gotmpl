@@ -7,6 +7,7 @@ import (
 	"github.com/dairycart/dairycart/api/storage/models"
 )
 
+// Querier is a generic interface that either *sql.DB or *sql.Tx can satisfy
 type Querier interface {
     Exec(query string, args ...interface{}) (sql.Result, error)
     Query(query string, args ...interface{}) (*sql.Rows, error)
@@ -14,36 +15,56 @@ type Querier interface {
 }
 
 type Storer interface {
-    {{- range .Schema.Tables }}
-    {{- $modelName := pascal (trimSuffix .Name "s") }}
-    {{- $isUser := eq $modelName "User" }}
-    {{- $isProduct := eq $modelName "Product" }}
-    {{- $isDiscount := eq $modelName "Discount" }}
-    {{- $isProductRoot := eq $modelName "ProductRoot" }}
-    {{- $isLoginAttempt := eq $modelName "LoginAttempt" }}
-    {{- $isProductOption := eq $modelName "ProductOption" }}
-    {{- $isPasswordResetToken := eq $modelName "PasswordResetToken" }}
-    {{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
-    // {{ pascal .Name }}
-    Get{{ $modelName }}(Querier, uint64) (*models.{{ $modelName }}, error)
-    Get{{ $modelName }}List(Querier, *models.QueryFilter) ([]models.{{ $modelName }}, error)
-    Get{{ $modelName }}Count(Querier, *models.QueryFilter) (uint64, error)
-    {{ $modelName }}Exists(Querier, uint64) (bool, error)
-    Create{{ $modelName }}(Querier, *models.{{ $modelName }}) (uint64, time.Time, {{ if $isProduct }}time.Time, {{ end }}error)
-    Update{{ $modelName }}(Querier, *models.{{ $modelName }}) (time.Time, error)
-    Delete{{ $modelName }}(Querier, uint64) (time.Time, error)
-    {{ if $isProductRoot }}{{ $modelName }}WithSKUPrefixExists(Querier, string) (bool, error){{- end -}}
-    {{ if $isDiscount }}Get{{ $modelName }}ByCode(Querier, string) (*models.{{ $modelName }}, error){{- end -}}
-    {{ if $isProductVariantBridge }}Delete{{ $modelName }}ByProductID(Querier, uint64) (time.Time, error)
-    CreateMultiple{{ $modelName }}sForProductID(Querier, uint64, []uint64) error{{- end -}}
-    {{ if $isPasswordResetToken }}{{ $modelName }}ForUserIDExists(Querier, uint64) (bool, error)
-    {{ $modelName }}WithTokenExists(Querier, string) (bool, error){{- end -}}
-    {{ if $isProduct }}Get{{ $modelName }}BySKU(Querier, string) (*models.{{ $modelName }}, error)
-    {{ $modelName }}WithSKUExists(Querier, string) (bool, error){{ "\n" }}{{- end -}}
-    {{ if $isUser }}Get{{ $modelName }}ByUsername(Querier, string) (*models.{{ $modelName }}, error)
-    {{ $modelName }}WithUsernameExists(Querier, string) (bool, error){{- end -}}
-    {{ if or $isProduct $isProductOption }}Get{{ $modelName }}sByProductRootID(Querier, uint64) ([]models.{{ $modelName }}, error){{"\n"}}{{- end -}}
-    {{ if $isLoginAttempt }}{{ $modelName }}sHaveBeenExhausted(Querier, string) (bool, error){{- end -}}
-    {{ "\n" }}
+    {{ range .Schema.Tables }}
+        {{- $modelName := pascal (trimSuffix .Name "s") -}}
+        {{- $isUser := eq $modelName "User" -}}
+        {{- $isProduct := eq $modelName "Product" -}}
+        {{- $isDiscount := eq $modelName "Discount" -}}
+        {{- $isProductRoot := eq $modelName "ProductRoot" -}}
+        {{- $isLoginAttempt := eq $modelName "LoginAttempt" -}}
+        {{- $isProductOption := eq $modelName "ProductOption" -}}
+        {{- $isProductOptionValue := eq $modelName "ProductOptionValue" -}}
+        {{- $isPasswordResetToken := eq $modelName "PasswordResetToken" -}}
+        {{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" -}}
+        // {{ pascal .Name }}
+            Get{{ $modelName }}(Querier, uint64) (*models.{{ $modelName }}, error)
+            Get{{ $modelName }}List(Querier, *models.QueryFilter) ([]models.{{ $modelName }}, error)
+            Get{{ $modelName }}Count(Querier, *models.QueryFilter) (uint64, error)
+            {{ $modelName }}Exists(Querier, uint64) (bool, error)
+            Create{{ $modelName }}(Querier, *models.{{ $modelName }}) (uint64, time.Time, {{ if $isProduct }}time.Time, {{ end }}error)
+            Update{{ $modelName }}(Querier, *models.{{ $modelName }}) (time.Time, error)
+            Delete{{ $modelName }}(Querier, uint64) (time.Time, error)
+        {{- if or (or $isProductVariantBridge $isProductOptionValue) (or $isProductOption $isProduct) }}
+            Archive{{ $modelName }}sWithProductRootID(Querier, uint64) (time.Time, error)
+        {{- end -}}
+        {{- if $isProductRoot }}
+            {{ $modelName }}WithSKUPrefixExists(Querier, string) (bool, error)
+        {{- end -}}
+        {{- if $isDiscount }}
+            Get{{ $modelName }}ByCode(Querier, string) (*models.{{ $modelName }}, error)
+        {{- end -}}
+        {{- if $isProductVariantBridge }}
+            Delete{{ $modelName }}ByProductID(Querier, uint64) (time.Time, error)
+            CreateMultiple{{ $modelName }}sForProductID(Querier, uint64, []uint64) error
+        {{- end -}}
+        {{- if $isPasswordResetToken }}
+            {{ $modelName }}ForUserIDExists(Querier, uint64) (bool, error)
+            {{ $modelName }}WithTokenExists(Querier, string) (bool, error)
+        {{- end -}}
+        {{- if $isProduct }}
+            Get{{ $modelName }}BySKU(Querier, string) (*models.{{ $modelName }}, error)
+            {{ $modelName }}WithSKUExists(Querier, string) (bool, error)
+        {{- end -}}
+        {{- if $isUser }}
+            Get{{ $modelName }}ByUsername(Querier, string) (*models.{{ $modelName }}, error)
+            {{ $modelName }}WithUsernameExists(Querier, string) (bool, error)
+        {{- end -}}
+        {{- if or $isProduct $isProductOption }}
+            Get{{ $modelName }}sByProductRootID(Querier, uint64) ([]models.{{ $modelName }}, error)
+        {{- end -}}
+        {{- if $isLoginAttempt }}
+            {{ $modelName }}sHaveBeenExhausted(Querier, string) (bool, error)
+        {{- end -}}
+        {{ "\n " }}
     {{ end -}}
 }

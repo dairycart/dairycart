@@ -410,3 +410,15 @@ func (pg *postgres) DeleteProduct(db storage.Querier, id uint64) (t time.Time, e
 	err = db.QueryRow(productDeletionQuery, id).Scan(&t)
 	return t, err
 }
+
+const productWithProductRootIDDeletionQuery = `
+    UPDATE products
+    SET archived_on = NOW()
+    WHERE product_root_id = $1
+    RETURNING archived_on
+`
+
+func (pg *postgres) ArchiveProductsWithProductRootID(db storage.Querier, id uint64) (t time.Time, err error) {
+	err = db.QueryRow(productWithProductRootIDDeletionQuery, id).Scan(&t)
+	return t, err
+}
