@@ -30,15 +30,15 @@ func SetupAPIRoutes(router *chi.Mux, db *sql.DB, dbxReplaceMePlz *sqlx.DB, store
 	// Auth
 	router.Post("/login", buildUserLoginHandler(db, client, store))
 	router.Post("/logout", buildUserLogoutHandler(store))
-	router.Post("/user", buildUserCreationHandler(dbxReplaceMePlz, store))
+	router.Post("/user", buildUserCreationHandler(db, client, store))
 	router.Patch(fmt.Sprintf("/user/{user_id:%s}", NumericPattern), buildUserInfoUpdateHandler(dbxReplaceMePlz))
-	router.Post("/password_reset", buildUserForgottenPasswordHandler(dbxReplaceMePlz))
+	router.Post("/password_reset", buildUserForgottenPasswordHandler(db, client))
 	router.Head("/password_reset/{reset_token}", buildUserPasswordResetTokenValidationHandler(dbxReplaceMePlz))
 	//router.Head("/password_reset/{reset_token:[a-zA-Z0-9]{}}", buildUserPasswordResetTokenValidationHandler(dbxReplaceMePlz))
 
 	router.Route("/v1", func(r chi.Router) {
 		// Users
-		r.Delete(fmt.Sprintf("/user/{user_id:%s}", NumericPattern), buildUserDeletionHandler(dbxReplaceMePlz, store))
+		r.Delete(fmt.Sprintf("/user/{user_id:%s}", NumericPattern), buildUserDeletionHandler(db, client, store))
 
 		// Product Roots
 		specificProductRootRoute := fmt.Sprintf("/product_root/{product_root_id:%s}", NumericPattern)

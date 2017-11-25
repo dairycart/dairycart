@@ -236,7 +236,7 @@ func createLoginAttemptRowInDatabase(db *sqlx.DB, username string, successful bo
 	return err
 }
 
-func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.HandlerFunc {
+func buildUserCreationHandler(db *sql.DB, client storage.Storer, store *sessions.CookieStore) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		userInput := &UserCreationInput{}
 		err := validateRequestInput(req, userInput)
@@ -265,7 +265,7 @@ func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 		}
 
 		// can't create a user with an email that already exists!
-		exists, err := rowExistsInDB(db, userExistenceQuery, userInput.Username)
+		exists, err := client.UserWithUsernameExists(db, userInput.Username)
 		if err != nil || exists {
 			notifyOfInvalidRequestBody(res, errors.New("username already taken"))
 			return
@@ -278,7 +278,7 @@ func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 			return
 		}
 
-		createdUserID, createdOn, err := createUserInDB(db, newUser)
+		createdUserID, createdOn, err := client.CreateUser(db, newUser)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "insert user in database")
 			return
@@ -375,14 +375,15 @@ func buildUserLogoutHandler(store *sessions.CookieStore) http.HandlerFunc {
 	}
 }
 
-func buildUserDeletionHandler(db *sqlx.DB, store *sessions.CookieStore) http.HandlerFunc {
+func buildUserDeletionHandler(db *sql.DB, client storage.Storer, store *sessions.CookieStore) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		userID := chi.URLParam(req, "user_id")
 		// we can eat this error because Mux takes care of validating route params for us
 		userIDInt, _ := strconv.ParseInt(userID, 10, 64)
+		userIDInt64 := uint64(userIDInt)
 
 		// can't delete a user that doesn't already exist!
-		exists, err := rowExistsInDB(db, userExistenceQueryByID, userID)
+		exists, err := client.UserExists(db, userIDInt64)
 		if err != nil || !exists {
 			respondThatRowDoesNotExist(req, res, "user", userID)
 			return
@@ -405,7 +406,7 @@ func buildUserDeletionHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 			json.NewEncoder(res).Encode(errRes)
 			return
 		} else if admin {
-			err = archiveUser(db, uint64(userIDInt))
+			_, err := client.DeleteUser(db, userIDInt64)
 			if err != nil {
 				notifyOfInternalIssue(res, err, "archive user")
 				return
@@ -416,7 +417,7 @@ func buildUserDeletionHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 	}
 }
 
-func buildUserForgottenPasswordHandler(db *sqlx.DB) http.HandlerFunc {
+func buildUserForgottenPasswordHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		loginInput := &UserLoginInput{}
 		err := validateRequestInput(req, loginInput)
@@ -426,7 +427,7 @@ func buildUserForgottenPasswordHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 		username := loginInput.Username
 
-		user, err := retrieveUserFromDB(db, username)
+		user, err := client.GetUserByUsername(db, username)
 		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "user", username)
 			return
@@ -435,21 +436,24 @@ func buildUserForgottenPasswordHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		userIDString := strconv.Itoa(int(user.ID))
-		exists, err := rowExistsInDB(db, passwordResetExistenceQueryForUserID, userIDString)
+		exists, err := client.PasswordResetTokenExistsForUserID(db, user.ID)
 		if err != nil || exists {
 			notifyOfInvalidRequestBody(res, errors.New("user has existent, non-expired password reset request"))
 			return
 		}
 
-		resetToken := uniuri.NewLen(resetTokenSize)
-		err = createPasswordResetEntryInDatabase(db, user.ID, resetToken)
+		resetToken := &models.PasswordResetToken{
+			UserID: user.ID,
+			Token:  uniuri.NewLen(resetTokenSize),
+		}
+
+		resetToken.ID, resetToken.CreatedOn, err = client.CreatePasswordResetToken(db, resetToken)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "read session data")
 			return
 		}
 
-		res.WriteHeader(http.StatusOK)
+		json.NewEncoder(res).Encode(resetToken)
 	}
 }
 

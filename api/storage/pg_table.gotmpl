@@ -8,6 +8,7 @@ package postgres
 {{- $isDiscount := eq $modelName "Discount" }}
 {{- $isProductRoot := eq $modelName "ProductRoot" }}
 {{- $isLoginAttempt := eq $modelName "LoginAttempt" }}
+{{- $isPasswordResetToken := eq $modelName "PasswordResetToken" }}
 {{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
 
 import (
@@ -155,6 +156,24 @@ func (pg *postgres) {{ $modelName }}sHaveBeenExhausted(db storage.Querier, usern
 		return false, err
 	}
 	return loginCount >= 10, err
+}
+{{- end }}
+
+{{- if $isPasswordResetToken }}
+{{ $pwtExistenceQueryVarName := printf "%sExistenceQueryByUserID" ( camel $modelName ) -}}
+const {{ $pwtExistenceQueryVarName }} = `SELECT EXISTS(SELECT id FROM {{ .Table.Name }} WHERE user_id = $1 AND NOW() < expires_on);`
+
+func (pg *postgres) {{ $modelName }}ExistsForUserID(db storage.Querier, id uint64) (bool, error) {
+    var exists string
+
+	err := db.QueryRow({{ $pwtExistenceQueryVarName }}, id).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return exists == "true", err
 }
 {{- end }}
 

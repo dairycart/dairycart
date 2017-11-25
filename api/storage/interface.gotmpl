@@ -21,6 +21,7 @@ type Storer interface {
     {{- $isDiscount := eq $modelName "Discount" }}
     {{- $isProductRoot := eq $modelName "ProductRoot" }}
     {{- $isLoginAttempt := eq $modelName "LoginAttempt" }}
+    {{- $isPasswordResetToken := eq $modelName "PasswordResetToken" }}
     {{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
     // {{ pascal .Name }}
     Get{{ $modelName }}(Querier, uint64) (*models.{{ $modelName }}, error)
@@ -34,6 +35,7 @@ type Storer interface {
     {{ if $isDiscount }}Get{{ $modelName }}ByCode(Querier, string) (*models.{{ $modelName }}, error){{- end -}}
     {{ if $isProductVariantBridge }}Delete{{ $modelName }}ByProductID(Querier, uint64) (time.Time, error)
     CreateMultiple{{ $modelName }}sForProductID(Querier, uint64, []uint64) error{{- end -}}
+    {{ if $isPasswordResetToken }}{{ $modelName }}ExistsForUserID(Querier, uint64) (bool, error){{- end -}}
     {{ if $isProduct }}Get{{ $modelName }}BySKU(Querier, string) (*models.{{ $modelName }}, error)
     {{ $modelName }}WithSKUExists(Querier, string) (bool, error){{- end -}}
     {{ if $isUser }}Get{{ $modelName }}ByUsername(Querier, string) (*models.{{ $modelName }}, error)

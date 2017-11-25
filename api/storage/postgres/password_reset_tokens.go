@@ -10,6 +10,21 @@ import (
 	"github.com/Masterminds/squirrel"
 )
 
+const passwordResetTokenExistenceQueryByUserID = `SELECT EXISTS(SELECT id FROM password_reset_tokens WHERE user_id = $1 AND NOW() < expires_on);`
+
+func (pg *postgres) PasswordResetTokenExistsForUserID(db storage.Querier, id uint64) (bool, error) {
+	var exists string
+
+	err := db.QueryRow(passwordResetTokenExistenceQueryByUserID, id).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return exists == "true", err
+}
+
 const passwordResetTokenExistenceQuery = `SELECT EXISTS(SELECT id FROM password_reset_tokens WHERE id = $1 and archived_on IS NULL);`
 
 func (pg *postgres) PasswordResetTokenExists(db storage.Querier, id uint64) (bool, error) {

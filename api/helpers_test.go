@@ -36,7 +36,6 @@ const (
 	//exampleTimeString        = "2016-12-01 12:00:00.000000"
 	exampleGarbageInput      = `{"things": "stuff"}`
 	exampleMarshalTimeString = "2016-12-31T12:00:00.000000Z"
-	examplePassword          = "Pa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rd"
 )
 
 func init() {

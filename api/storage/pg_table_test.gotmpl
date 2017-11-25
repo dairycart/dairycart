@@ -6,6 +6,7 @@ package postgres
 {{- $isDiscount := eq $modelName "Discount" }}
 {{- $isProductRoot := eq $modelName "ProductRoot" }}
 {{- $isLoginAttempt := eq $modelName "LoginAttempt" }}
+{{- $isPasswordResetToken := eq $modelName "PasswordResetToken" }}
 {{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
 
 import(
@@ -320,6 +321,53 @@ func Test{{ $modelName }}sHaveBeenExhausted(t *testing.T) {
 
         require.NotNil(t, err)
         require.Equal(t, expected, actual)
+    })
+}
+{{- end }}
+
+{{- if $isPasswordResetToken }}
+{{ $pwtExistenceQueryVarName := printf "%sExistenceQueryByUserID" ( camel $modelName ) -}}
+func set{{ $modelName }}ExistenceQueryByUserIDExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, shouldExist bool, err error) {
+    t.Helper()
+    query := formatQueryForSQLMock({{ $pwtExistenceQueryVarName }})
+
+	mock.ExpectQuery(query).
+		WithArgs(id).
+		WillReturnRows(sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(shouldExist))).
+		WillReturnError(err)
+}
+
+func Test{{ $modelName }}ExistsForUserID(t *testing.T) {
+    t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+    require.Nil(t, err)
+    defer mockDB.Close()
+    exampleID := uint64(1)
+    client := NewPostgres()
+
+    t.Run("existing", func(t *testing.T) {
+        set{{ $modelName }}ExistenceQueryByUserIDExpectation(t, mock, exampleID, true, nil)
+        actual, err := client.{{ $modelName }}ExistsForUserID(mockDB, exampleID)
+
+        require.Nil(t, err)
+        require.True(t, actual)
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+    t.Run("with no rows found", func(t *testing.T) {
+        set{{ $modelName }}ExistenceQueryByUserIDExpectation(t, mock, exampleID, true, sql.ErrNoRows)
+        actual, err := client.{{ $modelName }}ExistsForUserID(mockDB, exampleID)
+
+        require.Nil(t, err)
+        require.False(t, actual)
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+    t.Run("with a database error", func(t *testing.T) {
+        set{{ $modelName }}ExistenceQueryByUserIDExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
+        actual, err := client.{{ $modelName }}ExistsForUserID(mockDB, exampleID)
+
+        require.NotNil(t, err)
+        require.False(t, actual)
+        require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
 }
 {{- end }}

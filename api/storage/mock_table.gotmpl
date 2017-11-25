@@ -13,6 +13,7 @@ import (
 {{- $isDiscount := eq $modelName "Discount" }}
 {{- $isProductRoot := eq $modelName "ProductRoot" }}
 {{- $isLoginAttempt := eq $modelName "LoginAttempt" }}
+{{- $isPasswordResetToken := eq $modelName "PasswordResetToken" }}
 {{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
 
 {{- if $isProduct }}
@@ -56,6 +57,13 @@ func (m *MockDB) Get{{ $modelName }}ByCode(db storage.Querier, code string) (*mo
 {{- if $isProductRoot }}
 func (m *MockDB) {{ $modelName }}WithSKUPrefixExists(db storage.Querier, skuPrefix string) (bool, error) {
     args := m.Called(db, skuPrefix)
+	return args.Bool(0), args.Error(1)
+}
+{{- end }}
+
+{{- if $isPasswordResetToken }}
+func (m *MockDB) {{ $modelName }}ExistsForUserID(db storage.Querier, id uint64) (bool, error) {
+    args := m.Called(db, id)
 	return args.Bool(0), args.Error(1)
 }
 {{- end }}
