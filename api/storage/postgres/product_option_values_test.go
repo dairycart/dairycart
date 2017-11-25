@@ -15,6 +15,51 @@ import (
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
+func setProductOptionValueWithSKUExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, optionID uint64, value string, shouldExist bool, err error) {
+	t.Helper()
+	query := formatQueryForSQLMock(productOptionValueForOptionIDExistenceQuery)
+
+	mock.ExpectQuery(query).
+		WithArgs(optionID, value).
+		WillReturnRows(sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(shouldExist))).
+		WillReturnError(err)
+}
+
+func TestProductOptionValueForOptionIDExists(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	require.Nil(t, err)
+	defer mockDB.Close()
+	exampleOptionID := uint64(1)
+	exampleValue := "example"
+	client := NewPostgres()
+
+	t.Run("existing", func(t *testing.T) {
+		setProductOptionValueWithSKUExistenceQueryExpectation(t, mock, exampleOptionID, exampleValue, true, nil)
+		actual, err := client.ProductOptionValueForOptionIDExists(mockDB, exampleOptionID, exampleValue)
+
+		require.Nil(t, err)
+		require.True(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with no rows found", func(t *testing.T) {
+		setProductOptionValueWithSKUExistenceQueryExpectation(t, mock, exampleOptionID, exampleValue, true, sql.ErrNoRows)
+		actual, err := client.ProductOptionValueForOptionIDExists(mockDB, exampleOptionID, exampleValue)
+
+		require.Nil(t, err)
+		require.False(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with a database error", func(t *testing.T) {
+		setProductOptionValueWithSKUExistenceQueryExpectation(t, mock, exampleOptionID, exampleValue, true, errors.New("pineapple on pizza"))
+		actual, err := client.ProductOptionValueForOptionIDExists(mockDB, exampleOptionID, exampleValue)
+
+		require.NotNil(t, err)
+		require.False(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
+
 func setProductOptionValueExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, shouldExist bool, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productOptionValueExistenceQuery)

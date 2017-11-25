@@ -172,10 +172,6 @@ func getRowCount(db *sqlx.DB, table string, queryFilter *models.QueryFilter) (ui
 	return count, err
 }
 
-func retrieveListOfRowsFromDB(db *sqlx.DB, query string, args []interface{}, rows interface{}) error {
-	return db.Select(rows, query, args...)
-}
-
 // rowExistsInDB will return whether or not a product/option/etc with a given identifier exists in the database
 func rowExistsInDB(db *sqlx.DB, query string, identifier string) (bool, error) {
 	var exists string

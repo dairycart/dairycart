@@ -64,6 +64,25 @@ func (pg *postgres) {{ $modelName }}WithSKUExists(db storage.Querier, sku string
 }
 {{- end }}
 
+{{- if $isProductOptionValue }}
+{{ $existenceByOptionIDQueryVarName := printf "%sForOptionIDExistenceQuery" ( camel $modelName ) -}}
+const {{ $existenceByOptionIDQueryVarName }} = `SELECT EXISTS(SELECT id FROM {{ .Table.Name }} WHERE product_option_id = $1 AND value = $2 and archived_on IS NULL);`
+
+func (pg *postgres) {{ $modelName }}ForOptionIDExists(db storage.Querier, optionID uint64, value string) (bool, error) {
+    var exists string
+
+	err := db.QueryRow({{ $existenceByOptionIDQueryVarName }}, optionID, value).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return exists == "true", err
+}
+{{- end }}
+
+
 {{- if or $isProductOption $isProduct }}
 {{ $byProductRootIDVarName := printf "%sQueryByProductRootID" ( camel $modelName ) -}}
 const {{ $byProductRootIDVarName }} = `

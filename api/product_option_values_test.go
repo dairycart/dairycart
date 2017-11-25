@@ -1,10 +1,11 @@
-// +build !migrated
+// +build migrated
 
 package main
 
 import (
 	"database/sql"
 	"database/sql/driver"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,12 +14,8 @@ import (
 	"github.com/dairycart/dairycart/api/storage/models"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
-)
-
-const (
-	exampleProductOptionValueCreationBody = `{"value": "something"}`
-	exampleProductOptionValueUpdateBody   = `{"value": "something else"}`
 )
 
 func setExpectationsForProductOptionValueExistence(mock sqlmock.Sqlmock, v *models.ProductOptionValue, exists bool, err error) {
@@ -27,23 +24,6 @@ func setExpectationsForProductOptionValueExistence(mock sqlmock.Sqlmock, v *mode
 	stringID := strconv.Itoa(int(v.ID))
 	mock.ExpectQuery(query).
 		WithArgs(stringID).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
-}
-
-func setExpectationsForProductOptionValueRetrievalByOptionID(mock sqlmock.Sqlmock, a *models.ProductOption, err error) {
-	productOptionValueData := []driver.Value{
-		256,
-		123,
-		"something",
-		generateExampleTimeForTests(),
-		nil,
-		nil,
-	}
-	exampleRows := sqlmock.NewRows([]string{"id", "product_option_id", "value", "created_on", "updated_on", "archived_on"}).AddRow(productOptionValueData...)
-	query := formatQueryForSQLMock(productOptionValueRetrievalForOptionIDQuery)
-	mock.ExpectQuery(query).
-		WithArgs(a.ID).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
 }
@@ -61,15 +41,6 @@ func setExpectationsForProductOptionValueRetrieval(mock sqlmock.Sqlmock, v *mode
 	query := formatQueryForSQLMock(productOptionValueRetrievalQuery)
 	mock.ExpectQuery(query).
 		WithArgs(v.ID).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
-}
-
-func setExpectationsForProductOptionValueCreation(mock sqlmock.Sqlmock, v *models.ProductOptionValue, err error) {
-	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(v.ID, generateExampleTimeForTests())
-	query, _ := buildProductOptionValueCreationQuery(v)
-	mock.ExpectQuery(formatQueryForSQLMock(query)).
-		WithArgs(v.ProductOptionID, v.Value).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
 }
@@ -198,8 +169,7 @@ func TestArchiveProductOptionValue(t *testing.T) {
 ////////////////////////////////////////////////////////
 
 func TestProductOptionValueCreationHandler(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+	exampleProductOptionValueCreationBody := `{"value": "something"}`
 	exampleProductOptionValue := &models.ProductOptionValue{
 		ID:              256,
 		CreatedOn:       generateExampleTimeForTests(),
@@ -213,275 +183,149 @@ func TestProductOptionValueCreationHandler(t *testing.T) {
 		ProductRootID: 2,
 	}
 
-	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
-	setExpectationsForProductOptionValueForOptionExistence(testUtil.Mock, exampleProductOption, exampleProductOptionValue, false, nil)
-	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductOptionValueCreation(testUtil.Mock, exampleProductOptionValue, nil)
-	testUtil.Mock.ExpectCommit()
+	t.Run("optimal conditions", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductOptionExists", mock.Anything, exampleProductOption.ID).
+			Return(true, nil)
+		testUtil.MockDB.On("ProductOptionValueForOptionIDExists", mock.Anything, exampleProductOption.ID, exampleProductOptionValue.Value).
+			Return(false, nil)
+		testUtil.Mock.ExpectBegin()
+		testUtil.MockDB.On("CreateProductOptionValue", mock.Anything, mock.Anything).
+			Return(exampleProductOptionValue.ID, generateExampleTimeForTests(), nil)
+		testUtil.Mock.ExpectCommit()
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	optionValueEndpoint := buildRoute("v1", "product_options", "123", "value")
-	req, err := http.NewRequest(http.MethodPost, optionValueEndpoint, strings.NewReader(exampleProductOptionValueCreationBody))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_options/%d/value", exampleProductOption.ID), strings.NewReader(exampleProductOptionValueCreationBody))
+		assert.Nil(t, err)
 
-	assertStatusCode(t, testUtil, http.StatusCreated)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusCreated)
+	})
 
-func TestProductOptionValueCreationHandlerWhenTransactionFailsToBegin(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-	exampleProductOptionValue := &models.ProductOptionValue{
-		ID:              256,
-		CreatedOn:       generateExampleTimeForTests(),
-		ProductOptionID: 123,
-		Value:           "something",
-	}
-	exampleProductOption := &models.ProductOption{
-		ID:            123,
-		CreatedOn:     generateExampleTimeForTests(),
-		Name:          "something",
-		ProductRootID: 2,
-	}
+	t.Run("with invalid input", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_options/%d/value", exampleProductOption.ID), strings.NewReader(exampleGarbageInput))
+		assert.Nil(t, err)
 
-	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
-	setExpectationsForProductOptionValueForOptionExistence(testUtil.Mock, exampleProductOption, exampleProductOptionValue, false, nil)
-	testUtil.Mock.ExpectBegin().WillReturnError(generateArbitraryError())
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusBadRequest)
+	})
 
-	optionValueEndpoint := buildRoute("v1", "product_options", "123", "value")
-	req, err := http.NewRequest(http.MethodPost, optionValueEndpoint, strings.NewReader(exampleProductOptionValueCreationBody))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+	t.Run("with nonexistent product option", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductOptionExists", mock.Anything, exampleProductOption.ID).
+			Return(false, sql.ErrNoRows)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_options/%d/value", exampleProductOption.ID), strings.NewReader(exampleProductOptionValueCreationBody))
+		assert.Nil(t, err)
 
-func TestProductOptionValueCreationHandlerWhenTransactionFailsToCommit(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-	exampleProductOptionValue := &models.ProductOptionValue{
-		ID:              256,
-		CreatedOn:       generateExampleTimeForTests(),
-		ProductOptionID: 123,
-		Value:           "something",
-	}
-	exampleProductOption := &models.ProductOption{
-		ID:            123,
-		CreatedOn:     generateExampleTimeForTests(),
-		Name:          "something",
-		ProductRootID: 2,
-	}
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusNotFound)
+	})
 
-	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
-	setExpectationsForProductOptionValueForOptionExistence(testUtil.Mock, exampleProductOption, exampleProductOptionValue, false, nil)
-	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductOptionValueCreation(testUtil.Mock, exampleProductOptionValue, nil)
-	testUtil.Mock.ExpectCommit().WillReturnError(generateArbitraryError())
+	t.Run("with error checking product option existence", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductOptionExists", mock.Anything, exampleProductOption.ID).
+			Return(true, generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	optionValueEndpoint := buildRoute("v1", "product_options", "123", "value")
-	req, err := http.NewRequest(http.MethodPost, optionValueEndpoint, strings.NewReader(exampleProductOptionValueCreationBody))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_options/%d/value", exampleProductOption.ID), strings.NewReader(exampleProductOptionValueCreationBody))
+		assert.Nil(t, err)
 
-	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
 
-func TestProductOptionValueCreationHandlerWithNonexistentProductOption(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-	exampleProductOption := &models.ProductOption{
-		ID:            123,
-		CreatedOn:     generateExampleTimeForTests(),
-		Name:          "something",
-		ProductRootID: 2,
-	}
+	t.Run("with pre-existing value", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductOptionExists", mock.Anything, exampleProductOption.ID).
+			Return(true, nil)
+		testUtil.MockDB.On("ProductOptionValueForOptionIDExists", mock.Anything, exampleProductOption.ID, exampleProductOptionValue.Value).
+			Return(true, nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, generateArbitraryError())
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_options/%d/value", exampleProductOption.ID), strings.NewReader(exampleProductOptionValueCreationBody))
+		assert.Nil(t, err)
 
-	optionValueEndpoint := buildRoute("v1", "product_options", "123", "value")
-	req, err := http.NewRequest(http.MethodPost, optionValueEndpoint, strings.NewReader(exampleProductOptionValueCreationBody))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusBadRequest)
+	})
 
-	assertStatusCode(t, testUtil, http.StatusNotFound)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+	t.Run("with error checking for value existence", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductOptionExists", mock.Anything, exampleProductOption.ID).
+			Return(true, nil)
+		testUtil.MockDB.On("ProductOptionValueForOptionIDExists", mock.Anything, exampleProductOption.ID, exampleProductOptionValue.Value).
+			Return(false, generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-func TestProductOptionValueCreationHandlerWhenValueAlreadyExistsForOption(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-	exampleProductOptionValue := &models.ProductOptionValue{
-		ID:              256,
-		CreatedOn:       generateExampleTimeForTests(),
-		ProductOptionID: 123,
-		Value:           "something",
-	}
-	exampleProductOption := &models.ProductOption{
-		ID:            123,
-		CreatedOn:     generateExampleTimeForTests(),
-		Name:          "something",
-		ProductRootID: 2,
-	}
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_options/%d/value", exampleProductOption.ID), strings.NewReader(exampleProductOptionValueCreationBody))
+		assert.Nil(t, err)
 
-	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
-	setExpectationsForProductOptionValueForOptionExistence(testUtil.Mock, exampleProductOption, exampleProductOptionValue, true, nil)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
 
-	optionValueEndpoint := buildRoute("v1", "product_options", "123", "value")
-	req, err := http.NewRequest(http.MethodPost, optionValueEndpoint, strings.NewReader(exampleProductOptionValueCreationBody))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+	t.Run("with error creating transaction", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductOptionExists", mock.Anything, exampleProductOption.ID).
+			Return(true, nil)
+		testUtil.MockDB.On("ProductOptionValueForOptionIDExists", mock.Anything, exampleProductOption.ID, exampleProductOptionValue.Value).
+			Return(false, nil)
+		testUtil.Mock.ExpectBegin().WillReturnError(generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	assertStatusCode(t, testUtil, http.StatusBadRequest)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_options/%d/value", exampleProductOption.ID), strings.NewReader(exampleProductOptionValueCreationBody))
+		assert.Nil(t, err)
 
-func TestProductOptionValueCreationHandlerWhenValueExistenceCheckReturnsNoRows(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-	exampleProductOptionValue := &models.ProductOptionValue{
-		ID:              256,
-		CreatedOn:       generateExampleTimeForTests(),
-		ProductOptionID: 123,
-		Value:           "something",
-	}
-	exampleProductOption := &models.ProductOption{
-		ID:            123,
-		CreatedOn:     generateExampleTimeForTests(),
-		Name:          "something",
-		ProductRootID: 2,
-	}
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
 
-	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
-	setExpectationsForProductOptionValueForOptionExistence(testUtil.Mock, exampleProductOption, exampleProductOptionValue, false, sql.ErrNoRows)
-	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductOptionValueCreation(testUtil.Mock, exampleProductOptionValue, nil)
-	testUtil.Mock.ExpectCommit()
+	t.Run("with error creating product option value", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductOptionExists", mock.Anything, exampleProductOption.ID).
+			Return(true, nil)
+		testUtil.MockDB.On("ProductOptionValueForOptionIDExists", mock.Anything, exampleProductOption.ID, exampleProductOptionValue.Value).
+			Return(false, nil)
+		testUtil.Mock.ExpectBegin()
+		testUtil.MockDB.On("CreateProductOptionValue", mock.Anything, mock.Anything).
+			Return(exampleProductOptionValue.ID, generateExampleTimeForTests(), generateArbitraryError())
+		testUtil.Mock.ExpectRollback()
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	optionValueEndpoint := buildRoute("v1", "product_options", "123", "value")
-	req, err := http.NewRequest(http.MethodPost, optionValueEndpoint, strings.NewReader(exampleProductOptionValueCreationBody))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_options/%d/value", exampleProductOption.ID), strings.NewReader(exampleProductOptionValueCreationBody))
+		assert.Nil(t, err)
 
-	assertStatusCode(t, testUtil, http.StatusCreated)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
 
-func TestProductOptionValueCreationHandlerWhenValueExistenceCheckReturnsError(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-	exampleProductOptionValue := &models.ProductOptionValue{
-		ID:              256,
-		CreatedOn:       generateExampleTimeForTests(),
-		ProductOptionID: 123,
-		Value:           "something",
-	}
-	exampleProductOption := &models.ProductOption{
-		ID:            123,
-		CreatedOn:     generateExampleTimeForTests(),
-		Name:          "something",
-		ProductRootID: 2,
-	}
+	t.Run("with error committing transaction", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductOptionExists", mock.Anything, exampleProductOption.ID).
+			Return(true, nil)
+		testUtil.MockDB.On("ProductOptionValueForOptionIDExists", mock.Anything, exampleProductOption.ID, exampleProductOptionValue.Value).
+			Return(false, nil)
+		testUtil.Mock.ExpectBegin()
+		testUtil.MockDB.On("CreateProductOptionValue", mock.Anything, mock.Anything).
+			Return(exampleProductOptionValue.ID, generateExampleTimeForTests(), nil)
+		testUtil.Mock.ExpectCommit().WillReturnError(generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
-	setExpectationsForProductOptionValueForOptionExistence(testUtil.Mock, exampleProductOption, exampleProductOptionValue, false, generateArbitraryError())
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_options/%d/value", exampleProductOption.ID), strings.NewReader(exampleProductOptionValueCreationBody))
+		assert.Nil(t, err)
 
-	optionValueEndpoint := buildRoute("v1", "product_options", "123", "value")
-	req, err := http.NewRequest(http.MethodPost, optionValueEndpoint, strings.NewReader(exampleProductOptionValueCreationBody))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
 
-	assertStatusCode(t, testUtil, http.StatusBadRequest)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-func TestProductOptionValueCreationHandlerWithInvalidValueBody(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-	exampleProductOption := &models.ProductOption{
-		ID:            123,
-		CreatedOn:     generateExampleTimeForTests(),
-		Name:          "something",
-		ProductRootID: 2,
-	}
-
-	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
-
-	optionValueEndpoint := buildRoute("v1", "product_options", "123", "value")
-	req, err := http.NewRequest(http.MethodPost, optionValueEndpoint, strings.NewReader(exampleGarbageInput))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-	assertStatusCode(t, testUtil, http.StatusBadRequest)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-func TestProductOptionValueCreationHandlerWithRowCreationError(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-	exampleProductOptionValue := &models.ProductOptionValue{
-		ID:              256,
-		CreatedOn:       generateExampleTimeForTests(),
-		ProductOptionID: 123,
-		Value:           "something",
-	}
-	exampleProductOption := &models.ProductOption{
-		ID:            123,
-		CreatedOn:     generateExampleTimeForTests(),
-		Name:          "something",
-		ProductRootID: 2,
-	}
-
-	setExpectationsForProductOptionExistenceByID(testUtil.Mock, exampleProductOption, true, nil)
-	setExpectationsForProductOptionValueForOptionExistence(testUtil.Mock, exampleProductOption, exampleProductOptionValue, false, nil)
-	testUtil.Mock.ExpectBegin()
-	setExpectationsForProductOptionValueCreation(testUtil.Mock, exampleProductOptionValue, generateArbitraryError())
-	testUtil.Mock.ExpectRollback()
-
-	optionValueEndpoint := buildRoute("v1", "product_options", "123", "value")
-	req, err := http.NewRequest(http.MethodPost, optionValueEndpoint, strings.NewReader(exampleProductOptionValueCreationBody))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestProductOptionValueUpdateHandler(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-	exampleProductOptionValue := &models.ProductOptionValue{
-		ID:              256,
-		CreatedOn:       generateExampleTimeForTests(),
-		ProductOptionID: 123,
-		Value:           "something",
-	}
-	exampleUpdatedProductOptionValue := &models.ProductOptionValue{
-		ID:              256,
-		CreatedOn:       generateExampleTimeForTests(),
-		ProductOptionID: 123,
-		Value:           "something else",
-	}
-
-	optionValueIDString := strconv.Itoa(int(exampleProductOptionValue.ID))
-
-	setExpectationsForProductOptionValueExistence(testUtil.Mock, exampleProductOptionValue, true, nil)
-	setExpectationsForProductOptionValueRetrieval(testUtil.Mock, exampleProductOptionValue, nil)
-	setExpectationsForProductOptionValueUpdate(testUtil.Mock, exampleUpdatedProductOptionValue, nil)
-
-	productOptionValueEndpoint := buildRoute("v1", "product_option_values", optionValueIDString)
-	req, err := http.NewRequest(http.MethodPatch, productOptionValueEndpoint, strings.NewReader(exampleProductOptionValueUpdateBody))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-	assertStatusCode(t, testUtil, http.StatusOK)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-func TestProductOptionValueUpdateHandlerWhereOptionValueDoesNotExist(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+	exampleProductOptionValueUpdateBody := `{"value": "something else"}`
 	exampleProductOptionValue := &models.ProductOptionValue{
 		ID:              256,
 		CreatedOn:       generateExampleTimeForTests(),
@@ -489,143 +333,135 @@ func TestProductOptionValueUpdateHandlerWhereOptionValueDoesNotExist(t *testing.
 		Value:           "something",
 	}
 
-	optionValueIDString := strconv.Itoa(int(exampleProductOptionValue.ID))
+	t.Run("optimal conditions", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetProductOptionValue", mock.Anything, exampleProductOptionValue.ID).
+			Return(exampleProductOptionValue, nil)
+		testUtil.MockDB.On("UpdateProductOptionValue", mock.Anything, mock.Anything).
+			Return(generateExampleTimeForTests(), nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	setExpectationsForProductOptionValueExistence(testUtil.Mock, exampleProductOptionValue, false, nil)
+		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product_option_values/%d", exampleProductOptionValue.ID), strings.NewReader(exampleProductOptionValueUpdateBody))
+		assert.Nil(t, err)
 
-	productOptionValueEndpoint := buildRoute("v1", "product_option_values", optionValueIDString)
-	req, err := http.NewRequest(http.MethodPatch, productOptionValueEndpoint, strings.NewReader(exampleProductOptionValueUpdateBody))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusOK)
+	})
 
-	assertStatusCode(t, testUtil, http.StatusNotFound)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+	t.Run("with invalid input", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-func TestProductOptionValueUpdateHandlerWhereInputIsInvalid(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-	exampleProductOptionValue := &models.ProductOptionValue{
-		ID:              256,
-		CreatedOn:       generateExampleTimeForTests(),
-		ProductOptionID: 123,
-		Value:           "something",
-	}
+		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product_option_values/%d", exampleProductOptionValue.ID), strings.NewReader(exampleGarbageInput))
+		assert.Nil(t, err)
 
-	optionValueIDString := strconv.Itoa(int(exampleProductOptionValue.ID))
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusBadRequest)
+	})
 
-	setExpectationsForProductOptionValueExistence(testUtil.Mock, exampleProductOptionValue, true, nil)
+	t.Run("with nonexistent option value", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetProductOptionValue", mock.Anything, exampleProductOptionValue.ID).
+			Return(exampleProductOptionValue, sql.ErrNoRows)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	productOptionValueEndpoint := buildRoute("v1", "product_option_values", optionValueIDString)
-	req, err := http.NewRequest(http.MethodPatch, productOptionValueEndpoint, strings.NewReader(exampleGarbageInput))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product_option_values/%d", exampleProductOptionValue.ID), strings.NewReader(exampleProductOptionValueUpdateBody))
+		assert.Nil(t, err)
 
-	assertStatusCode(t, testUtil, http.StatusBadRequest)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusNotFound)
+	})
 
-func TestProductOptionValueUpdateHandlerWhereErrorEncounteredRetrievingOption(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-	exampleProductOptionValue := &models.ProductOptionValue{
-		ID:              256,
-		CreatedOn:       generateExampleTimeForTests(),
-		ProductOptionID: 123,
-		Value:           "something",
-	}
+	t.Run("with error retrieving option value", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetProductOptionValue", mock.Anything, exampleProductOptionValue.ID).
+			Return(exampleProductOptionValue, generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	optionValueIDString := strconv.Itoa(int(exampleProductOptionValue.ID))
+		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product_option_values/%d", exampleProductOptionValue.ID), strings.NewReader(exampleProductOptionValueUpdateBody))
+		assert.Nil(t, err)
 
-	setExpectationsForProductOptionValueExistence(testUtil.Mock, exampleProductOptionValue, true, nil)
-	setExpectationsForProductOptionValueRetrieval(testUtil.Mock, exampleProductOptionValue, generateArbitraryError())
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
 
-	productOptionValueEndpoint := buildRoute("v1", "product_option_values", optionValueIDString)
-	req, err := http.NewRequest(http.MethodPatch, productOptionValueEndpoint, strings.NewReader(exampleProductOptionValueUpdateBody))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+	t.Run("with error updating option value", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetProductOptionValue", mock.Anything, exampleProductOptionValue.ID).
+			Return(exampleProductOptionValue, nil)
+		testUtil.MockDB.On("UpdateProductOptionValue", mock.Anything, mock.Anything).
+			Return(generateExampleTimeForTests(), generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product_option_values/%d", exampleProductOptionValue.ID), strings.NewReader(exampleProductOptionValueUpdateBody))
+		assert.Nil(t, err)
 
-func TestProductOptionValueUpdateHandlerWhereErrorEncounteredUpdatingOption(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-	exampleProductOptionValue := &models.ProductOptionValue{
-		ID:              256,
-		CreatedOn:       generateExampleTimeForTests(),
-		ProductOptionID: 123,
-		Value:           "something",
-	}
-	exampleUpdatedProductOptionValue := &models.ProductOptionValue{
-		ID:              256,
-		CreatedOn:       generateExampleTimeForTests(),
-		ProductOptionID: 123,
-		Value:           "something else",
-	}
-
-	optionValueIDString := strconv.Itoa(int(exampleProductOptionValue.ID))
-
-	setExpectationsForProductOptionValueExistence(testUtil.Mock, exampleProductOptionValue, true, nil)
-	setExpectationsForProductOptionValueRetrieval(testUtil.Mock, exampleProductOptionValue, nil)
-	setExpectationsForProductOptionValueUpdate(testUtil.Mock, exampleUpdatedProductOptionValue, generateArbitraryError())
-
-	productOptionValueEndpoint := buildRoute("v1", "product_option_values", optionValueIDString)
-	req, err := http.NewRequest(http.MethodPatch, productOptionValueEndpoint, strings.NewReader(exampleProductOptionValueUpdateBody))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-	ensureExpectationsWereMet(t, testUtil.Mock)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
 }
 
 func TestProductOptionValueDeletionHandler(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+	exampleProductOptionValue := &models.ProductOptionValue{
+		ID:              256,
+		CreatedOn:       generateExampleTimeForTests(),
+		ProductOptionID: 123,
+		Value:           "something",
+	}
 
-	exampleID := uint64(1)
-	exampleIDString := strconv.Itoa(int(exampleID))
-	req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "product_option_values", exampleIDString), nil)
-	assert.Nil(t, err)
+	t.Run("optimal conditions", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetProductOptionValue", mock.Anything, exampleProductOptionValue.ID).
+			Return(exampleProductOptionValue, nil)
+		testUtil.MockDB.On("DeleteProductOptionValue", mock.Anything, exampleProductOptionValue.ID).
+			Return(generateExampleTimeForTests(), nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	setExpectationsForProductOptionValueExistence(testUtil.Mock, &models.ProductOptionValue{ID: exampleID}, true, nil)
-	setExpectationsForProductOptionValueDeletion(testUtil.Mock, exampleID, nil)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/product_option_values/%d", exampleProductOptionValue.ID), nil)
+		assert.Nil(t, err)
 
-	assertStatusCode(t, testUtil, http.StatusOK)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusOK)
+	})
 
-func TestProductOptionValueDeletionHandlerWithNonexistentOption(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+	t.Run("with nonexistent option value", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetProductOptionValue", mock.Anything, exampleProductOptionValue.ID).
+			Return(exampleProductOptionValue, sql.ErrNoRows)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	exampleID := uint64(1)
-	exampleIDString := strconv.Itoa(int(exampleID))
-	req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "product_option_values", exampleIDString), nil)
-	assert.Nil(t, err)
+		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/product_option_values/%d", exampleProductOptionValue.ID), nil)
+		assert.Nil(t, err)
 
-	setExpectationsForProductOptionValueExistence(testUtil.Mock, &models.ProductOptionValue{ID: exampleID}, false, nil)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusNotFound)
+	})
 
-	assertStatusCode(t, testUtil, http.StatusNotFound)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+	t.Run("with error retrieving option value", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetProductOptionValue", mock.Anything, exampleProductOptionValue.ID).
+			Return(exampleProductOptionValue, generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-func TestProductOptionValueDeletionHandlerWithErrorDeletingValue(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/product_option_values/%d", exampleProductOptionValue.ID), nil)
+		assert.Nil(t, err)
 
-	exampleID := uint64(1)
-	exampleIDString := strconv.Itoa(int(exampleID))
-	req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "product_option_values", exampleIDString), nil)
-	assert.Nil(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
 
-	setExpectationsForProductOptionValueExistence(testUtil.Mock, &models.ProductOptionValue{ID: exampleID}, true, nil)
-	setExpectationsForProductOptionValueDeletion(testUtil.Mock, exampleID, generateArbitraryError())
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+	t.Run("with error deleting option value", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetProductOptionValue", mock.Anything, exampleProductOptionValue.ID).
+			Return(exampleProductOptionValue, nil)
+		testUtil.MockDB.On("DeleteProductOptionValue", mock.Anything, exampleProductOptionValue.ID).
+			Return(generateExampleTimeForTests(), generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
 
-	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-	ensureExpectationsWereMet(t, testUtil.Mock)
+		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/product_option_values/%d", exampleProductOptionValue.ID), nil)
+		assert.Nil(t, err)
+
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
 }

@@ -20,8 +20,7 @@ import (
 )
 
 const (
-	exampleDiscountID        = 1
-	exampleDiscountStartTime = "2016-12-01T12:00:00+05:00"
+	exampleDiscountID = 1
 )
 
 func setExpectationsForDiscountRetrievalByID(mock sqlmock.Sqlmock, id string, err error) {
@@ -50,46 +49,6 @@ func setExpectationsForDiscountRetrievalByID(mock sqlmock.Sqlmock, id string, er
 		WillReturnError(err)
 }
 
-func setExpectationsForDiscountCountQuery(mock sqlmock.Sqlmock, queryFilter *models.QueryFilter, err error) {
-	exampleRows := sqlmock.NewRows([]string{"count"}).AddRow(3)
-
-	discountListRetrievalQuery := buildCountQuery("discounts", queryFilter)
-	query := formatQueryForSQLMock(discountListRetrievalQuery)
-	mock.ExpectQuery(query).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
-}
-
-func setExpectationsForDiscountListQuery(mock sqlmock.Sqlmock, err error) {
-	exampleDiscountReadData := []driver.Value{
-		1,
-		"Example Discount",
-		"flat_amount",
-		12.34,
-		generateExampleTimeForTests(),
-		generateExampleTimeForTests().Add(30 * (24 * time.Hour)),
-		false,
-		"",
-		false,
-		0,
-		false,
-		generateExampleTimeForTests(),
-		nil,
-		nil,
-	}
-
-	exampleRows := sqlmock.NewRows(strings.Split(strings.TrimSpace(discountsTableColumns), ",\n\t\t")).
-		AddRow(exampleDiscountReadData...).
-		AddRow(exampleDiscountReadData...).
-		AddRow(exampleDiscountReadData...)
-
-	discountListRetrievalQuery, _ := buildDiscountListQuery(genereateDefaultQueryFilter())
-	query := formatQueryForSQLMock(discountListRetrievalQuery)
-	mock.ExpectQuery(query).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
-}
-
 func setExpectationsForDiscountCreation(mock sqlmock.Sqlmock, d *models.Discount, err error) {
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(d.ID, d.CreatedOn)
 	discountCreationQuery, args := buildDiscountCreationQuery(d)
@@ -104,14 +63,6 @@ func setExpectationsForDiscountDeletion(mock sqlmock.Sqlmock, discountID string,
 	mock.ExpectExec(formatQueryForSQLMock(discountDeletionQuery)).
 		WithArgs(discountID).
 		WillReturnResult(sqlmock.NewResult(1, 1)).
-		WillReturnError(err)
-}
-
-func setExpectationsForDiscountExistence(mock sqlmock.Sqlmock, discountID string, exists bool, err error) {
-	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
-	mock.ExpectQuery(formatQueryForSQLMock(discountExistenceQuery)).
-		WithArgs(discountID).
-		WillReturnRows(exampleRows).
 		WillReturnError(err)
 }
 

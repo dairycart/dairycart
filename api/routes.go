@@ -64,9 +64,9 @@ func SetupAPIRoutes(router *chi.Mux, db *sql.DB, dbxReplaceMePlz *sqlx.DB, store
 
 		// Product Option Values
 		specificOptionValueRoute := fmt.Sprintf("/product_option_values/{option_value_id:%s}", NumericPattern)
-		r.Post(fmt.Sprintf("/product_options/{option_id:%s}/value", NumericPattern), buildProductOptionValueCreationHandler(dbxReplaceMePlz))
-		r.Patch(specificOptionValueRoute, buildProductOptionValueUpdateHandler(dbxReplaceMePlz))
-		r.Delete(specificOptionValueRoute, buildProductOptionValueDeletionHandler(dbxReplaceMePlz))
+		r.Post(fmt.Sprintf("/product_options/{option_id:%s}/value", NumericPattern), buildProductOptionValueCreationHandler(db, client))
+		r.Patch(specificOptionValueRoute, buildProductOptionValueUpdateHandler(db, client))
+		r.Delete(specificOptionValueRoute, buildProductOptionValueDeletionHandler(db, client))
 
 		// Discounts
 		specificDiscountRoute := fmt.Sprintf("/discount/{discount_id:%s}", NumericPattern)

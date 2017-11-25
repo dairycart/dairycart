@@ -10,6 +10,21 @@ import (
 	"github.com/Masterminds/squirrel"
 )
 
+const productOptionValueForOptionIDExistenceQuery = `SELECT EXISTS(SELECT id FROM product_option_values WHERE product_option_id = $1 AND value = $2 and archived_on IS NULL);`
+
+func (pg *postgres) ProductOptionValueForOptionIDExists(db storage.Querier, optionID uint64, value string) (bool, error) {
+	var exists string
+
+	err := db.QueryRow(productOptionValueForOptionIDExistenceQuery, optionID, value).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return exists == "true", err
+}
+
 const productOptionValueExistenceQuery = `SELECT EXISTS(SELECT id FROM product_option_values WHERE id = $1 and archived_on IS NULL);`
 
 func (pg *postgres) ProductOptionValueExists(db storage.Querier, id uint64) (bool, error) {

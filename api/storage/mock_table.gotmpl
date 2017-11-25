@@ -82,6 +82,13 @@ func (m *MockDB) {{ $modelName }}WithTokenExists(db storage.Querier, token strin
 }
 {{- end }}
 
+{{- if $isProductOptionValue }}
+func (m *MockDB) {{ $modelName }}ForOptionIDExists(db storage.Querier, optionID uint64, value string) (bool, error) {
+    args := m.Called(db, optionID, value)
+	return args.Bool(0), args.Error(1)
+}
+{{- end }}
+
 func (m *MockDB) {{ $modelName }}Exists(db storage.Querier, id uint64) (bool, error) {
     args := m.Called(db, id)
 	return args.Bool(0), args.Error(1)

@@ -35,6 +35,32 @@ const (
 	`
 )
 
+func setExpectationsForProductOptionValueRetrievalByOptionID(mock sqlmock.Sqlmock, a *models.ProductOption, err error) {
+	productOptionValueData := []driver.Value{
+		256,
+		123,
+		"something",
+		generateExampleTimeForTests(),
+		nil,
+		nil,
+	}
+	exampleRows := sqlmock.NewRows([]string{"id", "product_option_id", "value", "created_on", "updated_on", "archived_on"}).AddRow(productOptionValueData...)
+	query := formatQueryForSQLMock(productOptionValueRetrievalForOptionIDQuery)
+	mock.ExpectQuery(query).
+		WithArgs(a.ID).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
+func setExpectationsForProductOptionValueCreation(mock sqlmock.Sqlmock, v *models.ProductOptionValue, err error) {
+	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(v.ID, generateExampleTimeForTests())
+	query, _ := buildProductOptionValueCreationQuery(v)
+	mock.ExpectQuery(formatQueryForSQLMock(query)).
+		WithArgs(v.ProductOptionID, v.Value).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
 func setExpectationsForProductRootExistence(mock sqlmock.Sqlmock, id string, exists bool, err error) {
 	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
 	query := formatQueryForSQLMock(productRootExistenceQuery)

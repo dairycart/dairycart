@@ -35,7 +35,6 @@ const (
 	`
 
 	discountRetrievalQuery = `SELECT * FROM discounts WHERE id = $1`
-	discountExistenceQuery = `SELECT EXISTS(SELECT 1 FROM discounts WHERE id = $1 AND archived_on IS NULL)`
 	discountDeletionQuery  = `UPDATE discounts SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
 )
 

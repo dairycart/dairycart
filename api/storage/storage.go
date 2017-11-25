@@ -15,39 +15,6 @@ type Querier interface {
 }
 
 type Storer interface {
-	// ProductOptions
-	GetProductOption(Querier, uint64) (*models.ProductOption, error)
-	GetProductOptionList(Querier, *models.QueryFilter) ([]models.ProductOption, error)
-	GetProductOptionCount(Querier, *models.QueryFilter) (uint64, error)
-	ProductOptionExists(Querier, uint64) (bool, error)
-	CreateProductOption(Querier, *models.ProductOption) (uint64, time.Time, error)
-	UpdateProductOption(Querier, *models.ProductOption) (time.Time, error)
-	DeleteProductOption(Querier, uint64) (time.Time, error)
-	ArchiveProductOptionsWithProductRootID(Querier, uint64) (time.Time, error)
-	GetProductOptionsByProductRootID(Querier, uint64) ([]models.ProductOption, error)
-
-	// ProductOptionValues
-	GetProductOptionValue(Querier, uint64) (*models.ProductOptionValue, error)
-	GetProductOptionValueList(Querier, *models.QueryFilter) ([]models.ProductOptionValue, error)
-	GetProductOptionValueCount(Querier, *models.QueryFilter) (uint64, error)
-	ProductOptionValueExists(Querier, uint64) (bool, error)
-	CreateProductOptionValue(Querier, *models.ProductOptionValue) (uint64, time.Time, error)
-	UpdateProductOptionValue(Querier, *models.ProductOptionValue) (time.Time, error)
-	DeleteProductOptionValue(Querier, uint64) (time.Time, error)
-	ArchiveProductOptionValuesWithProductRootID(Querier, uint64) (time.Time, error)
-
-	// ProductVariantBridge
-	GetProductVariantBridge(Querier, uint64) (*models.ProductVariantBridge, error)
-	GetProductVariantBridgeList(Querier, *models.QueryFilter) ([]models.ProductVariantBridge, error)
-	GetProductVariantBridgeCount(Querier, *models.QueryFilter) (uint64, error)
-	ProductVariantBridgeExists(Querier, uint64) (bool, error)
-	CreateProductVariantBridge(Querier, *models.ProductVariantBridge) (uint64, time.Time, error)
-	UpdateProductVariantBridge(Querier, *models.ProductVariantBridge) (time.Time, error)
-	DeleteProductVariantBridge(Querier, uint64) (time.Time, error)
-	ArchiveProductVariantBridgesWithProductRootID(Querier, uint64) (time.Time, error)
-	DeleteProductVariantBridgeByProductID(Querier, uint64) (time.Time, error)
-	CreateMultipleProductVariantBridgesForProductID(Querier, uint64, []uint64) error
-
 	// Discounts
 	GetDiscount(Querier, uint64) (*models.Discount, error)
 	GetDiscountList(Querier, *models.QueryFilter) ([]models.Discount, error)
@@ -57,16 +24,6 @@ type Storer interface {
 	UpdateDiscount(Querier, *models.Discount) (time.Time, error)
 	DeleteDiscount(Querier, uint64) (time.Time, error)
 	GetDiscountByCode(Querier, string) (*models.Discount, error)
-
-	// ProductRoots
-	GetProductRoot(Querier, uint64) (*models.ProductRoot, error)
-	GetProductRootList(Querier, *models.QueryFilter) ([]models.ProductRoot, error)
-	GetProductRootCount(Querier, *models.QueryFilter) (uint64, error)
-	ProductRootExists(Querier, uint64) (bool, error)
-	CreateProductRoot(Querier, *models.ProductRoot) (uint64, time.Time, error)
-	UpdateProductRoot(Querier, *models.ProductRoot) (time.Time, error)
-	DeleteProductRoot(Querier, uint64) (time.Time, error)
-	ProductRootWithSKUPrefixExists(Querier, string) (bool, error)
 
 	// Products
 	GetProduct(Querier, uint64) (*models.Product, error)
@@ -80,6 +37,17 @@ type Storer interface {
 	GetProductBySKU(Querier, string) (*models.Product, error)
 	ProductWithSKUExists(Querier, string) (bool, error)
 	GetProductsByProductRootID(Querier, uint64) ([]models.Product, error)
+
+	// ProductOptionValues
+	GetProductOptionValue(Querier, uint64) (*models.ProductOptionValue, error)
+	GetProductOptionValueList(Querier, *models.QueryFilter) ([]models.ProductOptionValue, error)
+	GetProductOptionValueCount(Querier, *models.QueryFilter) (uint64, error)
+	ProductOptionValueExists(Querier, uint64) (bool, error)
+	CreateProductOptionValue(Querier, *models.ProductOptionValue) (uint64, time.Time, error)
+	UpdateProductOptionValue(Querier, *models.ProductOptionValue) (time.Time, error)
+	DeleteProductOptionValue(Querier, uint64) (time.Time, error)
+	ArchiveProductOptionValuesWithProductRootID(Querier, uint64) (time.Time, error)
+	ProductOptionValueForOptionIDExists(Querier, uint64, string) (bool, error)
 
 	// Users
 	GetUser(Querier, uint64) (*models.User, error)
@@ -112,4 +80,37 @@ type Storer interface {
 	UpdateLoginAttempt(Querier, *models.LoginAttempt) (time.Time, error)
 	DeleteLoginAttempt(Querier, uint64) (time.Time, error)
 	LoginAttemptsHaveBeenExhausted(Querier, string) (bool, error)
+
+	// ProductRoots
+	GetProductRoot(Querier, uint64) (*models.ProductRoot, error)
+	GetProductRootList(Querier, *models.QueryFilter) ([]models.ProductRoot, error)
+	GetProductRootCount(Querier, *models.QueryFilter) (uint64, error)
+	ProductRootExists(Querier, uint64) (bool, error)
+	CreateProductRoot(Querier, *models.ProductRoot) (uint64, time.Time, error)
+	UpdateProductRoot(Querier, *models.ProductRoot) (time.Time, error)
+	DeleteProductRoot(Querier, uint64) (time.Time, error)
+	ProductRootWithSKUPrefixExists(Querier, string) (bool, error)
+
+	// ProductOptions
+	GetProductOption(Querier, uint64) (*models.ProductOption, error)
+	GetProductOptionList(Querier, *models.QueryFilter) ([]models.ProductOption, error)
+	GetProductOptionCount(Querier, *models.QueryFilter) (uint64, error)
+	ProductOptionExists(Querier, uint64) (bool, error)
+	CreateProductOption(Querier, *models.ProductOption) (uint64, time.Time, error)
+	UpdateProductOption(Querier, *models.ProductOption) (time.Time, error)
+	DeleteProductOption(Querier, uint64) (time.Time, error)
+	ArchiveProductOptionsWithProductRootID(Querier, uint64) (time.Time, error)
+	GetProductOptionsByProductRootID(Querier, uint64) ([]models.ProductOption, error)
+
+	// ProductVariantBridge
+	GetProductVariantBridge(Querier, uint64) (*models.ProductVariantBridge, error)
+	GetProductVariantBridgeList(Querier, *models.QueryFilter) ([]models.ProductVariantBridge, error)
+	GetProductVariantBridgeCount(Querier, *models.QueryFilter) (uint64, error)
+	ProductVariantBridgeExists(Querier, uint64) (bool, error)
+	CreateProductVariantBridge(Querier, *models.ProductVariantBridge) (uint64, time.Time, error)
+	UpdateProductVariantBridge(Querier, *models.ProductVariantBridge) (time.Time, error)
+	DeleteProductVariantBridge(Querier, uint64) (time.Time, error)
+	ArchiveProductVariantBridgesWithProductRootID(Querier, uint64) (time.Time, error)
+	DeleteProductVariantBridgeByProductID(Querier, uint64) (time.Time, error)
+	CreateMultipleProductVariantBridgesForProductID(Querier, uint64, []uint64) error
 }
