@@ -5,44 +5,14 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairycart/api/storage/models"
 
 	"github.com/go-chi/chi"
 	"github.com/imdario/mergo"
-	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 )
-
-const (
-	discountsTableColumns = `
-		id,
-		name,
-		discount_type,
-		amount,
-		starts_on,
-		expires_on,
-		requires_code,
-		code,
-		limited_use,
-		number_of_uses,
-		login_required,
-		created_on,
-		updated_on,
-		archived_on
-	`
-
-	discountRetrievalQuery = `SELECT * FROM discounts WHERE id = $1`
-	discountDeletionQuery  = `UPDATE discounts SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
-)
-
-func retrieveDiscountFromDB(db *sqlx.DB, discountID string) (models.Discount, error) {
-	var d models.Discount
-	err := db.Get(&d, discountRetrievalQuery, discountID)
-	return d, err
-}
 
 func buildDiscountRetrievalHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
 	// DiscountRetrievalHandler is a request handler that returns a single Discount
@@ -92,14 +62,6 @@ func buildDiscountListRetrievalHandler(db *sql.DB, client storage.Storer) http.H
 	}
 }
 
-func createDiscountInDB(db *sqlx.DB, in *models.Discount) (uint64, time.Time, error) {
-	var createdID uint64
-	var createdOn time.Time
-	discountCreationQuery, queryArgs := buildDiscountCreationQuery(in)
-	err := db.QueryRow(discountCreationQuery, queryArgs...).Scan(&createdID, &createdOn)
-	return createdID, createdOn, err
-}
-
 func buildDiscountCreationHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
 	// DiscountCreationHandler is a request handler that creates a Discount from user input
 	return func(res http.ResponseWriter, req *http.Request) {
@@ -119,11 +81,6 @@ func buildDiscountCreationHandler(db *sql.DB, client storage.Storer) http.Handle
 		res.WriteHeader(http.StatusCreated)
 		json.NewEncoder(res).Encode(newDiscount)
 	}
-}
-
-func archiveDiscount(db *sqlx.DB, discountID string) error {
-	_, err := db.Exec(discountDeletionQuery, discountID)
-	return err
 }
 
 func buildDiscountDeletionHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
@@ -151,13 +108,6 @@ func buildDiscountDeletionHandler(db *sql.DB, client storage.Storer) http.Handle
 
 		json.NewEncoder(res).Encode(discount)
 	}
-}
-
-func updateDiscountInDatabase(db *sqlx.DB, up *models.Discount) (time.Time, error) {
-	var updatedTime time.Time
-	discountUpdateQuery, queryArgs := buildDiscountUpdateQuery(up)
-	err := db.QueryRow(discountUpdateQuery, queryArgs...).Scan(&updatedTime)
-	return updatedTime, err
 }
 
 func buildDiscountUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {

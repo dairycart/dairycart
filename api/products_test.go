@@ -15,16 +15,63 @@ import (
 )
 
 const (
-	exampleProductID = uint64(2)
 	badSKUUpdateJSON = `{"sku": "pooƃ ou sᴉ nʞs sᴉɥʇ"}`
 )
+
+func TestCreateProductsInDBFromOptionRows(t *testing.T) {
+	exampleID := uint64(1)
+	exampleProductRoot := &models.ProductRoot{
+		Options: []models.ProductOption{
+			{
+				ID:            exampleID,
+				Name:          "name",
+				ProductRootID: exampleID,
+				CreatedOn:     generateExampleTimeForTests(),
+				Values:        []models.ProductOptionValue{{Value: "one"}, {Value: "two"}, {Value: "three"}},
+			},
+		},
+	}
+	exampleProduct := &models.Product{}
+
+	t.Run("optimal conditions", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.Mock.ExpectBegin()
+
+		testUtil.MockDB.On("CreateProduct", mock.Anything, mock.Anything).
+			Return(exampleID, generateExampleTimeForTests(), generateExampleTimeForTests(), nil)
+		testUtil.MockDB.On("CreateMultipleProductVariantBridgesForProductID", mock.Anything, mock.Anything, mock.Anything).
+			Return(nil)
+
+		tx, err := testUtil.PlainDB.Begin()
+		assert.Nil(t, err)
+
+		actual, err := createProductsInDBFromOptionRows(testUtil.MockDB, tx, exampleProductRoot, exampleProduct)
+		assert.Nil(t, err)
+		assert.NotNil(t, actual)
+	})
+
+	t.Run("with error creating products", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.Mock.ExpectBegin()
+
+		testUtil.MockDB.On("CreateProduct", mock.Anything, mock.Anything).
+			Return(exampleID, generateExampleTimeForTests(), generateExampleTimeForTests(), generateArbitraryError())
+
+		tx, err := testUtil.PlainDB.Begin()
+		assert.Nil(t, err)
+
+		_, err = createProductsInDBFromOptionRows(testUtil.MockDB, tx, exampleProductRoot, exampleProduct)
+		assert.NotNil(t, err)
+	})
+
+}
 
 func TestProductExistenceHandler(t *testing.T) {
 	exampleSKU := "example"
 	t.Run("with existent product", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("ProductWithSKUExists", mock.Anything, exampleSKU).Return(true, nil)
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest("HEAD", "/v1/product/example", nil)
 		assert.Nil(t, err)
@@ -35,7 +82,7 @@ func TestProductExistenceHandler(t *testing.T) {
 	t.Run("with nonexistent product", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("ProductWithSKUExists", mock.Anything, exampleSKU).Return(false, nil)
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest("HEAD", "/v1/product/example", nil)
 		assert.Nil(t, err)
@@ -46,7 +93,7 @@ func TestProductExistenceHandler(t *testing.T) {
 	t.Run("with error performing check", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("ProductWithSKUExists", mock.Anything, exampleSKU).Return(false, generateArbitraryError())
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest("HEAD", "/v1/product/example", nil)
 		assert.Nil(t, err)
@@ -81,7 +128,7 @@ func TestProductRetrievalHandler(t *testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).Return(exampleProduct, nil)
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), nil)
 		assert.Nil(t, err)
@@ -94,7 +141,7 @@ func TestProductRetrievalHandler(t *testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).Return(exampleProduct, generateArbitraryError())
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), nil)
 		assert.Nil(t, err)
@@ -107,7 +154,7 @@ func TestProductRetrievalHandler(t *testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).Return(exampleProduct, sql.ErrNoRows)
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), nil)
 		assert.Nil(t, err)
@@ -146,7 +193,7 @@ func TestProductListHandler(t *testing.T) {
 			Return(exampleLength, nil)
 		testUtil.MockDB.On("GetProductList", mock.Anything, mock.Anything).
 			Return([]models.Product{exampleProduct, exampleProduct, exampleProduct}, nil)
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/products", nil)
 		assert.Nil(t, err)
@@ -158,7 +205,7 @@ func TestProductListHandler(t *testing.T) {
 	t.Run("with error retrieving count", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("GetProductCount", mock.Anything, mock.Anything).Return(exampleLength, sql.ErrNoRows)
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/products", nil)
 		assert.Nil(t, err)
@@ -172,7 +219,7 @@ func TestProductListHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductCount", mock.Anything, mock.Anything).Return(exampleLength, nil)
 		testUtil.MockDB.On("GetProductList", mock.Anything, mock.Anything).
 			Return([]models.Product{exampleProduct, exampleProduct, exampleProduct}, generateArbitraryError())
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/products", nil)
 		assert.Nil(t, err)
@@ -217,7 +264,7 @@ func TestProductUpdateHandler(t *testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).Return(exampleProduct, nil).Once()
 		testUtil.MockDB.On("UpdateProduct", mock.Anything, mock.Anything).Return(generateExampleTimeForTests(), nil).Once()
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), strings.NewReader(exampleProductUpdateInput))
 		assert.Nil(t, err)
@@ -230,7 +277,7 @@ func TestProductUpdateHandler(t *testing.T) {
 	t.Run("with nonexistent product", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).Return(exampleProduct, sql.ErrNoRows).Once()
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), strings.NewReader(exampleProductUpdateInput))
 		assert.Nil(t, err)
@@ -242,7 +289,7 @@ func TestProductUpdateHandler(t *testing.T) {
 	t.Run("with database error retrieving product", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).Return(exampleProduct, generateArbitraryError()).Once()
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), strings.NewReader(exampleProductUpdateInput))
 		assert.Nil(t, err)
@@ -253,7 +300,7 @@ func TestProductUpdateHandler(t *testing.T) {
 
 	t.Run("with input validation error", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPatch, "/v1/product/example", strings.NewReader(exampleGarbageInput))
 		assert.Nil(t, err)
@@ -265,7 +312,7 @@ func TestProductUpdateHandler(t *testing.T) {
 	t.Run("with SKU validation error", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).Return(exampleProduct, nil).Once()
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPatch, "/v1/product/skateboard", strings.NewReader(badSKUUpdateJSON))
 		assert.Nil(t, err)
@@ -278,7 +325,7 @@ func TestProductUpdateHandler(t *testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).Return(exampleProduct, nil).Once()
 		testUtil.MockDB.On("UpdateProduct", mock.Anything, mock.Anything).Return(generateExampleTimeForTests(), generateArbitraryError()).Once()
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), strings.NewReader(exampleProductUpdateInput))
 		assert.Nil(t, err)
@@ -306,7 +353,7 @@ func TestProductDeletionHandler(t *testing.T) {
 			Return(generateExampleTimeForTests(), nil).Once()
 		testUtil.MockDB.On("DeleteProduct", mock.Anything, exampleProduct.ID).
 			Return(generateExampleTimeForTests(), nil).Once()
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 		assert.Nil(t, err)
@@ -319,7 +366,7 @@ func TestProductDeletionHandler(t *testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).
 			Return(exampleProduct, sql.ErrNoRows).Once()
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 		assert.Nil(t, err)
@@ -332,7 +379,7 @@ func TestProductDeletionHandler(t *testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).
 			Return(exampleProduct, generateArbitraryError()).Once()
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 		assert.Nil(t, err)
@@ -346,7 +393,7 @@ func TestProductDeletionHandler(t *testing.T) {
 		testUtil.Mock.ExpectBegin().WillReturnError(generateArbitraryError())
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).
 			Return(exampleProduct, nil).Once()
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 		assert.Nil(t, err)
@@ -363,7 +410,7 @@ func TestProductDeletionHandler(t *testing.T) {
 			Return(exampleProduct, nil).Once()
 		testUtil.MockDB.On("DeleteProductVariantBridgeByProductID", mock.Anything, exampleProduct.ID).
 			Return(generateExampleTimeForTests(), generateArbitraryError()).Once()
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 		assert.Nil(t, err)
@@ -384,7 +431,7 @@ func TestProductDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("DeleteProduct", mock.Anything, exampleProduct.ID).
 			Return(generateExampleTimeForTests(), generateArbitraryError()).
 			Once()
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 		assert.Nil(t, err)
@@ -403,7 +450,7 @@ func TestProductDeletionHandler(t *testing.T) {
 			Return(generateExampleTimeForTests(), nil).Once()
 		testUtil.MockDB.On("DeleteProduct", mock.Anything, exampleProduct.ID).
 			Return(generateExampleTimeForTests(), nil).Once()
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 		assert.Nil(t, err)
@@ -548,7 +595,7 @@ func TestProductCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("CreateProductOptionValue", mock.Anything, mock.Anything).
 			Return(expectedCreatedProductOption.Values[0].ID, generateExampleTimeForTests(), nil)
 		testUtil.Mock.ExpectCommit()
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
 		assert.Nil(t, err)
@@ -569,7 +616,7 @@ func TestProductCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("CreateMultipleProductVariantBridgesForProductID", mock.Anything, mock.Anything, mock.Anything).
 			Return(nil)
 		testUtil.Mock.ExpectCommit()
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInput))
 		assert.Nil(t, err)
@@ -581,7 +628,7 @@ func TestProductCreationHandler(t *testing.T) {
 	t.Run("with error validating input", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("ProductRootWithSKUPrefixExists", mock.Anything, exampleProduct.SKU).Return(false, nil)
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleGarbageInput))
 		assert.Nil(t, err)
@@ -593,7 +640,7 @@ func TestProductCreationHandler(t *testing.T) {
 	t.Run("with invalid product sku", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("ProductRootWithSKUPrefixExists", mock.Anything, exampleProduct.SKU).Return(false, nil)
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(badSKUUpdateJSON))
 		assert.Nil(t, err)
@@ -605,7 +652,7 @@ func TestProductCreationHandler(t *testing.T) {
 	t.Run("with already existent product", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("ProductRootWithSKUPrefixExists", mock.Anything, exampleProduct.SKU).Return(true, nil)
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
 		assert.Nil(t, err)
@@ -619,7 +666,7 @@ func TestProductCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("ProductRootWithSKUPrefixExists", mock.Anything, exampleProduct.SKU).
 			Return(false, nil)
 		testUtil.Mock.ExpectBegin().WillReturnError(generateArbitraryError())
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
 		assert.Nil(t, err)
@@ -636,7 +683,7 @@ func TestProductCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("CreateProductRoot", mock.Anything, mock.Anything).
 			Return(exampleRoot.ID, generateExampleTimeForTests(), generateArbitraryError())
 		testUtil.Mock.ExpectRollback()
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
 		assert.Nil(t, err)
@@ -655,7 +702,7 @@ func TestProductCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("CreateProduct", mock.Anything, mock.Anything).
 			Return(exampleProduct.ID, generateExampleTimeForTests(), generateExampleTimeForTests(), generateArbitraryError())
 		testUtil.Mock.ExpectRollback()
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInput))
 		assert.Nil(t, err)
@@ -675,7 +722,7 @@ func TestProductCreationHandler(t *testing.T) {
 			Return(exampleProduct.ID, generateExampleTimeForTests(), generateExampleTimeForTests(), generateArbitraryError())
 		testUtil.MockDB.On("CreateProductOption", mock.Anything, mock.Anything).
 			Return(expectedCreatedProductOption.ID, generateExampleTimeForTests(), generateArbitraryError())
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
 		assert.Nil(t, err)
@@ -695,7 +742,7 @@ func TestProductCreationHandler(t *testing.T) {
 			Return(exampleProduct.ID, generateExampleTimeForTests(), generateExampleTimeForTests(), generateArbitraryError())
 		testUtil.MockDB.On("CreateProductOption", mock.Anything, mock.Anything).
 			Return(expectedCreatedProductOption.ID, generateExampleTimeForTests(), generateArbitraryError())
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
 		assert.Nil(t, err)
@@ -720,7 +767,7 @@ func TestProductCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("CreateMultipleProductVariantBridgesForProductID", mock.Anything, mock.Anything, mock.Anything).
 			Return(generateArbitraryError())
 		testUtil.Mock.ExpectRollback()
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
 		assert.Nil(t, err)
@@ -745,7 +792,7 @@ func TestProductCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("CreateProductOptionValue", mock.Anything, mock.Anything).
 			Return(expectedCreatedProductOption.Values[0].ID, generateExampleTimeForTests(), nil)
 		testUtil.Mock.ExpectCommit().WillReturnError(generateArbitraryError())
-		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.DB, testUtil.Store, testUtil.MockDB)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
 		assert.Nil(t, err)

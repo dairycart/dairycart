@@ -82,10 +82,26 @@ func (m *MockDB) {{ $modelName }}WithTokenExists(db storage.Querier, token strin
 }
 {{- end }}
 
+{{- if $isProductOption }}
+func (m *MockDB) {{ $modelName }}WithNameExistsForProductRoot(db storage.Querier, name string, productRootID uint64) (bool, error) {
+    args := m.Called(db, name, productRootID)
+    return args.Bool(0), args.Error(1)
+}
+{{- end }}
+
 {{- if $isProductOptionValue }}
 func (m *MockDB) {{ $modelName }}ForOptionIDExists(db storage.Querier, optionID uint64, value string) (bool, error) {
     args := m.Called(db, optionID, value)
 	return args.Bool(0), args.Error(1)
+}
+func (m *MockDB) Archive{{ $modelName }}sForOption(db storage.Querier, optionID uint64) (time.Time, error) {
+    args := m.Called(db, optionID)
+    return args.Get(0).(time.Time), args.Error(1)
+}
+
+func (m *MockDB) Get{{ $modelName }}sForOption(db storage.Querier, optionID uint64) ([]models.{{ $modelName }}, error) {
+    args := m.Called(db, optionID)
+    return args.Get(0).([]models.{{ $modelName }}), args.Error(1)
 }
 {{- end }}
 

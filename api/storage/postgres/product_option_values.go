@@ -25,6 +25,65 @@ func (pg *postgres) ProductOptionValueForOptionIDExists(db storage.Querier, opti
 	return exists == "true", err
 }
 
+const productOptionValueArchiveQueryByOptionID = `
+    UPDATE product_option_values
+    SET archived_on = NOW()
+    WHERE product_option_id = $1
+    RETURNING archived_on
+`
+
+func (pg *postgres) ArchiveProductOptionValuesForOption(db storage.Querier, optionID uint64) (t time.Time, err error) {
+	err = db.QueryRow(productOptionValueArchiveQueryByOptionID, optionID).Scan(&t)
+	return t, err
+}
+
+const productOptionValueRetrievalQueryByOptionID = `
+    SELECT
+        id,
+        product_option_id,
+        value,
+        created_on,
+        updated_on,
+        archived_on
+    FROM
+        product_option_values
+    WHERE
+        archived_on is null
+    AND
+        product_option_id = $1
+`
+
+func (pg *postgres) GetProductOptionValuesForOption(db storage.Querier, optionID uint64) ([]models.ProductOptionValue, error) {
+	var list []models.ProductOptionValue
+
+	rows, err := db.Query(productOptionValueRetrievalQueryByOptionID, optionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var p models.ProductOptionValue
+		err := rows.Scan(
+			&p.ID,
+			&p.ProductOptionID,
+			&p.Value,
+			&p.CreatedOn,
+			&p.UpdatedOn,
+			&p.ArchivedOn,
+		)
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, p)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return list, err
+}
+
 const productOptionValueExistenceQuery = `SELECT EXISTS(SELECT id FROM product_option_values WHERE id = $1 and archived_on IS NULL);`
 
 func (pg *postgres) ProductOptionValueExists(db storage.Querier, id uint64) (bool, error) {

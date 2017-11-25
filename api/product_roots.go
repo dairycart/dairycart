@@ -13,10 +13,6 @@ import (
 	"github.com/lib/pq"
 )
 
-const (
-	productRootExistenceQuery = `SELECT EXISTS(SELECT 1 FROM product_roots WHERE id = $1 AND archived_on IS NULL)`
-)
-
 func createProductRootFromProduct(p *models.Product) *models.ProductRoot {
 	r := &models.ProductRoot{
 		Name:               p.Name,

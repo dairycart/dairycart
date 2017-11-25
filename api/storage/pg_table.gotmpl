@@ -64,6 +64,24 @@ func (pg *postgres) {{ $modelName }}WithSKUExists(db storage.Querier, sku string
 }
 {{- end }}
 
+{{- if $isProductOption }}
+{{ $existenceByProductRootIDAndNameQueryVarName := printf "%sForNameAndProductIDExistenceQuery" ( camel $modelName ) -}}
+const {{ $existenceByProductRootIDAndNameQueryVarName }} = `SELECT EXISTS(SELECT 1 FROM {{ .Table.Name }} WHERE name = $1 AND product_root_id = $2 and archived_on IS NULL)`
+
+func (pg *postgres) {{ $modelName }}WithNameExistsForProductRoot(db storage.Querier, name string, productRootID uint64) (bool, error) {
+    var exists string
+
+	err := db.QueryRow({{ $existenceByProductRootIDAndNameQueryVarName }}, name, productRootID).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return exists == "true", err
+}
+{{- end }}
+
 {{- if $isProductOptionValue }}
 {{ $existenceByOptionIDQueryVarName := printf "%sForOptionIDExistenceQuery" ( camel $modelName ) -}}
 const {{ $existenceByOptionIDQueryVarName }} = `SELECT EXISTS(SELECT id FROM {{ .Table.Name }} WHERE product_option_id = $1 AND value = $2 and archived_on IS NULL);`
@@ -79,6 +97,60 @@ func (pg *postgres) {{ $modelName }}ForOptionIDExists(db storage.Querier, option
 	}
 
 	return exists == "true", err
+}
+
+{{ $archiveValuesByOptionIDVarName := printf "%sArchiveQueryByOptionID" ( camel $modelName ) -}}
+const {{ $archiveValuesByOptionIDVarName }} = `
+    UPDATE {{ toLower .Table.Name }}
+    SET archived_on = NOW()
+    WHERE product_option_id = $1
+    RETURNING archived_on
+`
+
+func (pg *postgres) Archive{{ $modelName }}sForOption(db storage.Querier, optionID uint64) (t time.Time, err error) {
+    err = db.QueryRow({{ $archiveValuesByOptionIDVarName }}, optionID).Scan(&t)
+    return t, err
+}
+
+{{ $getValuesByOptionIDVarName := printf "%sRetrievalQueryByOptionID" ( camel $modelName ) -}}
+const {{ $getValuesByOptionIDVarName }} = `
+    SELECT
+    {{ $lastCol := dec (len .Table.Columns.DBNames) -}}
+    {{ range $x, $col := .Table.Columns.DBNames }}    {{ $col }}{{ if ne $x $lastCol }},
+    {{ end }}{{ end }}
+    FROM
+        {{ .Table.Name }}
+    WHERE
+        archived_on is null
+    AND
+        product_option_id = $1
+`
+
+func (pg *postgres) Get{{ $modelName }}sForOption(db storage.Querier, optionID uint64) ([]models.{{ $modelName }}, error) {
+	var list []models.{{ $modelName }}
+
+    rows, err := db.Query({{ $getValuesByOptionIDVarName }}, optionID)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+    for rows.Next() {
+        var {{ $shortVarName }} models.{{ $modelName }}
+        err := rows.Scan(
+            {{ range $x, $col := .Table.Columns.DBNames }}&{{ $shortVarName }}.{{ pascal $col }},
+            {{ end }}
+        )
+        if err != nil {
+            return nil, err
+        }
+        list = append(list, {{ $shortVarName }})
+    }
+    err = rows.Err()
+    if err != nil {
+        return nil, err
+    }
+
+	return list, err
 }
 {{- end }}
 

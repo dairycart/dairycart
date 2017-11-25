@@ -11,7 +11,6 @@ import (
 	// external dependencies
 	"github.com/go-chi/chi"
 	"github.com/gorilla/sessions"
-	"github.com/jmoiron/sqlx"
 )
 
 const (
@@ -26,18 +25,18 @@ func buildRoute(routeVersion string, routeParts ...string) string {
 }
 
 // SetupAPIRoutes takes a mux router and a database connection and creates all the API routes for the API
-func SetupAPIRoutes(router *chi.Mux, db *sql.DB, dbxReplaceMePlz *sqlx.DB, store *sessions.CookieStore, client storage.Storer) {
+func SetupAPIRoutes(router *chi.Mux, db *sql.DB, cookies *sessions.CookieStore, client storage.Storer) {
 	// Auth
-	router.Post("/login", buildUserLoginHandler(db, client, store))
-	router.Post("/logout", buildUserLogoutHandler(store))
-	router.Post("/user", buildUserCreationHandler(db, client, store))
+	router.Post("/login", buildUserLoginHandler(db, client, cookies))
+	router.Post("/logout", buildUserLogoutHandler(cookies))
+	router.Post("/user", buildUserCreationHandler(db, client, cookies))
 	router.Patch(fmt.Sprintf("/user/{user_id:%s}", NumericPattern), buildUserInfoUpdateHandler(db, client))
 	router.Post("/password_reset", buildUserForgottenPasswordHandler(db, client))
 	router.Head("/password_reset/{reset_token}", buildUserPasswordResetTokenValidationHandler(db, client))
 
 	router.Route("/v1", func(r chi.Router) {
 		// Users
-		r.Delete(fmt.Sprintf("/user/{user_id:%s}", NumericPattern), buildUserDeletionHandler(db, client, store))
+		r.Delete(fmt.Sprintf("/user/{user_id:%s}", NumericPattern), buildUserDeletionHandler(db, client, cookies))
 
 		// Product Roots
 		specificProductRootRoute := fmt.Sprintf("/product_root/{product_root_id:%s}", NumericPattern)
@@ -57,10 +56,10 @@ func SetupAPIRoutes(router *chi.Mux, db *sql.DB, dbxReplaceMePlz *sqlx.DB, store
 		// Product Options
 		optionsListRoute := fmt.Sprintf("/product/{product_root_id:%s}/options", NumericPattern)
 		specificOptionRoute := fmt.Sprintf("/product_options/{option_id:%s}", NumericPattern)
-		r.Get(optionsListRoute, buildProductOptionListHandler(dbxReplaceMePlz))
-		r.Post(optionsListRoute, buildProductOptionCreationHandler(dbxReplaceMePlz, client))
-		r.Patch(specificOptionRoute, buildProductOptionUpdateHandler(dbxReplaceMePlz))
-		r.Delete(specificOptionRoute, buildProductOptionDeletionHandler(dbxReplaceMePlz))
+		r.Get(optionsListRoute, buildProductOptionListHandler(db, client))
+		r.Post(optionsListRoute, buildProductOptionCreationHandler(db, client))
+		r.Patch(specificOptionRoute, buildProductOptionUpdateHandler(db, client))
+		r.Delete(specificOptionRoute, buildProductOptionDeletionHandler(db, client))
 
 		// Product Option Values
 		specificOptionValueRoute := fmt.Sprintf("/product_option_values/{option_value_id:%s}", NumericPattern)

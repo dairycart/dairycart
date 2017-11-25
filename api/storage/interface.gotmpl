@@ -37,8 +37,13 @@ type Storer interface {
         {{- if or (or $isProductVariantBridge $isProductOptionValue) (or $isProductOption $isProduct) }}
             Archive{{ $modelName }}sWithProductRootID(Querier, uint64) (time.Time, error)
         {{- end -}}
+        {{- if $isProductOption }}
+            {{ $modelName }}WithNameExistsForProductRoot(Querier, string, uint64) (bool, error)
+        {{- end -}}
         {{- if $isProductOptionValue }}
             {{ $modelName }}ForOptionIDExists(Querier, uint64, string) (bool, error)
+            Archive{{ $modelName }}sForOption(Querier, uint64) (time.Time, error)
+            Get{{ $modelName }}sForOption(Querier, uint64) ([]models.{{ $modelName }}, error)
         {{- end -}}
         {{- if $isProductRoot }}
             {{ $modelName }}WithSKUPrefixExists(Querier, string) (bool, error)

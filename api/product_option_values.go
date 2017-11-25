@@ -11,24 +11,8 @@ import (
 	"github.com/dairycart/dairycart/api/storage/models"
 
 	"github.com/go-chi/chi"
-	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
-	"github.com/pkg/errors"
 )
-
-const (
-	productOptionValueRetrievalForOptionIDQuery = `SELECT id, product_option_id, value, created_on, updated_on, archived_on FROM product_option_values WHERE product_option_id = $1 AND archived_on IS NULL`
-)
-
-// retrieveProductOptionValuesForOptionFromDB retrieves a list of ProductOptionValue with a given product_option_id from the database
-func retrieveProductOptionValuesForOptionFromDB(db *sqlx.DB, optionID uint64) ([]models.ProductOptionValue, error) {
-	var values []models.ProductOptionValue
-	err := db.Select(&values, productOptionValueRetrievalForOptionIDQuery, optionID)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error encountered querying for products")
-	}
-	return values, nil
-}
 
 func buildProductOptionValueUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
 	// ProductOptionValueUpdateHandler is a request handler that can update product option values
@@ -50,7 +34,7 @@ func buildProductOptionValueUpdateHandler(db *sql.DB, client storage.Storer) htt
 			respondThatRowDoesNotExist(req, res, "product option value", optionValueIDStr)
 			return
 		} else if err != nil {
-			notifyOfInternalIssue(res, err, "retrieve discount from database")
+			notifyOfInternalIssue(res, err, "retrieve product option value from database")
 			return
 		}
 		existingOptionValue.Value = updatedValueData.Value

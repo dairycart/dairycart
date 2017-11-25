@@ -15,7 +15,7 @@ import (
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
-func setProductOptionValueWithSKUExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, optionID uint64, value string, shouldExist bool, err error) {
+func setProductOptionValueForOptionIDExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, optionID uint64, value string, shouldExist bool, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productOptionValueForOptionIDExistenceQuery)
 
@@ -35,7 +35,7 @@ func TestProductOptionValueForOptionIDExists(t *testing.T) {
 	client := NewPostgres()
 
 	t.Run("existing", func(t *testing.T) {
-		setProductOptionValueWithSKUExistenceQueryExpectation(t, mock, exampleOptionID, exampleValue, true, nil)
+		setProductOptionValueForOptionIDExistenceQueryExpectation(t, mock, exampleOptionID, exampleValue, true, nil)
 		actual, err := client.ProductOptionValueForOptionIDExists(mockDB, exampleOptionID, exampleValue)
 
 		require.Nil(t, err)
@@ -43,7 +43,7 @@ func TestProductOptionValueForOptionIDExists(t *testing.T) {
 		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 	t.Run("with no rows found", func(t *testing.T) {
-		setProductOptionValueWithSKUExistenceQueryExpectation(t, mock, exampleOptionID, exampleValue, true, sql.ErrNoRows)
+		setProductOptionValueForOptionIDExistenceQueryExpectation(t, mock, exampleOptionID, exampleValue, true, sql.ErrNoRows)
 		actual, err := client.ProductOptionValueForOptionIDExists(mockDB, exampleOptionID, exampleValue)
 
 		require.Nil(t, err)
@@ -51,11 +51,119 @@ func TestProductOptionValueForOptionIDExists(t *testing.T) {
 		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 	t.Run("with a database error", func(t *testing.T) {
-		setProductOptionValueWithSKUExistenceQueryExpectation(t, mock, exampleOptionID, exampleValue, true, errors.New("pineapple on pizza"))
+		setProductOptionValueForOptionIDExistenceQueryExpectation(t, mock, exampleOptionID, exampleValue, true, errors.New("pineapple on pizza"))
 		actual, err := client.ProductOptionValueForOptionIDExists(mockDB, exampleOptionID, exampleValue)
 
 		require.NotNil(t, err)
 		require.False(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
+
+func setProductOptionValueDeletionQueryByOptionIDExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
+	t.Helper()
+	query := formatQueryForSQLMock(productOptionValueArchiveQueryByOptionID)
+	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
+	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
+}
+
+func TestArchiveProductOptionValuesForOption(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	require.Nil(t, err)
+	defer mockDB.Close()
+	exampleID := uint64(1)
+	client := NewPostgres()
+
+	t.Run("optimal behavior", func(t *testing.T) {
+		setProductOptionValueDeletionQueryByOptionIDExpectation(t, mock, exampleID, nil)
+		expected := generateExampleTimeForTests(t)
+		actual, err := client.ArchiveProductOptionValuesForOption(mockDB, exampleID)
+
+		require.Nil(t, err)
+		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
+
+func setProductOptionValueForOptionIDReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, optionID uint64, example *models.ProductOptionValue, rowErr error, err error) {
+	exampleRows := sqlmock.NewRows([]string{
+		"id",
+		"product_option_id",
+		"value",
+		"created_on",
+		"updated_on",
+		"archived_on",
+	}).AddRow(
+		example.ID,
+		example.ProductOptionID,
+		example.Value,
+		example.CreatedOn,
+		example.UpdatedOn,
+		example.ArchivedOn,
+	).AddRow(
+		example.ID,
+		example.ProductOptionID,
+		example.Value,
+		example.CreatedOn,
+		example.UpdatedOn,
+		example.ArchivedOn,
+	).AddRow(
+		example.ID,
+		example.ProductOptionID,
+		example.Value,
+		example.CreatedOn,
+		example.UpdatedOn,
+		example.ArchivedOn,
+	).RowError(1, rowErr)
+
+	mock.ExpectQuery(formatQueryForSQLMock(productOptionValueRetrievalQueryByOptionID)).
+		WithArgs(optionID).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
+func TestGetProductOptionValuesForOption(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	require.Nil(t, err)
+	defer mockDB.Close()
+	exampleID := uint64(1)
+	example := &models.ProductOptionValue{ID: exampleID}
+	client := NewPostgres()
+
+	t.Run("optimal behavior", func(t *testing.T) {
+		setProductOptionValueForOptionIDReadQueryExpectation(t, mock, exampleID, example, nil, nil)
+		actual, err := client.GetProductOptionValuesForOption(mockDB, exampleID)
+
+		require.Nil(t, err)
+		require.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with error executing query", func(t *testing.T) {
+		setProductOptionValueForOptionIDReadQueryExpectation(t, mock, exampleID, example, nil, errors.New("pineapple on pizza"))
+		actual, err := client.GetProductOptionValuesForOption(mockDB, exampleID)
+
+		require.NotNil(t, err)
+		require.Nil(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with error scanning values", func(t *testing.T) {
+		exampleRows := sqlmock.NewRows([]string{"things"}).AddRow("stuff")
+		mock.ExpectQuery(formatQueryForSQLMock(productOptionValueRetrievalQueryByOptionID)).
+			WillReturnRows(exampleRows)
+		actual, err := client.GetProductOptionValuesForOption(mockDB, exampleID)
+
+		require.NotNil(t, err)
+		require.Nil(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with with row errors", func(t *testing.T) {
+		setProductOptionValueForOptionIDReadQueryExpectation(t, mock, exampleID, example, errors.New("pineapple on pizza"), nil)
+		actual, err := client.GetProductOptionValuesForOption(mockDB, exampleID)
+
+		require.NotNil(t, err)
+		require.Nil(t, actual)
 		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }

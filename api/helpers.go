@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,8 +15,6 @@ import (
 
 	validator "github.com/asaskevich/govalidator"
 	"github.com/fatih/structs"
-	"github.com/jmoiron/sqlx"
-	"github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -28,49 +25,11 @@ const (
 	MaxLimit = 50
 
 	dataValidationPattern = `^[a-zA-Z\-_]{1,50}$`
-	timeLayout            = "2006-01-02T15:04:05.000000Z"
 )
-
-// Modified from code borrowed from http://stackoverflow.com/questions/32825640/custom-marshaltext-for-golang-sql-null-types
-
-// NullTime is a json.Marshal-able pq.NullTime.
-type NullTime struct {
-	pq.NullTime
-}
-
-// MarshalText satisfies the encoding.TestMarshaler interface
-func (nt NullTime) MarshalText() ([]byte, error) {
-	if nt.Valid {
-		return []byte(nt.Time.Format(timeLayout)), nil
-	}
-	return nil, nil
-}
-
-// UnmarshalText is a function which unmarshals a NullTime
-func (nt *NullTime) UnmarshalText(text []byte) (err error) {
-	if len(text) == 0 {
-		nt.Time = time.Time{}
-		nt.Valid = true
-		return nil
-	}
-
-	t, _ := time.Parse(timeLayout, string(text))
-	nt.Time = t
-	nt.Valid = true
-	return nil
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 //    ¸,ø¤º°º¤ø,¸¸,ø¤º°   Everything after this point is not borrowed.   °º¤ø,¸¸,ø¤º°º¤ø,¸    //
 ////////////////////////////////////////////////////////////////////////////////////////////////
-
-// DBRow is meant to represent the base columns that every database table should have
-type DBRow struct {
-	ID         uint64    `json:"id"`
-	CreatedOn  time.Time `json:"created_on"`
-	UpdatedOn  NullTime  `json:"updated_on,omitempty"`
-	ArchivedOn NullTime  `json:"archived_on,omitempty"`
-}
 
 // ListResponse is a generic list response struct containing values that represent
 // pagination, meant to be embedded into other object response structs
@@ -163,27 +122,6 @@ func restrictedStringIsValid(input string) bool {
 	dataValidator := regexp.MustCompile(dataValidationPattern)
 	matches := dataValidator.MatchString(input)
 	return matches
-}
-
-func getRowCount(db *sqlx.DB, table string, queryFilter *models.QueryFilter) (uint64, error) {
-	var count uint64
-	query := buildCountQuery(table, queryFilter)
-	err := db.Get(&count, query)
-	return count, err
-}
-
-// rowExistsInDB will return whether or not a product/option/etc with a given identifier exists in the database
-func rowExistsInDB(db *sqlx.DB, query string, identifier string) (bool, error) {
-	var exists string
-
-	err := db.QueryRow(query, identifier).Scan(&exists)
-	if err == sql.ErrNoRows {
-		return false, nil
-	} else if err != nil {
-		return false, err
-	}
-
-	return exists == "true", err
 }
 
 func validateRequestInput(req *http.Request, output interface{}) error {

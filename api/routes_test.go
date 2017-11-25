@@ -1,5 +1,3 @@
-// +build !migrated
-
 package main
 
 import (

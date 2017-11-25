@@ -3,7 +3,6 @@
 package main
 
 import (
-	// stdlib
 	"database/sql"
 	"fmt"
 	"io"
@@ -14,24 +13,18 @@ import (
 	"strings"
 	"time"
 
-	// local storage adapter thing
 	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairycart/api/storage/postgres"
 
-	// external dependencies
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
-	"github.com/jmoiron/sqlx"
-	"github.com/jmoiron/sqlx/reflectx"
+	_ "github.com/lib/pq"
 	"github.com/mattes/migrate"
 	migratePG "github.com/mattes/migrate/database/postgres"
-	"github.com/sirupsen/logrus"
-
-	// unnamed dependencies
-	_ "github.com/lib/pq"
 	_ "github.com/mattes/migrate/source/file"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -97,7 +90,6 @@ func main() {
 
 	var (
 		storageClient storage.Storer
-		dbx           *sqlx.DB
 		db            *sql.DB
 		err           error
 	)
@@ -112,9 +104,6 @@ func main() {
 			logrus.Fatalf("error encountered connecting to database: %v", err)
 		}
 		storageClient = postgres.NewPostgres()
-		dbx = sqlx.NewDb(db, "postgres")
-		dbx.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
-
 	default:
 		log.Fatalf("invalid database choice: '%s'", dbChoice)
 	}
@@ -134,7 +123,7 @@ func main() {
 	v1APIRouter.Use(middleware.RequestID)
 	v1APIRouter.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{Logger: log.New(os.Stdout, "", log.LstdFlags)}))
 
-	SetupAPIRoutes(v1APIRouter, db, dbx, store, storageClient)
+	SetupAPIRoutes(v1APIRouter, db, store, storageClient)
 
 	// serve 'em up a lil' sauce
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "healthy!") })

@@ -11,6 +11,10 @@ func (m *MockDB) GetProductOptionsByProductRootID(db storage.Querier, productRoo
 	args := m.Called(db, productRootID)
 	return args.Get(0).([]models.ProductOption), args.Error(1)
 }
+func (m *MockDB) ProductOptionWithNameExistsForProductRoot(db storage.Querier, name string, productRootID uint64) (bool, error) {
+	args := m.Called(db, name, productRootID)
+	return args.Bool(0), args.Error(1)
+}
 
 func (m *MockDB) ProductOptionExists(db storage.Querier, id uint64) (bool, error) {
 	args := m.Called(db, id)

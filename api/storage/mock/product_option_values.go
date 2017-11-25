@@ -11,6 +11,15 @@ func (m *MockDB) ProductOptionValueForOptionIDExists(db storage.Querier, optionI
 	args := m.Called(db, optionID, value)
 	return args.Bool(0), args.Error(1)
 }
+func (m *MockDB) ArchiveProductOptionValuesForOption(db storage.Querier, optionID uint64) (time.Time, error) {
+	args := m.Called(db, optionID)
+	return args.Get(0).(time.Time), args.Error(1)
+}
+
+func (m *MockDB) GetProductOptionValuesForOption(db storage.Querier, optionID uint64) ([]models.ProductOptionValue, error) {
+	args := m.Called(db, optionID)
+	return args.Get(0).([]models.ProductOptionValue), args.Error(1)
+}
 
 func (m *MockDB) ProductOptionValueExists(db storage.Querier, id uint64) (bool, error) {
 	args := m.Called(db, id)

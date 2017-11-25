@@ -98,6 +98,51 @@ func TestGetProductOptionsByProductRootID(t *testing.T) {
 	})
 }
 
+func setProductOptionWithNameProductIDExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, productRootID uint64, name string, shouldExist bool, err error) {
+	t.Helper()
+	query := formatQueryForSQLMock(productOptionForNameAndProductIDExistenceQuery)
+
+	mock.ExpectQuery(query).
+		WithArgs(name, productRootID).
+		WillReturnRows(sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(shouldExist))).
+		WillReturnError(err)
+}
+
+func TestProductOptionWithNameExistsForProductRoot(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	require.Nil(t, err)
+	defer mockDB.Close()
+	exampleProductRootID := uint64(1)
+	exampleName := "example"
+	client := NewPostgres()
+
+	t.Run("existing", func(t *testing.T) {
+		setProductOptionWithNameProductIDExistenceQueryExpectation(t, mock, exampleProductRootID, exampleName, true, nil)
+		actual, err := client.ProductOptionWithNameExistsForProductRoot(mockDB, exampleName, exampleProductRootID)
+
+		require.Nil(t, err)
+		require.True(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with no rows found", func(t *testing.T) {
+		setProductOptionWithNameProductIDExistenceQueryExpectation(t, mock, exampleProductRootID, exampleName, true, sql.ErrNoRows)
+		actual, err := client.ProductOptionWithNameExistsForProductRoot(mockDB, exampleName, exampleProductRootID)
+
+		require.Nil(t, err)
+		require.False(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+	t.Run("with a database error", func(t *testing.T) {
+		setProductOptionWithNameProductIDExistenceQueryExpectation(t, mock, exampleProductRootID, exampleName, true, errors.New("pineapple on pizza"))
+		actual, err := client.ProductOptionWithNameExistsForProductRoot(mockDB, exampleName, exampleProductRootID)
+
+		require.NotNil(t, err)
+		require.False(t, actual)
+		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
+
 func setProductOptionExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, shouldExist bool, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productOptionExistenceQuery)

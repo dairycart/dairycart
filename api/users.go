@@ -32,12 +32,18 @@ const (
 )
 
 // DisplayUser represents a Dairycart user we can return in responses
+// TODO: the main reason for doing this is so we don't end up returning
+// the password hash to the user, but there's bound to be a way to reuse
+// that struct
 type DisplayUser struct {
-	DBRow
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Email     string `json:"email"`
-	IsAdmin   bool   `json:"is_admin"`
+	ID         uint64          `json:"id"`
+	FirstName  string          `json:"first_name"`
+	LastName   string          `json:"last_name"`
+	Email      string          `json:"email"`
+	IsAdmin    bool            `json:"is_admin"`
+	CreatedOn  time.Time       `json:"created_on"`
+	UpdatedOn  models.NullTime `json:"updated_on,omitempty"`
+	ArchivedOn models.NullTime `json:"archived_on,omitempty"`
 }
 
 // UserCreationInput represents the payload used to create a Dairycart user
@@ -201,10 +207,8 @@ func buildUserCreationHandler(db *sql.DB, client storage.Storer, store *sessions
 		}
 
 		responseUser := &DisplayUser{
-			DBRow: DBRow{
-				ID:        createdUserID,
-				CreatedOn: createdOn,
-			},
+			ID:        createdUserID,
+			CreatedOn: createdOn,
 			FirstName: newUser.FirstName,
 			LastName:  newUser.LastName,
 			Email:     newUser.Email,
