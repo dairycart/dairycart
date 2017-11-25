@@ -81,7 +81,8 @@ func buildSingleProductRootHandler(db *sql.DB, client storage.Storer) http.Handl
 	// SingleProductRootHandler is a request handler that returns a single product root
 	return func(res http.ResponseWriter, req *http.Request) {
 		productRootIDStr := chi.URLParam(req, "product_root_id")
-		productRootID, err := strconv.ParseUint(productRootIDStr, 10, 64)
+		// eating this error because the router should have ensured this is an integer
+		productRootID, _ := strconv.ParseUint(productRootIDStr, 10, 64)
 
 		productRoot, err := client.GetProductRoot(db, productRootID)
 		if err == sql.ErrNoRows {
@@ -114,7 +115,8 @@ func buildProductRootDeletionHandler(db *sql.DB, client storage.Storer) http.Han
 	// ProductDeletionHandler is a request handler that deletes a single product
 	return func(res http.ResponseWriter, req *http.Request) {
 		productRootIDStr := chi.URLParam(req, "product_root_id")
-		productRootID, err := strconv.ParseUint(productRootIDStr, 10, 64)
+		// eating this error because the router should have ensured this is an integer
+		productRootID, _ := strconv.ParseUint(productRootIDStr, 10, 64)
 
 		// can't delete a product root that doesn't exist!
 		productRoot, err := client.GetProductRoot(db, productRootID)

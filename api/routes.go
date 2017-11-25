@@ -70,10 +70,10 @@ func SetupAPIRoutes(router *chi.Mux, db *sql.DB, dbxReplaceMePlz *sqlx.DB, store
 
 		// Discounts
 		specificDiscountRoute := fmt.Sprintf("/discount/{discount_id:%s}", NumericPattern)
-		r.Get(specificDiscountRoute, buildDiscountRetrievalHandler(dbxReplaceMePlz))
-		r.Patch(specificDiscountRoute, buildDiscountUpdateHandler(dbxReplaceMePlz))
-		r.Delete(specificDiscountRoute, buildDiscountDeletionHandler(dbxReplaceMePlz))
-		r.Get("/discounts", buildDiscountListRetrievalHandler(dbxReplaceMePlz))
-		r.Post("/discount", buildDiscountCreationHandler(dbxReplaceMePlz))
+		r.Get(specificDiscountRoute, buildDiscountRetrievalHandler(db, client))
+		r.Patch(specificDiscountRoute, buildDiscountUpdateHandler(db, client))
+		r.Delete(specificDiscountRoute, buildDiscountDeletionHandler(db, client))
+		r.Get("/discounts", buildDiscountListRetrievalHandler(db, client))
+		r.Post("/discount", buildDiscountCreationHandler(db, client))
 	})
 }

@@ -3,11 +3,11 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairycart/api/storage/models"
 
 	"github.com/go-chi/chi"
@@ -45,14 +45,16 @@ func retrieveDiscountFromDB(db *sqlx.DB, discountID string) (models.Discount, er
 	return d, err
 }
 
-func buildDiscountRetrievalHandler(db *sqlx.DB) http.HandlerFunc {
+func buildDiscountRetrievalHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
 	// DiscountRetrievalHandler is a request handler that returns a single Discount
 	return func(res http.ResponseWriter, req *http.Request) {
-		discountID := chi.URLParam(req, "discount_id")
+		discountIDStr := chi.URLParam(req, "discount_id")
+		// eating this error because the router should have ensured this is an integer
+		discountID, _ := strconv.ParseUint(discountIDStr, 10, 64)
 
-		discount, err := retrieveDiscountFromDB(db, discountID)
+		discount, err := client.GetDiscount(db, discountID)
 		if err == sql.ErrNoRows {
-			respondThatRowDoesNotExist(req, res, "discount", discountID)
+			respondThatRowDoesNotExist(req, res, "discount", discountIDStr)
 			return
 		} else if err != nil {
 			notifyOfInternalIssue(res, err, "retrieving discount from database")
@@ -63,20 +65,19 @@ func buildDiscountRetrievalHandler(db *sqlx.DB) http.HandlerFunc {
 	}
 }
 
-func buildDiscountListRetrievalHandler(db *sqlx.DB) http.HandlerFunc {
+func buildDiscountListRetrievalHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
 	// DiscountListRetrievalHandler is a request handler that returns a list of Discounts
 	return func(res http.ResponseWriter, req *http.Request) {
 		rawFilterParams := req.URL.Query()
 		queryFilter := parseRawFilterParams(rawFilterParams)
-		count, err := getRowCount(db, "discounts", queryFilter)
+
+		count, err := client.GetDiscountCount(db, queryFilter)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve count of discounts from the database")
 			return
 		}
 
-		var discounts []models.Discount
-		query, args := buildDiscountListQuery(queryFilter)
-		err = retrieveListOfRowsFromDB(db, query, args, &discounts)
+		discounts, err := client.GetDiscountList(db, queryFilter)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve discounts from the database")
 			return
@@ -100,7 +101,7 @@ func createDiscountInDB(db *sqlx.DB, in *models.Discount) (uint64, time.Time, er
 	return createdID, createdOn, err
 }
 
-func buildDiscountCreationHandler(db *sqlx.DB) http.HandlerFunc {
+func buildDiscountCreationHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
 	// DiscountCreationHandler is a request handler that creates a Discount from user input
 	return func(res http.ResponseWriter, req *http.Request) {
 		newDiscount := &models.Discount{}
@@ -110,7 +111,7 @@ func buildDiscountCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		newDiscount.ID, newDiscount.CreatedOn, err = createDiscountInDB(db, newDiscount)
+		newDiscount.ID, newDiscount.CreatedOn, err = client.CreateDiscount(db, newDiscount)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "insert discount into database")
 			return
@@ -126,25 +127,30 @@ func archiveDiscount(db *sqlx.DB, discountID string) error {
 	return err
 }
 
-func buildDiscountDeletionHandler(db *sqlx.DB) http.HandlerFunc {
+func buildDiscountDeletionHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
 	// ProductDeletionHandler is a request handler that deletes a single product
 	return func(res http.ResponseWriter, req *http.Request) {
-		discountID := chi.URLParam(req, "discount_id")
+		discountIDStr := chi.URLParam(req, "discount_id")
+		// eating this error because the router should have ensured this is an integer
+		discountID, _ := strconv.ParseUint(discountIDStr, 10, 64)
 
-		// can't delete a discount that doesn't exist!
-		exists, err := rowExistsInDB(db, discountExistenceQuery, discountID)
-		if err != nil || !exists {
-			respondThatRowDoesNotExist(req, res, "discount", discountID)
+		discount, err := client.GetDiscount(db, discountID)
+		if err == sql.ErrNoRows {
+			respondThatRowDoesNotExist(req, res, "discount", discountIDStr)
+			return
+		} else if err != nil {
+			notifyOfInternalIssue(res, err, "retrieving discount from database")
 			return
 		}
 
-		err = archiveDiscount(db, discountID)
+		archivedOn, err := client.DeleteDiscount(db, discountID)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "archive discount in database")
 			return
 		}
+		discount.ArchivedOn = models.NullTime{NullTime: pq.NullTime{Time: archivedOn, Valid: true}}
 
-		io.WriteString(res, fmt.Sprintf("Successfully archived discount `%s`", discountID))
+		json.NewEncoder(res).Encode(discount)
 	}
 }
 
@@ -155,10 +161,12 @@ func updateDiscountInDatabase(db *sqlx.DB, up *models.Discount) (time.Time, erro
 	return updatedTime, err
 }
 
-func buildDiscountUpdateHandler(db *sqlx.DB) http.HandlerFunc {
+func buildDiscountUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
 	// DiscountUpdateHandler is a request handler that can update discounts
 	return func(res http.ResponseWriter, req *http.Request) {
-		discountID := chi.URLParam(req, "discount_id")
+		discountIDStr := chi.URLParam(req, "discount_id")
+		// eating this error because the router should have ensured this is an integer
+		discountID, _ := strconv.ParseUint(discountIDStr, 10, 64)
 
 		updatedDiscount := &models.Discount{}
 		err := validateRequestInput(req, updatedDiscount)
@@ -167,9 +175,9 @@ func buildDiscountUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		existingDiscount, err := retrieveDiscountFromDB(db, discountID)
+		existingDiscount, err := client.GetDiscount(db, discountID)
 		if err == sql.ErrNoRows {
-			respondThatRowDoesNotExist(req, res, "discount", discountID)
+			respondThatRowDoesNotExist(req, res, "discount", discountIDStr)
 			return
 		} else if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve discount from database")
@@ -179,12 +187,8 @@ func buildDiscountUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 		// eating the error here because we've already validated input
 		mergo.Merge(updatedDiscount, &existingDiscount)
 
-		use := func(...interface{}) {}
-
-		updatedOn, err := updateDiscountInDatabase(db, updatedDiscount)
+		updatedOn, err := client.UpdateDiscount(db, updatedDiscount)
 		if err != nil {
-			errStr := err.Error()
-			use(errStr)
 			notifyOfInternalIssue(res, err, "update product in database")
 			return
 		}
