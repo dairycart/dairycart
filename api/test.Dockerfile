@@ -7,4 +7,4 @@ ADD api/storage api/storage
 ENV DB_TO_USE "postgres"
 ENV DAIRYSECRET "do-not-use-secrets-like-this-plz"
 
-ENTRYPOINT ["go", "test", "-cover", "-race", "-tags", "test"]
+ENTRYPOINT ["go", "test", "-cover", "-tags", "test"]
