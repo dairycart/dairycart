@@ -201,10 +201,9 @@ func (pg *postgres) DeleteProductVariantBridge(db storage.Querier, id uint64) (t
 }
 
 const productVariantBridgeWithProductRootIDDeletionQuery = `
-    UPDATE product_variant_bridge
-    SET archived_on = NOW()
-    WHERE product_root_id = $1
-    RETURNING archived_on
+	UPDATE product_variant_bridge
+	SET archived_on = NOW()
+	WHERE product_id IN (SELECT id FROM products WHERE product_root_id = $1)
 `
 
 func (pg *postgres) ArchiveProductVariantBridgesWithProductRootID(db storage.Querier, id uint64) (t time.Time, err error) {

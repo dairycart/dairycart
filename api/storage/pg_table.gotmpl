@@ -527,13 +527,57 @@ func (pg *postgres) Delete{{ $modelName }}(db storage.Querier, id uint64) (t tim
     return t, err
 }
 
-{{- if or (or $isProductVariantBridge $isProductOptionValue) (or $isProductOption $isProduct) }}
+{{- if $isProductVariantBridge }}
+{{ $withRootDeletionQueryVarName := printf "%sWithProductRootIDDeletionQuery" ( camel $modelName ) -}}
+const {{ $withRootDeletionQueryVarName }} = `
+	UPDATE {{ .Table.Name }}
+	SET archived_on = NOW()
+	WHERE product_id IN (SELECT id FROM products WHERE product_root_id = $1)
+`
+
+func (pg *postgres) Archive{{ $modelName }}sWithProductRootID(db storage.Querier, id uint64) (t time.Time, err error) {
+    err = db.QueryRow({{ $withRootDeletionQueryVarName }}, id).Scan(&t)
+    return t, err
+}
+{{- end }}
+
+{{- if $isProduct }}
 {{ $withRootDeletionQueryVarName := printf "%sWithProductRootIDDeletionQuery" ( camel $modelName ) -}}
 const {{ $withRootDeletionQueryVarName }} = `
     UPDATE {{ toLower .Table.Name }}
     SET archived_on = NOW()
     WHERE product_root_id = $1
     RETURNING archived_on
+`
+
+func (pg *postgres) Archive{{ $modelName }}sWithProductRootID(db storage.Querier, id uint64) (t time.Time, err error) {
+    err = db.QueryRow({{ $withRootDeletionQueryVarName }}, id).Scan(&t)
+    return t, err
+}
+{{- end }}
+
+{{- if $isProductOption }}
+{{ $withRootDeletionQueryVarName := printf "%sWithProductRootIDDeletionQuery" ( camel $modelName ) -}}
+const {{ $withRootDeletionQueryVarName }} = `
+    UPDATE {{ toLower .Table.Name }}
+    SET archived_on = NOW()
+    WHERE product_root_id = $1
+    AND archived_on IS NULL
+`
+
+func (pg *postgres) Archive{{ $modelName }}sWithProductRootID(db storage.Querier, id uint64) (t time.Time, err error) {
+    err = db.QueryRow({{ $withRootDeletionQueryVarName }}, id).Scan(&t)
+    return t, err
+}
+{{- end }}
+
+
+{{- if $isProductOptionValue }}
+{{ $withRootDeletionQueryVarName := printf "%sWithProductRootIDDeletionQuery" ( camel $modelName ) -}}
+const {{ $withRootDeletionQueryVarName }} = `
+    UPDATE {{ toLower .Table.Name }}
+	SET archived_on = NOW()
+	WHERE product_option_id IN (SELECT id FROM product_options WHERE product_root_id = $1)
 `
 
 func (pg *postgres) Archive{{ $modelName }}sWithProductRootID(db storage.Querier, id uint64) (t time.Time, err error) {

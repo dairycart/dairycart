@@ -241,9 +241,8 @@ func (pg *postgres) DeleteProductOptionValue(db storage.Querier, id uint64) (t t
 
 const productOptionValueWithProductRootIDDeletionQuery = `
     UPDATE product_option_values
-    SET archived_on = NOW()
-    WHERE product_root_id = $1
-    RETURNING archived_on
+	SET archived_on = NOW()
+	WHERE product_option_id IN (SELECT id FROM product_options WHERE product_root_id = $1)
 `
 
 func (pg *postgres) ArchiveProductOptionValuesWithProductRootID(db storage.Querier, id uint64) (t time.Time, err error) {

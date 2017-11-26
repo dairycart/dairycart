@@ -229,7 +229,7 @@ const productOptionWithProductRootIDDeletionQuery = `
     UPDATE product_options
     SET archived_on = NOW()
     WHERE product_root_id = $1
-    RETURNING archived_on
+    AND archived_on IS NULL
 `
 
 func (pg *postgres) ArchiveProductOptionsWithProductRootID(db storage.Querier, id uint64) (t time.Time, err error) {

@@ -497,6 +497,7 @@ func TestDeleteProductOptionValueByID(t *testing.T) {
 		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
+
 func setProductOptionValueWithProductRootIDDeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productOptionValueWithProductRootIDDeletionQuery)

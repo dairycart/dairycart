@@ -132,7 +132,7 @@ func buildProductRootDeletionHandler(db *sql.DB, client storage.Storer) http.Han
 
 		// delete product variant bridge entries
 		_, err = client.ArchiveProductVariantBridgesWithProductRootID(tx, productRoot.ID)
-		if err != nil {
+		if err != nil && err != sql.ErrNoRows {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "archive product variant bridge entries in database")
 			return
@@ -140,7 +140,7 @@ func buildProductRootDeletionHandler(db *sql.DB, client storage.Storer) http.Han
 
 		// delete product option values
 		_, err = client.ArchiveProductOptionValuesWithProductRootID(tx, productRoot.ID)
-		if err != nil {
+		if err != nil && err != sql.ErrNoRows {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "archive product option values in database")
 			return
@@ -148,7 +148,7 @@ func buildProductRootDeletionHandler(db *sql.DB, client storage.Storer) http.Han
 
 		// delete product options
 		_, err = client.ArchiveProductOptionsWithProductRootID(tx, productRoot.ID)
-		if err != nil {
+		if err != nil && err != sql.ErrNoRows {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "archive product options in database")
 			return
@@ -156,7 +156,7 @@ func buildProductRootDeletionHandler(db *sql.DB, client storage.Storer) http.Han
 
 		// delete products
 		_, err = client.ArchiveProductsWithProductRootID(tx, productRoot.ID)
-		if err != nil {
+		if err != nil && err != sql.ErrNoRows {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "archive products in database")
 			return

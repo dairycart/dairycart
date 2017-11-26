@@ -136,9 +136,9 @@ func buildProductDeletionHandler(db *sql.DB, client storage.Storer) http.Handler
 		}
 
 		_, err = client.DeleteProductVariantBridgeByProductID(tx, existingProduct.ID)
-		if err != nil {
+		if err != nil && err != sql.ErrNoRows {
 			tx.Rollback()
-			notifyOfInternalIssue(res, err, "archive product in database")
+			notifyOfInternalIssue(res, err, "archive product variant bridges in database")
 			return
 		}
 
@@ -181,7 +181,7 @@ func buildProductUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerFu
 		}
 
 		// eating the error here because we've already validated input
-		mergo.Merge(newerProduct, &existingProduct)
+		mergo.Merge(newerProduct, existingProduct)
 
 		if !restrictedStringIsValid(newerProduct.SKU) {
 			notifyOfInvalidRequestBody(res, fmt.Errorf("The sku received (%s) is invalid", newerProduct.SKU))
