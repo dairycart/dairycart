@@ -1,5 +1,9 @@
 # Integration tests checklist
 
+## WARNING
+
+The plan is for this document to be valid very soon, but switching to a better testing method/structure means that this document will not be updated, nor will its quality be ensured in tests until this notice disappears.
+
 ## Product routes
 
 Product existence route:

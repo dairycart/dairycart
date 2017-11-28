@@ -26,8 +26,8 @@ script:
   - docker-compose --file api/integration_tests.yml up --abort-on-container-exit --build --remove-orphans --force-recreate
   # coverage output
   - go test github.com/dairycart/dairycart/api -coverprofile=coverage.out -tags test
-  # ensure README is up to date
-  - go run tools/integration_tests_checklist/main.go
+  # # ensure README is up to date
+  # - go run tools/integration_tests_checklist/main.go
 
 after_success:
   # send coverage report to coveralls
