@@ -177,6 +177,6 @@ func buildProductRootDeletionHandler(db *sql.DB, client storage.Storer) http.Han
 			return
 		}
 
-		res.WriteHeader(http.StatusOK)
+		json.NewEncoder(res).Encode(productRoot)
 	}
 }

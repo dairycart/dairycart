@@ -5,10 +5,12 @@ import (
 	"io/ioutil"
 	"net/http"
 	"reflect"
+	"testing"
 
 	"github.com/dairycart/dairymodels"
 
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/require"
 )
 
 func interfaceArgIsNotPointerOrNil(i interface{}) error {
@@ -22,23 +24,15 @@ func interfaceArgIsNotPointerOrNil(i interface{}) error {
 	return nil
 }
 
-func unmarshalBody(res *http.Response, dest interface{}) error {
+func unmarshalBody(t *testing.T, res *http.Response, dest interface{}) {
+	t.Helper()
 	// These paths should only ever be reached in tests, an should never be encountered by an end user.
-	if err := interfaceArgIsNotPointerOrNil(dest); err != nil {
-		return err
-	}
+	require.Nil(t, interfaceArgIsNotPointerOrNil(dest), "unmarshalBody can only accept pointers")
 
 	bodyBytes, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return err
-	}
+	require.Nil(t, err)
 
-	err = json.Unmarshal(bodyBytes, &dest)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	require.Nil(t, json.Unmarshal(bodyBytes, &dest))
 }
 
 func convertCreationInputToProduct(in models.ProductCreationInput) models.Product {

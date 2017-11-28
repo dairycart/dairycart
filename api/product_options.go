@@ -202,7 +202,7 @@ func buildProductOptionCreationHandler(db *sql.DB, client storage.Storer) http.H
 		productRootID, _ := strconv.ParseUint(productRootIDStr, 10, 64)
 
 		newOptionData := models.ProductOptionCreationInput{}
-		err := validateRequestInput(req, newOptionData)
+		err := validateRequestInput(req, &newOptionData)
 		if err != nil {
 			notifyOfInvalidRequestBody(res, err)
 			return
