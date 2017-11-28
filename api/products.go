@@ -15,7 +15,7 @@ import (
 )
 
 // newProductFromCreationInput creates a new product from a ProductCreationInput
-func newProductFromCreationInput(in *ProductCreationInput) *models.Product {
+func newProductFromCreationInput(in *models.ProductCreationInput) *models.Product {
 	np := &models.Product{
 		Name:               in.Name,
 		Subtitle:           in.Subtitle,
@@ -47,7 +47,7 @@ func newProductFromCreationInput(in *ProductCreationInput) *models.Product {
 // ProductCreationInput is a struct that represents a product creation body
 type ProductCreationInput struct {
 	models.Product
-	Options []*ProductOptionCreationInput `json:"options"`
+	Options []models.ProductOption `json:"options"`
 }
 
 func buildProductExistenceHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
@@ -229,7 +229,7 @@ func createProductsInDBFromOptionRows(client storage.Storer, tx *sql.Tx, r *mode
 
 func buildProductCreationHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		productInput := &ProductCreationInput{}
+		productInput := &models.ProductCreationInput{}
 		err := validateRequestInput(req, productInput)
 		if err != nil {
 			notifyOfInvalidRequestBody(res, err)
@@ -257,7 +257,6 @@ func buildProductCreationHandler(db *sql.DB, client storage.Storer) http.Handler
 		newProduct := newProductFromCreationInput(productInput)
 		productRoot := createProductRootFromProduct(newProduct)
 		productRoot.ID, productRoot.CreatedOn, err = client.CreateProductRoot(tx, productRoot)
-		// productRoot.ID, productRoot.CreatedOn, err = createProductRootInDB(tx, productRoot)
 		if err != nil {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "insert product options and values in database")

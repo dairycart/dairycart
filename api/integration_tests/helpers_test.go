@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"reflect"
 
+	"github.com/dairycart/dairymodels"
+
 	"github.com/pkg/errors"
 )
 
@@ -37,4 +39,33 @@ func unmarshalBody(res *http.Response, dest interface{}) error {
 	}
 
 	return nil
+}
+
+func convertCreationInputToProduct(in models.ProductCreationInput) models.Product {
+	np := models.Product{
+		Name:               in.Name,
+		Subtitle:           in.Subtitle,
+		Description:        in.Description,
+		SKU:                in.SKU,
+		UPC:                in.UPC,
+		Manufacturer:       in.Manufacturer,
+		Brand:              in.Brand,
+		Quantity:           in.Quantity,
+		QuantityPerPackage: in.QuantityPerPackage,
+		Taxable:            in.Taxable,
+		Price:              in.Price,
+		OnSale:             in.OnSale,
+		SalePrice:          in.SalePrice,
+		Cost:               in.Cost,
+		ProductWeight:      in.ProductWeight,
+		ProductHeight:      in.ProductHeight,
+		ProductWidth:       in.ProductWidth,
+		ProductLength:      in.ProductLength,
+		PackageWeight:      in.PackageWeight,
+		PackageHeight:      in.PackageHeight,
+		PackageWidth:       in.PackageWidth,
+		PackageLength:      in.PackageLength,
+		AvailableOn:        in.AvailableOn,
+	}
+	return np
 }

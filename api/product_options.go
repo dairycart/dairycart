@@ -16,17 +16,6 @@ import (
 	"github.com/lib/pq"
 )
 
-// ProductOptionUpdateInput is a struct to use for updating product options
-type ProductOptionUpdateInput struct {
-	Name string `json:"name"`
-}
-
-// ProductOptionCreationInput is a struct to use for creating product options
-type ProductOptionCreationInput struct {
-	Name   string   `json:"name"`
-	Values []string `json:"values"`
-}
-
 type simpleProductOption struct {
 	IDs            []uint64
 	OptionSummary  string
@@ -41,7 +30,6 @@ type optionPlaceholder struct {
 	OriginalValue models.ProductOptionValue
 }
 
-// FIXME: don't use pointers here
 func generateCartesianProductForOptions(inputOptions []models.ProductOption) []simpleProductOption {
 	/*
 		Some notes about this function:
@@ -144,7 +132,7 @@ func buildProductOptionUpdateHandler(db *sql.DB, client storage.Storer) http.Han
 		// eating this error because the router should have ensured this is an integer
 		optionID, _ := strconv.ParseUint(optionIDStr, 10, 64)
 
-		updatedOptionData := &ProductOptionUpdateInput{}
+		updatedOptionData := &models.ProductOption{}
 		err := validateRequestInput(req, updatedOptionData)
 		if err != nil {
 			notifyOfInvalidRequestBody(res, err)
@@ -181,7 +169,7 @@ func buildProductOptionUpdateHandler(db *sql.DB, client storage.Storer) http.Han
 	}
 }
 
-func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in *ProductOptionCreationInput, productRootID uint64, client storage.Storer) (models.ProductOption, error) {
+func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in models.ProductOptionCreationInput, productRootID uint64, client storage.Storer) (models.ProductOption, error) {
 	var err error
 	newProductOption := &models.ProductOption{Name: in.Name, ProductRootID: productRootID}
 	newProductOption.ID, newProductOption.CreatedOn, err = client.CreateProductOption(tx, newProductOption)
@@ -213,7 +201,7 @@ func buildProductOptionCreationHandler(db *sql.DB, client storage.Storer) http.H
 		// eating this error because the router should have ensured this is an integer
 		productRootID, _ := strconv.ParseUint(productRootIDStr, 10, 64)
 
-		newOptionData := &ProductOptionCreationInput{}
+		newOptionData := models.ProductOptionCreationInput{}
 		err := validateRequestInput(req, newOptionData)
 		if err != nil {
 			notifyOfInvalidRequestBody(res, err)

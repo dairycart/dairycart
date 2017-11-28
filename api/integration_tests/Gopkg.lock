@@ -5,7 +5,7 @@
   branch = "storage-interfaces"
   name = "github.com/dairycart/dairycart"
   packages = ["api/storage/models"]
-  revision = "011f6ab8dc2f39897e93e657f1d9ee722c202aa9"
+  revision = "0ab2f60ba567e79f0e0e267b94ef29c2d300ac38"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -17,7 +17,7 @@
   branch = "master"
   name = "github.com/lib/pq"
   packages = [".","oid"]
-  revision = "8c6ee72f3e6bcb1542298dd5f76cb74af9742cec"
+  revision = "83612a56d3dd153a94a629cd64925371c9adad78"
 
 [[projects]]
   name = "github.com/pkg/errors"
@@ -52,6 +52,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "4bfd60a86b021899b146ab8a4c7bd85450bced66dcffcc0653cad1dcdbf92738"
+  inputs-digest = "60aedfab71e8ee83fcecd236530c66e4a25eba54f0805dfcd4e4878fdfe109f5"
   solver-name = "gps-cdcl"
   solver-version = 1

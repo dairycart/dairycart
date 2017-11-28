@@ -39,3 +39,33 @@ type Product struct {
 	// useful for responses
 	ApplicableOptionValues []ProductOptionValue `json:"applicable_options,omitempty"`
 }
+
+// ProductCreationInput is a struct that represents a product creation body
+type ProductCreationInput struct {
+	Name               string                       `json:"name"`                 // name
+	Subtitle           string                       `json:"subtitle"`             // subtitle
+	Description        string                       `json:"description"`          // description
+	OptionSummary      string                       `json:"option_summary"`       // option_summary
+	SKU                string                       `json:"sku"`                  // sku
+	UPC                string                       `json:"upc"`                  // upc
+	Manufacturer       string                       `json:"manufacturer"`         // manufacturer
+	Brand              string                       `json:"brand"`                // brand
+	Quantity           uint32                       `json:"quantity"`             // quantity
+	Taxable            bool                         `json:"taxable"`              // taxable
+	Price              float64                      `json:"price"`                // price
+	OnSale             bool                         `json:"on_sale"`              // on_sale
+	SalePrice          float64                      `json:"sale_price"`           // sale_price
+	Cost               float64                      `json:"cost"`                 // cost
+	ProductWeight      float64                      `json:"product_weight"`       // product_weight
+	ProductHeight      float64                      `json:"product_height"`       // product_height
+	ProductWidth       float64                      `json:"product_width"`        // product_width
+	ProductLength      float64                      `json:"product_length"`       // product_length
+	PackageWeight      float64                      `json:"package_weight"`       // package_weight
+	PackageHeight      float64                      `json:"package_height"`       // package_height
+	PackageWidth       float64                      `json:"package_width"`        // package_width
+	PackageLength      float64                      `json:"package_length"`       // package_length
+	QuantityPerPackage uint32                       `json:"quantity_per_package"` // quantity_per_package
+	AvailableOn        time.Time                    `json:"available_on"`         // available_on
+	UpdatedOn          NullTime                     `json:"updated_on"`           // updated_on
+	Options            []ProductOptionCreationInput `json:"options"`
+}
