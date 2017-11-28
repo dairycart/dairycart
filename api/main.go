@@ -82,6 +82,7 @@ func migrateDatabase(db *sql.DB, migrationCount int) {
 			databaseIsNotMigrated = false
 		}
 	}
+	log.Println("database migrated!")
 }
 
 func main() {

@@ -59,7 +59,7 @@ func deleteTestProductRoot(t *testing.T, productRootID uint64) {
 	assertStatusCode(t, resp, http.StatusOK)
 }
 
-func compareListResponses(t *testing.T, expected models.ListResponse, actual models.ListResponse) {
+func compareListResponses(t *testing.T, expected, actual models.ListResponse) {
 	t.Helper()
 	assert.Equal(t, expected.Limit, actual.Limit, "expected and actual limit don't match")
 	assert.Equal(t, expected.Page, actual.Page, "expected and actual page don't match")
@@ -158,7 +158,7 @@ func compareProducts(t *testing.T, expected models.Product, actual models.Produc
 
 	for i := range expected.ApplicableOptionValues {
 		if len(actual.ApplicableOptionValues)-1 < i {
-			t.Logf("expected %d option values, got %d instead.", len(expected.ApplicableOptionValues), len(actual.ApplicableOptionValues))
+			t.Logf("expected %d option values attached to product, got %d instead.", len(expected.ApplicableOptionValues), len(actual.ApplicableOptionValues))
 			t.Fail()
 			break
 		}
@@ -269,13 +269,13 @@ func TestProductRetrievalRoute(t *testing.T) {
 		unmarshalBody(resp, &actual)
 		expected := models.ErrorResponse{
 			Status:  http.StatusNotFound,
-			Message: "The product you were looking for (sku 'nonexistent') does not exist",
+			Message: fmt.Sprintf("The product you were looking for (sku '%s') does not exist", nonexistentSKU),
 		}
 		assert.Equal(t, expected, actual, "trying to retrieve a product that doesn't exist should respond 404")
 	})
 }
 
-func TestProductListRouteFilters(t *testing.T) {
+func TestProductListRoute(t *testing.T) {
 	// // t.Parallel()
 
 	t.Run("with standard filter", func(*testing.T) {
@@ -497,12 +497,7 @@ func TestProductCreationRoute(t *testing.T) {
 			PackageWidth:       9,
 			PackageLength:      9,
 			QuantityPerPackage: 3,
-			Options: []models.ProductOptionCreationInput{
-				{
-					Name:   "numbers",
-					Values: []string{"one", "two", "three"},
-				},
-			},
+			Options:            []models.ProductOptionCreationInput{{Name: "numbers", Values: []string{"one", "two", "three"}}},
 		}
 
 		newProductJSON := createProductCreationBody(t, testProduct)
@@ -539,96 +534,116 @@ func TestProductCreationRoute(t *testing.T) {
 			},
 			Products: []models.Product{
 				{
-					Name:               "New Product",
-					Subtitle:           "this is a product",
-					Description:        "this product is neat or maybe its not who really knows for sure?",
-					OptionSummary:      "numbers: one",
-					SKU:                fmt.Sprintf("%s_%s", testSKU, "one"),
-					Manufacturer:       "Manufacturer",
-					Brand:              "Brand",
-					Quantity:           123,
-					Taxable:            false,
-					Price:              12.34,
-					OnSale:             true,
-					SalePrice:          10,
-					Cost:               5,
-					ProductWeight:      9,
-					ProductHeight:      9,
-					ProductWidth:       9,
-					ProductLength:      9,
-					PackageWeight:      9,
-					PackageHeight:      9,
-					PackageWidth:       9,
-					PackageLength:      9,
-					QuantityPerPackage: 3,
-					ApplicableOptionValues: []models.ProductOptionValue{
-						{
-							Value: "one",
-						},
-					},
+					Name:                   "New Product",
+					Subtitle:               "this is a product",
+					Description:            "this product is neat or maybe its not who really knows for sure?",
+					OptionSummary:          "numbers: one",
+					SKU:                    fmt.Sprintf("%s_%s", testSKU, "one"),
+					Manufacturer:           "Manufacturer",
+					Brand:                  "Brand",
+					Quantity:               123,
+					Taxable:                false,
+					Price:                  12.34,
+					OnSale:                 true,
+					SalePrice:              10,
+					Cost:                   5,
+					ProductWeight:          9,
+					ProductHeight:          9,
+					ProductWidth:           9,
+					ProductLength:          9,
+					PackageWeight:          9,
+					PackageHeight:          9,
+					PackageWidth:           9,
+					PackageLength:          9,
+					QuantityPerPackage:     3,
+					ApplicableOptionValues: []models.ProductOptionValue{{Value: "one"}},
 				},
 				{
-					Name:               "New Product",
-					Subtitle:           "this is a product",
-					Description:        "this product is neat or maybe its not who really knows for sure?",
-					OptionSummary:      "numbers: two",
-					SKU:                fmt.Sprintf("%s_%s", testSKU, "two"),
-					Manufacturer:       "Manufacturer",
-					Brand:              "Brand",
-					Quantity:           123,
-					Taxable:            false,
-					Price:              12.34,
-					OnSale:             true,
-					SalePrice:          10,
-					Cost:               5,
-					ProductWeight:      9,
-					ProductHeight:      9,
-					ProductWidth:       9,
-					ProductLength:      9,
-					PackageWeight:      9,
-					PackageHeight:      9,
-					PackageWidth:       9,
-					PackageLength:      9,
-					QuantityPerPackage: 3,
-					ApplicableOptionValues: []models.ProductOptionValue{
-						{
-							Value: "two",
-						},
-					},
+					Name:                   "New Product",
+					Subtitle:               "this is a product",
+					Description:            "this product is neat or maybe its not who really knows for sure?",
+					OptionSummary:          "numbers: two",
+					SKU:                    fmt.Sprintf("%s_%s", testSKU, "two"),
+					Manufacturer:           "Manufacturer",
+					Brand:                  "Brand",
+					Quantity:               123,
+					Taxable:                false,
+					Price:                  12.34,
+					OnSale:                 true,
+					SalePrice:              10,
+					Cost:                   5,
+					ProductWeight:          9,
+					ProductHeight:          9,
+					ProductWidth:           9,
+					ProductLength:          9,
+					PackageWeight:          9,
+					PackageHeight:          9,
+					PackageWidth:           9,
+					PackageLength:          9,
+					QuantityPerPackage:     3,
+					ApplicableOptionValues: []models.ProductOptionValue{{Value: "two"}},
 				},
 				{
-					Name:               "New Product",
-					Subtitle:           "this is a product",
-					Description:        "this product is neat or maybe its not who really knows for sure?",
-					OptionSummary:      "numbers: three",
-					SKU:                fmt.Sprintf("%s_%s", testSKU, "three"),
-					Manufacturer:       "Manufacturer",
-					Brand:              "Brand",
-					Quantity:           123,
-					Taxable:            false,
-					Price:              12.34,
-					OnSale:             true,
-					SalePrice:          10,
-					Cost:               5,
-					ProductWeight:      9,
-					ProductHeight:      9,
-					ProductWidth:       9,
-					ProductLength:      9,
-					PackageWeight:      9,
-					PackageHeight:      9,
-					PackageWidth:       9,
-					PackageLength:      9,
-					QuantityPerPackage: 3,
-					ApplicableOptionValues: []models.ProductOptionValue{
-						{
-							Value: "three",
-						},
-					},
+					Name:                   "New Product",
+					Subtitle:               "this is a product",
+					Description:            "this product is neat or maybe its not who really knows for sure?",
+					OptionSummary:          "numbers: three",
+					SKU:                    fmt.Sprintf("%s_%s", testSKU, "three"),
+					Manufacturer:           "Manufacturer",
+					Brand:                  "Brand",
+					Quantity:               123,
+					Taxable:                false,
+					Price:                  12.34,
+					OnSale:                 true,
+					SalePrice:              10,
+					Cost:                   5,
+					ProductWeight:          9,
+					ProductHeight:          9,
+					ProductWidth:           9,
+					ProductLength:          9,
+					PackageWeight:          9,
+					PackageHeight:          9,
+					PackageWidth:           9,
+					PackageLength:          9,
+					QuantityPerPackage:     3,
+					ApplicableOptionValues: []models.ProductOptionValue{{Value: "three"}},
 				},
 			},
 		}
 
 		compareProductRoots(t, expected, actual)
+	})
+
+	t.Run("with already existent SKU", func(*testing.T) {
+		alreadyExistentSKU := "t-shirt"
+		testProduct := models.ProductCreationInput{SKU: alreadyExistentSKU}
+
+		newProductJSON := createProductCreationBody(t, testProduct)
+		resp, err := createProduct(newProductJSON)
+		assert.Nil(t, err)
+		assertStatusCode(t, resp, http.StatusBadRequest)
+
+		expected := models.ErrorResponse{
+			Status:  http.StatusBadRequest,
+			Message: fmt.Sprintf("product with sku '%s' already exists", alreadyExistentSKU),
+		}
+		var actual models.ErrorResponse
+		unmarshalBody(resp, &actual)
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("with invalid input", func(*testing.T) {
+		resp, err := createProduct(exampleGarbageInput)
+		assert.Nil(t, err)
+		assertStatusCode(t, resp, http.StatusBadRequest)
+
+		expected := models.ErrorResponse{
+			Status:  http.StatusBadRequest,
+			Message: "Invalid input provided in request body",
+		}
+		var actual models.ErrorResponse
+		unmarshalBody(resp, &actual)
+		assert.Equal(t, expected, actual)
 	})
 }
 
@@ -639,13 +654,14 @@ func TestProductDeletion(t *testing.T) {
 	t.Run("normal usecase", func(*testing.T) {
 		testProduct := models.ProductCreationInput{SKU: testSKU}
 		createTestProduct(t, testProduct)
+
 		resp, err := deleteProduct(testSKU)
 		assert.Nil(t, err)
 		assertStatusCode(t, resp, http.StatusOK)
 
 		var actual models.Product
 		unmarshalBody(resp, &actual)
-		assert.NotNil(t, actual.ArchivedOn)
+		assert.False(t, actual.ArchivedOn.Time.IsZero())
 	})
 
 	t.Run("nonexistent product", func(*testing.T) {
@@ -655,7 +671,7 @@ func TestProductDeletion(t *testing.T) {
 
 		expected := models.ErrorResponse{
 			Status:  http.StatusNotFound,
-			Message: "The product you were looking for (sku 'nonexistent') does not exist",
+			Message: fmt.Sprintf("The product you were looking for (sku '%s') does not exist", nonexistentSKU),
 		}
 		var actual models.ErrorResponse
 		unmarshalBody(resp, &actual)
@@ -663,434 +679,387 @@ func TestProductDeletion(t *testing.T) {
 	})
 }
 
-// func TestProductRootListRetrievalRouteWithDefaultPagination(t *testing.T) {
-// 	t.Skip()
-// 	resp, err := retrieveProductRoots(nil)
-// 	assert.Nil(t, err)
-// 	assertStatusCode(t, resp, http.StatusOK)
-// 	body := turnResponseBodyIntoString(t, resp)
+func TestProductRootList(t *testing.T) {
+	// 	t.Parallel()
 
-// 	lr := parseResponseIntoStruct(t, body)
-// 	assert.True(t, len(lr.Data) <= int(lr.Limit), "product option list route should not return more data than the limit")
-// 	assert.Equal(t, uint8(25), lr.Limit, "product option list route should respond with the default limit when a limit is not specified")
-// 	assert.Equal(t, uint64(1), lr.Page, "product option list route should respond with the first page when a page is not specified")
-// }
+	t.Run("no filter", func(*testing.T) {
+		resp, err := retrieveProductRoots(nil)
+		assert.Nil(t, err)
+		assertStatusCode(t, resp, http.StatusOK)
 
-// func TestProductRootListRetrievalRouteWithCustomPagination(t *testing.T) {
-// 	t.Skip()
-// 	customFilter := map[string]string{
-// 		"page":  "2",
-// 		"limit": "1",
-// 	}
-// 	resp, err := retrieveProductRoots(customFilter)
-// 	assert.Nil(t, err)
-// 	assertStatusCode(t, resp, http.StatusOK)
-// 	body := turnResponseBodyIntoString(t, resp)
+		expected := models.ListResponse{
+			Limit: 25,
+			Page:  1,
+		}
+		var actual models.ListResponse
+		unmarshalBody(resp, &actual)
+		compareListResponses(t, expected, actual)
+	})
 
-// 	lr := parseResponseIntoStruct(t, body)
-// 	assert.True(t, len(lr.Data) <= int(lr.Limit), "product option list route should not return more data than the limit")
-// 	assert.Equal(t, uint8(1), lr.Limit, "product option list route should respond with the default limit when a limit is not specified")
-// 	assert.Equal(t, uint64(2), lr.Page, "product option list route should respond with the first page when a page is not specified")
-// }
+	// FIXME
+	// t.Run("custom filter", func(*testing.T) {
+	// 	customFilter := map[string]string{
+	// 		"page":  "2",
+	// 		"limit": "1",
+	// 	}
+	// 	resp, err := retrieveProductRoots(customFilter)
+	// 	assert.Nil(t, err)
+	// 	assertStatusCode(t, resp, http.StatusOK)
 
-// func TestProductRootRetrievalRoute(t *testing.T) {
-// 	t.Skip()
-// 	resp, err := retrieveProductRoot(existentID)
-// 	assert.Nil(t, err)
-// 	assertStatusCode(t, resp, http.StatusOK)
+	// 	expected := models.ListResponse{
+	// 		Limit: 1,
+	// 		Page:  2,
+	// 	}
+	// 	var actual models.ListResponse
+	// 	unmarshalBody(resp, &actual)
+	// 	compareListResponses(t, expected, actual)
+	// })
+}
 
-// 	body := turnResponseBodyIntoString(t, resp)
-// 	actual := cleanAPIResponseBody(body)
-// 	expected := minifyJSON(t, `{
-// 			"name": "Your Favorite Band's T-Shirt",
-// 			"subtitle": "A t-shirt you can wear",
-// 			"description": "Wear this if you'd like. Or don't, I'm not in charge of your actions",
-// 			"sku_prefix": "t-shirt",
-// 			"manufacturer": "Record Company",
-// 			"brand": "Your Favorite Band",
-// 			"taxable": true,
-// 			"cost": 20,
-// 			"product_weight": 1,
-// 			"product_height": 5,
-// 			"product_width": 5,
-// 			"product_length": 5,
-// 			"package_weight": 1,
-// 			"package_height": 5,
-// 			"package_width": 5,
-// 			"package_length": 5,
-// 			"quantity_per_package": 1,
-// 			"options": [{
-// 				"name": "color",
-// 				"values": null
-// 			}, {
-// 				"name": "size",
-// 				"values": null
-// 			}],
-// 			"products": [{
-// 				"name": "Your Favorite Band's T-Shirt",
-// 				"subtitle": "A t-shirt you can wear",
-// 				"description": "Wear this if you'd like. Or don't, I'm not incharge of your actions",
-// 				"option_summary": "Size: Small, Color: Red",
-// 				"sku": "t-shirt-small-red",
-// 				"upc": "",
-// 				"manufacturer": "Record Company",
-// 				"brand": "Your Favorite Band",
-// 				"quantity": 666,
-// 				"taxable": true,
-// 				"price": 20,
-// 				"on_sale": false,
-// 				"sale_price": 0,
-// 				"cost": 10,
-// 				"product_weight": 1,
-// 				"product_height": 5,
-// 				"product_width": 5,
-// 				"product_length": 5,
-// 				"package_weight": 1,
-// 				"package_height": 5,
-// 				"package_width": 5,
-// 				"package_length": 5,
-// 				"quantity_per_package": 1
-// 			}, {
-// 				"name": "Your Favorite Band's T-Shirt",
-// 				"subtitle": "A t-shirt you can wear",
-// 				"description": "Wear this if you'd like. Or don't, I'm not in charge of your actions",
-// 				"option_summary": "Size: Medium, Color: Red",
-// 				"sku": "t-shirt-medium-red",
-// 				"upc": "",
-// 				"manufacturer": "Record Company",
-// 				"brand": "Your Favorite Band",
-// 				"quantity": 666,
-// 				"taxable": true,
-// 				"price": 20,
-// 				"on_sale": false,
-// 				"sale_price": 0,
-// 				"cost": 10,
-// 				"product_weight": 1,
-// 				"product_height": 5,
-// 				"product_width": 5,
-// 				"product_length": 5,
-// 				"package_weight": 1,
-// 				"package_height": 5,
-// 				"package_width": 5,
-// 				"package_length": 5,
-// 				"quantity_per_package": 1
-// 			}, {
-// 				"name": "Your Favorite Band's T-Shirt",
-// 				"subtitle": "A t-shirt you can wear",
-// 				"description": "Wear this if you'd like. Or don't, I'm not in charge of your actions",
-// 				"option_summary": "Size: Large, Color: Red",
-// 				"sku": "t-shirt-large-red",
-// 				"upc": "",
-// 				"manufacturer": "Record Company",
-// 				"brand": "Your Favorite Band",
-// 				"quantity": 666,
-// 				"taxable": true,
-// 				"price": 20,
-// 				"on_sale": false,
-// 				"sale_price": 0,
-// 				"cost": 10,
-// 				"product_weight": 1,
-// 				"product_height": 5,
-// 				"product_width": 5,
-// 				"product_length": 5,
-// 				"package_weight": 1,
-// 				"package_height": 5,
-// 				"package_width": 5,
-// 				"package_length": 5,
-// 				"quantity_per_package": 1
-// 			}, {
-// 				"name": "Your Favorite Band's T-Shirt",
-// 				"subtitle": "A t-shirtyou can wear",
-// 				"description": "Wear this if you'd like. Or don't, I'm not in charge ofyour actions",
-// 				"option_summary": "Size: Small, Color: Blue",
-// 				"sku": "t-shirt-small-blue",
-// 				"upc": "",
-// 				"manufacturer": "Record Company",
-// 				"brand": "Your Favorite Band",
-// 				"quantity": 666,
-// 				"taxable": true,
-// 				"price": 20,
-// 				"on_sale": false,
-// 				"sale_price": 0,
-// 				"cost": 10,
-// 				"product_weight": 1,
-// 				"product_height": 5,
-// 				"product_width": 5,
-// 				"product_length": 5,
-// 				"package_weight": 1,
-// 				"package_height": 5,
-// 				"package_width": 5,
-// 				"package_length": 5,
-// 				"quantity_per_package": 1
-// 			}, {
-// 				"name": "Your Favorite Band's T-Shirt",
-// 				"subtitle": "A t-shirt you can wear",
-// 				"description": "Wear this if you'd like. Or don't, I'm not in charge of your actions",
-// 				"option_summary": "Size: Medium, Color: Blue",
-// 				"sku": "t-shirt-medium-blue",
-// 				"upc": "",
-// 				"manufacturer": "Record Company",
-// 				"brand": "Your Favorite Band",
-// 				"quantity": 666,
-// 				"taxable": true,
-// 				"price": 20,
-// 				"on_sale": false,
-// 				"sale_price": 0,
-// 				"cost": 10,
-// 				"product_weight": 1,
-// 				"product_height": 5,
-// 				"product_width": 5,
-// 				"product_length": 5,
-// 				"package_weight": 1,
-// 				"package_height": 5,
-// 				"package_width": 5,
-// 				"package_length": 5,
-// 				"quantity_per_package": 1
-// 			}, {
-// 				"name": "Your Favorite Band's T-Shirt",
-// 				"subtitle": "A t-shirt you can wear",
-// 				"description": "Wear this if you'd like. Or don't, I'm not in charge of your actions",
-// 				"option_summary": "Size: Large, Color: Blue",
-// 				"sku": "t-shirt-large-blue",
-// 				"upc": "",
-// 				"manufacturer": "Record Company",
-// 				"brand": "Your Favorite Band",
-// 				"quantity": 666,
-// 				"taxable": true,
-// 				"price": 20,
-// 				"on_sale": false,
-// 				"sale_price": 0,
-// 				"cost": 10,
-// 				"product_weight": 1,
-// 				"product_height": 5,
-// 				"product_width": 5,
-// 				"product_length": 5,
-// 				"package_weight": 1,
-// 				"package_height": 5,
-// 				"package_width": 5,
-// 				"package_length": 5,
-// 				"quantity_per_package": 1
-// 			}, {
-// 				"name": "Your Favorite Band's T-Shirt",
-// 				"subtitle": "A t-shirt youcan wear",
-// 				"description": "Wear this if you'd like. Or don't, I'm not in charge of your actions",
-// 				"option_summary": "Size: Small, Color: Green",
-// 				"sku": "t-shirt-small-green",
-// 				"upc": "",
-// 				"manufacturer": "Record Company",
-// 				"brand": "Your Favorite Band",
-// 				"quantity": 666,
-// 				"taxable": true,
-// 				"price": 20,
-// 				"on_sale": false,
-// 				"sale_price": 0,
-// 				"cost": 10,
-// 				"product_weight": 1,
-// 				"product_height": 5,
-// 				"product_width": 5,
-// 				"product_length": 5,
-// 				"package_weight": 1,
-// 				"package_height": 5,
-// 				"package_width": 5,
-// 				"package_length": 5,
-// 				"quantity_per_package": 1
-// 			}, {
-// 				"name": "Your Favorite Band's T-Shirt",
-// 				"subtitle": "A t-shirt youcan wear",
-// 				"description": "Wear this if you'd like. Or don't, I'm not in charge of your actions",
-// 				"option_summary": "Size: Medium, Color: Green",
-// 				"sku": "t-shirt-medium-green",
-// 				"upc": "",
-// 				"manufacturer": "Record Company",
-// 				"brand": "Your Favorite Band",
-// 				"quantity": 666,
-// 				"taxable": true,
-// 				"price": 20,
-// 				"on_sale": false,
-// 				"sale_price": 0,
-// 				"cost": 10,
-// 				"product_weight": 1,
-// 				"product_height": 5,
-// 				"product_width": 5,
-// 				"product_length": 5,
-// 				"package_weight": 1,
-// 				"package_height": 5,
-// 				"package_width": 5,
-// 				"package_length": 5,
-// 				"quantity_per_package": 1
-// 			}, {
-// 				"name": "Your Favorite Band's T-Shirt",
-// 				"subtitle": "A t-shirt you can wear",
-// 				"description": "Wear this if you'd like. Or don't, I'm not in charge of your actions",
-// 				"option_summary": "Size: Large, Color: Green",
-// 				"sku": "t-shirt-large-green",
-// 				"upc": "",
-// 				"manufacturer": "Record Company",
-// 				"brand": "Your Favorite Band",
-// 				"quantity": 666,
-// 				"taxable": true,
-// 				"price": 20,
-// 				"on_sale": false,
-// 				"sale_price": 0,
-// 				"cost": 10,
-// 				"product_weight": 1,
-// 				"product_height": 5,
-// 				"product_width": 5,
-// 				"product_length": 5,
-// 				"package_weight": 1,
-// 				"package_height": 5,
-// 				"package_width": 5,
-// 				"package_length": 5,
-// 				"quantity_per_package": 1
-// 			}]
-// 		}
-// 	`)
-// 	assert.Equal(t, expected, actual, "product retrieval response should contain a complete product")
-// }
+func TestProductRootRetrievalRoute(t *testing.T) {
+	// t.Parallel()
 
-// func TestProductRootRetrievalRouteForNonexistentRoot(t *testing.T) {
-// 	t.Skip()
-// 	resp, err := retrieveProductRoot(nonexistentID)
-// 	assert.Nil(t, err)
-// 	assertStatusCode(t, resp, http.StatusNotFound)
+	t.Run("normal usage", func(*testing.T) {
+		resp, err := retrieveProductRoot(existentID)
+		assert.Nil(t, err)
+		assertStatusCode(t, resp, http.StatusOK)
 
-// 	actual := turnResponseBodyIntoString(t, resp)
-// 	expected := `{"status":404,"message":"The product_root you were looking for (identified by '999999999') does not exist"}`
-// 	assert.Equal(t, expected, actual, "expected and actual bodies should match")
-// }
+		expected := models.ProductRoot{
+			Name:               "Your Favorite Band's T-Shirt",
+			Subtitle:           "A t-shirt you can wear",
+			Description:        "Wear this if you'd like. Or don't, I'm not in charge of your actions",
+			SKUPrefix:          "t-shirt",
+			Manufacturer:       "Record Company",
+			Brand:              "Your Favorite Band",
+			Taxable:            true,
+			Cost:               20,
+			ProductWeight:      1,
+			ProductHeight:      5,
+			ProductWidth:       5,
+			ProductLength:      5,
+			PackageWeight:      1,
+			PackageHeight:      5,
+			PackageWidth:       5,
+			PackageLength:      5,
+			QuantityPerPackage: 1,
+			Options: []models.ProductOption{
+				{
+					Name: "color",
+					// FIXME:
+					// Values: []models.ProductOptionValue{{Value: "red"}, {Value: "green"}, {Value: "blue"}}},
+				},
+				{
+					Name: "size",
+					// Values: []models.ProductOptionValue{{Value: "small"}, {Value: "medium"}, {Value: "large"}}},
+				},
+			},
+			Products: []models.Product{
+				{
+					Name:               "Your Favorite Band's T-Shirt",
+					Subtitle:           "A t-shirt you can wear",
+					Description:        "Wear this if you'd like. Or don't, I'm not in charge of your actions",
+					SKU:                "t-shirt-small-red",
+					OptionSummary:      "Size: Small, Color: Red",
+					Manufacturer:       "Record Company",
+					Brand:              "Your Favorite Band",
+					Taxable:            true,
+					Quantity:           666,
+					Price:              20,
+					Cost:               10,
+					ProductWeight:      1,
+					ProductHeight:      5,
+					ProductWidth:       5,
+					ProductLength:      5,
+					PackageWeight:      1,
+					PackageHeight:      5,
+					PackageWidth:       5,
+					PackageLength:      5,
+					QuantityPerPackage: 1,
+					// FIXME:
+					// ApplicableOptionValues: []models.ProductOptionValue{{Value: "small"}, {Value: "red"}},
+				},
+				{
+					Name:               "Your Favorite Band's T-Shirt",
+					Subtitle:           "A t-shirt you can wear",
+					Description:        "Wear this if you'd like. Or don't, I'm not in charge of your actions",
+					SKU:                "t-shirt-medium-red",
+					OptionSummary:      "Size: Medium, Color: Red",
+					Manufacturer:       "Record Company",
+					Brand:              "Your Favorite Band",
+					Taxable:            true,
+					Quantity:           666,
+					Price:              20,
+					Cost:               10,
+					ProductWeight:      1,
+					ProductHeight:      5,
+					ProductWidth:       5,
+					ProductLength:      5,
+					PackageWeight:      1,
+					PackageHeight:      5,
+					PackageWidth:       5,
+					PackageLength:      5,
+					QuantityPerPackage: 1,
+					// ApplicableOptionValues: []models.ProductOptionValue{{Value: "medium"}, {Value: "red"}},
+				},
+				{
+					Name:               "Your Favorite Band's T-Shirt",
+					Subtitle:           "A t-shirt you can wear",
+					Description:        "Wear this if you'd like. Or don't, I'm not in charge of your actions",
+					SKU:                "t-shirt-large-red",
+					OptionSummary:      "Size: Large, Color: Red",
+					Manufacturer:       "Record Company",
+					Brand:              "Your Favorite Band",
+					Taxable:            true,
+					Quantity:           666,
+					Price:              20,
+					Cost:               10,
+					ProductWeight:      1,
+					ProductHeight:      5,
+					ProductWidth:       5,
+					ProductLength:      5,
+					PackageWeight:      1,
+					PackageHeight:      5,
+					PackageWidth:       5,
+					PackageLength:      5,
+					QuantityPerPackage: 1,
+					// ApplicableOptionValues: []models.ProductOptionValue{{Value: "large"}, {Value: "red"}},
+				},
+				{
+					Name:               "Your Favorite Band's T-Shirt",
+					Subtitle:           "A t-shirt you can wear",
+					Description:        "Wear this if you'd like. Or don't, I'm not in charge of your actions",
+					SKU:                "t-shirt-small-blue",
+					OptionSummary:      "Size: Small, Color: Blue",
+					Manufacturer:       "Record Company",
+					Brand:              "Your Favorite Band",
+					Taxable:            true,
+					Quantity:           666,
+					Price:              20,
+					Cost:               10,
+					ProductWeight:      1,
+					ProductHeight:      5,
+					ProductWidth:       5,
+					ProductLength:      5,
+					PackageWeight:      1,
+					PackageHeight:      5,
+					PackageWidth:       5,
+					PackageLength:      5,
+					QuantityPerPackage: 1,
+					// ApplicableOptionValues: []models.ProductOptionValue{{Value: "small"}, {Value: "blue"}},
+				},
+				{
+					Name:               "Your Favorite Band's T-Shirt",
+					Subtitle:           "A t-shirt you can wear",
+					Description:        "Wear this if you'd like. Or don't, I'm not in charge of your actions",
+					SKU:                "t-shirt-medium-blue",
+					OptionSummary:      "Size: Medium, Color: Blue",
+					Manufacturer:       "Record Company",
+					Brand:              "Your Favorite Band",
+					Taxable:            true,
+					Quantity:           666,
+					Price:              20,
+					Cost:               10,
+					ProductWeight:      1,
+					ProductHeight:      5,
+					ProductWidth:       5,
+					ProductLength:      5,
+					PackageWeight:      1,
+					PackageHeight:      5,
+					PackageWidth:       5,
+					PackageLength:      5,
+					QuantityPerPackage: 1,
+					// ApplicableOptionValues: []models.ProductOptionValue{{Value: "medium"}, {Value: "blue"}},
+				},
+				{
+					Name:               "Your Favorite Band's T-Shirt",
+					Subtitle:           "A t-shirt you can wear",
+					Description:        "Wear this if you'd like. Or don't, I'm not in charge of your actions",
+					SKU:                "t-shirt-large-blue",
+					OptionSummary:      "Size: Large, Color: Blue",
+					Manufacturer:       "Record Company",
+					Brand:              "Your Favorite Band",
+					Taxable:            true,
+					Quantity:           666,
+					Price:              20,
+					Cost:               10,
+					ProductWeight:      1,
+					ProductHeight:      5,
+					ProductWidth:       5,
+					ProductLength:      5,
+					PackageWeight:      1,
+					PackageHeight:      5,
+					PackageWidth:       5,
+					PackageLength:      5,
+					QuantityPerPackage: 1,
+					// ApplicableOptionValues: []models.ProductOptionValue{{Value: "large"}, {Value: "blue"}},
+				},
+				{
+					Name:               "Your Favorite Band's T-Shirt",
+					Subtitle:           "A t-shirt you can wear",
+					Description:        "Wear this if you'd like. Or don't, I'm not in charge of your actions",
+					SKU:                "t-shirt-small-green",
+					OptionSummary:      "Size: Small, Color: Green",
+					Manufacturer:       "Record Company",
+					Brand:              "Your Favorite Band",
+					Taxable:            true,
+					Quantity:           666,
+					Price:              20,
+					Cost:               10,
+					ProductWeight:      1,
+					ProductHeight:      5,
+					ProductWidth:       5,
+					ProductLength:      5,
+					PackageWeight:      1,
+					PackageHeight:      5,
+					PackageWidth:       5,
+					PackageLength:      5,
+					QuantityPerPackage: 1,
+					// ApplicableOptionValues: []models.ProductOptionValue{{Value: "small"}, {Value: "green"}},
+				},
+				{
+					Name:               "Your Favorite Band's T-Shirt",
+					Subtitle:           "A t-shirt you can wear",
+					Description:        "Wear this if you'd like. Or don't, I'm not in charge of your actions",
+					SKU:                "t-shirt-medium-green",
+					OptionSummary:      "Size: Medium, Color: Green",
+					Manufacturer:       "Record Company",
+					Brand:              "Your Favorite Band",
+					Taxable:            true,
+					Quantity:           666,
+					Price:              20,
+					Cost:               10,
+					ProductWeight:      1,
+					ProductHeight:      5,
+					ProductWidth:       5,
+					ProductLength:      5,
+					PackageWeight:      1,
+					PackageHeight:      5,
+					PackageWidth:       5,
+					PackageLength:      5,
+					QuantityPerPackage: 1,
+					// ApplicableOptionValues: []models.ProductOptionValue{{Value: "medium"}, {Value: "green"}},
+				},
+				{
+					Name:               "Your Favorite Band's T-Shirt",
+					Subtitle:           "A t-shirt you can wear",
+					Description:        "Wear this if you'd like. Or don't, I'm not in charge of your actions",
+					SKU:                "t-shirt-large-green",
+					OptionSummary:      "Size: Large, Color: Green",
+					Manufacturer:       "Record Company",
+					Brand:              "Your Favorite Band",
+					Taxable:            true,
+					Quantity:           666,
+					Price:              20,
+					Cost:               10,
+					ProductWeight:      1,
+					ProductHeight:      5,
+					ProductWidth:       5,
+					ProductLength:      5,
+					PackageWeight:      1,
+					PackageHeight:      5,
+					PackageWidth:       5,
+					PackageLength:      5,
+					QuantityPerPackage: 1,
+					// ApplicableOptionValues: []models.ProductOptionValue{{Value: "large"}, {Value: "green"}},
+				},
+			},
+		}
+		var actual models.ProductRoot
+		unmarshalBody(resp, &actual)
+		compareProductRoots(t, expected, actual)
+	})
 
-// func TestProductRootDeletionRoute(t *testing.T) {
-// 	t.Skip()
+	t.Run("nonexistent product root", func(*testing.T) {
+		resp, err := retrieveProductRoot(nonexistentID)
+		assert.Nil(t, err)
+		assertStatusCode(t, resp, http.StatusNotFound)
 
-// 	var productRootID uint64
-// 	testSKU := "test-product-root-deletion"
-// 	testProductCreation := func(t *testing.T) {
-// 		newProductJSON := createProductCreationBody(testSKU, "")
-// 		resp, err := createProduct(newProductJSON)
-// 		assert.Nil(t, err)
+		expected := models.ErrorResponse{
+			Status:  http.StatusNotFound,
+			Message: fmt.Sprintf("The product_root you were looking for (identified by '%s') does not exist", nonexistentID),
+		}
+		var actual models.ErrorResponse
+		unmarshalBody(resp, &actual)
+		assert.Equal(t, expected, actual)
+	})
+}
 
-// 		body := turnResponseBodyIntoString(t, resp)
-// 		productRootID = retrieveIDFromResponseBody(t, body)
-// 		assertStatusCode(t, resp, http.StatusCreated)
-// 	}
+func TestProductRootDeletionRoute(t *testing.T) {
+	// 	t.Parallel()
 
-// 	testDeleteProductRoot := func(t *testing.T) {
-// 		resp, err := deleteProductRoot(strconv.Itoa(int(productRootID)))
-// 		assert.Nil(t, err)
+	testSKU := "test-product-root-deletion"
+	t.Run("normal usage", func(*testing.T) {
+		testProduct := models.ProductCreationInput{SKU: testSKU}
 
-// 		body := turnResponseBodyIntoString(t, resp)
+		newProductJSON := createProductCreationBody(t, testProduct)
+		resp, err := createProduct(newProductJSON)
+		assert.Nil(t, err)
+		assertStatusCode(t, resp, http.StatusCreated)
 
-// 		assert.Empty(t, body)
-// 		assertStatusCode(t, resp, http.StatusOK)
-// 	}
+		var createdRoot models.ProductRoot
+		unmarshalBody(resp, &createdRoot)
+		assert.True(t, createdRoot.ArchivedOn.Time.IsZero())
 
-// 	subtests := []subtest{
-// 		{
-// 			Message: "create product",
-// 			Test:    testProductCreation,
-// 		},
-// 		{
-// 			Message: "delete created product root",
-// 			Test:    testDeleteProductRoot,
-// 		},
-// 	}
-// 	runSubtestSuite(t, subtests)
-// }
+		resp, err = deleteProductRoot(strconv.Itoa(int(createdRoot.ID)))
+		assert.Nil(t, err)
+		assertStatusCode(t, resp, http.StatusOK)
 
-// func TestProductRootDeletionRouteForNonexistentRoot(t *testing.T) {
-// 	t.Skip()
-// 	resp, err := deleteProductRoot(nonexistentID)
-// 	assert.Nil(t, err)
+		var actual models.ProductRoot
+		unmarshalBody(resp, &actual)
+		assert.True(t, createdRoot.ArchivedOn.Valid)
+	})
 
-// 	actual := turnResponseBodyIntoString(t, resp)
-// 	expected := `{"status":404,"message":"The product_root you were looking for (identified by '999999999') does not exist"}`
-// 	assert.Equal(t, expected, actual, "expected and actual bodies should match")
-// 	assertStatusCode(t, resp, http.StatusNotFound)
-// }
+	t.Run("nonexistent product root", func(*testing.T) {
+		resp, err := deleteProductRoot(nonexistentID)
+		assert.Nil(t, err)
+		assertStatusCode(t, resp, http.StatusNotFound)
 
-// func TestProductCreationWithAlreadyExistentSKU(t *testing.T) {
-// 	t.Skip()
-// 	existentProductJSON := `
-// 		{
-// 			"name": "Your Favorite Band's T-Shirt",
-// 			"subtitle": "A t-shirt you can wear",
-// 			"description": "Wear this if you'd like. Or don't, I'm not in charge of your actions",
-// 			"sku": "t-shirt",
-// 			"upc": "",
-// 			"manufacturer": "Record Company",
-// 			"brand": "Your Favorite Band",
-// 			"quantity": 666,
-// 			"quantity_per_package": 1,
-// 			"taxable": true,
-// 			"price": 20,
-// 			"on_sale": false,
-// 			"sale_price": 0,
-// 			"cost": 10,
-// 			"product_weight": 1,
-// 			"product_height": 5,
-// 			"product_width": 5,
-// 			"product_length": 5,
-// 			"package_weight": 1,
-// 			"package_height": 5,
-// 			"package_width": 5,
-// 			"package_length": 5
-// 		}
-// 	`
-// 	resp, err := createProduct(existentProductJSON)
-// 	assert.Nil(t, err)
-// 	assertStatusCode(t, resp, http.StatusBadRequest)
+		expected := models.ErrorResponse{
+			Status:  http.StatusNotFound,
+			Message: fmt.Sprintf("The product_root you were looking for (identified by '%s') does not exist", nonexistentID),
+		}
+		var actual models.ErrorResponse
+		unmarshalBody(resp, &actual)
+		assert.Equal(t, expected, actual)
+	})
+}
 
-// 	actual := turnResponseBodyIntoString(t, resp)
-// 	expected := minifyJSON(t, `
-// 		{
-// 			"status": 400,
-// 			"message": "product with sku 't-shirt' already exists"
-// 		}
-// 	`)
-// 	assert.Equal(t, expected, actual, "product creation route should respond with failure message when you try to create a sku that already exists")
-// }
+func TestProductOptionListRoute(t *testing.T) {
+	// 	t.Parallel()
 
-// func TestProductCreationWithInvalidInput(t *testing.T) {
-// 	t.Skip()
-// 	resp, err := createProduct(exampleGarbageInput)
-// 	assert.Nil(t, err)
-// 	assertStatusCode(t, resp, http.StatusBadRequest)
+	t.Run("no filter", func(*testing.T) {
+		resp, err := retrieveProductOptions("1", nil)
+		assert.Nil(t, err)
+		assertStatusCode(t, resp, http.StatusOK)
 
-// 	actual := turnResponseBodyIntoString(t, resp)
-// 	assert.Equal(t, expectedBadRequestResponse, actual, "product creation route should respond with failure message when you try to create a product with invalid input")
-// }
+		expected := models.ListResponse{
+			Limit: 25,
+			Page:  1,
+		}
+		var actual models.ListResponse
+		unmarshalBody(resp, &actual)
+		compareListResponses(t, expected, actual)
+	})
 
-// func TestProductOptionListRetrievalWithDefaultFilter(t *testing.T) {
-// 	t.Skip()
-// 	resp, err := retrieveProductOptions("1", nil)
-// 	assert.Nil(t, err)
-// 	assertStatusCode(t, resp, http.StatusOK)
+	// FIXME
+	// t.Run("custom filter", func(*testing.T) {
+	// 	customFilter := map[string]string{
+	// 		"page":  "2",
+	// 		"limit": "1",
+	// 	}
+	// 	resp, err := retrieveProductOptions("1", customFilter)
+	// 	assert.Nil(t, err)
+	// 	assertStatusCode(t, resp, http.StatusOK)
 
-// 	body := turnResponseBodyIntoString(t, resp)
-
-// 	lr := parseResponseIntoStruct(t, body)
-// 	assert.True(t, len(lr.Data) <= int(lr.Limit), "product option list route should not return more data than the limit")
-// 	assert.Equal(t, uint8(25), lr.Limit, "product option list route should respond with the default limit when a limit is not specified")
-// 	assert.Equal(t, uint64(1), lr.Page, "product option list route should respond with the first page when a page is not specified")
-// }
-
-// func TestProductOptionListRetrievalWithCustomFilter(t *testing.T) {
-// 	t.Skip()
-// 	customFilter := map[string]string{
-// 		"page":  "2",
-// 		"limit": "1",
-// 	}
-// 	resp, err := retrieveProductOptions("1", customFilter)
-// 	assert.Nil(t, err)
-// 	assertStatusCode(t, resp, http.StatusOK)
-
-// 	body := turnResponseBodyIntoString(t, resp)
-
-// 	lr := parseResponseIntoStruct(t, body)
-// 	assert.True(t, len(lr.Data) <= int(lr.Limit), "product option list route should not return more data than the limit")
-// 	assert.Equal(t, uint8(1), lr.Limit, "product option list route should respond with the default limit when a limit is not specified")
-// 	assert.Equal(t, uint64(2), lr.Page, "product option list route should respond with the first page when a page is not specified")
-// }
+	// 	expected := models.ListResponse{
+	// 		Limit: 1,
+	// 		Page:  2,
+	// 	}
+	// 	var actual models.ListResponse
+	// 	unmarshalBody(resp, &actual)
+	// 	compareListResponses(t, expected, actual)
+	// })
+}
 
 // func TestProductOptionCreation(t *testing.T) {
 // 	t.Skip()
