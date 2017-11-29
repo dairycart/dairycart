@@ -13,7 +13,7 @@ import (
 	"testing"
 	// "text/template"
 
-	"github.com/dairycart/dairymodels"
+	"github.com/dairycart/dairycart/api/storage/models"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -344,7 +344,7 @@ func TestProductUpdateRoute(t *testing.T) {
 		deleteTestProduct(t, testSKU)
 	})
 
-	t.Run("with completely invalid input", func(*testing.T) {
+	t.Run("with invalid input", func(*testing.T) {
 		resp, err := updateProduct(existentSKU, exampleGarbageInput)
 		assert.Nil(t, err)
 		assertStatusCode(t, resp, http.StatusBadRequest)
@@ -1202,96 +1202,59 @@ func TestProductOptionDeletion(t *testing.T) {
 	})
 }
 
-// func TestProductOptionUpdate(t *testing.T) {
-// 	t.Skip()
-// 	testSKU := "testing_product_options"
-// 	testOptionName := "example_option_to_update"
-// 	var createdOptionID uint64
-// 	var createdRootID uint64
+func TestProductOptionUpdate(t *testing.T) {
+	// t.Parallel()
 
-// 	updatedOptionName := "not_the_same"
+	t.Run("normal usage", func(*testing.T) {
+		testSKU := "testing_product_options"
+		testOptionName := "example_option_to_update"
 
-// 	testProductCreation := func(t *testing.T) {
-// 		newProductJSON := createProductCreationBody(testSKU, "")
-// 		resp, err := createProduct(newProductJSON)
-// 		assert.Nil(t, err)
-// 		assertStatusCode(t, resp, http.StatusCreated)
-// 		body := turnResponseBodyIntoString(t, resp)
-// 		createdRootID = retrieveIDFromResponseBody(t, body)
-// 	}
+		// create product to attach option to
+		testProduct := models.ProductCreationInput{SKU: testSKU}
+		newProductJSON := createJSONBody(t, testProduct)
+		resp, err := createProduct(newProductJSON)
+		assert.Nil(t, err)
+		assertStatusCode(t, resp, http.StatusCreated)
 
-// 	testProductOptionCreation := func(t *testing.T) {
-// 		newOptionJSON := createProductOptionCreationBody(testOptionName)
-// 		resp, err := createProductOptionForProduct(strconv.Itoa(int(createdRootID)), newOptionJSON)
-// 		assert.Nil(t, err)
-// 		assertStatusCode(t, resp, http.StatusCreated)
+		var createdProductRoot models.ProductRoot
+		unmarshalBody(t, resp, &createdProductRoot)
 
-// 		body := turnResponseBodyIntoString(t, resp)
-// 		createdOptionID = retrieveIDFromResponseBody(t, body)
-// 	}
+		// create option
+		testOption := models.ProductOptionCreationInput{
+			Name:   testOptionName,
+			Values: []string{"one", "two", "three"},
+		}
+		newOptionJSON := createJSONBody(t, testOption)
+		resp, err = createProductOptionForProduct(strconv.Itoa(int(createdProductRoot.ID)), newOptionJSON)
+		assert.Nil(t, err)
+		assertStatusCode(t, resp, http.StatusCreated)
 
-// 	testUpdateProductOption := func(t *testing.T) {
-// 		updatedOptionJSON := createProductOptionBody(updatedOptionName)
-// 		resp, err := updateProductOption(strconv.Itoa(int(createdOptionID)), updatedOptionJSON)
-// 		assert.Nil(t, err)
-// 		assertStatusCode(t, resp, http.StatusOK)
+		var createdOption models.ProductOption
+		unmarshalBody(t, resp, &createdOption)
 
-// 		body := turnResponseBodyIntoString(t, resp)
-// 		actual := cleanAPIResponseBody(body)
-// 		expected := minifyJSON(t, `
-// 			{
-// 				"name": "not_the_same",
-// 				"values": [{
-// 					"value": "one"
-// 				}, {
-// 					"value": "two"
-// 				}, {
-// 					"value": "three"
-// 				}]
-// 			}
-// 		`)
-// 		assert.Equal(t, expected, actual, "product option update response should reflect the updated fields")
-// 	}
+		// update product option
+		optionUpdate := models.ProductOption{Name: "not_the_same"} // `{"name": "not_the_same"}`
+		optionUpdateJSON := createJSONBody(t, optionUpdate)
+		resp, err = updateProductOption(strconv.Itoa(int(createdOption.ID)), optionUpdateJSON)
 
-// 	testDeleteProductOption := func(t *testing.T) {
-// 		resp, err := deleteProductOption(strconv.Itoa(int(createdOptionID)))
-// 		assert.Nil(t, err)
-// 		assertStatusCode(t, resp, http.StatusOK)
+		assert.Nil(t, err)
+		assertStatusCode(t, resp, http.StatusOK)
 
-// 		actual := turnResponseBodyIntoString(t, resp)
-// 		assert.Equal(t, "", actual, "product option deletion route should respond with affirmative message upon successful deletion")
-// 	}
+		expected := models.ProductOption{
+			Name:   "not_the_same",
+			Values: []models.ProductOptionValue{{Value: "one"}, {Value: "two"}, {Value: "three"}},
+		}
 
-// 	testDeleteProduct := func(t *testing.T) {
-// 		resp, err := deleteProductRoot(strconv.Itoa(int(createdRootID)))
-// 		assert.Nil(t, err)
-// 		assertStatusCode(t, resp, http.StatusOK)
-// 	}
+		var actual models.ProductOption
+		assert.False(t, actual.UpdatedOn.Valid)
+		unmarshalBody(t, resp, &actual)
+		assert.True(t, actual.UpdatedOn.Valid)
+		compareProductOptions(t, expected, actual)
 
-// 	subtests := []subtest{
-// 		{
-// 			Message: "create product to add option to",
-// 			Test:    testProductCreation,
-// 		},
-// 		{
-// 			Message: "create product option",
-// 			Test:    testProductOptionCreation,
-// 		},
-// 		{
-// 			Message: "update product option",
-// 			Test:    testUpdateProductOption,
-// 		},
-// 		{
-// 			Message: "delete created product option",
-// 			Test:    testDeleteProductOption,
-// 		},
-// 		{
-// 			Message: "delete created product root",
-// 			Test:    testDeleteProduct,
-// 		},
-// 	}
-// 	runSubtestSuite(t, subtests)
-// }
+		// clean up after yourself
+		deleteProductOption(strconv.Itoa(int(createdOption.ID)))
+	})
+}
 
 // func TestProductOptionUpdateWithInvalidInput(t *testing.T) {
 // 	t.Skip()

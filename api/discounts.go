@@ -133,8 +133,11 @@ func buildDiscountUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerF
 			return
 		}
 
-		// eating the error here because we've already validated input
-		mergo.Merge(updatedDiscount, existingDiscount)
+		err = mergo.Merge(updatedDiscount, existingDiscount)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "merge input and existing data")
+			return
+		}
 
 		updatedOn, err := client.UpdateDiscount(db, updatedDiscount)
 		if err != nil {

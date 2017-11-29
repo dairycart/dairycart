@@ -443,8 +443,12 @@ func buildUserInfoUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerF
 		}
 
 		updatedUser := createUserFromUpdateInput(updatedUserInfo, hashedPassword)
-		// eating the error here because we've already validated input
-		mergo.Merge(updatedUser, existingUser)
+
+		err = mergo.Merge(updatedUser, existingUser)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "merge input and existing data")
+			return
+		}
 
 		if passwordChanged {
 			updatedUser.PasswordLastChangedOn = models.NullTime{NullTime: pq.NullTime{Time: time.Now(), Valid: true}}

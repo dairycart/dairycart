@@ -148,8 +148,11 @@ func buildProductOptionUpdateHandler(db *sql.DB, client storage.Storer) http.Han
 			return
 		}
 
-		// eating the error here because we've already validated input
-		mergo.Merge(updatedOptionData, existingOption)
+		err = mergo.MergeWithOverwrite(existingOption, updatedOptionData)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "merge input and existing data")
+			return
+		}
 
 		updatedOn, err := client.UpdateProductOption(db, existingOption)
 		if err != nil {

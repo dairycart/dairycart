@@ -180,8 +180,11 @@ func buildProductUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerFu
 			return
 		}
 
-		// eating the error here because we've already validated input
-		mergo.Merge(newerProduct, existingProduct)
+		err = mergo.Merge(newerProduct, existingProduct)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "merge input and existing data")
+			return
+		}
 
 		if !restrictedStringIsValid(newerProduct.SKU) {
 			notifyOfInvalidRequestBody(res, fmt.Errorf("The sku received (%s) is invalid", newerProduct.SKU))
