@@ -7,64 +7,30 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
+
+	"github.com/dairycart/dairycart/api/storage"
+	"github.com/dairycart/dairycart/api/storage/models"
 
 	"github.com/go-chi/chi"
-	"github.com/jmoiron/sqlx"
+	"github.com/imdario/mergo"
 	"github.com/lib/pq"
-	"github.com/pkg/errors"
 )
-
-const (
-	productOptionsHeaders = `id,
-		name,
-		product_root_id,
-		created_on,
-		updated_on,
-		archived_on
-	`
-	productOptionExistenceQuery                 = `SELECT EXISTS(SELECT 1 FROM product_options WHERE id = $1 AND archived_on IS NULL)`
-	productOptionRetrievalQuery                 = `SELECT * FROM product_options WHERE id = $1`
-	productOptionExistenceQueryForProductByName = `SELECT EXISTS(SELECT 1 FROM product_options WHERE name = $1 AND product_root_id = $2 and archived_on IS NULL)`
-	productOptionDeletionQuery                  = `UPDATE product_options SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
-	productOptionValuesDeletionQueryByOptionID  = `UPDATE product_option_values SET archived_on = NOW() WHERE product_option_id = $1 AND archived_on IS NULL`
-)
-
-// ProductOption represents a products variant options. If you have a t-shirt that comes in three colors
-// and three sizes, then there are two ProductOptions for that base_product, color and size.
-type ProductOption struct {
-	DBRow
-	ProductRootID uint64               `json:"product_root_id"`
-	Name          string               `json:"name"`
-	Values        []ProductOptionValue `json:"values"`
-}
-
-// ProductOptionUpdateInput is a struct to use for updating product options
-type ProductOptionUpdateInput struct {
-	Name string `json:"name"`
-}
-
-// ProductOptionCreationInput is a struct to use for creating product options
-type ProductOptionCreationInput struct {
-	Name   string   `json:"name"`
-	Values []string `json:"values"`
-}
 
 type simpleProductOption struct {
 	IDs            []uint64
 	OptionSummary  string
 	SKUPostfix     string
-	OriginalValues []ProductOptionValue
+	OriginalValues []models.ProductOptionValue
 }
 
 type optionPlaceholder struct {
 	ID            uint64
 	Summary       string
 	Value         string
-	OriginalValue ProductOptionValue
+	OriginalValue models.ProductOptionValue
 }
 
-func generateCartesianProductForOptions(inputOptions []*ProductOption) []simpleProductOption {
+func generateCartesianProductForOptions(inputOptions []models.ProductOption) []simpleProductOption {
 	/*
 		Some notes about this function:
 
@@ -110,7 +76,7 @@ func generateCartesianProductForOptions(inputOptions []*ProductOption) []simpleP
 		var ids []uint64
 		var skuPrefixParts []string
 		var optionSummaryParts []string
-		var originalValues []ProductOptionValue
+		var originalValues []models.ProductOptionValue
 		for j, k := range ix {
 			ids = append(ids, optionData[j][k].ID)
 			optionSummaryParts = append(optionSummaryParts, optionData[j][k].Summary)
@@ -128,61 +94,22 @@ func generateCartesianProductForOptions(inputOptions []*ProductOption) []simpleP
 	return output
 }
 
-// FIXME: this function should be abstracted
-func productOptionAlreadyExistsForProduct(db *sqlx.DB, in *ProductOptionCreationInput, productRootID string) (bool, error) {
-	var exists string
-
-	err := db.QueryRow(productOptionExistenceQueryForProductByName, in.Name, productRootID).Scan(&exists)
-	if err == sql.ErrNoRows {
-		return false, nil
-	}
-
-	return exists == "true", err
-}
-
-// retrieveProductOptionFromDB retrieves a ProductOption with a given ID from the database
-func retrieveProductOptionFromDB(db *sqlx.DB, id uint64) (*ProductOption, error) {
-	option := &ProductOption{}
-	err := db.QueryRowx(productOptionRetrievalQuery, id).StructScan(option)
-	if err == sql.ErrNoRows {
-		return option, errors.Wrap(err, "Error querying for product")
-	}
-	return option, err
-}
-
-func getProductOptionsForProductRoot(db *sqlx.DB, productRootID uint64, queryFilter *QueryFilter) ([]*ProductOption, error) {
-	var options []*ProductOption
-
-	query, args := buildProductOptionListQuery(productRootID, queryFilter)
-	err := db.Select(&options, query, args...)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error encountered querying for product options")
-	}
-
-	for _, option := range options {
-		option.Values, err = retrieveProductOptionValuesForOptionFromDB(db, option.ID)
-		if err != nil {
-			return options, errors.Wrap(err, "Error retrieving product option values for option")
-		}
-	}
-	return options, nil
-}
-
-func buildProductOptionListHandler(db *sqlx.DB) http.HandlerFunc {
+func buildProductOptionListHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		productRootID := chi.URLParam(req, "product_root_id")
+		productRootIDStr := chi.URLParam(req, "product_root_id")
+		// eating this error because the router should have ensured this is an integer
+		productRootID, _ := strconv.ParseUint(productRootIDStr, 10, 64)
 		rawFilterParams := req.URL.Query()
 		queryFilter := parseRawFilterParams(rawFilterParams)
-		productRootIDInt, _ := strconv.Atoi(productRootID)
 
 		// FIXME: this will return the count of all options, not the options for a given product root
-		count, err := getRowCount(db, "product_options", queryFilter)
+		count, err := client.GetProductOptionCount(db, queryFilter)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve count of product options from the database")
 			return
 		}
 
-		options, err := getProductOptionsForProductRoot(db, uint64(productRootIDInt), queryFilter)
+		options, err := client.GetProductOptionsByProductRootID(db, productRootID)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve products from the database")
 			return
@@ -198,121 +125,109 @@ func buildProductOptionListHandler(db *sqlx.DB) http.HandlerFunc {
 	}
 }
 
-func updateProductOptionInDB(db *sqlx.DB, a *ProductOption) (time.Time, error) {
-	var updatedOn time.Time
-	optionUpdateQuery, queryArgs := buildProductOptionUpdateQuery(a)
-	err := db.QueryRow(optionUpdateQuery, queryArgs...).Scan(&updatedOn)
-	return updatedOn, err
-}
-
-func buildProductOptionUpdateHandler(db *sqlx.DB) http.HandlerFunc {
+func buildProductOptionUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+	// ProductOptionUpdateHandler is a request handler that can update product options
 	return func(res http.ResponseWriter, req *http.Request) {
-		// ProductOptionUpdateHandler is a request handler that can update product options
-		optionID := chi.URLParam(req, "option_id")
-		// eating this error because Chi should validate this for us.
-		optionIDInt, _ := strconv.Atoi(optionID)
+		optionIDStr := chi.URLParam(req, "option_id")
+		// eating this error because the router should have ensured this is an integer
+		optionID, _ := strconv.ParseUint(optionIDStr, 10, 64)
 
-		// can't update an option that doesn't exist!
-		optionExists, err := rowExistsInDB(db, productOptionExistenceQuery, optionID)
-		if err != nil || !optionExists {
-			respondThatRowDoesNotExist(req, res, "product option", optionID)
-			return
-		}
-
-		updatedOptionData := &ProductOptionUpdateInput{}
-		err = validateRequestInput(req, updatedOptionData)
+		updatedOptionData := &models.ProductOption{}
+		err := validateRequestInput(req, updatedOptionData)
 		if err != nil {
 			notifyOfInvalidRequestBody(res, err)
 			return
 		}
 
-		existingOption, err := retrieveProductOptionFromDB(db, uint64(optionIDInt))
-		if err != nil {
-			notifyOfInternalIssue(res, err, "retrieve product option from the database")
+		existingOption, err := client.GetProductOption(db, optionID)
+		if err == sql.ErrNoRows {
+			respondThatRowDoesNotExist(req, res, "product option", optionIDStr)
+			return
+		} else if err != nil {
+			notifyOfInternalIssue(res, err, "retrieve product option from database")
 			return
 		}
-		existingOption.Name = updatedOptionData.Name
 
-		optionUpdatedOn, err := updateProductOptionInDB(db, existingOption)
+		err = mergo.MergeWithOverwrite(existingOption, updatedOptionData)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "merge input and existing data")
+			return
+		}
+
+		updatedOn, err := client.UpdateProductOption(db, existingOption)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "update product option in the database")
 			return
 		}
-		existingOption.UpdatedOn = NullTime{pq.NullTime{Time: optionUpdatedOn, Valid: true}}
+		existingOption.UpdatedOn = models.NullTime{NullTime: pq.NullTime{Time: updatedOn, Valid: true}}
 
-		existingOption.Values, err = retrieveProductOptionValuesForOptionFromDB(db, existingOption.ID)
+		values, err := client.GetProductOptionValuesForOption(db, existingOption.ID)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve product option from the database")
 			return
 		}
+		existingOption.Values = values
 
 		json.NewEncoder(res).Encode(existingOption)
 	}
 }
 
-func createProductOptionInDB(tx *sql.Tx, o *ProductOption, productRootID uint64) (uint64, time.Time, error) {
-	var newOptionID uint64
-	var createdOn time.Time
-	// using QueryRow instead of Exec because we want it to return the newly created row's ID
-	// Exec normally returns a sql.Result, which has a LastInsertedID() method, but when I tested
-	// this locally, it never worked. ¯\_(ツ)_/¯
-	query, queryArgs := buildProductOptionCreationQuery(o, productRootID)
-	err := tx.QueryRow(query, queryArgs...).Scan(&newOptionID, &createdOn)
-
-	return newOptionID, createdOn, err
-}
-
-func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in *ProductOptionCreationInput, productRootID uint64) (*ProductOption, error) {
+func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in models.ProductOptionCreationInput, productRootID uint64, client storage.Storer) (models.ProductOption, error) {
 	var err error
-	newProductOption := &ProductOption{Name: in.Name, ProductRootID: productRootID}
-	newProductOption.ID, newProductOption.CreatedOn, err = createProductOptionInDB(tx, newProductOption, productRootID)
+	newProductOption := &models.ProductOption{Name: in.Name, ProductRootID: productRootID}
+	newProductOption.ID, newProductOption.CreatedOn, err = client.CreateProductOption(tx, newProductOption)
 	if err != nil {
-		return nil, err
+		return models.ProductOption{}, err
 	}
 
 	for _, value := range in.Values {
-		newOptionValue := ProductOptionValue{
+		newOptionValue := models.ProductOptionValue{
 			ProductOptionID: newProductOption.ID,
 			Value:           value,
 		}
-		newOptionValueID, optionCreatedOn, err := createProductOptionValueInDB(tx, &newOptionValue)
+		newOptionValueID, optionCreatedOn, err := client.CreateProductOptionValue(tx, &newOptionValue)
 		if err != nil {
-			return nil, err
+			return models.ProductOption{}, err
 		}
 		newOptionValue.ID = newOptionValueID
 		newOptionValue.CreatedOn = optionCreatedOn
 		newProductOption.Values = append(newProductOption.Values, newOptionValue)
 	}
 
-	return newProductOption, nil
+	return *newProductOption, nil
 }
 
-func buildProductOptionCreationHandler(db *sqlx.DB) http.HandlerFunc {
+func buildProductOptionCreationHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
 	// ProductOptionCreationHandler is a request handler that can create product options
 	return func(res http.ResponseWriter, req *http.Request) {
-		productRootID := chi.URLParam(req, "product_root_id")
-		// eating this error because Chi should validate this for us.
-		i, _ := strconv.Atoi(productRootID)
-		productRootIDInt := uint64(i)
+		productRootIDStr := chi.URLParam(req, "product_root_id")
+		// eating this error because the router should have ensured this is an integer
+		productRootID, _ := strconv.ParseUint(productRootIDStr, 10, 64)
 
-		// can't create an option for a product that doesn't exist!
-		productRootExists, err := rowExistsInDB(db, productRootExistenceQuery, productRootID)
-		if err != nil || !productRootExists {
-			respondThatRowDoesNotExist(req, res, "product root", productRootID)
-			return
-		}
-
-		newOptionData := &ProductOptionCreationInput{}
-		err = validateRequestInput(req, newOptionData)
+		newOptionData := models.ProductOptionCreationInput{}
+		err := validateRequestInput(req, &newOptionData)
 		if err != nil {
 			notifyOfInvalidRequestBody(res, err)
 			return
 		}
 
+		// can't create an option for a product that doesn't exist!
+		productRootExists, err := client.ProductRootExists(db, productRootID)
+		if err == sql.ErrNoRows || !productRootExists {
+			respondThatRowDoesNotExist(req, res, "product root", productRootIDStr)
+			return
+		} else if err != nil {
+			notifyOfInternalIssue(res, err, "retrieve product root from database")
+			return
+		}
+
 		// can't create an option that already exists!
-		optionExists, err := productOptionAlreadyExistsForProduct(db, newOptionData, productRootID)
-		if err != nil || optionExists {
+		optionExists, err := client.ProductOptionWithNameExistsForProductRoot(db, newOptionData.Name, productRootID)
+		if optionExists {
 			notifyOfInvalidRequestBody(res, fmt.Errorf("product option with the name '%s' already exists", newOptionData.Name))
+			return
+		} else if err != nil {
+			notifyOfInternalIssue(res, err, "retrieve product option from database")
 			return
 		}
 
@@ -322,7 +237,7 @@ func buildProductOptionCreationHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		newProductOption, err := createProductOptionAndValuesInDBFromInput(tx, newOptionData, productRootIDInt)
+		newProductOption, err := createProductOptionAndValuesInDBFromInput(tx, newOptionData, productRootID, client)
 		if err != nil {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "create product option in the database")
@@ -340,47 +255,41 @@ func buildProductOptionCreationHandler(db *sqlx.DB) http.HandlerFunc {
 	}
 }
 
-func archiveProductOption(db *sqlx.Tx, optionID uint64) error {
-	_, err := db.Exec(productOptionDeletionQuery, optionID)
-	return err
-}
-
-func archiveProductOptionValuesForOption(db *sqlx.Tx, optionID uint64) error {
-	_, err := db.Exec(productOptionValuesDeletionQueryByOptionID, optionID)
-	return err
-}
-
-func buildProductOptionDeletionHandler(db *sqlx.DB) http.HandlerFunc {
+func buildProductOptionDeletionHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+	// ProductOptionDeletionHandler is a request handler that can delete product options
 	return func(res http.ResponseWriter, req *http.Request) {
-		// ProductOptionDeletionHandler is a request handler that can delete product options
-		optionID := chi.URLParam(req, "option_id")
-		// eating this error because Chi should validate this for us.
-		optionIDInt, _ := strconv.Atoi(optionID)
+		optionIDStr := chi.URLParam(req, "option_id")
+		// eating this error because the router should have ensured this is an integer
+		optionID, _ := strconv.ParseUint(optionIDStr, 10, 64)
 
 		// can't delete an option that doesn't exist!
-		optionExists, err := rowExistsInDB(db, productOptionExistenceQuery, optionID)
-		if err != nil || !optionExists {
-			respondThatRowDoesNotExist(req, res, "product option", optionID)
+		existingOption, err := client.GetProductOption(db, optionID)
+		if err == sql.ErrNoRows {
+			respondThatRowDoesNotExist(req, res, "product option", optionIDStr)
+			return
+		} else if err != nil {
+			notifyOfInternalIssue(res, err, "retrieve product option from database")
 			return
 		}
 
-		tx, err := db.Beginx()
+		tx, err := db.Begin()
 		if err != nil {
 			notifyOfInternalIssue(res, err, "starting a new transaction")
 			return
 		}
 
-		err = archiveProductOptionValuesForOption(tx, uint64(optionIDInt))
+		_, err = client.ArchiveProductOptionValuesForOption(tx, optionID)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "archiving product option values")
 			return
 		}
 
-		err = archiveProductOption(tx, uint64(optionIDInt))
+		archivedOn, err := client.DeleteProductOption(tx, optionID)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "archiving product options")
 			return
 		}
+		existingOption.ArchivedOn = models.NullTime{NullTime: pq.NullTime{Time: archivedOn, Valid: true}}
 
 		err = tx.Commit()
 		if err != nil {
@@ -388,6 +297,6 @@ func buildProductOptionDeletionHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		res.WriteHeader(http.StatusOK)
+		json.NewEncoder(res).Encode(existingOption)
 	}
 }

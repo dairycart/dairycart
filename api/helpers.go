@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,66 +11,25 @@ import (
 	"strconv"
 	"time"
 
-	validator "github.com/asaskevich/govalidator"
+	"github.com/dairycart/dairycart/api/storage/models"
 
+	validator "github.com/asaskevich/govalidator"
 	"github.com/fatih/structs"
-	"github.com/jmoiron/sqlx"
-	"github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 )
 
 const (
 	// DefaultLimit is the number of results we will return per page if the user doesn't specify another amount
 	DefaultLimit = 25
-	// DefaultLimitString is DefaultLimit but in string form because types are a thing
-	DefaultLimitString = "25"
 	// MaxLimit is the maximum number of objects Dairycart will return in a response
 	MaxLimit = 50
 
 	dataValidationPattern = `^[a-zA-Z\-_]{1,50}$`
-	timeLayout            = "2006-01-02T15:04:05.000000Z"
 )
-
-// Modified from code borrowed from http://stackoverflow.com/questions/32825640/custom-marshaltext-for-golang-sql-null-types
-
-// NullTime is a json.Marshal-able pq.NullTime.
-type NullTime struct {
-	pq.NullTime
-}
-
-// MarshalText satisfies the encoding.TestMarshaler interface
-func (nt NullTime) MarshalText() ([]byte, error) {
-	if nt.Valid {
-		return []byte(nt.Time.Format(timeLayout)), nil
-	}
-	return nil, nil
-}
-
-// UnmarshalText is a function which unmarshals a NullTime
-func (nt *NullTime) UnmarshalText(text []byte) (err error) {
-	if len(text) == 0 {
-		nt.Time = time.Time{}
-		nt.Valid = true
-		return nil
-	}
-
-	t, _ := time.Parse(timeLayout, string(text))
-	nt.Time = t
-	nt.Valid = true
-	return nil
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 //    ¸,ø¤º°º¤ø,¸¸,ø¤º°   Everything after this point is not borrowed.   °º¤ø,¸¸,ø¤º°º¤ø,¸    //
 ////////////////////////////////////////////////////////////////////////////////////////////////
-
-// DBRow is meant to represent the base columns that every database table should have
-type DBRow struct {
-	ID         uint64    `json:"id"`
-	CreatedOn  time.Time `json:"created_on"`
-	UpdatedOn  NullTime  `json:"updated_on,omitempty"`
-	ArchivedOn NullTime  `json:"archived_on,omitempty"`
-}
 
 // ListResponse is a generic list response struct containing values that represent
 // pagination, meant to be embedded into other object response structs
@@ -88,18 +46,8 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
-// QueryFilter represents a query filter
-type QueryFilter struct {
-	Page          uint64
-	Limit         uint8
-	CreatedAfter  time.Time
-	CreatedBefore time.Time
-	UpdatedAfter  time.Time
-	UpdatedBefore time.Time
-}
-
-func parseRawFilterParams(rawFilterParams url.Values) *QueryFilter {
-	qf := &QueryFilter{
+func parseRawFilterParams(rawFilterParams url.Values) *models.QueryFilter {
+	qf := &models.QueryFilter{
 		Page:  1,
 		Limit: 25,
 	}
@@ -120,7 +68,7 @@ func parseRawFilterParams(rawFilterParams url.Values) *QueryFilter {
 		if err != nil {
 			log.Printf("encountered error when trying to parse query filter param %s: %v", `Limit`, err)
 		} else {
-			qf.Limit = uint8(math.Min(i, MaxLimit))
+			qf.Limit = uint8(math.Max(math.Min(i, MaxLimit), DefaultLimit))
 		}
 	}
 
@@ -174,31 +122,6 @@ func restrictedStringIsValid(input string) bool {
 	dataValidator := regexp.MustCompile(dataValidationPattern)
 	matches := dataValidator.MatchString(input)
 	return matches
-}
-
-func getRowCount(db *sqlx.DB, table string, queryFilter *QueryFilter) (uint64, error) {
-	var count uint64
-	query := buildCountQuery(table, queryFilter)
-	err := db.Get(&count, query)
-	return count, err
-}
-
-func retrieveListOfRowsFromDB(db *sqlx.DB, query string, args []interface{}, rows interface{}) error {
-	return db.Select(rows, query, args...)
-}
-
-// rowExistsInDB will return whether or not a product/option/etc with a given identifier exists in the database
-func rowExistsInDB(db *sqlx.DB, query string, identifier string) (bool, error) {
-	var exists string
-
-	err := db.QueryRow(query, identifier).Scan(&exists)
-	if err == sql.ErrNoRows {
-		return false, nil
-	} else if err != nil {
-		return false, err
-	}
-
-	return exists == "true", err
 }
 
 func validateRequestInput(req *http.Request, output interface{}) error {

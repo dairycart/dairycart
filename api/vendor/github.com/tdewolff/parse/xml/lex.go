@@ -2,17 +2,12 @@
 package xml // import "github.com/tdewolff/parse/xml"
 
 import (
-	"errors"
 	"io"
 	"strconv"
 
-	"github.com/tdewolff/buffer"
+	"github.com/tdewolff/parse"
+	"github.com/tdewolff/parse/buffer"
 )
-
-// ErrBadNull is returned when a null character is encountered.
-var ErrBadNull = errors.New("unexpected null character")
-
-////////////////////////////////////////////////////////////////
 
 // TokenType determines the type of token, eg. a number or a semicolon.
 type TokenType uint32
@@ -93,9 +88,9 @@ func (l *Lexer) Err() error {
 	return l.err
 }
 
-// Free frees up bytes of length n from previously shifted tokens.
-func (l *Lexer) Free(n int) {
-	l.r.Free(n)
+// Restore restores the NULL byte at the end of the buffer.
+func (l *Lexer) Restore() {
+	l.r.Restore()
 }
 
 // Next returns the next Token. It returns ErrorToken when an error was encountered. Using Err() one can retrieve the error message.
@@ -112,7 +107,7 @@ func (l *Lexer) Next() (TokenType, []byte) {
 			break
 		}
 		if c == 0 {
-			l.err = ErrBadNull
+			l.err = parse.NewErrorLexer("unexpected null character", l.r)
 			return ErrorToken, nil
 		} else if c != '>' && (c != '/' && c != '?' || l.r.Peek(1) != '>') {
 			return AttributeToken, l.shiftAttribute()
@@ -169,7 +164,7 @@ func (l *Lexer) Next() (TokenType, []byte) {
 			if l.r.Pos() > 0 {
 				return TextToken, l.r.Shift()
 			}
-			l.err = ErrBadNull
+			l.err = parse.NewErrorLexer("unexpected null character", l.r)
 			return ErrorToken, nil
 		}
 		l.r.Move(1)

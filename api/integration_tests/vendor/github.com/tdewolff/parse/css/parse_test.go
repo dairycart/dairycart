@@ -6,6 +6,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/tdewolff/parse"
 	"github.com/tdewolff/test"
 )
 
@@ -40,10 +41,10 @@ func TestParse(t *testing.T) {
 		{false, "@keyframes 'diagonal-slide' {  from { left: 0; top: 0; } to { left: 100px; top: 100px; } }", "@keyframes 'diagonal-slide'{from{left:0;top:0;}to{left:100px;top:100px;}}"},
 		{false, "@keyframes movingbox{0%{left:90%;}50%{left:10%;}100%{left:90%;}}", "@keyframes movingbox{0%{left:90%;}50%{left:10%;}100%{left:90%;}}"},
 		{false, ".foo { color: #fff;}", ".foo{color:#fff;}"},
-		{false, ".foo { *color: #fff;}", ".foo{*color:#fff;}"},
 		{false, ".foo { ; _color: #fff;}", ".foo{_color:#fff;}"},
 		{false, "a { color: red; border: 0; }", "a{color:red;border:0;}"},
 		{false, "a { color: red; border: 0; } b { padding: 0; }", "a{color:red;border:0;}b{padding:0;}"},
+		{false, "/* comment */", "/* comment */"},
 
 		// extraordinary
 		{true, "color: red;;", "color:red;"},
@@ -52,6 +53,7 @@ func TestParse(t *testing.T) {
 		{true, "filter: progid : DXImageTransform.Microsoft.BasicImage(rotation=1);", "filter:progid:DXImageTransform.Microsoft.BasicImage(rotation=1);"},
 		{true, "/*a*/\n/*c*/\nkey: value;", "key:value;"},
 		{true, "@-moz-charset;", "@-moz-charset;"},
+		{true, "--custom-variable:  (0;)  ;", "--custom-variable:  (0;)  ;"},
 		{false, "@import;@import;", "@import;@import;"},
 		{false, ".a .b#c, .d<.e { x:y; }", ".a .b#c,.d<.e{x:y;}"},
 		{false, ".a[b~=c]d { x:y; }", ".a[b~=c]d{x:y;}"},
@@ -81,9 +83,14 @@ func TestParse(t *testing.T) {
 		{false, "table { @unknown }", "table{@unknown;}"},
 
 		// early endings
-		{true, "~color:red;", ""},
 		{false, "selector{", "selector{"},
 		{false, "@media{selector{", "@media{selector{"},
+
+		// bad grammar
+		{true, "~color:red", "~color:red;"},
+		{false, ".foo { *color: #fff;}", ".foo{*color:#fff;}"},
+		{true, "*color: red; font-size: 12pt;", "*color:red;font-size:12pt;"},
+		{true, "_color: red; font-size: 12pt;", "_color:red;font-size:12pt;"},
 
 		// issues
 		{false, "@media print {.class{width:5px;}}", "@media print{.class{width:5px;}}"},                  // #6
@@ -95,63 +102,86 @@ func TestParse(t *testing.T) {
 		{false, "@-webkit-", "@-webkit-;"},
 	}
 	for _, tt := range parseTests {
-		output := ""
-		p := NewParser(bytes.NewBufferString(tt.css), tt.inline)
-		for {
-			grammar, _, data := p.Next()
-			if grammar == ErrorGrammar {
-				err := p.Err()
-				if err != nil {
-					test.Error(t, err, io.EOF, "in "+tt.css)
+		t.Run(tt.css, func(t *testing.T) {
+			output := ""
+			p := NewParser(bytes.NewBufferString(tt.css), tt.inline)
+			for {
+				grammar, _, data := p.Next()
+				data = parse.Copy(data)
+				if grammar == ErrorGrammar {
+					if err := p.Err(); err != io.EOF {
+						for _, val := range p.Values() {
+							data = append(data, val.Data...)
+						}
+						if perr, ok := err.(*parse.Error); ok && perr.Message == "unexpected token in declaration" {
+							data = append(data, ";"...)
+						}
+					} else {
+						test.T(t, err, io.EOF)
+						break
+					}
+				} else if grammar == AtRuleGrammar || grammar == BeginAtRuleGrammar || grammar == QualifiedRuleGrammar || grammar == BeginRulesetGrammar || grammar == DeclarationGrammar || grammar == CustomPropertyGrammar {
+					if grammar == DeclarationGrammar || grammar == CustomPropertyGrammar {
+						data = append(data, ":"...)
+					}
+					for _, val := range p.Values() {
+						data = append(data, val.Data...)
+					}
+					if grammar == BeginAtRuleGrammar || grammar == BeginRulesetGrammar {
+						data = append(data, "{"...)
+					} else if grammar == AtRuleGrammar || grammar == DeclarationGrammar || grammar == CustomPropertyGrammar {
+						data = append(data, ";"...)
+					} else if grammar == QualifiedRuleGrammar {
+						data = append(data, ","...)
+					}
 				}
-				break
-			} else if grammar == AtRuleGrammar || grammar == BeginAtRuleGrammar || grammar == BeginRulesetGrammar || grammar == DeclarationGrammar {
-				if grammar == DeclarationGrammar {
-					data = append(data, ":"...)
-				}
-				for _, val := range p.Values() {
-					data = append(data, val.Data...)
-				}
-				if grammar == BeginAtRuleGrammar || grammar == BeginRulesetGrammar {
-					data = append(data, "{"...)
-				} else if grammar == AtRuleGrammar || grammar == DeclarationGrammar {
-					data = append(data, ";"...)
-				}
+				output += string(data)
 			}
-			output += string(data)
-		}
-		test.String(t, output, tt.expected, "in "+tt.css)
+			test.String(t, output, tt.expected)
+		})
 	}
 
-	test.String(t, ErrorGrammar.String(), "Error")
-	test.String(t, AtRuleGrammar.String(), "AtRule")
-	test.String(t, BeginAtRuleGrammar.String(), "BeginAtRule")
-	test.String(t, EndAtRuleGrammar.String(), "EndAtRule")
-	test.String(t, BeginRulesetGrammar.String(), "BeginRuleset")
-	test.String(t, EndRulesetGrammar.String(), "EndRuleset")
-	test.String(t, DeclarationGrammar.String(), "Declaration")
-	test.String(t, TokenGrammar.String(), "Token")
-	test.String(t, GrammarType(100).String(), "Invalid(100)")
+	test.T(t, ErrorGrammar.String(), "Error")
+	test.T(t, AtRuleGrammar.String(), "AtRule")
+	test.T(t, BeginAtRuleGrammar.String(), "BeginAtRule")
+	test.T(t, EndAtRuleGrammar.String(), "EndAtRule")
+	test.T(t, BeginRulesetGrammar.String(), "BeginRuleset")
+	test.T(t, EndRulesetGrammar.String(), "EndRuleset")
+	test.T(t, DeclarationGrammar.String(), "Declaration")
+	test.T(t, TokenGrammar.String(), "Token")
+	test.T(t, CommentGrammar.String(), "Comment")
+	test.T(t, CustomPropertyGrammar.String(), "CustomProperty")
+	test.T(t, GrammarType(100).String(), "Invalid(100)")
 }
 
 func TestParseError(t *testing.T) {
 	var parseErrorTests = []struct {
-		inline   bool
-		css      string
-		expected error
+		inline bool
+		css    string
+		col    int
 	}{
-		{false, "selector", ErrBadQualifiedRule},
-		{true, "color 0", ErrBadDeclaration},
+		{false, "selector", 9},
+		{true, "color 0", 8},
+		{true, "--color 0", 10},
+		{true, "--custom-variable:0", 0},
 	}
 	for _, tt := range parseErrorTests {
-		p := NewParser(bytes.NewBufferString(tt.css), tt.inline)
-		for {
-			grammar, _, _ := p.Next()
-			if grammar == ErrorGrammar {
-				test.Error(t, p.Err(), tt.expected, "in "+tt.css)
-				break
+		t.Run(tt.css, func(t *testing.T) {
+			p := NewParser(bytes.NewBufferString(tt.css), tt.inline)
+			for {
+				grammar, _, _ := p.Next()
+				if grammar == ErrorGrammar {
+					if tt.col == 0 {
+						test.T(t, p.Err(), io.EOF)
+					} else if perr, ok := p.Err().(*parse.Error); ok {
+						test.T(t, perr.Col, tt.col)
+					} else {
+						test.Fail(t, "bad error:", p.Err())
+					}
+					break
+				}
 			}
-		}
+		})
 	}
 }
 
@@ -167,6 +197,27 @@ func TestReader(t *testing.T) {
 }
 
 ////////////////////////////////////////////////////////////////
+
+type Obj struct{}
+
+func (*Obj) F() {}
+
+var f1 func(*Obj)
+
+func BenchmarkFuncPtr(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		f1 = (*Obj).F
+	}
+}
+
+var f2 func()
+
+func BenchmarkMemFuncPtr(b *testing.B) {
+	obj := &Obj{}
+	for i := 0; i < b.N; i++ {
+		f2 = obj.F
+	}
+}
 
 func ExampleNewParser() {
 	p := NewParser(bytes.NewBufferString("color: red;"), true) // false because this is the content of an inline style attribute

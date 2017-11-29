@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"regexp"
+	"bytes"
 	"strings"
 	"testing"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/tdewolff/minify"
 
 	jsonMinify "github.com/tdewolff/minify/json"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -74,7 +76,8 @@ func replaceTimeStringsForTests(body string) string {
 func turnResponseBodyIntoString(t *testing.T, res *http.Response) string {
 	t.Helper()
 	bodyBytes, err := ioutil.ReadAll(res.Body)
-	assert.Nil(t, err)
+	require.Nil(t, err)
+	res.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 	return strings.TrimSpace(string(bodyBytes))
 }
 
@@ -83,7 +86,7 @@ func minifyJSON(t *testing.T, jsonBody string) string {
 	jsonMinifier := minify.New()
 	jsonMinifier.AddFunc("application/json", jsonMinify.Minify)
 	minified, err := jsonMinifier.String("application/json", jsonBody)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 	return minified
 }
 

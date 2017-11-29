@@ -814,7 +814,7 @@ VALUES
 INSERT INTO discounts
 (
     "name",
-    "type",
+    "discount_type",
     "amount",
     "starts_on",
     "expires_on"

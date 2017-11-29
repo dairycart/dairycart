@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"database/sql/driver"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -14,24 +13,22 @@ import (
 	"testing"
 	"time"
 
-	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
+	// local dependencies
+	"github.com/dairycart/dairycart/api/storage/mock"
+	"github.com/dairycart/dairycart/api/storage/models"
 
+	// external dependencies
 	"github.com/go-chi/chi"
-	"github.com/gorilla/sessions"
-	"github.com/jmoiron/sqlx"
-	"github.com/jmoiron/sqlx/reflectx"
-	"github.com/lib/pq"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/gorilla/securecookie"
+	"github.com/gorilla/sessions"
 	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
 const (
-	exampleSKU               = "example"
-	exampleTimeString        = "2016-12-01 12:00:00.000000"
-	exampleGarbageInput      = `{"things": "stuff"}`
-	exampleMarshalTimeString = "2016-12-31T12:00:00.000000Z"
+	exampleSKU          = "example"
+	exampleGarbageInput = `{"things": "stuff"}`
 )
 
 func init() {
@@ -46,12 +43,13 @@ func init() {
 //                                                   //
 ///////////////////////////////////////////////////////
 
+// TODO: Rename much of these fields as well as this entire struct
 type TestUtil struct {
 	Response *httptest.ResponseRecorder
 	Router   *chi.Mux
 	PlainDB  *sql.DB
-	DB       *sqlx.DB
 	Mock     sqlmock.Sqlmock
+	MockDB   *dairymock.MockDB
 	Store    *sessions.CookieStore
 }
 
@@ -63,8 +61,8 @@ func generateExampleTimeForTests() time.Time {
 	return out
 }
 
-func genereateDefaultQueryFilter() *QueryFilter {
-	qf := &QueryFilter{
+func genereateDefaultQueryFilter() *models.QueryFilter {
+	qf := &models.QueryFilter{
 		Page:  1,
 		Limit: 25,
 	}
@@ -72,48 +70,20 @@ func genereateDefaultQueryFilter() *QueryFilter {
 }
 
 func generateArbitraryError() error {
-	err := errors.New("pineapple on pizza")
-	return err
+	return errors.New("pineapple on pizza")
 }
 
-func setExpectationsForRowCount(mock sqlmock.Sqlmock, table string, queryFilter *QueryFilter, count uint64, err error) {
-	exampleRows := sqlmock.NewRows([]string{"count"}).AddRow(count)
-	mock.ExpectQuery(formatQueryForSQLMock(buildCountQuery(table, queryFilter))).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
-}
-
-func setupTestVariables(t *testing.T) *TestUtil {
+func setupTestVariablesWithMock(t *testing.T) *TestUtil {
 	t.Helper()
-	mockDB, mock, err := sqlmock.New()
-	dbx := sqlx.NewDb(mockDB, "postgres")
-	dbx.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
-	assert.Nil(t, err)
-
-	secret := os.Getenv("DAIRYSECRET")
-	if len(secret) < 32 {
-		log.Fatalf("Something is up with your app secret: `%s`", secret)
-	}
-	store := sessions.NewCookieStore([]byte(secret))
-
-	router := chi.NewRouter()
-	SetupAPIRoutes(router, dbx, store)
-
+	mockDB, mock, _ := sqlmock.New()
 	return &TestUtil{
 		Response: httptest.NewRecorder(),
-		Router:   router,
+		Router:   chi.NewRouter(),
 		PlainDB:  mockDB,
-		DB:       dbx,
 		Mock:     mock,
-		Store:    store,
+		MockDB:   &dairymock.MockDB{},
+		Store:    sessions.NewCookieStore([]byte(os.Getenv("DAIRYSECRET"))),
 	}
-}
-
-func formatQueryForSQLMock(query string) string {
-	for _, x := range []string{"$", "(", ")", "=", "*", ".", "+", "?", ",", "-"} {
-		query = strings.Replace(query, x, fmt.Sprintf(`\%s`, x), -1)
-	}
-	return query
 }
 
 func ensureExpectationsWereMet(t *testing.T, mock sqlmock.Sqlmock) {
@@ -121,14 +91,6 @@ func ensureExpectationsWereMet(t *testing.T, mock sqlmock.Sqlmock) {
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
-}
-
-func argsToDriverValues(args []interface{}) []driver.Value {
-	rv := []driver.Value{}
-	for _, x := range args {
-		rv = append(rv, x)
-	}
-	return rv
 }
 
 func buildCookieForRequest(t *testing.T, store *sessions.CookieStore, authorized bool, admin bool) (*http.Cookie, error) {
@@ -163,24 +125,6 @@ func assertStatusCode(t *testing.T, testUtil *TestUtil, statusCode int) {
 //                                                   //
 ///////////////////////////////////////////////////////
 
-func TestNullTimeMarshalText(t *testing.T) {
-	t.Parallel()
-	expected := []byte(exampleMarshalTimeString)
-	example := NullTime{pq.NullTime{Time: generateExampleTimeForTests(), Valid: true}}
-	actual, err := example.MarshalText()
-
-	assert.Nil(t, err)
-	assert.Equal(t, expected, actual, "Marshaled time string should marshal correctly")
-}
-
-func TestNullTimeUnmarshalText(t *testing.T) {
-	t.Parallel()
-	example := []byte(exampleMarshalTimeString)
-	nt := NullTime{}
-	err := nt.UnmarshalText(example)
-	assert.Nil(t, err)
-}
-
 func TestParseRawFilterParams(t *testing.T) {
 	t.Parallel()
 	exampleUnixStartTime := int64(232747200)
@@ -191,7 +135,7 @@ func TestParseRawFilterParams(t *testing.T) {
 
 	testSuite := []struct {
 		input          string
-		expected       *QueryFilter
+		expected       *models.QueryFilter
 		failureMessage string
 	}{
 		{
@@ -206,7 +150,7 @@ func TestParseRawFilterParams(t *testing.T) {
 		},
 		{
 			input: "https://test.com/example?page=1&limit=500000",
-			expected: &QueryFilter{
+			expected: &models.QueryFilter{
 				Page:  1,
 				Limit: 50,
 			},
@@ -214,7 +158,7 @@ func TestParseRawFilterParams(t *testing.T) {
 		},
 		{
 			input: "https://test.com/example?page=2&limit=40",
-			expected: &QueryFilter{
+			expected: &models.QueryFilter{
 				Page:  2,
 				Limit: 40,
 			},
@@ -222,7 +166,7 @@ func TestParseRawFilterParams(t *testing.T) {
 		},
 		{
 			input: fmt.Sprintf("https://test.com/example?updated_after=%v", exampleUnixStartTime),
-			expected: &QueryFilter{
+			expected: &models.QueryFilter{
 				Page:         1,
 				Limit:        25,
 				UpdatedAfter: exampleFilterStartTime,
@@ -231,7 +175,7 @@ func TestParseRawFilterParams(t *testing.T) {
 		},
 		{
 			input: fmt.Sprintf("https://test.com/example?updated_before=%v", exampleUnixEndTime),
-			expected: &QueryFilter{
+			expected: &models.QueryFilter{
 				Page:          1,
 				Limit:         25,
 				UpdatedBefore: exampleFilterEndTime,
@@ -240,7 +184,7 @@ func TestParseRawFilterParams(t *testing.T) {
 		},
 		{
 			input: fmt.Sprintf("https://test.com/example?updated_after=%v&updated_before=%v", exampleUnixStartTime, exampleUnixEndTime),
-			expected: &QueryFilter{
+			expected: &models.QueryFilter{
 				Page:          1,
 				Limit:         25,
 				UpdatedAfter:  exampleFilterStartTime,
@@ -250,7 +194,7 @@ func TestParseRawFilterParams(t *testing.T) {
 		},
 		{
 			input: fmt.Sprintf("https://test.com/example?page=2&limit=35&updated_after=%v&updated_before=%v", exampleUnixStartTime, exampleUnixEndTime),
-			expected: &QueryFilter{
+			expected: &models.QueryFilter{
 				Page:          2,
 				Limit:         35,
 				UpdatedAfter:  exampleFilterStartTime,
@@ -260,7 +204,7 @@ func TestParseRawFilterParams(t *testing.T) {
 		},
 		{
 			input: fmt.Sprintf("https://test.com/example?page=2&limit=35&created_after=%v&created_before=%v", exampleUnixStartTime, exampleUnixEndTime),
-			expected: &QueryFilter{
+			expected: &models.QueryFilter{
 				Page:          2,
 				Limit:         35,
 				CreatedAfter:  exampleFilterStartTime,
@@ -394,42 +338,6 @@ func TestNotifyOfInternalIssue(t *testing.T) {
 
 	assert.Equal(t, expected, actual, "response should indicate their was an internal error")
 	assert.Equal(t, http.StatusInternalServerError, w.Code, "status code should be 404")
-}
-
-func TestRowExistsInDBWhenDBThrowsError(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
-	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleSKU, true, sql.ErrNoRows)
-	exists, err := rowExistsInDB(testUtil.DB, productRootSkuExistenceQuery, exampleSKU)
-
-	assert.Nil(t, err)
-	assert.False(t, exists)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-func TestRowExistsInDBForExistingRow(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
-	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleSKU, true, nil)
-	exists, err := rowExistsInDB(testUtil.DB, productRootSkuExistenceQuery, exampleSKU)
-
-	assert.Nil(t, err)
-	assert.True(t, exists)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-func TestRowExistsInDBForNonexistentRow(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
-	setExpectationsForProductRootSKUExistence(testUtil.Mock, exampleSKU, false, nil)
-	exists, err := rowExistsInDB(testUtil.DB, productRootSkuExistenceQuery, exampleSKU)
-
-	assert.Nil(t, err)
-	assert.False(t, exists)
-	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestValidateRequestInput(t *testing.T) {
