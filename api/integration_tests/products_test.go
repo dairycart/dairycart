@@ -1064,9 +1064,6 @@ func TestProductOptionCreation(t *testing.T) {
 		var actual models.ProductOption
 		unmarshalBody(t, resp, &actual)
 		compareProductOptions(t, expected, actual)
-
-		// clean up after yourself
-		deleteProductOption(strconv.Itoa(int(actual.ID)))
 	})
 
 	t.Run("with already existent name", func(*testing.T) {
@@ -1106,9 +1103,6 @@ func TestProductOptionCreation(t *testing.T) {
 		resp, err = createProductOptionForProduct(strconv.Itoa(int(createdProductRoot.ID)), newOptionJSON)
 		assert.Nil(t, err)
 		assertStatusCode(t, resp, http.StatusBadRequest)
-
-		// clean up after yourself
-		deleteProductOption(strconv.Itoa(int(actual.ID)))
 	})
 
 	t.Run("with invalid input", func(*testing.T) {
@@ -1254,295 +1248,137 @@ func TestProductOptionUpdate(t *testing.T) {
 		// clean up after yourself
 		deleteProductOption(strconv.Itoa(int(createdOption.ID)))
 	})
+
+	t.Run("with invalid input", func(*testing.T) {
+		resp, err := updateProductOption(existentID, exampleGarbageInput)
+		assert.Nil(t, err)
+		assertStatusCode(t, resp, http.StatusBadRequest)
+
+		expected := models.ErrorResponse{
+			Status:  http.StatusBadRequest,
+			Message: "Invalid input provided in request body",
+		}
+		var actual models.ErrorResponse
+		unmarshalBody(t, resp, &actual)
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("for nonexistent product option", func(*testing.T) {
+		testOption := models.ProductOption{Name: "arbitrary"}
+		testOptionJSON := createJSONBody(t, testOption)
+
+		resp, err := updateProductOption(nonexistentID, testOptionJSON)
+		assert.Nil(t, err)
+		assertStatusCode(t, resp, http.StatusNotFound)
+
+		expected := models.ErrorResponse{
+			Status:  http.StatusNotFound,
+			Message: fmt.Sprintf("The product option you were looking for (id '%s') does not exist", nonexistentID),
+		}
+		var actual models.ErrorResponse
+		unmarshalBody(t, resp, &actual)
+		assert.Equal(t, expected, actual)
+	})
 }
 
-// func TestProductOptionUpdateWithInvalidInput(t *testing.T) {
-// 	t.Skip()
-// 	resp, err := updateProductOption(existentID, exampleGarbageInput)
-// 	assert.Nil(t, err)
-// 	assertStatusCode(t, resp, http.StatusBadRequest)
+func TestProductOptionValueCreation(t *testing.T) {
+	// t.Paralle()
 
-// 	body := turnResponseBodyIntoString(t, resp)
-// 	actual := cleanAPIResponseBody(body)
-// 	assert.Equal(t, expectedBadRequestResponse, actual, "product option update route should respond with failure message when you provide it invalid input")
-// }
+	t.Run("normal usage", func(*testing.T) {
+		testOptionName := "example_option_value_to_create"
+		testSKU := "test-option-value-creation-sku"
 
-// func TestProductOptionUpdateForNonexistentOption(t *testing.T) {
-// 	t.Skip()
-// 	updatedOptionName := "nonexistent-not-the-same"
-// 	updatedOptionJSON := createProductOptionBody(updatedOptionName)
-// 	resp, err := updateProductOption(nonexistentID, updatedOptionJSON)
-// 	assert.Nil(t, err)
-// 	assertStatusCode(t, resp, http.StatusNotFound)
+		// create product to attach option to
+		testProduct := models.ProductCreationInput{SKU: testSKU}
+		newProductJSON := createJSONBody(t, testProduct)
+		resp, err := createProduct(newProductJSON)
+		require.Nil(t, err)
 
-// 	body := turnResponseBodyIntoString(t, resp)
-// 	actual := cleanAPIResponseBody(body)
-// 	expected := minifyJSON(t, `
-// 		{
-// 			"status": 404,
-// 			"message": "The product option you were looking for (id '999999999') does not exist"
-// 		}
-// 	`)
-// 	assert.Equal(t, expected, actual, "product option update route should respond with 404 message when you try to delete a product that doesn't exist")
-// }
+		var createdProductRoot models.ProductRoot
+		unmarshalBody(t, resp, &createdProductRoot)
 
-// func TestProductOptionValueCreation(t *testing.T) {
-// 	t.Skip()
+		// create option
+		testOption := models.ProductOptionCreationInput{
+			Name:   testOptionName,
+			Values: []string{"one", "two", "three"},
+		}
+		newOptionJSON := createJSONBody(t, testOption)
+		resp, err = createProductOptionForProduct(strconv.Itoa(int(createdProductRoot.ID)), newOptionJSON)
+		require.Nil(t, err)
 
-// 	var createdOptionValueID uint64
-// 	testValue := "test-value-creation"
-// 	testCreateProductOptionValue := func(t *testing.T) {
-// 		newOptionValueJSON := createProductOptionValueBody(testValue)
-// 		resp, err := createProductOptionValueForOption(existentID, newOptionValueJSON)
-// 		assert.Nil(t, err)
-// 		assertStatusCode(t, resp, http.StatusCreated)
+		expected := models.ProductOption{
+			Name:   testOptionName,
+			Values: []models.ProductOptionValue{{Value: "one"}, {Value: "two"}, {Value: "three"}},
+		}
+		var actual models.ProductOption
+		unmarshalBody(t, resp, &actual)
+		compareProductOptions(t, expected, actual)
 
-// 		body := turnResponseBodyIntoString(t, resp)
-// 		createdOptionValueID = retrieveIDFromResponseBody(t, body)
-// 		actual := cleanAPIResponseBody(body)
-// 		expected := minifyJSON(t, fmt.Sprintf(`
-// 			{
-// 				"value": "%s"
-// 			}
-// 		`, testValue))
-// 		assert.Equal(t, expected, actual, "product option value creation route should respond with created product option body")
-// 	}
+		// newOptionValueJSON := createProductOptionValueBody(testValue)
+		// resp, err := createProductOptionValueForOption(existentID, newOptionValueJSON)
+		// assert.Nil(t, err)
+		// assertStatusCode(t, resp, http.StatusCreated)
+	})
 
-// 	testDeleteProductOptionValue := func(t *testing.T) {
-// 		resp, err := deleteProductOptionValueForOption(strconv.Itoa(int(createdOptionValueID)))
-// 		assert.Nil(t, err)
-// 		assertStatusCode(t, resp, http.StatusOK)
-// 	}
+	t.Run("with invalid input", func(*testing.T) {
 
-// 	subtests := []subtest{
-// 		{
-// 			Message: "create product option value",
-// 			Test:    testCreateProductOptionValue,
-// 		},
-// 		{
-// 			Message: "delete created product option value",
-// 			Test:    testDeleteProductOptionValue,
-// 		},
-// 	}
-// 	runSubtestSuite(t, subtests)
-// }
+	})
 
-// func TestProductOptionValueUpdate(t *testing.T) {
-// 	t.Skip()
+	t.Run("for nonexistent option", func(*testing.T) {
 
-// 	var createdOptionID uint64
-// 	var createdOptionValueID uint64
-// 	testSKU := "test-value-update-sku"
-// 	testOptionName := "test-value-update-obligatory-option"
-// 	testValue := "test-value-update"
-// 	testUpdatedValue := "not_the_same_value"
+	})
 
-// 	createdProductRootID := createTestProduct(t, testSKU)
+	t.Run("with duplicate value", func(*testing.T) {
 
-// 	testProductOptionCreation := func(t *testing.T) {
-// 		newOptionJSON := createProductOptionCreationBody(testOptionName)
-// 		createdProductRootIDString := strconv.Itoa(int(createdProductRootID))
-// 		resp, err := createProductOptionForProduct(createdProductRootIDString, newOptionJSON)
-// 		assert.Nil(t, err)
-// 		assertStatusCode(t, resp, http.StatusCreated)
+	})
+}
 
-// 		body := turnResponseBodyIntoString(t, resp)
-// 		createdOptionID = retrieveIDFromResponseBody(t, body)
-// 		actual := cleanAPIResponseBody(body)
+func TestProductOptionValueUpdate(t *testing.T) {
+	// t.Paralle()
 
-// 		expected := minifyJSON(t, fmt.Sprintf(`
-// 			{
-// 				"name": "%s"
-// 				"values": [
-// 					{
-// 						"value": "one"
-// 					},
-// 					{
-// 						"value": "two"
-// 					},
-// 					{
-// 						"value": "three"
-// 					}
-// 				]
-// 			}
-// 		`, testOptionName))
-// 		assert.Equal(t, expected, actual, "product option creation route should respond with created product option body")
-// 	}
+	t.Run("normal usage", func(*testing.T) {
+		// newOptionJSON := createProductOptionCreationBody(testOptionName)
+		// createdProductRootIDString := strconv.Itoa(int(createdProductRootID))
+		// resp, err := createProductOptionForProduct(createdProductRootIDString, newOptionJSON)
+		// assert.Nil(t, err)
+		// assertStatusCode(t, resp, http.StatusCreated)
+	})
 
-// 	testCreateProductOptionValue := func(t *testing.T) {
-// 		newOptionValueJSON := createProductOptionValueBody(testValue)
-// 		createdOptionIDString := strconv.Itoa(int(createdOptionID))
-// 		resp, err := createProductOptionValueForOption(createdOptionIDString, newOptionValueJSON)
-// 		assert.Nil(t, err)
-// 		assertStatusCode(t, resp, http.StatusCreated)
+	t.Run("with invalid input", func(*testing.T) {
 
-// 		body := turnResponseBodyIntoString(t, resp)
-// 		createdOptionValueID = retrieveIDFromResponseBody(t, body)
-// 	}
+	})
 
-// 	testUpdateProductOptionValue := func(t *testing.T) {
-// 		updatedOptionValueJSON := createProductOptionValueBody(testUpdatedValue)
-// 		resp, err := updateProductOptionValueForOption(strconv.Itoa(int(createdOptionValueID)), updatedOptionValueJSON)
-// 		assert.Nil(t, err)
-// 		assertStatusCode(t, resp, http.StatusOK)
+	t.Run("for nonexistent option value", func(*testing.T) {
 
-// 		body := turnResponseBodyIntoString(t, resp)
-// 		actual := cleanAPIResponseBody(body)
-// 		expected := minifyJSON(t, fmt.Sprintf(`
-// 			{
-// 				"value": "%s"
-// 			}
-// 		`, testUpdatedValue))
-// 		assert.Equal(t, expected, actual, "product option update response should reflect the updated fields")
-// 	}
+	})
 
-// 	testDeleteProductOptionValue := func(t *testing.T) {
-// 		resp, err := deleteProductOptionValueForOption(strconv.Itoa(int(createdOptionValueID)))
-// 		assert.Nil(t, err)
-// 		assertStatusCode(t, resp, http.StatusOK)
-// 	}
+	t.Run("with duplicate value", func(*testing.T) {
+		// 	// Say you have a product option called `color`, and it has three values (`red`, `green`, and `blue`).
+		// 	// Let's say you try to change `red` to `blue` for whatever reason. That will fail at the database level,
+		// 	// because the schema ensures a unique combination of value and option ID and archived date.
 
-// 	subtests := []subtest{
-// 		{
-// 			Message: "create product option",
-// 			Test:    testProductOptionCreation,
-// 		},
-// 		{
-// 			Message: "create product option value",
-// 			Test:    testCreateProductOptionValue,
-// 		},
-// 		{
-// 			Message: "update created product option value",
-// 			Test:    testUpdateProductOptionValue,
-// 		},
-// 		{
-// 			Message: "delete created product option value",
-// 			Test:    testDeleteProductOptionValue,
-// 		},
-// 	}
-// 	runSubtestSuite(t, subtests)
-// }
+	})
+}
 
-// func TestProductOptionValueDeletion(t *testing.T) {
-// 	t.Skip()
+func TestProductOptionValueDeletion(t *testing.T) {
+	// t.Paralle()
 
-// 	var createdOptionValueID uint64
-// 	testValue := "test-value-deletion"
-// 	testCreateProductOptionValue := func(t *testing.T) {
-// 		newOptionValueJSON := createProductOptionValueBody(testValue)
-// 		resp, err := createProductOptionValueForOption(existentID, newOptionValueJSON)
-// 		assert.Nil(t, err)
-// 		assertStatusCode(t, resp, http.StatusCreated)
-// 		body := turnResponseBodyIntoString(t, resp)
-// 		createdOptionValueID = retrieveIDFromResponseBody(t, body)
-// 	}
+	t.Run("normal usage", func(*testing.T) {
+		// newOptionValueJSON := createProductOptionValueBody(testValue)
+		// resp, err := createProductOptionValueForOption(existentID, newOptionValueJSON)
+		// assert.Nil(t, err)
+		// assertStatusCode(t, resp, http.StatusCreated)
+		// body := turnResponseBodyIntoString(t, resp)
+		// createdOptionValueID = retrieveIDFromResponseBody(t, body)
 
-// 	testDeleteProductOptionValue := func(t *testing.T) {
-// 		resp, err := deleteProductOptionValueForOption(strconv.Itoa(int(createdOptionValueID)))
-// 		assert.Nil(t, err)
-// 		assertStatusCode(t, resp, http.StatusOK)
+		// resp, err := deleteProductOptionValueForOption(strconv.Itoa(int(createdOptionValueID)))
+		// assert.Nil(t, err)
+		// assertStatusCode(t, resp, http.StatusOK)
+	})
 
-// 		actual := turnResponseBodyIntoString(t, resp)
-// 		assert.NotEmpty(t, actual, "product option deletion route should respond with affirmative message upon successful deletion")
-// 	}
-
-// 	subtests := []subtest{
-// 		{
-// 			Message: "create product option value",
-// 			Test:    testCreateProductOptionValue,
-// 		},
-// 		{
-// 			Message: "delete created product option value",
-// 			Test:    testDeleteProductOptionValue,
-// 		},
-// 	}
-// 	runSubtestSuite(t, subtests)
-// }
-
-// func TestProductOptionValueDeletionForNonexistentOptionValue(t *testing.T) {
-// 	t.Skip()
-
-// 	resp, err := deleteProductOptionValueForOption(nonexistentID)
-// 	assert.Nil(t, err)
-// 	assertStatusCode(t, resp, http.StatusNotFound)
-
-// 	actual := turnResponseBodyIntoString(t, resp)
-// 	expected := `{"status":404,"message":"The product option value you were looking for (id '999999999') does not exist"}`
-// 	assert.Equal(t, expected, actual, "product option deletion route should respond with affirmative message upon successful deletion")
-// }
-
-// func TestProductOptionValueCreationWithInvalidInput(t *testing.T) {
-// 	t.Skip()
-// 	resp, err := createProductOptionValueForOption(existentID, exampleGarbageInput)
-// 	assert.Nil(t, err)
-// 	assertStatusCode(t, resp, http.StatusBadRequest)
-
-// 	actual := turnResponseBodyIntoString(t, resp)
-// 	assert.Equal(t, expectedBadRequestResponse, actual, "product option value creation route should respond with failure message when you provide it invalid input")
-// }
-
-// func TestProductOptionValueCreationWithAlreadyExistentValue(t *testing.T) {
-// 	t.Skip()
-
-// 	alreadyExistentValue := "blue"
-// 	existingOptionJSON := createProductOptionValueBody(alreadyExistentValue)
-// 	resp, err := createProductOptionValueForOption(existentID, existingOptionJSON)
-// 	assert.Nil(t, err)
-// 	assertStatusCode(t, resp, http.StatusBadRequest)
-
-// 	actual := turnResponseBodyIntoString(t, resp)
-// 	expected := minifyJSON(t, `
-// 		{
-// 			"status": 400,
-// 			"message": "product option value 'blue' already exists for option ID 1"
-// 		}
-// 	`)
-// 	assert.Equal(t, expected, actual, "product option value creation route should respond with failure message when you try to create a value that already exists")
-// }
-
-// func TestProductOptionValueUpdateWithInvalidInput(t *testing.T) {
-// 	t.Skip()
-// 	resp, err := updateProductOptionValueForOption(existentID, exampleGarbageInput)
-// 	assert.Nil(t, err)
-// 	assertStatusCode(t, resp, http.StatusBadRequest)
-
-// 	body := turnResponseBodyIntoString(t, resp)
-// 	actual := cleanAPIResponseBody(body)
-// 	assert.Equal(t, expectedBadRequestResponse, actual, "product option update route should respond with failure message when you provide it invalid input")
-// }
-
-// func TestProductOptionValueUpdateForNonexistentOption(t *testing.T) {
-// 	t.Skip()
-
-// 	obligatoryValue := "whatever"
-// 	updatedOptionValueJSON := createProductOptionValueBody(obligatoryValue)
-// 	resp, err := updateProductOptionValueForOption(nonexistentID, updatedOptionValueJSON)
-// 	assert.Nil(t, err)
-// 	assertStatusCode(t, resp, http.StatusNotFound)
-
-// 	body := turnResponseBodyIntoString(t, resp)
-// 	actual := cleanAPIResponseBody(body)
-// 	expected := minifyJSON(t, `
-// 		{
-// 			"status": 404,
-// 			"message": "The product option value you were looking for (id '999999999') does not exist"
-// 		}
-// 	`)
-// 	assert.Equal(t, expected, actual, "product option update route should respond with 404 message when you try to delete a product that doesn't exist")
-// }
-
-// func TestProductOptionValueUpdateForAlreadyExistentValue(t *testing.T) {
-// 	// Say you have a product option called `color`, and it has three values (`red`, `green`, and `blue`).
-// 	// Let's say you try to change `red` to `blue` for whatever reason. That will fail at the database level,
-// 	// because the schema ensures a unique combination of value and option ID and archived date.
-// 	t.Skip()
-
-// 	duplicatedOptionValueJSON := createProductOptionValueBody("medium")
-// 	resp, err := updateProductOptionValueForOption("4", duplicatedOptionValueJSON)
-// 	assert.Nil(t, err)
-// 	assertStatusCode(t, resp, http.StatusInternalServerError)
-
-// 	body := turnResponseBodyIntoString(t, resp)
-// 	actual := cleanAPIResponseBody(body)
-// 	assert.Equal(t, expectedInternalErrorResponse, actual, "product option update route should respond with 404 message when you try to delete a product that doesn't exist")
-// }
+	t.Run("for nonexistent option value", func(*testing.T) {
+		// 	resp, err := deleteProductOptionValueForOption(nonexistentID)
+		// 	assert.Nil(t, err)
+		// 	assertStatusCode(t, resp, http.StatusNotFound)
+	})
+}
