@@ -9,6 +9,8 @@ go:
   - master
 
 before_install:
+  # install dep
+  - go get -u github.com/golang/dep/cmd/dep
   # install goveralls
   - go get github.com/mattn/goveralls
   # dump this step once multi-stage builds hit Travis
@@ -17,6 +19,7 @@ before_install:
   - sudo apt-get update
   - sudo apt-get -y install docker-ce
   # this stays after the above goes away
+  - (cd api/integration_tests && dep ensure)
   - docker build -t api_test -f api/test.Dockerfile .
 
 script:
