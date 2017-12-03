@@ -9,6 +9,8 @@ go:
   - master
 
 before_install:
+  # install dep
+  - go get -u github.com/golang/dep/cmd/dep
   # install goveralls
   - go get github.com/mattn/goveralls
   # dump this step once multi-stage builds hit Travis
@@ -17,13 +19,14 @@ before_install:
   - sudo apt-get update
   - sudo apt-get -y install docker-ce
   # this stays after the above goes away
+  - (cd integration_tests && dep ensure -v)
   - docker build -t api_test -f api/test.Dockerfile .
 
 script:
   # unit tests
   - docker run --name api_test --rm api_test
   # integration tests
-  - docker-compose --file api/integration_tests.yml up --abort-on-container-exit --build --remove-orphans --force-recreate
+  - docker-compose --file integration_tests.yml up --abort-on-container-exit --build --remove-orphans --force-recreate
   # coverage output
   - go test github.com/dairycart/dairycart/api -coverprofile=coverage.out -tags test
   # # ensure README is up to date

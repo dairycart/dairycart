@@ -802,6 +802,7 @@ func TestGet{{ $modelName }}List(t *testing.T) {
         assert.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
+
     t.Run("with error executing query", func(t *testing.T) {
         set{{ $modelName }}ListReadQueryExpectation(t, mock, exampleQF, example, nil, errors.New("pineapple on pizza"))
         actual, err := client.Get{{ $modelName }}List(mockDB, exampleQF)
@@ -810,6 +811,7 @@ func TestGet{{ $modelName }}List(t *testing.T) {
         assert.Nil(t, actual)
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
+
     t.Run("with error scanning values", func(t *testing.T) {
         exampleRows := sqlmock.NewRows([]string{"things"}).AddRow("stuff")
         query, _ := build{{ $modelName }}ListRetrievalQuery(exampleQF)
@@ -822,6 +824,7 @@ func TestGet{{ $modelName }}List(t *testing.T) {
         assert.Nil(t, actual)
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
+
     t.Run("with with row errors", func(t *testing.T) {
         set{{ $modelName }}ListReadQueryExpectation(t, mock, exampleQF, example, errors.New("pineapple on pizza"), nil)
         actual, err := client.Get{{ $modelName }}List(mockDB, exampleQF)
@@ -921,7 +924,33 @@ func TestCreate{{ $modelName }}(t *testing.T) {
 
 {{ if $isProductVariantBridge }}
 func TestBuildMulti{{ $modelName }}CreationQuery(t *testing.T){
-    expectedQuery := `
+    t.Run("single {{ toLower $modelName }}", func(*testing.T) {
+        expectedQuery := `
+        INSERT INTO product_variant_bridge
+            (
+                product_id, product_option_value_id
+            )
+        VALUES
+            (
+                $1, $2
+            )
+        RETURNING
+            id, created_on;
+    `
+        expectedValues := []interface{}{
+            uint64(1),
+            uint64(2),
+        }
+
+        exampleInput := []uint64{2}
+        actualQuery, actualValues := buildMulti{{ $modelName }}CreationQuery(1, exampleInput)
+
+        assert.Equal(t, expectedQuery, actualQuery)
+        assert.Equal(t, actualValues, expectedValues)
+    })
+
+    t.Run("multiple {{ toLower $modelName }}", func(*testing.T) {
+        expectedQuery := `
         INSERT INTO product_variant_bridge
             (
                 product_id, product_option_value_id
@@ -937,20 +966,21 @@ func TestBuildMulti{{ $modelName }}CreationQuery(t *testing.T){
         RETURNING
             id, created_on;
     `
-    expectedValues := []interface{}{
-        uint64(1),
-        uint64(2),
-        uint64(3),
-        uint64(4),
-        uint64(5),
-        uint64(6),
-    }
+        expectedValues := []interface{}{
+            uint64(1),
+            uint64(2),
+            uint64(3),
+            uint64(4),
+            uint64(5),
+            uint64(6),
+        }
 
-    exampleInput := []uint64{2, 3, 4, 5, 6}
-    actualQuery, actualValues := buildMulti{{ $modelName }}CreationQuery(1, exampleInput)
+        exampleInput := []uint64{2, 3, 4, 5, 6}
+        actualQuery, actualValues := buildMulti{{ $modelName }}CreationQuery(1, exampleInput)
 
-    assert.Equal(t, expectedQuery, actualQuery)
-    assert.Equal(t, actualValues, expectedValues)
+        assert.Equal(t, expectedQuery, actualQuery)
+        assert.Equal(t, actualValues, expectedValues)
+    })
 }
 
 func setMultiple{{ $modelName }}CreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, productID uint64, optionValueIDs []uint64, err error) {

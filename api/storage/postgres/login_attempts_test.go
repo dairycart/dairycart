@@ -11,7 +11,7 @@ import (
 	"github.com/dairycart/dairycart/api/storage/models"
 
 	// external dependencies
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
@@ -36,7 +36,7 @@ func setExpectationsForLoginAttemptExhaustionQuery(mock sqlmock.Sqlmock, usernam
 func TestLoginAttemptsHaveBeenExhausted(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	client := NewPostgres()
 	exampleUsername := "username"
@@ -46,8 +46,8 @@ func TestLoginAttemptsHaveBeenExhausted(t *testing.T) {
 		setExpectationsForLoginAttemptExhaustionQuery(mock, exampleUsername, expected, false)
 		actual, err := client.LoginAttemptsHaveBeenExhausted(mockDB, exampleUsername)
 
-		require.Nil(t, err)
-		require.Equal(t, expected, actual)
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual)
 	})
 
 	t.Run("with db error", func(*testing.T) {
@@ -55,8 +55,8 @@ func TestLoginAttemptsHaveBeenExhausted(t *testing.T) {
 		setExpectationsForLoginAttemptExhaustionQuery(mock, exampleUsername, expected, true)
 		actual, err := client.LoginAttemptsHaveBeenExhausted(mockDB, exampleUsername)
 
-		require.NotNil(t, err)
-		require.Equal(t, expected, actual)
+		assert.NotNil(t, err)
+		assert.Equal(t, expected, actual)
 	})
 }
 
@@ -73,7 +73,7 @@ func setLoginAttemptExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmock
 func TestLoginAttemptExists(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
 	client := NewPostgres()
@@ -82,25 +82,25 @@ func TestLoginAttemptExists(t *testing.T) {
 		setLoginAttemptExistenceQueryExpectation(t, mock, exampleID, true, nil)
 		actual, err := client.LoginAttemptExists(mockDB, exampleID)
 
-		require.Nil(t, err)
-		require.True(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.True(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 	t.Run("with no rows found", func(t *testing.T) {
 		setLoginAttemptExistenceQueryExpectation(t, mock, exampleID, true, sql.ErrNoRows)
 		actual, err := client.LoginAttemptExists(mockDB, exampleID)
 
-		require.Nil(t, err)
-		require.False(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.False(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 	t.Run("with a database error", func(t *testing.T) {
 		setLoginAttemptExistenceQueryExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
 		actual, err := client.LoginAttemptExists(mockDB, exampleID)
 
-		require.NotNil(t, err)
-		require.False(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NotNil(t, err)
+		assert.False(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -125,7 +125,7 @@ func setLoginAttemptReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id 
 func TestGetLoginAttempt(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
 	expected := &models.LoginAttempt{ID: exampleID}
@@ -135,9 +135,9 @@ func TestGetLoginAttempt(t *testing.T) {
 		setLoginAttemptReadQueryExpectation(t, mock, exampleID, expected, nil)
 		actual, err := client.GetLoginAttempt(mockDB, exampleID)
 
-		require.Nil(t, err)
-		require.Equal(t, expected, actual, "expected loginattempt did not match actual loginattempt")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual, "expected loginattempt did not match actual loginattempt")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -174,7 +174,7 @@ func setLoginAttemptListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock,
 func TestGetLoginAttemptList(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
 	example := &models.LoginAttempt{ID: exampleID}
@@ -188,18 +188,20 @@ func TestGetLoginAttemptList(t *testing.T) {
 		setLoginAttemptListReadQueryExpectation(t, mock, exampleQF, example, nil, nil)
 		actual, err := client.GetLoginAttemptList(mockDB, exampleQF)
 
-		require.Nil(t, err)
-		require.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with error executing query", func(t *testing.T) {
 		setLoginAttemptListReadQueryExpectation(t, mock, exampleQF, example, nil, errors.New("pineapple on pizza"))
 		actual, err := client.GetLoginAttemptList(mockDB, exampleQF)
 
-		require.NotNil(t, err)
-		require.Nil(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NotNil(t, err)
+		assert.Nil(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with error scanning values", func(t *testing.T) {
 		exampleRows := sqlmock.NewRows([]string{"things"}).AddRow("stuff")
 		query, _ := buildLoginAttemptListRetrievalQuery(exampleQF)
@@ -208,17 +210,18 @@ func TestGetLoginAttemptList(t *testing.T) {
 
 		actual, err := client.GetLoginAttemptList(mockDB, exampleQF)
 
-		require.NotNil(t, err)
-		require.Nil(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NotNil(t, err)
+		assert.Nil(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with with row errors", func(t *testing.T) {
 		setLoginAttemptListReadQueryExpectation(t, mock, exampleQF, example, errors.New("pineapple on pizza"), nil)
 		actual, err := client.GetLoginAttemptList(mockDB, exampleQF)
 
-		require.NotNil(t, err)
-		require.Nil(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NotNil(t, err)
+		assert.Nil(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -232,7 +235,7 @@ func TestBuildLoginAttemptCountRetrievalQuery(t *testing.T) {
 	expected := `SELECT count(id) FROM login_attempts WHERE archived_on IS NULL LIMIT 25`
 	actual, _ := buildLoginAttemptCountRetrievalQuery(exampleQF)
 
-	require.Equal(t, expected, actual, "expected and actual queries should match")
+	assert.Equal(t, expected, actual, "expected and actual queries should match")
 }
 
 func setLoginAttemptCountRetrievalQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, count uint64, err error) {
@@ -252,7 +255,7 @@ func setLoginAttemptCountRetrievalQueryExpectation(t *testing.T, mock sqlmock.Sq
 func TestGetLoginAttemptCount(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	client := NewPostgres()
 	expected := uint64(123)
@@ -265,9 +268,9 @@ func TestGetLoginAttemptCount(t *testing.T) {
 		setLoginAttemptCountRetrievalQueryExpectation(t, mock, exampleQF, expected, nil)
 		actual, err := client.GetLoginAttemptCount(mockDB, exampleQF)
 
-		require.Nil(t, err)
-		require.Equal(t, expected, actual, "count retrieval method should return the expected value")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual, "count retrieval method should return the expected value")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -287,7 +290,7 @@ func setLoginAttemptCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock,
 func TestCreateLoginAttempt(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	expectedID := uint64(1)
 	exampleInput := &models.LoginAttempt{ID: expectedID}
@@ -298,11 +301,11 @@ func TestCreateLoginAttempt(t *testing.T) {
 		expected := generateExampleTimeForTests(t)
 		actualID, actualCreationDate, err := client.CreateLoginAttempt(mockDB, exampleInput)
 
-		require.Nil(t, err)
-		require.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
-		require.Equal(t, expected, actualCreationDate, "expected creation time did not match actual creation time")
+		assert.NoError(t, err)
+		assert.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
+		assert.Equal(t, expected, actualCreationDate, "expected creation time did not match actual creation time")
 
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -323,7 +326,7 @@ func setLoginAttemptUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, t
 func TestUpdateLoginAttemptByID(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	exampleInput := &models.LoginAttempt{ID: uint64(1)}
 	client := NewPostgres()
@@ -333,9 +336,9 @@ func TestUpdateLoginAttemptByID(t *testing.T) {
 		expected := generateExampleTimeForTests(t)
 		actual, err := client.UpdateLoginAttempt(mockDB, exampleInput)
 
-		require.Nil(t, err)
-		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -349,7 +352,7 @@ func setLoginAttemptDeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock,
 func TestDeleteLoginAttemptByID(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
 	client := NewPostgres()
@@ -359,9 +362,9 @@ func TestDeleteLoginAttemptByID(t *testing.T) {
 		expected := generateExampleTimeForTests(t)
 		actual, err := client.DeleteLoginAttempt(mockDB, exampleID)
 
-		require.Nil(t, err)
-		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 
 	t.Run("with transaction", func(t *testing.T) {
@@ -369,11 +372,11 @@ func TestDeleteLoginAttemptByID(t *testing.T) {
 		setLoginAttemptDeletionQueryExpectation(t, mock, exampleID, nil)
 		expected := generateExampleTimeForTests(t)
 		tx, err := mockDB.Begin()
-		require.Nil(t, err, "no error should be returned setting up a transaction in the mock DB")
+		assert.NoError(t, err, "no error should be returned setting up a transaction in the mock DB")
 		actual, err := client.DeleteLoginAttempt(tx, exampleID)
 
-		require.Nil(t, err)
-		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }

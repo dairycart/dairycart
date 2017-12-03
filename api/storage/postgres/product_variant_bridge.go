@@ -134,6 +134,7 @@ func (pg *postgres) CreateProductVariantBridge(db storage.Querier, nu *models.Pr
 	err := db.QueryRow(productvariantbridgeCreationQuery, &nu.ProductID, &nu.ProductOptionValueID).Scan(&createdID, &createdAt)
 	return createdID, createdAt, err
 }
+
 func buildMultiProductVariantBridgeCreationQuery(productID uint64, optionValueIDs []uint64) (query string, values []interface{}) {
 	values = append(values, productID)
 	var valueString string
@@ -181,7 +182,7 @@ func (pg *postgres) CreateMultipleProductVariantBridgesForProductID(db storage.Q
 const productVariantBridgeUpdateQuery = `
     UPDATE product_variant_bridge
     SET
-        product_id = $1,
+        product_id = $1, 
         product_option_value_id = $2
     WHERE id = $2
     RETURNING updated_on;
