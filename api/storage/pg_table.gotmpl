@@ -456,7 +456,7 @@ func (pg *postgres) Create{{ $modelName }}(db storage.Querier, nu *models.{{ $mo
     return createdID, createdAt, {{- if $isProduct }}availableOn, {{ end }}err
 }
 
-{{- if $isProductVariantBridge }}
+{{ if $isProductVariantBridge -}}
 func buildMulti{{ $modelName }}CreationQuery(productID uint64, optionValueIDs []uint64) (query string, values []interface{}) {
     values = append(values, productID)
     var valueString string
@@ -500,7 +500,8 @@ func (pg *postgres) CreateMultiple{{ $modelName }}sForProductID(db storage.Queri
     _, err := db.Exec(query, args...)
     return err
 }
-{{- end }}
+
+{{ end -}}
 
 {{ $updateColumns := .Table.Columns.Names.Except (makeSlice "id" "created_on" "archived_on") -}}
 {{ $updateQueryVarName := printf "%sUpdateQuery" ( camel $modelName ) -}}

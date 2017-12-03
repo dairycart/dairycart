@@ -11,7 +11,7 @@ import (
 	"github.com/dairycart/dairycart/api/storage/models"
 
 	// external dependencies
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
@@ -28,7 +28,7 @@ func setPasswordResetTokenExistenceQueryByUserIDExpectation(t *testing.T, mock s
 func TestPasswordResetTokenForUserIDExists(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
 	client := NewPostgres()
@@ -37,25 +37,25 @@ func TestPasswordResetTokenForUserIDExists(t *testing.T) {
 		setPasswordResetTokenExistenceQueryByUserIDExpectation(t, mock, exampleID, true, nil)
 		actual, err := client.PasswordResetTokenForUserIDExists(mockDB, exampleID)
 
-		require.Nil(t, err)
-		require.True(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.True(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 	t.Run("with no rows found", func(t *testing.T) {
 		setPasswordResetTokenExistenceQueryByUserIDExpectation(t, mock, exampleID, true, sql.ErrNoRows)
 		actual, err := client.PasswordResetTokenForUserIDExists(mockDB, exampleID)
 
-		require.Nil(t, err)
-		require.False(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.False(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 	t.Run("with a database error", func(t *testing.T) {
 		setPasswordResetTokenExistenceQueryByUserIDExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
 		actual, err := client.PasswordResetTokenForUserIDExists(mockDB, exampleID)
 
-		require.NotNil(t, err)
-		require.False(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NotNil(t, err)
+		assert.False(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -72,7 +72,7 @@ func setPasswordResetTokenExistenceQueryByTokenExpectation(t *testing.T, mock sq
 func TestPasswordResetTokenWithTokenExists(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	exampleToken := "deadbeef"
 	client := NewPostgres()
@@ -81,25 +81,25 @@ func TestPasswordResetTokenWithTokenExists(t *testing.T) {
 		setPasswordResetTokenExistenceQueryByTokenExpectation(t, mock, exampleToken, true, nil)
 		actual, err := client.PasswordResetTokenWithTokenExists(mockDB, exampleToken)
 
-		require.Nil(t, err)
-		require.True(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.True(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 	t.Run("with no rows found", func(t *testing.T) {
 		setPasswordResetTokenExistenceQueryByTokenExpectation(t, mock, exampleToken, true, sql.ErrNoRows)
 		actual, err := client.PasswordResetTokenWithTokenExists(mockDB, exampleToken)
 
-		require.Nil(t, err)
-		require.False(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.False(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 	t.Run("with a database error", func(t *testing.T) {
 		setPasswordResetTokenExistenceQueryByTokenExpectation(t, mock, exampleToken, true, errors.New("pineapple on pizza"))
 		actual, err := client.PasswordResetTokenWithTokenExists(mockDB, exampleToken)
 
-		require.NotNil(t, err)
-		require.False(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NotNil(t, err)
+		assert.False(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -116,7 +116,7 @@ func setPasswordResetTokenExistenceQueryExpectation(t *testing.T, mock sqlmock.S
 func TestPasswordResetTokenExists(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
 	client := NewPostgres()
@@ -125,25 +125,25 @@ func TestPasswordResetTokenExists(t *testing.T) {
 		setPasswordResetTokenExistenceQueryExpectation(t, mock, exampleID, true, nil)
 		actual, err := client.PasswordResetTokenExists(mockDB, exampleID)
 
-		require.Nil(t, err)
-		require.True(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.True(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 	t.Run("with no rows found", func(t *testing.T) {
 		setPasswordResetTokenExistenceQueryExpectation(t, mock, exampleID, true, sql.ErrNoRows)
 		actual, err := client.PasswordResetTokenExists(mockDB, exampleID)
 
-		require.Nil(t, err)
-		require.False(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.False(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 	t.Run("with a database error", func(t *testing.T) {
 		setPasswordResetTokenExistenceQueryExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
 		actual, err := client.PasswordResetTokenExists(mockDB, exampleID)
 
-		require.NotNil(t, err)
-		require.False(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NotNil(t, err)
+		assert.False(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -172,7 +172,7 @@ func setPasswordResetTokenReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmoc
 func TestGetPasswordResetToken(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
 	expected := &models.PasswordResetToken{ID: exampleID}
@@ -182,9 +182,9 @@ func TestGetPasswordResetToken(t *testing.T) {
 		setPasswordResetTokenReadQueryExpectation(t, mock, exampleID, expected, nil)
 		actual, err := client.GetPasswordResetToken(mockDB, exampleID)
 
-		require.Nil(t, err)
-		require.Equal(t, expected, actual, "expected passwordresettoken did not match actual passwordresettoken")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual, "expected passwordresettoken did not match actual passwordresettoken")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -229,7 +229,7 @@ func setPasswordResetTokenListReadQueryExpectation(t *testing.T, mock sqlmock.Sq
 func TestGetPasswordResetTokenList(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
 	example := &models.PasswordResetToken{ID: exampleID}
@@ -243,18 +243,20 @@ func TestGetPasswordResetTokenList(t *testing.T) {
 		setPasswordResetTokenListReadQueryExpectation(t, mock, exampleQF, example, nil, nil)
 		actual, err := client.GetPasswordResetTokenList(mockDB, exampleQF)
 
-		require.Nil(t, err)
-		require.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with error executing query", func(t *testing.T) {
 		setPasswordResetTokenListReadQueryExpectation(t, mock, exampleQF, example, nil, errors.New("pineapple on pizza"))
 		actual, err := client.GetPasswordResetTokenList(mockDB, exampleQF)
 
-		require.NotNil(t, err)
-		require.Nil(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NotNil(t, err)
+		assert.Nil(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with error scanning values", func(t *testing.T) {
 		exampleRows := sqlmock.NewRows([]string{"things"}).AddRow("stuff")
 		query, _ := buildPasswordResetTokenListRetrievalQuery(exampleQF)
@@ -263,17 +265,18 @@ func TestGetPasswordResetTokenList(t *testing.T) {
 
 		actual, err := client.GetPasswordResetTokenList(mockDB, exampleQF)
 
-		require.NotNil(t, err)
-		require.Nil(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NotNil(t, err)
+		assert.Nil(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with with row errors", func(t *testing.T) {
 		setPasswordResetTokenListReadQueryExpectation(t, mock, exampleQF, example, errors.New("pineapple on pizza"), nil)
 		actual, err := client.GetPasswordResetTokenList(mockDB, exampleQF)
 
-		require.NotNil(t, err)
-		require.Nil(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NotNil(t, err)
+		assert.Nil(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -287,7 +290,7 @@ func TestBuildPasswordResetTokenCountRetrievalQuery(t *testing.T) {
 	expected := `SELECT count(id) FROM password_reset_tokens WHERE archived_on IS NULL LIMIT 25`
 	actual, _ := buildPasswordResetTokenCountRetrievalQuery(exampleQF)
 
-	require.Equal(t, expected, actual, "expected and actual queries should match")
+	assert.Equal(t, expected, actual, "expected and actual queries should match")
 }
 
 func setPasswordResetTokenCountRetrievalQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, count uint64, err error) {
@@ -307,7 +310,7 @@ func setPasswordResetTokenCountRetrievalQueryExpectation(t *testing.T, mock sqlm
 func TestGetPasswordResetTokenCount(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	client := NewPostgres()
 	expected := uint64(123)
@@ -320,9 +323,9 @@ func TestGetPasswordResetTokenCount(t *testing.T) {
 		setPasswordResetTokenCountRetrievalQueryExpectation(t, mock, exampleQF, expected, nil)
 		actual, err := client.GetPasswordResetTokenCount(mockDB, exampleQF)
 
-		require.Nil(t, err)
-		require.Equal(t, expected, actual, "count retrieval method should return the expected value")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual, "count retrieval method should return the expected value")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -344,7 +347,7 @@ func setPasswordResetTokenCreationQueryExpectation(t *testing.T, mock sqlmock.Sq
 func TestCreatePasswordResetToken(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	expectedID := uint64(1)
 	exampleInput := &models.PasswordResetToken{ID: expectedID}
@@ -355,11 +358,11 @@ func TestCreatePasswordResetToken(t *testing.T) {
 		expected := generateExampleTimeForTests(t)
 		actualID, actualCreationDate, err := client.CreatePasswordResetToken(mockDB, exampleInput)
 
-		require.Nil(t, err)
-		require.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
-		require.Equal(t, expected, actualCreationDate, "expected creation time did not match actual creation time")
+		assert.NoError(t, err)
+		assert.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
+		assert.Equal(t, expected, actualCreationDate, "expected creation time did not match actual creation time")
 
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -382,7 +385,7 @@ func setPasswordResetTokenUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlm
 func TestUpdatePasswordResetTokenByID(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	exampleInput := &models.PasswordResetToken{ID: uint64(1)}
 	client := NewPostgres()
@@ -392,9 +395,9 @@ func TestUpdatePasswordResetTokenByID(t *testing.T) {
 		expected := generateExampleTimeForTests(t)
 		actual, err := client.UpdatePasswordResetToken(mockDB, exampleInput)
 
-		require.Nil(t, err)
-		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -408,7 +411,7 @@ func setPasswordResetTokenDeletionQueryExpectation(t *testing.T, mock sqlmock.Sq
 func TestDeletePasswordResetTokenByID(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
 	client := NewPostgres()
@@ -418,9 +421,9 @@ func TestDeletePasswordResetTokenByID(t *testing.T) {
 		expected := generateExampleTimeForTests(t)
 		actual, err := client.DeletePasswordResetToken(mockDB, exampleID)
 
-		require.Nil(t, err)
-		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 
 	t.Run("with transaction", func(t *testing.T) {
@@ -428,11 +431,11 @@ func TestDeletePasswordResetTokenByID(t *testing.T) {
 		setPasswordResetTokenDeletionQueryExpectation(t, mock, exampleID, nil)
 		expected := generateExampleTimeForTests(t)
 		tx, err := mockDB.Begin()
-		require.Nil(t, err, "no error should be returned setting up a transaction in the mock DB")
+		assert.NoError(t, err, "no error should be returned setting up a transaction in the mock DB")
 		actual, err := client.DeletePasswordResetToken(tx, exampleID)
 
-		require.Nil(t, err)
-		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }

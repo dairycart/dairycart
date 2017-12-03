@@ -11,7 +11,7 @@ import (
 	"github.com/dairycart/dairycart/api/storage/models"
 
 	// external dependencies
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
@@ -85,7 +85,7 @@ func setProductReadQueryExpectationBySKU(t *testing.T, mock sqlmock.Sqlmock, sku
 func TestGetProductBySKU(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	client := NewPostgres()
 
@@ -96,9 +96,9 @@ func TestGetProductBySKU(t *testing.T) {
 		setProductReadQueryExpectationBySKU(t, mock, exampleSKU, expected, nil)
 		actual, err := client.GetProductBySKU(mockDB, exampleSKU)
 
-		require.Nil(t, err)
-		require.Equal(t, expected, actual, "expected product did not match actual product")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual, "expected product did not match actual product")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 func setProductReadQueryExpectationByProductRootID(t *testing.T, mock sqlmock.Sqlmock, example *models.Product, rowErr error, err error) {
@@ -232,7 +232,7 @@ func setProductReadQueryExpectationByProductRootID(t *testing.T, mock sqlmock.Sq
 func TestGetProductsByProductRootID(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	client := NewPostgres()
 
@@ -243,17 +243,17 @@ func TestGetProductsByProductRootID(t *testing.T) {
 		setProductReadQueryExpectationByProductRootID(t, mock, example, nil, nil)
 		actual, err := client.GetProductsByProductRootID(mockDB, exampleProductRootID)
 
-		require.Nil(t, err)
-		require.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 	t.Run("with error executing query", func(t *testing.T) {
 		setProductReadQueryExpectationByProductRootID(t, mock, example, nil, errors.New("pineapple on pizza"))
 		actual, err := client.GetProductsByProductRootID(mockDB, exampleProductRootID)
 
-		require.NotNil(t, err)
-		require.Nil(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NotNil(t, err)
+		assert.Nil(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 	t.Run("with error scanning values", func(t *testing.T) {
 		exampleRows := sqlmock.NewRows([]string{"things"}).AddRow("stuff")
@@ -262,17 +262,17 @@ func TestGetProductsByProductRootID(t *testing.T) {
 
 		actual, err := client.GetProductsByProductRootID(mockDB, exampleProductRootID)
 
-		require.NotNil(t, err)
-		require.Nil(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NotNil(t, err)
+		assert.Nil(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 	t.Run("with with row errors", func(t *testing.T) {
 		setProductReadQueryExpectationByProductRootID(t, mock, example, errors.New("pineapple on pizza"), nil)
 		actual, err := client.GetProductsByProductRootID(mockDB, exampleProductRootID)
 
-		require.NotNil(t, err)
-		require.Nil(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NotNil(t, err)
+		assert.Nil(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -289,7 +289,7 @@ func setProductWithSKUExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmo
 func TestProductWithSKUExists(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	exampleSKU := "example"
 	client := NewPostgres()
@@ -298,25 +298,25 @@ func TestProductWithSKUExists(t *testing.T) {
 		setProductWithSKUExistenceQueryExpectation(t, mock, exampleSKU, true, nil)
 		actual, err := client.ProductWithSKUExists(mockDB, exampleSKU)
 
-		require.Nil(t, err)
-		require.True(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.True(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 	t.Run("with no rows found", func(t *testing.T) {
 		setProductWithSKUExistenceQueryExpectation(t, mock, exampleSKU, true, sql.ErrNoRows)
 		actual, err := client.ProductWithSKUExists(mockDB, exampleSKU)
 
-		require.Nil(t, err)
-		require.False(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.False(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 	t.Run("with a database error", func(t *testing.T) {
 		setProductWithSKUExistenceQueryExpectation(t, mock, exampleSKU, true, errors.New("pineapple on pizza"))
 		actual, err := client.ProductWithSKUExists(mockDB, exampleSKU)
 
-		require.NotNil(t, err)
-		require.False(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NotNil(t, err)
+		assert.False(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -333,7 +333,7 @@ func setProductExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id 
 func TestProductExists(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
 	client := NewPostgres()
@@ -342,25 +342,25 @@ func TestProductExists(t *testing.T) {
 		setProductExistenceQueryExpectation(t, mock, exampleID, true, nil)
 		actual, err := client.ProductExists(mockDB, exampleID)
 
-		require.Nil(t, err)
-		require.True(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.True(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 	t.Run("with no rows found", func(t *testing.T) {
 		setProductExistenceQueryExpectation(t, mock, exampleID, true, sql.ErrNoRows)
 		actual, err := client.ProductExists(mockDB, exampleID)
 
-		require.Nil(t, err)
-		require.False(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.False(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 	t.Run("with a database error", func(t *testing.T) {
 		setProductExistenceQueryExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
 		actual, err := client.ProductExists(mockDB, exampleID)
 
-		require.NotNil(t, err)
-		require.False(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NotNil(t, err)
+		assert.False(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -435,7 +435,7 @@ func setProductReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint6
 func TestGetProduct(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
 	expected := &models.Product{ID: exampleID}
@@ -445,9 +445,9 @@ func TestGetProduct(t *testing.T) {
 		setProductReadQueryExpectation(t, mock, exampleID, expected, nil)
 		actual, err := client.GetProduct(mockDB, exampleID)
 
-		require.Nil(t, err)
-		require.Equal(t, expected, actual, "expected product did not match actual product")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual, "expected product did not match actual product")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -584,7 +584,7 @@ func setProductListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *
 func TestGetProductList(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
 	example := &models.Product{ID: exampleID}
@@ -598,18 +598,20 @@ func TestGetProductList(t *testing.T) {
 		setProductListReadQueryExpectation(t, mock, exampleQF, example, nil, nil)
 		actual, err := client.GetProductList(mockDB, exampleQF)
 
-		require.Nil(t, err)
-		require.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with error executing query", func(t *testing.T) {
 		setProductListReadQueryExpectation(t, mock, exampleQF, example, nil, errors.New("pineapple on pizza"))
 		actual, err := client.GetProductList(mockDB, exampleQF)
 
-		require.NotNil(t, err)
-		require.Nil(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NotNil(t, err)
+		assert.Nil(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with error scanning values", func(t *testing.T) {
 		exampleRows := sqlmock.NewRows([]string{"things"}).AddRow("stuff")
 		query, _ := buildProductListRetrievalQuery(exampleQF)
@@ -618,17 +620,18 @@ func TestGetProductList(t *testing.T) {
 
 		actual, err := client.GetProductList(mockDB, exampleQF)
 
-		require.NotNil(t, err)
-		require.Nil(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NotNil(t, err)
+		assert.Nil(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with with row errors", func(t *testing.T) {
 		setProductListReadQueryExpectation(t, mock, exampleQF, example, errors.New("pineapple on pizza"), nil)
 		actual, err := client.GetProductList(mockDB, exampleQF)
 
-		require.NotNil(t, err)
-		require.Nil(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NotNil(t, err)
+		assert.Nil(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -642,7 +645,7 @@ func TestBuildProductCountRetrievalQuery(t *testing.T) {
 	expected := `SELECT count(id) FROM products WHERE archived_on IS NULL LIMIT 25`
 	actual, _ := buildProductCountRetrievalQuery(exampleQF)
 
-	require.Equal(t, expected, actual, "expected and actual queries should match")
+	assert.Equal(t, expected, actual, "expected and actual queries should match")
 }
 
 func setProductCountRetrievalQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, count uint64, err error) {
@@ -662,7 +665,7 @@ func setProductCountRetrievalQueryExpectation(t *testing.T, mock sqlmock.Sqlmock
 func TestGetProductCount(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	client := NewPostgres()
 	expected := uint64(123)
@@ -675,9 +678,9 @@ func TestGetProductCount(t *testing.T) {
 		setProductCountRetrievalQueryExpectation(t, mock, exampleQF, expected, nil)
 		actual, err := client.GetProductCount(mockDB, exampleQF)
 
-		require.Nil(t, err)
-		require.Equal(t, expected, actual, "count retrieval method should return the expected value")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual, "count retrieval method should return the expected value")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -720,7 +723,7 @@ func setProductCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCr
 func TestCreateProduct(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	expectedID := uint64(1)
 	exampleInput := &models.Product{ID: expectedID}
@@ -731,11 +734,11 @@ func TestCreateProduct(t *testing.T) {
 		expected := generateExampleTimeForTests(t)
 		actualID, actualCreationDate, actualAvailableOn, err := client.CreateProduct(mockDB, exampleInput)
 
-		require.Nil(t, err)
-		require.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
-		require.Equal(t, expected, actualCreationDate, "expected creation time did not match actual creation time")
-		require.Equal(t, expected, actualAvailableOn, "expected availability time did not match actual availability time")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
+		assert.Equal(t, expected, actualCreationDate, "expected creation time did not match actual creation time")
+		assert.Equal(t, expected, actualAvailableOn, "expected availability time did not match actual availability time")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -779,7 +782,7 @@ func setProductUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpda
 func TestUpdateProductByID(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	exampleInput := &models.Product{ID: uint64(1)}
 	client := NewPostgres()
@@ -789,9 +792,9 @@ func TestUpdateProductByID(t *testing.T) {
 		expected := generateExampleTimeForTests(t)
 		actual, err := client.UpdateProduct(mockDB, exampleInput)
 
-		require.Nil(t, err)
-		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -805,7 +808,7 @@ func setProductDeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id u
 func TestDeleteProductByID(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
 	client := NewPostgres()
@@ -815,9 +818,9 @@ func TestDeleteProductByID(t *testing.T) {
 		expected := generateExampleTimeForTests(t)
 		actual, err := client.DeleteProduct(mockDB, exampleID)
 
-		require.Nil(t, err)
-		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 
 	t.Run("with transaction", func(t *testing.T) {
@@ -825,12 +828,12 @@ func TestDeleteProductByID(t *testing.T) {
 		setProductDeletionQueryExpectation(t, mock, exampleID, nil)
 		expected := generateExampleTimeForTests(t)
 		tx, err := mockDB.Begin()
-		require.Nil(t, err, "no error should be returned setting up a transaction in the mock DB")
+		assert.NoError(t, err, "no error should be returned setting up a transaction in the mock DB")
 		actual, err := client.DeleteProduct(tx, exampleID)
 
-		require.Nil(t, err)
-		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -844,7 +847,7 @@ func setProductWithProductRootIDDeletionQueryExpectation(t *testing.T, mock sqlm
 func TestArchiveProductsWithProductRootID(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
 	client := NewPostgres()
@@ -854,9 +857,9 @@ func TestArchiveProductsWithProductRootID(t *testing.T) {
 		expected := generateExampleTimeForTests(t)
 		actual, err := client.ArchiveProductsWithProductRootID(mockDB, exampleID)
 
-		require.Nil(t, err)
-		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 
 	t.Run("with transaction", func(t *testing.T) {
@@ -864,11 +867,11 @@ func TestArchiveProductsWithProductRootID(t *testing.T) {
 		setProductWithProductRootIDDeletionQueryExpectation(t, mock, exampleID, nil)
 		expected := generateExampleTimeForTests(t)
 		tx, err := mockDB.Begin()
-		require.Nil(t, err, "no error should be returned setting up a transaction in the mock DB")
+		assert.NoError(t, err, "no error should be returned setting up a transaction in the mock DB")
 		actual, err := client.ArchiveProductsWithProductRootID(tx, exampleID)
 
-		require.Nil(t, err)
-		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }

@@ -11,7 +11,7 @@ import (
 	"github.com/dairycart/dairycart/api/storage/models"
 
 	// external dependencies
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
@@ -56,7 +56,7 @@ func setDiscountReadQueryExpectationByCode(t *testing.T, mock sqlmock.Sqlmock, c
 func TestGetDiscountByCode(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	client := NewPostgres()
 
@@ -67,9 +67,9 @@ func TestGetDiscountByCode(t *testing.T) {
 		setDiscountReadQueryExpectationByCode(t, mock, exampleCode, expected, nil)
 		actual, err := client.GetDiscountByCode(mockDB, exampleCode)
 
-		require.Nil(t, err)
-		require.Equal(t, expected, actual, "expected discount did not match actual discount")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual, "expected discount did not match actual discount")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -86,7 +86,7 @@ func setDiscountExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id
 func TestDiscountExists(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
 	client := NewPostgres()
@@ -95,25 +95,25 @@ func TestDiscountExists(t *testing.T) {
 		setDiscountExistenceQueryExpectation(t, mock, exampleID, true, nil)
 		actual, err := client.DiscountExists(mockDB, exampleID)
 
-		require.Nil(t, err)
-		require.True(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.True(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 	t.Run("with no rows found", func(t *testing.T) {
 		setDiscountExistenceQueryExpectation(t, mock, exampleID, true, sql.ErrNoRows)
 		actual, err := client.DiscountExists(mockDB, exampleID)
 
-		require.Nil(t, err)
-		require.False(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.False(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 	t.Run("with a database error", func(t *testing.T) {
 		setDiscountExistenceQueryExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
 		actual, err := client.DiscountExists(mockDB, exampleID)
 
-		require.NotNil(t, err)
-		require.False(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NotNil(t, err)
+		assert.False(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -158,7 +158,7 @@ func setDiscountReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint
 func TestGetDiscount(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
 	expected := &models.Discount{ID: exampleID}
@@ -168,9 +168,9 @@ func TestGetDiscount(t *testing.T) {
 		setDiscountReadQueryExpectation(t, mock, exampleID, expected, nil)
 		actual, err := client.GetDiscount(mockDB, exampleID)
 
-		require.Nil(t, err)
-		require.Equal(t, expected, actual, "expected discount did not match actual discount")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual, "expected discount did not match actual discount")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -247,7 +247,7 @@ func setDiscountListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf 
 func TestGetDiscountList(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
 	example := &models.Discount{ID: exampleID}
@@ -261,18 +261,20 @@ func TestGetDiscountList(t *testing.T) {
 		setDiscountListReadQueryExpectation(t, mock, exampleQF, example, nil, nil)
 		actual, err := client.GetDiscountList(mockDB, exampleQF)
 
-		require.Nil(t, err)
-		require.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with error executing query", func(t *testing.T) {
 		setDiscountListReadQueryExpectation(t, mock, exampleQF, example, nil, errors.New("pineapple on pizza"))
 		actual, err := client.GetDiscountList(mockDB, exampleQF)
 
-		require.NotNil(t, err)
-		require.Nil(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NotNil(t, err)
+		assert.Nil(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with error scanning values", func(t *testing.T) {
 		exampleRows := sqlmock.NewRows([]string{"things"}).AddRow("stuff")
 		query, _ := buildDiscountListRetrievalQuery(exampleQF)
@@ -281,17 +283,18 @@ func TestGetDiscountList(t *testing.T) {
 
 		actual, err := client.GetDiscountList(mockDB, exampleQF)
 
-		require.NotNil(t, err)
-		require.Nil(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NotNil(t, err)
+		assert.Nil(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with with row errors", func(t *testing.T) {
 		setDiscountListReadQueryExpectation(t, mock, exampleQF, example, errors.New("pineapple on pizza"), nil)
 		actual, err := client.GetDiscountList(mockDB, exampleQF)
 
-		require.NotNil(t, err)
-		require.Nil(t, actual)
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NotNil(t, err)
+		assert.Nil(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -305,7 +308,7 @@ func TestBuildDiscountCountRetrievalQuery(t *testing.T) {
 	expected := `SELECT count(id) FROM discounts WHERE archived_on IS NULL LIMIT 25`
 	actual, _ := buildDiscountCountRetrievalQuery(exampleQF)
 
-	require.Equal(t, expected, actual, "expected and actual queries should match")
+	assert.Equal(t, expected, actual, "expected and actual queries should match")
 }
 
 func setDiscountCountRetrievalQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, count uint64, err error) {
@@ -325,7 +328,7 @@ func setDiscountCountRetrievalQueryExpectation(t *testing.T, mock sqlmock.Sqlmoc
 func TestGetDiscountCount(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	client := NewPostgres()
 	expected := uint64(123)
@@ -338,9 +341,9 @@ func TestGetDiscountCount(t *testing.T) {
 		setDiscountCountRetrievalQueryExpectation(t, mock, exampleQF, expected, nil)
 		actual, err := client.GetDiscountCount(mockDB, exampleQF)
 
-		require.Nil(t, err)
-		require.Equal(t, expected, actual, "count retrieval method should return the expected value")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual, "count retrieval method should return the expected value")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -368,7 +371,7 @@ func setDiscountCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toC
 func TestCreateDiscount(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	expectedID := uint64(1)
 	exampleInput := &models.Discount{ID: expectedID}
@@ -379,11 +382,11 @@ func TestCreateDiscount(t *testing.T) {
 		expected := generateExampleTimeForTests(t)
 		actualID, actualCreationDate, err := client.CreateDiscount(mockDB, exampleInput)
 
-		require.Nil(t, err)
-		require.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
-		require.Equal(t, expected, actualCreationDate, "expected creation time did not match actual creation time")
+		assert.NoError(t, err)
+		assert.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
+		assert.Equal(t, expected, actualCreationDate, "expected creation time did not match actual creation time")
 
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -412,7 +415,7 @@ func setDiscountUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpd
 func TestUpdateDiscountByID(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	exampleInput := &models.Discount{ID: uint64(1)}
 	client := NewPostgres()
@@ -422,9 +425,9 @@ func TestUpdateDiscountByID(t *testing.T) {
 		expected := generateExampleTimeForTests(t)
 		actual, err := client.UpdateDiscount(mockDB, exampleInput)
 
-		require.Nil(t, err)
-		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
 
@@ -438,7 +441,7 @@ func setDiscountDeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id 
 func TestDeleteDiscountByID(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
-	require.Nil(t, err)
+	assert.NoError(t, err)
 	defer mockDB.Close()
 	exampleID := uint64(1)
 	client := NewPostgres()
@@ -448,9 +451,9 @@ func TestDeleteDiscountByID(t *testing.T) {
 		expected := generateExampleTimeForTests(t)
 		actual, err := client.DeleteDiscount(mockDB, exampleID)
 
-		require.Nil(t, err)
-		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 
 	t.Run("with transaction", func(t *testing.T) {
@@ -458,11 +461,11 @@ func TestDeleteDiscountByID(t *testing.T) {
 		setDiscountDeletionQueryExpectation(t, mock, exampleID, nil)
 		expected := generateExampleTimeForTests(t)
 		tx, err := mockDB.Begin()
-		require.Nil(t, err, "no error should be returned setting up a transaction in the mock DB")
+		assert.NoError(t, err, "no error should be returned setting up a transaction in the mock DB")
 		actual, err := client.DeleteDiscount(tx, exampleID)
 
-		require.Nil(t, err)
-		require.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
-		require.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
 }
