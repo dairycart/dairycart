@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"net/http"
 	"net/url"
@@ -16,7 +15,7 @@ import (
 
 	"github.com/asaskevich/govalidator"
 	"github.com/fatih/structs"
-	// log "github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 const (

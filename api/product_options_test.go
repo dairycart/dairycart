@@ -217,7 +217,7 @@ func TestCreateProductOptionAndValuesInDBFromInput(t *testing.T) {
 	exampleID := uint64(1)
 
 	t.Run("optimal conditions", func(*testing.T) {
-		exampleProductOptionCreationInput := &ProductOptionCreationInput{
+		exampleProductOptionCreationInput := models.ProductOptionCreationInput{
 			Name:   "name",
 			Values: []string{"one", "two", "three"},
 		}
@@ -237,7 +237,7 @@ func TestCreateProductOptionAndValuesInDBFromInput(t *testing.T) {
 	})
 
 	t.Run("with error creating product option value", func(*testing.T) {
-		exampleProductOptionCreationInput := &ProductOptionCreationInput{
+		exampleProductOptionCreationInput := models.ProductOptionCreationInput{
 			Name:   "name",
 			Values: []string{"one", "two", "three"},
 		}

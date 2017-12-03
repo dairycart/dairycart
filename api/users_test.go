@@ -509,11 +509,19 @@ func TestUserLogoutHandler(t *testing.T) {
 func TestUserDeletionHandler(t *testing.T) {
 	exampleID := uint64(1)
 	exampleIDString := strconv.Itoa(int(exampleID))
+	exampleUser := &models.User{
+		FirstName: "Frank",
+		LastName:  "Zappa",
+		Email:     "frank@zappa.com",
+		Username:  "username",
+		Password:  "invalid",
+		IsAdmin:   false,
+	}
 
 	t.Run("optimal conditions", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
-		testUtil.MockDB.On("UserExists", mock.Anything, exampleID).
-			Return(true, nil)
+		testUtil.MockDB.On("GetUser", mock.Anything, exampleID).
+			Return(exampleUser, nil)
 		testUtil.MockDB.On("DeleteUser", mock.Anything, exampleID).
 			Return(generateExampleTimeForTests(), nil)
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
@@ -531,8 +539,8 @@ func TestUserDeletionHandler(t *testing.T) {
 
 	t.Run("with nonexistent user", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
-		testUtil.MockDB.On("UserExists", mock.Anything, exampleID).
-			Return(false, nil)
+		testUtil.MockDB.On("GetUser", mock.Anything, exampleID).
+			Return(exampleUser, sql.ErrNoRows)
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
@@ -542,10 +550,23 @@ func TestUserDeletionHandler(t *testing.T) {
 		assertStatusCode(t, testUtil, http.StatusNotFound)
 	})
 
+	t.Run("with error retrieving user user", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetUser", mock.Anything, exampleID).
+			Return(exampleUser, generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
+
+		req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
+		assert.NoError(t, err)
+
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
+
 	t.Run("with invalid cookie", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
-		testUtil.MockDB.On("UserExists", mock.Anything, exampleID).
-			Return(true, nil)
+		testUtil.MockDB.On("GetUser", mock.Anything, exampleID).
+			Return(exampleUser, nil)
 		testUtil.MockDB.On("DeleteUser", mock.Anything, exampleID).
 			Return(generateExampleTimeForTests(), nil)
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
@@ -560,8 +581,8 @@ func TestUserDeletionHandler(t *testing.T) {
 
 	t.Run("when deleting admin user as regular user", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
-		testUtil.MockDB.On("UserExists", mock.Anything, exampleID).
-			Return(true, nil)
+		testUtil.MockDB.On("GetUser", mock.Anything, exampleID).
+			Return(exampleUser, nil)
 		testUtil.MockDB.On("DeleteUser", mock.Anything, exampleID).
 			Return(generateExampleTimeForTests(), nil)
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
@@ -578,8 +599,8 @@ func TestUserDeletionHandler(t *testing.T) {
 
 	t.Run("with error deleting user", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
-		testUtil.MockDB.On("UserExists", mock.Anything, exampleID).
-			Return(true, nil)
+		testUtil.MockDB.On("GetUser", mock.Anything, exampleID).
+			Return(exampleUser, nil)
 		testUtil.MockDB.On("DeleteUser", mock.Anything, exampleID).
 			Return(generateExampleTimeForTests(), generateArbitraryError())
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
