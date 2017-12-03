@@ -308,7 +308,7 @@ func TestUserCreationHandler(t *testing.T) {
 }
 
 func TestUserLoginHandler(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 	exampleInput := fmt.Sprintf(`
 		{
 			"username": "frankzappa",

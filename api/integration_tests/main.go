@@ -172,7 +172,7 @@ func createNewUser(JSONBody string, createAsSuperUser bool) (*http.Response, err
 	return requester.ExecuteRequestAsRegularUser(req)
 }
 
-func deleteUser(userID string, deleteAsSuperUser bool) (*http.Response, error) {
+func deleteUser(userID uint64, deleteAsSuperUser bool) (*http.Response, error) {
 	u := buildPath("user", userID)
 	req, _ := http.NewRequest(http.MethodDelete, u, nil)
 	if deleteAsSuperUser {

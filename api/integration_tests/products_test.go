@@ -27,7 +27,7 @@ func logBodyAndResetResponse(t *testing.T, resp *http.Response) {
 	respStr := turnResponseBodyIntoString(t, resp)
 	log.Printf(`
 
-		%s
+		'%s'
 
 	`, respStr)
 	resp.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(respStr)))
@@ -66,7 +66,7 @@ func createJSONBody(t *testing.T, o interface{}) string {
 }
 
 func TestProductExistenceRoute(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	t.Run("for existing product", func(*testing.T) {
 		resp, err := checkProductExistence(existentSKU)
@@ -182,7 +182,7 @@ func compareProductRoots(t *testing.T, expected, actual models.ProductRoot) {
 }
 
 func TestProductRetrievalRoute(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 	t.Run("existent product", func(*testing.T) {
 		resp, err := retrieveProduct(existentSKU)
 		assert.NoError(t, err)
@@ -236,7 +236,7 @@ func TestProductRetrievalRoute(t *testing.T) {
 }
 
 func TestProductListRoute(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	t.Run("with standard filter", func(*testing.T) {
 		resp, err := retrieveListOfProducts(nil)
@@ -273,7 +273,7 @@ func TestProductListRoute(t *testing.T) {
 }
 
 func TestProductUpdateRoute(t *testing.T) {
-	// // t.Parallel()
+	// t.Parallel()
 	testSKU := "test-product-updating"
 
 	t.Run("normal use", func(*testing.T) {
@@ -620,7 +620,7 @@ func TestProductCreationRoute(t *testing.T) {
 }
 
 func TestProductDeletion(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 	testSKU := "test-product-deletion"
 
 	t.Run("normal usecase", func(*testing.T) {
@@ -689,7 +689,7 @@ func TestProductRootList(t *testing.T) {
 }
 
 func TestProductRootRetrievalRoute(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	t.Run("normal usage", func(*testing.T) {
 		resp, err := retrieveProductRoot(existentID)
@@ -1034,7 +1034,7 @@ func TestProductOptionListRoute(t *testing.T) {
 }
 
 func TestProductOptionCreation(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	t.Run("normal usage", func(*testing.T) {
 		testOptionName := "example_option_to_create"
@@ -1147,7 +1147,7 @@ func TestProductOptionCreation(t *testing.T) {
 }
 
 func TestProductOptionDeletion(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	t.Run("normal usage", func(*testing.T) {
 		testOptionName := "example_option_to_delete"
@@ -1201,7 +1201,7 @@ func TestProductOptionDeletion(t *testing.T) {
 }
 
 func TestProductOptionUpdate(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	t.Run("normal usage", func(*testing.T) {
 		testSKU := "testing_product_options"
@@ -1279,7 +1279,7 @@ func TestProductOptionUpdate(t *testing.T) {
 }
 
 func TestProductOptionValueCreation(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	t.Run("normal usage", func(*testing.T) {
 		testOptionName := "example_option_value_to_create"
@@ -1421,7 +1421,7 @@ func createTestProductOptionValue(t *testing.T, sku, optionName string, value mo
 }
 
 func TestProductOptionValueUpdate(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	t.Run("normal usage", func(*testing.T) {
 		testOptionName := "example_option_value_to_update"
@@ -1507,7 +1507,7 @@ func TestProductOptionValueUpdate(t *testing.T) {
 }
 
 func TestProductOptionValueDeletion(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	t.Run("normal usage", func(*testing.T) {
 		testOptionName := "example_option_value_to_delete"

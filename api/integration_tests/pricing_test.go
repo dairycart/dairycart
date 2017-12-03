@@ -22,7 +22,7 @@ func compareDiscounts(t *testing.T, expected, actual models.Discount) {
 }
 
 func TestDiscountRetrievalRoute(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	t.Run("normal usage", func(*testing.T) {
 		resp, err := getDiscountByID(existentID)
@@ -60,7 +60,7 @@ func TestDiscountRetrievalRoute(t *testing.T) {
 }
 
 func TestDiscountListRoute(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	t.Run("with standard filter", func(*testing.T) {
 		resp, err := getListOfDiscounts(nil)
@@ -97,7 +97,7 @@ func TestDiscountListRoute(t *testing.T) {
 }
 
 func TestDiscountCreationRoute(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	t.Run("normal usage", func(*testing.T) {
 		expected := models.Discount{
@@ -137,7 +137,7 @@ func TestDiscountCreationRoute(t *testing.T) {
 }
 
 func TestDiscountUpdateRoute(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	t.Run("normal usage", func(*testing.T) {
 		exampleInput := models.Discount{
@@ -199,7 +199,7 @@ func TestDiscountUpdateRoute(t *testing.T) {
 }
 
 func TestDiscountDeletionRoute(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	t.Run("normal usage", func(*testing.T) {
 		exampleInput := models.Discount{

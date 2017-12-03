@@ -305,9 +305,12 @@ func buildUserDeletionHandler(db *sql.DB, client storage.Storer, store *sessions
 		userIDInt64 := uint64(userIDInt)
 
 		// can't delete a user that doesn't already exist!
-		exists, err := client.UserExists(db, userIDInt64)
-		if err != nil || !exists {
+		user, err := client.GetUser(db, userIDInt64)
+		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "user", userID)
+			return
+		} else if err != nil {
+			notifyOfInternalIssue(res, err, "retrieve user")
 			return
 		}
 
@@ -328,14 +331,15 @@ func buildUserDeletionHandler(db *sql.DB, client storage.Storer, store *sessions
 			json.NewEncoder(res).Encode(errRes)
 			return
 		} else if admin {
-			_, err := client.DeleteUser(db, userIDInt64)
+			archivedOn, err := client.DeleteUser(db, userIDInt64)
+			user.ArchivedOn = models.NullTime{NullTime: pq.NullTime{Time: archivedOn, Valid: true}}
 			if err != nil {
 				notifyOfInternalIssue(res, err, "archive user")
 				return
 			}
 		}
 
-		res.WriteHeader(http.StatusOK)
+		json.NewEncoder(res).Encode(user)
 	}
 }
 
@@ -450,6 +454,7 @@ func buildUserInfoUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerF
 			return
 		}
 
+		// FIXME: this isn't how this should be done
 		if passwordChanged {
 			updatedUser.PasswordLastChangedOn = models.NullTime{NullTime: pq.NullTime{Time: time.Now(), Valid: true}}
 		}
