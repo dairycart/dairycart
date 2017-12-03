@@ -236,7 +236,7 @@ func TestProductRetrievalRoute(t *testing.T) {
 }
 
 func TestProductListRoute(t *testing.T) {
-	// // t.Parallel()
+	// t.Parallel()
 
 	t.Run("with standard filter", func(*testing.T) {
 		resp, err := retrieveListOfProducts(nil)
