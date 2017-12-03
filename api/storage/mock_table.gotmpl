@@ -1,0 +1,162 @@
+package dairymock
+
+import (
+    "time"
+
+	"github.com/dairycart/dairycart/api/storage"
+    "github.com/dairycart/dairycart/api/storage/models"
+)
+
+{{- $modelName := pascal (trimSuffix .Table.Name "s") }}
+{{- $isUser := eq $modelName "User" }}
+{{- $isProduct := eq $modelName "Product" }}
+{{- $isDiscount := eq $modelName "Discount" }}
+{{- $isProductRoot := eq $modelName "ProductRoot" }}
+{{- $isLoginAttempt := eq $modelName "LoginAttempt" }}
+{{- $isProductOption := eq $modelName "ProductOption" }}
+{{- $isProductOptionValue := eq $modelName "ProductOptionValue" }}
+{{- $isPasswordResetToken := eq $modelName "PasswordResetToken" }}
+{{- $isProductVariantBridge := eq $modelName "ProductVariantBridge" }}
+
+{{- if $isProduct }}
+func (m *MockDB) Get{{ $modelName }}BySKU(db storage.Querier, sku string) (*models.{{ $modelName }}, error) {
+    args := m.Called(db, sku)
+	return args.Get(0).(*models.{{ $modelName }}), args.Error(1)
+}
+
+func (m *MockDB) {{ $modelName }}WithSKUExists(db storage.Querier, sku string) (bool, error) {
+    args := m.Called(db, sku)
+	return args.Bool(0), args.Error(1)
+}
+{{- end }}
+
+{{- if or $isProductOption $isProduct }}
+func (m *MockDB) Get{{ $modelName }}sByProductRootID(db storage.Querier, productRootID uint64)([]models.{{ $modelName }}, error) {
+    args := m.Called(db, productRootID)
+	return args.Get(0).([]models.{{ $modelName }}), args.Error(1)
+}
+{{- end }}
+
+{{- if $isUser }}
+func (m *MockDB) Get{{ $modelName }}ByUsername(db storage.Querier, username string) (*models.{{ $modelName }}, error) {
+    args := m.Called(db, username)
+	return args.Get(0).(*models.{{ $modelName }}), args.Error(1)
+}
+
+func (m *MockDB) {{ $modelName }}WithUsernameExists(db storage.Querier, username string) (bool, error) {
+    args := m.Called(db, username)
+	return args.Bool(0), args.Error(1)
+}
+{{- end }}
+
+{{- if $isLoginAttempt }}
+func (m *MockDB) {{ $modelName }}sHaveBeenExhausted(db storage.Querier, username string) (bool, error) {
+    args := m.Called(db, username)
+	return args.Bool(0), args.Error(1)
+}
+{{- end }}
+
+{{- if $isDiscount }}
+func (m *MockDB) Get{{ $modelName }}ByCode(db storage.Querier, code string) (*models.{{ $modelName }}, error) {
+    args := m.Called(db, code)
+	return args.Get(0).(*models.{{ $modelName }}), args.Error(1)
+}
+{{- end }}
+
+{{- if $isProductRoot }}
+func (m *MockDB) {{ $modelName }}WithSKUPrefixExists(db storage.Querier, skuPrefix string) (bool, error) {
+    args := m.Called(db, skuPrefix)
+	return args.Bool(0), args.Error(1)
+}
+{{- end }}
+
+{{- if $isPasswordResetToken }}
+func (m *MockDB) {{ $modelName }}ForUserIDExists(db storage.Querier, id uint64) (bool, error) {
+    args := m.Called(db, id)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *MockDB) {{ $modelName }}WithTokenExists(db storage.Querier, token string) (bool, error) {
+    args := m.Called(db, token)
+	return args.Bool(0), args.Error(1)
+}
+{{- end }}
+
+{{- if $isProductOption }}
+func (m *MockDB) {{ $modelName }}WithNameExistsForProductRoot(db storage.Querier, name string, productRootID uint64) (bool, error) {
+    args := m.Called(db, name, productRootID)
+    return args.Bool(0), args.Error(1)
+}
+{{- end }}
+
+{{- if $isProductOptionValue }}
+func (m *MockDB) {{ $modelName }}ForOptionIDExists(db storage.Querier, optionID uint64, value string) (bool, error) {
+    args := m.Called(db, optionID, value)
+	return args.Bool(0), args.Error(1)
+}
+func (m *MockDB) Archive{{ $modelName }}sForOption(db storage.Querier, optionID uint64) (time.Time, error) {
+    args := m.Called(db, optionID)
+    return args.Get(0).(time.Time), args.Error(1)
+}
+
+func (m *MockDB) Get{{ $modelName }}sForOption(db storage.Querier, optionID uint64) ([]models.{{ $modelName }}, error) {
+    args := m.Called(db, optionID)
+    return args.Get(0).([]models.{{ $modelName }}), args.Error(1)
+}
+{{- end }}
+
+func (m *MockDB) {{ $modelName }}Exists(db storage.Querier, id uint64) (bool, error) {
+    args := m.Called(db, id)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *MockDB) Get{{ $modelName }}(db storage.Querier, id uint64) (*models.{{ $modelName }}, error) {
+    args := m.Called(db, id)
+	return args.Get(0).(*models.{{ $modelName }}), args.Error(1)
+}
+
+func (m *MockDB) Get{{ $modelName }}List(db storage.Querier, qf *models.QueryFilter) ([]models.{{ $modelName }}, error) {
+    args := m.Called(db, qf)
+    return args.Get(0).([]models.{{ $modelName }}), args.Error(1)
+}
+
+func (m *MockDB) Get{{ $modelName }}Count(db storage.Querier, qf *models.QueryFilter) (uint64, error){
+    args := m.Called(db, qf)
+    return args.Get(0).(uint64), args.Error(1)
+}
+
+func (m *MockDB) Create{{ $modelName }}(db storage.Querier, nu *models.{{ $modelName }}) (uint64, time.Time, {{- if $isProduct }}time.Time, {{ end }}error) {
+    args := m.Called(db, nu)
+	return args.Get(0).(uint64), args.Get(1).(time.Time), {{ if $isProduct -}}args.Get(2).(time.Time), args.Error(3){{ else }}args.Error(2){{ end -}}
+}
+
+{{ if $isProductVariantBridge }}
+func (m *MockDB) CreateMultiple{{ $modelName }}sForProductID(db storage.Querier, productID uint64, optionValueIDs []uint64) error {
+    args := m.Called(db, productID, optionValueIDs)
+	return args.Error(0)
+}
+{{- end }}
+
+func (m *MockDB) Update{{ $modelName }}(db storage.Querier, updated *models.{{ $modelName }}) (time.Time, error) {
+    args := m.Called(db, updated)
+	return args.Get(0).(time.Time), args.Error(1)
+}
+
+func (m *MockDB) Delete{{ $modelName }}(db storage.Querier, id uint64) (time.Time, error) {
+    args := m.Called(db, id)
+	return args.Get(0).(time.Time), args.Error(1)
+}
+
+{{- if or (or $isProductVariantBridge $isProductOptionValue) (or $isProductOption $isProduct) }}
+func (m *MockDB) Archive{{ $modelName }}sWithProductRootID(db storage.Querier, id uint64) (t time.Time, err error) {
+    args := m.Called(db, id)
+	return args.Get(0).(time.Time), args.Error(1)
+}
+{{- end }}
+
+{{ if $isProductVariantBridge }}
+func (m *MockDB) Delete{{ $modelName }}ByProductID(db storage.Querier, productID uint64) (t time.Time, err error) {
+    args := m.Called(db, productID)
+	return args.Get(0).(time.Time), args.Error(1)
+}
+{{- end }}

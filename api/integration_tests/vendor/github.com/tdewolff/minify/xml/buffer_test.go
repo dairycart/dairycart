@@ -19,19 +19,19 @@ func TestBuffer(t *testing.T) {
 	test.That(t, len(z.buf) == 0, "shift first token and restore length")
 
 	test.That(t, string(z.Peek(2).Text) == "href", "third token is href")
-	test.That(t, z.pos == 0, "don't change positon after peeking")
+	test.That(t, z.pos == 0, "don't change position after peeking")
 	test.That(t, len(z.buf) == 3, "two tokens after peeking")
 
-	test.That(t, string(z.Peek(8).Text) == "p", "nineth token is <p>")
-	test.That(t, z.pos == 0, "don't change positon after peeking")
+	test.That(t, string(z.Peek(8).Text) == "p", "ninth token is <p>")
+	test.That(t, z.pos == 0, "don't change position after peeking")
 	test.That(t, len(z.buf) == 9, "nine tokens after peeking")
 
 	test.That(t, z.Peek(9).TokenType == xml.ErrorToken, "tenth token is an error")
 	test.That(t, z.Peek(9) == z.Peek(10), "tenth and eleventh token are EOF")
 	test.That(t, len(z.buf) == 10, "ten tokens after peeking")
 
-	tok = z.Shift()
+	_ = z.Shift()
 	tok = z.Shift()
 	test.That(t, string(tok.Text) == "a", "third token is <a>")
-	test.That(t, z.pos == 2, "don't change positon after peeking")
+	test.That(t, z.pos == 2, "don't change position after peeking")
 }

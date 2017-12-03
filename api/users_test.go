@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"database/sql/driver"
 	"fmt"
 	"net/http"
 	"os"
@@ -10,15 +9,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"golang.org/x/crypto/bcrypt"
+	"github.com/dairycart/dairycart/api/storage/models"
 
-	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var dummySalt []byte
-var userTableHeaders []string
-var exampleUserData []driver.Value
 
 const (
 	examplePassword       = "Pa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rdPa$$w0rd"
@@ -28,166 +26,6 @@ const (
 func init() {
 	os.Setenv("DAIRYSECRET", "do-not-use-secrets-like-this-plz")
 	dummySalt = []byte("farts")
-	userTableHeaders = strings.Split(usersTableHeaders, ", ")
-	exampleUserData = []driver.Value{
-		1, "Frank", "Zappa", "frankzappa", "frank@zappa.com", hashedExamplePassword, dummySalt, true, nil, generateExampleTimeForTests(), nil, nil,
-	}
-}
-
-func setExpectationsForUserExistence(mock sqlmock.Sqlmock, username string, exists bool, err error) {
-	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
-	mock.ExpectQuery(formatQueryForSQLMock(userExistenceQuery)).
-		WithArgs(username).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
-}
-
-func setExpectationsForUserExistenceByID(mock sqlmock.Sqlmock, id string, exists bool, err error) {
-	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
-	mock.ExpectQuery(formatQueryForSQLMock(userExistenceQueryByID)).
-		WithArgs(id).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
-}
-
-func setExpectationsForUserCreation(mock sqlmock.Sqlmock, u *User, err error) {
-	// can't expect args here because we can't predict the salt/hash
-	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(u.ID, generateExampleTimeForTests())
-	query, _ := buildUserCreationQuery(u)
-	mock.ExpectQuery(formatQueryForSQLMock(query)).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
-}
-
-func setExpectationsForSpecificUserRetrieval(mock sqlmock.Sqlmock, u *User, err error) {
-	exampleRow := []driver.Value{
-		u.ID,
-		u.FirstName,
-		u.LastName,
-		u.Username,
-		u.Email,
-		u.Password,
-		u.Salt,
-		u.IsAdmin,
-		u.PasswordLastChangedOn,
-		u.CreatedOn,
-		u.UpdatedOn,
-		u.ArchivedOn,
-	}
-
-	exampleRows := sqlmock.NewRows(userTableHeaders).AddRow(exampleRow...)
-	query, rawArgs := buildUserSelectionQuery(u.Email)
-	query = formatQueryForSQLMock(query)
-	args := argsToDriverValues(rawArgs)
-	mock.ExpectQuery(query).
-		WithArgs(args...).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
-}
-
-func setExpectationsForUserRetrieval(mock sqlmock.Sqlmock, email string, err error) {
-	exampleRows := sqlmock.NewRows(userTableHeaders).AddRow(exampleUserData...)
-	query, rawArgs := buildUserSelectionQuery(email)
-	query = formatQueryForSQLMock(query)
-	args := argsToDriverValues(rawArgs)
-	mock.ExpectQuery(query).
-		WithArgs(args...).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
-}
-
-func setExpectationsForUserRetrievalByID(mock sqlmock.Sqlmock, userID uint64, err error) {
-	exampleRows := sqlmock.NewRows(userTableHeaders).AddRow(exampleUserData...)
-	query, rawArgs := buildUserSelectionQueryByID(userID)
-	query = formatQueryForSQLMock(query)
-	args := argsToDriverValues(rawArgs)
-	mock.ExpectQuery(query).
-		WithArgs(args...).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
-}
-
-func setExpectationsForUserUpdate(mock sqlmock.Sqlmock, u *User, passwordChanged bool, err error) {
-	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests())
-	rawQuery, rawArgs := buildUserUpdateQuery(u, passwordChanged)
-	query := formatQueryForSQLMock(rawQuery)
-	args := argsToDriverValues(rawArgs)
-	mock.ExpectQuery(query).
-		WithArgs(args...).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
-}
-
-func setExpectationsForUserUpdateWithoutSpecifyingPassword(mock sqlmock.Sqlmock, u *User, passwordChanged bool, err error) {
-	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests())
-	rawQuery, _ := buildUserUpdateQuery(u, passwordChanged)
-	query := formatQueryForSQLMock(rawQuery)
-	mock.ExpectQuery(query).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
-}
-
-func setExpectationsForUserDeletion(mock sqlmock.Sqlmock, id uint64, err error) {
-	mock.ExpectExec(formatQueryForSQLMock(userDeletionQuery)).
-		WithArgs(id).
-		WillReturnResult(sqlmock.NewResult(1, 1)).
-		WillReturnError(err)
-}
-
-func setExpectationsForPasswordResetCreation(mock sqlmock.Sqlmock, id uint64, resetToken string, err error) {
-	query, rawArgs := buildPasswordResetRowCreationQuery(id, resetToken)
-	args := argsToDriverValues(rawArgs)
-	mock.ExpectExec(formatQueryForSQLMock(query)).
-		WithArgs(args...).
-		WillReturnResult(sqlmock.NewResult(1, 1)).
-		WillReturnError(err)
-}
-
-func setExpectationsForPasswordResetCreationWithNoSpecificResetToken(mock sqlmock.Sqlmock, id uint64, err error) {
-	query, _ := buildPasswordResetRowCreationQuery(id, "reset-token")
-	mock.ExpectExec(formatQueryForSQLMock(query)).
-		WillReturnResult(sqlmock.NewResult(1, 1)).
-		WillReturnError(err)
-}
-
-func setExpectationsForPasswordResetEntryExistenceByResetToken(mock sqlmock.Sqlmock, resetToken string, exists bool, err error) {
-	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
-	query := formatQueryForSQLMock(passwordResetExistenceQuery)
-	mock.ExpectQuery(query).
-		WithArgs(resetToken).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
-}
-
-func setExpectationsForPasswordResetEntryExistenceByUserID(mock sqlmock.Sqlmock, userID string, exists bool, err error) {
-	exampleRows := sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(exists))
-	query := formatQueryForSQLMock(passwordResetExistenceQueryForUserID)
-	mock.ExpectQuery(query).
-		WithArgs(userID).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
-}
-
-func setExpectationsForLoginAttemptExhaustionQuery(mock sqlmock.Sqlmock, username string, exhausted bool, err error) {
-	count := 0
-	if exhausted {
-		count = 666
-	}
-	exampleRows := sqlmock.NewRows([]string{""}).AddRow(count)
-	query := formatQueryForSQLMock(loginAttemptExhaustionQuery)
-	mock.ExpectQuery(query).
-		WithArgs(username).
-		WillReturnRows(exampleRows).
-		WillReturnError(err)
-}
-
-func setExpectationsForLoginAttemptCreationQuery(mock sqlmock.Sqlmock, username string, successful bool, err error) {
-	query, rawArgs := buildLoginAttemptCreationQuery(username, successful)
-	args := argsToDriverValues(rawArgs)
-	mock.ExpectExec(formatQueryForSQLMock(query)).
-		WithArgs(args...).
-		WillReturnResult(sqlmock.NewResult(1, 1)).
-		WillReturnError(err)
 }
 
 func TestValidateSessionCookieMiddleware(t *testing.T) {
@@ -198,13 +36,13 @@ func TestValidateSessionCookieMiddleware(t *testing.T) {
 		handlerWasCalled = true
 	}
 
-	testUtil := setupTestVariables(t)
+	testUtil := setupTestVariablesWithMock(t)
 
 	req, err := http.NewRequest(http.MethodGet, "", nil)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	session, err := testUtil.Store.Get(req, dairycartCookieName)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	session.Values[sessionAuthorizedKeyName] = true
 	session.Save(req, testUtil.Response)
 
@@ -220,10 +58,10 @@ func TestValidateSessionCookieMiddlewareWithInvalidCookie(t *testing.T) {
 		handlerWasCalled = true
 	}
 
-	testUtil := setupTestVariables(t)
+	testUtil := setupTestVariablesWithMock(t)
 
 	req, err := http.NewRequest(http.MethodGet, "", nil)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	validateSessionCookieMiddleware(testUtil.Response, req, testUtil.Store, exampleHandler)
 	assert.False(t, handlerWasCalled)
@@ -259,7 +97,7 @@ func TestCreateUserFromInput(t *testing.T) {
 		Password:  examplePassword,
 		IsAdmin:   true,
 	}
-	expected := &User{
+	expected := &models.User{
 		FirstName: "FirstName",
 		LastName:  "LastName",
 		Email:     "Email",
@@ -267,7 +105,7 @@ func TestCreateUserFromInput(t *testing.T) {
 	}
 
 	actual, err := createUserFromInput(exampleUserInput)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	assert.Equal(t, expected.FirstName, actual.FirstName, "FirstName fields should match")
 	assert.Equal(t, expected.LastName, actual.LastName, "LastName fields should match")
@@ -286,7 +124,7 @@ func TestCreateUserFromUpdateInput(t *testing.T) {
 		Username:  "Username",
 		Email:     "Email",
 	}
-	expected := &User{
+	expected := &models.User{
 		FirstName: "FirstName",
 		LastName:  "LastName",
 		Username:  "Username",
@@ -301,7 +139,7 @@ func TestCreateUserFromUpdateInput(t *testing.T) {
 func TestGenerateSalt(t *testing.T) {
 	t.Parallel()
 	salt, err := generateSalt()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, saltSize, len(salt), fmt.Sprintf("Generated salt should be %d bytes large", saltSize))
 }
 
@@ -311,114 +149,16 @@ func TestSaltAndHashPassword(t *testing.T) {
 	saltedPass := append(salt, examplePassword...)
 
 	actual, err := saltAndHashPassword(examplePassword, salt)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Nil(t, bcrypt.CompareHashAndPassword([]byte(actual), saltedPass))
-}
-
-func TestCreateUserInDB(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "FirstName",
-		LastName:  "LastName",
-		Email:     "Email",
-		Password:  examplePassword,
-	}
-
-	setExpectationsForUserCreation(testUtil.Mock, exampleUser, nil)
-	newID, createdOn, err := createUserInDB(testUtil.DB, exampleUser)
-
-	assert.Nil(t, err)
-	assert.Equal(t, exampleUser.ID, newID, "createProductInDB should return the created ID")
-	assert.Equal(t, exampleUser.CreatedOn, createdOn, "createProductInDB should return the created ID")
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-func TestCreateUserInDBWhenErrorOccurs(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "FirstName",
-		LastName:  "LastName",
-		Email:     "Email",
-		Password:  examplePassword,
-	}
-
-	setExpectationsForUserCreation(testUtil.Mock, exampleUser, generateArbitraryError())
-	_, _, err := createUserInDB(testUtil.DB, exampleUser)
-
-	assert.NotNil(t, err)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-func TestRetrieveUserFromDB(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
-	expected := User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "Frank",
-		LastName:  "Zappa",
-		Username:  "frankzappa",
-		Email:     "frank@zappa.com",
-		Password:  hashedExamplePassword,
-		IsAdmin:   true,
-		Salt:      dummySalt,
-	}
-
-	setExpectationsForUserRetrieval(testUtil.Mock, expected.Username, nil)
-	actual, err := retrieveUserFromDB(testUtil.DB, expected.Username)
-	assert.Nil(t, err)
-
-	assert.Equal(t, expected, actual, "expected and actual users should match")
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-func TestRetrieveUserFromDBByID(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
-	expected := User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "Frank",
-		LastName:  "Zappa",
-		Username:  "frankzappa",
-		Email:     "frank@zappa.com",
-		Password:  hashedExamplePassword,
-		IsAdmin:   true,
-		Salt:      dummySalt,
-	}
-
-	setExpectationsForUserRetrievalByID(testUtil.Mock, expected.ID, nil)
-	actual, err := retrieveUserFromDBByID(testUtil.DB, expected.ID)
-	assert.Nil(t, err)
-
-	assert.Equal(t, expected, actual, "expected and actual users should match")
-	ensureExpectationsWereMet(t, testUtil.Mock)
 }
 
 func TestPasswordMatches(t *testing.T) {
 	t.Parallel()
 
 	saltedPasswordHash, err := saltAndHashPassword(examplePassword, dummySalt)
-	assert.Nil(t, err)
-	exampleUser := User{
+	assert.NoError(t, err)
+	exampleUser := &models.User{
 		Password: saltedPasswordHash,
 		Salt:     dummySalt,
 	}
@@ -431,8 +171,8 @@ func TestPasswordMatchesFailsWhenPasswordsDoNotMatch(t *testing.T) {
 	t.Parallel()
 
 	saltedPasswordHash, err := saltAndHashPassword(examplePassword, dummySalt)
-	assert.Nil(t, err)
-	exampleUser := User{
+	assert.NoError(t, err)
+	exampleUser := &models.User{
 		Password: saltedPasswordHash,
 		Salt:     dummySalt,
 	}
@@ -445,100 +185,14 @@ func TestPasswordMatchesWithVeryLongPassword(t *testing.T) {
 	t.Parallel()
 
 	saltedPasswordHash, err := saltAndHashPassword(examplePassword, dummySalt)
-	assert.Nil(t, err)
-	exampleUser := User{
+	assert.NoError(t, err)
+	exampleUser := &models.User{
 		Password: saltedPasswordHash,
 		Salt:     dummySalt,
 	}
 
 	actual := passwordMatches(examplePassword, exampleUser)
 	assert.True(t, actual)
-}
-
-func TestUpdateUserInDatabase(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
-	examplePasswordChanged := false
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "Frank",
-		LastName:  "Zappa",
-		Username:  "frankzappa",
-		Email:     "frank@zappa.com",
-		Password:  hashedExamplePassword,
-		IsAdmin:   true,
-		Salt:      dummySalt,
-	}
-	setExpectationsForUserUpdate(testUtil.Mock, exampleUser, examplePasswordChanged, nil)
-
-	updatedOn, err := updateUserInDatabase(testUtil.DB, exampleUser, examplePasswordChanged)
-	assert.Nil(t, err)
-	assert.Equal(t, generateExampleTimeForTests(), updatedOn, "updateUserInDatabase should return valid updated_on time")
-
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-func TestArchiveUser(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
-	setExpectationsForUserDeletion(testUtil.Mock, 1, nil)
-
-	err := archiveUser(testUtil.DB, 1)
-	assert.Nil(t, err)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-func TestCreatePasswordResetEntryInDatabase(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
-	userID := uint64(1)
-	resetToken := "reset-token"
-	setExpectationsForPasswordResetCreation(testUtil.Mock, userID, resetToken, nil)
-
-	err := createPasswordResetEntryInDatabase(testUtil.DB, userID, resetToken)
-	assert.Nil(t, err)
-}
-
-func TestLoginAttemptsHaveBeenExhausted(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
-	exampleUsername := "farts"
-	setExpectationsForLoginAttemptExhaustionQuery(testUtil.Mock, exampleUsername, false, nil)
-
-	exhausted, err := loginAttemptsHaveBeenExhausted(testUtil.DB, exampleUsername)
-	assert.False(t, exhausted)
-	assert.Nil(t, err)
-}
-
-func TestLoginAttemptsHaveBeenExhaustedWithErrorExecutingQuery(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
-	exampleUsername := "farts"
-	setExpectationsForLoginAttemptExhaustionQuery(testUtil.Mock, exampleUsername, false, generateArbitraryError())
-
-	exhausted, err := loginAttemptsHaveBeenExhausted(testUtil.DB, exampleUsername)
-	assert.False(t, exhausted)
-	assert.NotNil(t, err)
-}
-
-func TestCreateLoginAttemptRowInDatabase(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
-	exampleUsername := "farts"
-	successful := true
-	setExpectationsForLoginAttemptCreationQuery(testUtil.Mock, exampleUsername, successful, nil)
-
-	err := createLoginAttemptRowInDatabase(testUtil.DB, exampleUsername, successful)
-	assert.Nil(t, err)
 }
 
 ////////////////////////////////////////////////////////
@@ -548,9 +202,6 @@ func TestCreateLoginAttemptRowInDatabase(t *testing.T) {
 ////////////////////////////////////////////////////////
 
 func TestUserCreationHandler(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
 	exampleInput := fmt.Sprintf(`
 		{
 			"first_name": "Frank",
@@ -561,11 +212,20 @@ func TestUserCreationHandler(t *testing.T) {
 		}
 	`, examplePassword)
 
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleAdminInput := fmt.Sprintf(`
+			{
+				"first_name": "Frank",
+				"last_name": "Zappa",
+				"email": "frank@zappa.com",
+				"username": "frankzappa",
+				"password": "%s",
+				"is_admin": true
+			}
+		`, examplePassword)
+
+	exampleUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
@@ -573,178 +233,82 @@ func TestUserCreationHandler(t *testing.T) {
 		Password:  examplePassword,
 	}
 
-	setExpectationsForUserExistence(testUtil.Mock, exampleUser.Username, false, nil)
-	setExpectationsForUserCreation(testUtil.Mock, exampleUser, nil)
+	t.Run("optimal conditions", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("UserWithUsernameExists", mock.Anything, exampleUser.Username).
+			Return(false, nil)
+		testUtil.MockDB.On("CreateUser", mock.Anything, mock.Anything).
+			Return(exampleUser.ID, generateExampleTimeForTests(), nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+		req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusCreated)
+	})
 
-	assertStatusCode(t, testUtil, http.StatusCreated)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+	t.Run("already existent user", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("UserWithUsernameExists", mock.Anything, exampleUser.Username).
+			Return(true, nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-func TestUserCreationHandlerFailsWhenCreatingAdminUsersAsRegularUser(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+		req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusBadRequest)
+	})
 
-	exampleInput := fmt.Sprintf(`
-		{
-			"first_name": "Frank",
-			"last_name": "Zappa",
-			"email": "frank@zappa.com",
-			"username": "frankzappa",
-			"password": "%s",
-			"is_admin": true
-		}
-	`, examplePassword)
+	t.Run("creating an admin user as a non-admin user", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("UserWithUsernameExists", mock.Anything, exampleUser.Username).
+			Return(false, nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+		req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleAdminInput))
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusForbidden)
+	})
 
-	assertStatusCode(t, testUtil, http.StatusForbidden)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+	t.Run("with invalid input", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-func TestUserCreationHandlerWithInvalidInput(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+		req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleGarbageInput))
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusBadRequest)
+	})
 
-	req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleGarbageInput))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+	t.Run("with invalid cookie", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	assertStatusCode(t, testUtil, http.StatusBadRequest)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+		req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
+		assert.NoError(t, err)
+		attachBadCookieToRequest(req)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusBadRequest)
+	})
 
-func TestUserCreationHandlerWithInvalidCookie(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+	t.Run("with error creating user", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("UserWithUsernameExists", mock.Anything, exampleUser.Username).
+			Return(false, nil)
+		testUtil.MockDB.On("CreateUser", mock.Anything, mock.Anything).
+			Return(exampleUser.ID, generateExampleTimeForTests(), generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	exampleInput := fmt.Sprintf(`
-		{
-			"first_name": "Frank",
-			"last_name": "Zappa",
-			"email": "frank@zappa.com",
-			"username": "frankzappa",
-			"password": "%s"
-		}
-	`, examplePassword)
-
-	req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
-	assert.Nil(t, err)
-	attachBadCookieToRequest(req)
-
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-	assertStatusCode(t, testUtil, http.StatusBadRequest)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-func TestUserCreationHandlerForAlreadyExistentUsername(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
-	exampleInput := fmt.Sprintf(`
-		{
-			"first_name": "Frank",
-			"last_name": "Zappa",
-			"email": "frank@zappa.com",
-			"username": "frankzappa",
-			"password": "%s"
-		}
-	`, examplePassword)
-
-	setExpectationsForUserExistence(testUtil.Mock, "frankzappa", true, nil)
-
-	req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-	assertStatusCode(t, testUtil, http.StatusBadRequest)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-func TestUserCreationHandlerWithErrorCreatingUser(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
-	exampleInput := fmt.Sprintf(`
-		{
-			"first_name": "Frank",
-			"last_name": "Zappa",
-			"email": "frank@zappa.com",
-			"username": "frankzappa",
-			"password": "%s"
-		}
-	`, examplePassword)
-
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "Frank",
-		LastName:  "Zappa",
-		Email:     "frank@zappa.com",
-		Username:  "frankzappa",
-		Password:  examplePassword,
-	}
-
-	setExpectationsForUserExistence(testUtil.Mock, exampleUser.Username, false, nil)
-	setExpectationsForUserCreation(testUtil.Mock, exampleUser, nil)
-
-	req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-	assertStatusCode(t, testUtil, http.StatusCreated)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-func TestUserCreationHandlerWhenErrorEncounteredInsertingIntoDB(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
-	exampleInput := fmt.Sprintf(`
-		{
-			"first_name": "Frank",
-			"last_name": "Zappa",
-			"email": "frank@zappa.com",
-			"username": "frankzappa",
-			"password": "%s"
-		}
-	`, examplePassword)
-
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "Frank",
-		LastName:  "Zappa",
-		Email:     "frank@zappa.com",
-		Username:  "frankzappa",
-		Password:  "password",
-	}
-
-	setExpectationsForUserExistence(testUtil.Mock, exampleUser.Username, false, nil)
-	setExpectationsForUserCreation(testUtil.Mock, exampleUser, generateArbitraryError())
-
-	req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-	ensureExpectationsWereMet(t, testUtil.Mock)
+		req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
 }
 
 func TestUserLoginHandler(t *testing.T) {
 	t.Parallel()
-	testUtil := setupTestVariables(t)
-
 	exampleInput := fmt.Sprintf(`
 		{
 			"username": "frankzappa",
@@ -752,413 +316,308 @@ func TestUserLoginHandler(t *testing.T) {
 		}
 	`, examplePassword)
 
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
 		Username:  "frankzappa",
-		Password:  examplePassword,
+		Password:  hashedExamplePassword,
+		Salt:      dummySalt,
 	}
 
-	setExpectationsForLoginAttemptExhaustionQuery(testUtil.Mock, exampleUser.Username, false, nil)
-	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, nil)
-	setExpectationsForLoginAttemptCreationQuery(testUtil.Mock, exampleUser.Username, true, nil)
+	t.Run("optimal conditions", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("LoginAttemptsHaveBeenExhausted", mock.Anything, exampleUser.Username).
+			Return(false, nil)
+		testUtil.MockDB.On("GetUserByUsername", mock.Anything, exampleUser.Username).
+			Return(exampleUser, nil)
+		testUtil.MockDB.On("CreateLoginAttempt", mock.Anything, mock.Anything).
+			Return(uint64(0), generateExampleTimeForTests(), nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assert.Contains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
+		assertStatusCode(t, testUtil, http.StatusOK)
+	})
 
-	assert.Contains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
-	assertStatusCode(t, testUtil, http.StatusOK)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+	t.Run("with invalid login input", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("LoginAttemptsHaveBeenExhausted", mock.Anything, exampleUser.Username).
+			Return(false, nil)
+		testUtil.MockDB.On("GetUserByUsername", mock.Anything, exampleUser.Username).
+			Return(exampleUser, nil)
+		testUtil.MockDB.On("CreateLoginAttempt", mock.Anything, mock.Anything).
+			Return(uint64(0), generateExampleTimeForTests(), nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-func TestUserLoginHandlerWithInvalidLoginInput(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleGarbageInput))
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
+		assertStatusCode(t, testUtil, http.StatusBadRequest)
+	})
 
-	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleGarbageInput))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+	t.Run("when login attempts have been exhausted", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("LoginAttemptsHaveBeenExhausted", mock.Anything, exampleUser.Username).
+			Return(true, nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler shouldn't attach a cookie when request is invalid")
-	assertStatusCode(t, testUtil, http.StatusBadRequest)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
+		assertStatusCode(t, testUtil, http.StatusUnauthorized)
+	})
 
-func TestUserLoginHandlerWhenLoginAttemptsHaveBeenExhausted(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+	t.Run("with error checking login attempts", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("LoginAttemptsHaveBeenExhausted", mock.Anything, exampleUser.Username).
+			Return(false, generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	exampleInput := fmt.Sprintf(`
-		{
-			"username": "frankzappa",
-			"password": "%s"
-		}
-	`, examplePassword)
+		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
 
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "Frank",
-		LastName:  "Zappa",
-		Email:     "frank@zappa.com",
-		Username:  "frankzappa",
-		Password:  examplePassword,
-	}
+	t.Run("without matching user in database", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("LoginAttemptsHaveBeenExhausted", mock.Anything, exampleUser.Username).
+			Return(false, nil)
+		testUtil.MockDB.On("GetUserByUsername", mock.Anything, exampleUser.Username).
+			Return(exampleUser, sql.ErrNoRows)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	setExpectationsForLoginAttemptExhaustionQuery(testUtil.Mock, exampleUser.Username, true, nil)
+		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
+		assertStatusCode(t, testUtil, http.StatusNotFound)
+	})
 
-	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+	t.Run("with error retrieving user", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("LoginAttemptsHaveBeenExhausted", mock.Anything, exampleUser.Username).
+			Return(false, nil)
+		testUtil.MockDB.On("GetUserByUsername", mock.Anything, exampleUser.Username).
+			Return(exampleUser, generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
-	assertStatusCode(t, testUtil, http.StatusUnauthorized)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
 
-func TestUserLoginHandlerWhenErrorOccursCheckingLoginAttempts(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+	t.Run("with error creating a login attempt", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("LoginAttemptsHaveBeenExhausted", mock.Anything, exampleUser.Username).
+			Return(false, nil)
+		testUtil.MockDB.On("GetUserByUsername", mock.Anything, exampleUser.Username).
+			Return(exampleUser, nil)
+		testUtil.MockDB.On("CreateLoginAttempt", mock.Anything, mock.Anything).
+			Return(uint64(0), generateExampleTimeForTests(), generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	exampleInput := fmt.Sprintf(`
-		{
-			"username": "frankzappa",
-			"password": "%s"
-		}
-	`, examplePassword)
+		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
 
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "Frank",
-		LastName:  "Zappa",
-		Email:     "frank@zappa.com",
-		Username:  "frankzappa",
-		Password:  examplePassword,
-	}
+	})
 
-	setExpectationsForLoginAttemptExhaustionQuery(testUtil.Mock, exampleUser.Username, false, generateArbitraryError())
+	t.Run("with invalid password", func(*testing.T) {
+		invalidInput := `
+			{
+				"username": "frankzappa",
+				"password": "password"
+			}
+		`
 
-	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("LoginAttemptsHaveBeenExhausted", mock.Anything, exampleUser.Username).
+			Return(false, nil)
+		testUtil.MockDB.On("GetUserByUsername", mock.Anything, exampleUser.Username).
+			Return(exampleUser, nil)
+		testUtil.MockDB.On("CreateLoginAttempt", mock.Anything, mock.Anything).
+			Return(uint64(0), generateExampleTimeForTests(), nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
-	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(invalidInput))
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
+		assertStatusCode(t, testUtil, http.StatusUnauthorized)
 
-func TestUserLoginHandlerWithNoMatchingUserInDatabase(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+	})
 
-	exampleInput := fmt.Sprintf(`
-		{
-			"username": "frankzappa",
-			"password": "%s"
-		}
-	`, examplePassword)
+	t.Run("with invalid cookie", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("LoginAttemptsHaveBeenExhausted", mock.Anything, exampleUser.Username).
+			Return(false, nil)
+		testUtil.MockDB.On("GetUserByUsername", mock.Anything, exampleUser.Username).
+			Return(exampleUser, nil)
+		testUtil.MockDB.On("CreateLoginAttempt", mock.Anything, mock.Anything).
+			Return(uint64(0), generateExampleTimeForTests(), nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "Frank",
-		LastName:  "Zappa",
-		Email:     "frank@zappa.com",
-		Username:  "frankzappa",
-		Password:  examplePassword,
-	}
-
-	setExpectationsForLoginAttemptExhaustionQuery(testUtil.Mock, exampleUser.Username, false, nil)
-	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, sql.ErrNoRows)
-
-	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-	assertStatusCode(t, testUtil, http.StatusNotFound)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-func TestUserLoginHandlerWithErrorRetrievingUserFromDatabase(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
-	exampleInput := fmt.Sprintf(`
-		{
-			"username": "frankzappa",
-			"password": "%s"
-		}
-	`, examplePassword)
-
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "Frank",
-		LastName:  "Zappa",
-		Email:     "frank@zappa.com",
-		Username:  "frankzappa",
-		Password:  examplePassword,
-	}
-
-	setExpectationsForLoginAttemptExhaustionQuery(testUtil.Mock, exampleUser.Username, false, nil)
-	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, generateArbitraryError())
-
-	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-func TestUserLoginHandlerWithErrorCreatingLoginAttemptRow(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
-	exampleInput := fmt.Sprintf(`
-		{
-			"username": "frankzappa",
-			"password": "%s"
-		}
-	`, examplePassword)
-
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "Frank",
-		LastName:  "Zappa",
-		Email:     "frank@zappa.com",
-		Username:  "frankzappa",
-		Password:  examplePassword,
-	}
-
-	setExpectationsForLoginAttemptExhaustionQuery(testUtil.Mock, exampleUser.Username, false, nil)
-	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, nil)
-	setExpectationsForLoginAttemptCreationQuery(testUtil.Mock, exampleUser.Username, true, generateArbitraryError())
-
-	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-func TestUserLoginHandlerWithInvalidPassword(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
-	exampleInput := `
-		{
-			"username": "frankzappa",
-			"password": "password"
-		}
-	`
-
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "Frank",
-		LastName:  "Zappa",
-		Email:     "frank@zappa.com",
-		Username:  "frankzappa",
-		Password:  examplePassword,
-	}
-
-	setExpectationsForLoginAttemptExhaustionQuery(testUtil.Mock, exampleUser.Username, false, nil)
-	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, nil)
-	setExpectationsForLoginAttemptCreationQuery(testUtil.Mock, exampleUser.Username, false, nil)
-
-	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-	assert.Equal(t, 401, testUtil.Response.Code, "status code should be 401")
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-func TestUserLoginHandlerWithInvalidCookie(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
-	exampleInput := fmt.Sprintf(`
-		{
-			"username": "frankzappa",
-			"password": "%s"
-		}
-	`, examplePassword)
-
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "Frank",
-		LastName:  "Zappa",
-		Email:     "frank@zappa.com",
-		Username:  "frankzappa",
-		Password:  examplePassword,
-	}
-
-	setExpectationsForLoginAttemptExhaustionQuery(testUtil.Mock, exampleUser.Username, false, nil)
-	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, nil)
-	setExpectationsForLoginAttemptCreationQuery(testUtil.Mock, exampleUser.Username, true, nil)
-
-	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
-	assert.Nil(t, err)
-	attachBadCookieToRequest(req)
-
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-	assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should not attach a cookie when request is invalid")
-	assertStatusCode(t, testUtil, http.StatusBadRequest)
-	ensureExpectationsWereMet(t, testUtil.Mock)
+		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
+		assert.NoError(t, err)
+		attachBadCookieToRequest(req)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
+		assertStatusCode(t, testUtil, http.StatusBadRequest)
+	})
 }
 
 func TestUserLogoutHandler(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+	t.Run("optimal conditions", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	req, err := http.NewRequest(http.MethodPost, "/logout", nil)
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+		req, err := http.NewRequest(http.MethodPost, "/logout", nil)
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.Contains(t, testUtil.Response.HeaderMap, "Set-Cookie", "logout handler should attach a cookie when request is valid")
-	assertStatusCode(t, testUtil, http.StatusOK)
-}
+		assert.Contains(t, testUtil.Response.HeaderMap, "Set-Cookie", "logout handler should attach a cookie when request is valid")
+		assertStatusCode(t, testUtil, http.StatusOK)
+	})
 
-func TestUserLogoutHandlerWithInvalidCookie(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+	t.Run("with invalid cookie", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	req, err := http.NewRequest(http.MethodPost, "/logout", nil)
-	assert.Nil(t, err)
-	attachBadCookieToRequest(req)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+		req, err := http.NewRequest(http.MethodPost, "/logout", nil)
+		assert.NoError(t, err)
+		attachBadCookieToRequest(req)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
-	assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "logout handler should not attach a cookie when request is invalid")
-	assertStatusCode(t, testUtil, http.StatusBadRequest)
+		assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "logout handler should not attach a cookie when request is invalid")
+		assertStatusCode(t, testUtil, http.StatusBadRequest)
+	})
 }
 
 func TestUserDeletionHandler(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
 	exampleID := uint64(1)
 	exampleIDString := strconv.Itoa(int(exampleID))
-	req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
-	assert.Nil(t, err)
+	exampleUser := &models.User{
+		FirstName: "Frank",
+		LastName:  "Zappa",
+		Email:     "frank@zappa.com",
+		Username:  "username",
+		Password:  "invalid",
+		IsAdmin:   false,
+	}
 
-	cookie, err := buildCookieForRequest(t, testUtil.Store, true, true)
-	assert.Nil(t, err)
-	req.AddCookie(cookie)
+	t.Run("optimal conditions", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetUser", mock.Anything, exampleID).
+			Return(exampleUser, nil)
+		testUtil.MockDB.On("DeleteUser", mock.Anything, exampleID).
+			Return(generateExampleTimeForTests(), nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	setExpectationsForUserExistenceByID(testUtil.Mock, exampleIDString, true, nil)
-	setExpectationsForUserDeletion(testUtil.Mock, exampleID, nil)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+		req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
+		assert.NoError(t, err)
 
-	assertStatusCode(t, testUtil, http.StatusOK)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+		cookie, err := buildCookieForRequest(t, testUtil.Store, true, true)
+		assert.NoError(t, err)
+		req.AddCookie(cookie)
 
-func TestUserDeletionHandlerForNonexistentUser(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusOK)
+	})
 
-	exampleID := uint64(1)
-	exampleIDString := strconv.Itoa(int(exampleID))
-	req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
-	assert.Nil(t, err)
+	t.Run("with nonexistent user", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetUser", mock.Anything, exampleID).
+			Return(exampleUser, sql.ErrNoRows)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	setExpectationsForUserExistenceByID(testUtil.Mock, exampleIDString, false, nil)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+		req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
+		assert.NoError(t, err)
 
-	assertStatusCode(t, testUtil, http.StatusNotFound)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusNotFound)
+	})
 
-func TestUserDeletionHandlerWithInvalidCookie(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+	t.Run("with error retrieving user user", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetUser", mock.Anything, exampleID).
+			Return(exampleUser, generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	exampleID := uint64(1)
-	exampleIDString := strconv.Itoa(int(exampleID))
-	req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
-	assert.Nil(t, err)
+		req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
+		assert.NoError(t, err)
 
-	attachBadCookieToRequest(req)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
 
-	setExpectationsForUserExistenceByID(testUtil.Mock, exampleIDString, true, nil)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+	t.Run("with invalid cookie", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetUser", mock.Anything, exampleID).
+			Return(exampleUser, nil)
+		testUtil.MockDB.On("DeleteUser", mock.Anything, exampleID).
+			Return(generateExampleTimeForTests(), nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	assertStatusCode(t, testUtil, http.StatusBadRequest)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+		req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
+		assert.NoError(t, err)
+		attachBadCookieToRequest(req)
 
-func TestUserDeletionHandlerWhenDeletingAdminUserAsRegularUser(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusBadRequest)
+	})
 
-	exampleID := uint64(1)
-	exampleIDString := strconv.Itoa(int(exampleID))
-	req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
-	assert.Nil(t, err)
+	t.Run("when deleting admin user as regular user", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetUser", mock.Anything, exampleID).
+			Return(exampleUser, nil)
+		testUtil.MockDB.On("DeleteUser", mock.Anything, exampleID).
+			Return(generateExampleTimeForTests(), nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	cookie, err := buildCookieForRequest(t, testUtil.Store, true, false)
-	assert.Nil(t, err)
-	req.AddCookie(cookie)
+		req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
+		assert.NoError(t, err)
+		cookie, err := buildCookieForRequest(t, testUtil.Store, true, false)
+		assert.NoError(t, err)
+		req.AddCookie(cookie)
 
-	setExpectationsForUserExistenceByID(testUtil.Mock, exampleIDString, true, nil)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusForbidden)
+	})
 
-	assertStatusCode(t, testUtil, http.StatusForbidden)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+	t.Run("with error deleting user", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetUser", mock.Anything, exampleID).
+			Return(exampleUser, nil)
+		testUtil.MockDB.On("DeleteUser", mock.Anything, exampleID).
+			Return(generateExampleTimeForTests(), generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-func TestUserDeletionHandlerWithArbitraryErrorWhenDeletingUser(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+		req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
+		assert.NoError(t, err)
 
-	exampleID := uint64(1)
-	exampleIDString := strconv.Itoa(int(exampleID))
-	req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
-	assert.Nil(t, err)
+		cookie, err := buildCookieForRequest(t, testUtil.Store, true, true)
+		assert.NoError(t, err)
+		req.AddCookie(cookie)
 
-	cookie, err := buildCookieForRequest(t, testUtil.Store, true, true)
-	assert.Nil(t, err)
-	req.AddCookie(cookie)
-
-	setExpectationsForUserExistenceByID(testUtil.Mock, exampleIDString, true, nil)
-	setExpectationsForUserDeletion(testUtil.Mock, exampleID, generateArbitraryError())
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-	ensureExpectationsWereMet(t, testUtil.Mock)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
 }
 
 func TestUserForgottenPasswordHandler(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
 	exampleInput := fmt.Sprintf(`
 		{
 			"username": "frankzappa",
@@ -1166,59 +625,9 @@ func TestUserForgottenPasswordHandler(t *testing.T) {
 		}
 	`, examplePassword)
 
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "Frank",
-		LastName:  "Zappa",
-		Email:     "frank@zappa.com",
-		Username:  "frankzappa",
-		Password:  examplePassword,
-	}
-	userID := strconv.Itoa(int(exampleUser.ID))
-
-	req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleInput))
-	assert.Nil(t, err)
-
-	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, nil)
-	setExpectationsForPasswordResetEntryExistenceByUserID(testUtil.Mock, userID, false, nil)
-	setExpectationsForPasswordResetCreationWithNoSpecificResetToken(testUtil.Mock, exampleUser.ID, nil)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-	assertStatusCode(t, testUtil, http.StatusOK)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-func TestUserForgottenPasswordHandlerWithInvalidInput(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
-	req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleGarbageInput))
-	assert.Nil(t, err)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-	assertStatusCode(t, testUtil, http.StatusBadRequest)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-func TestUserForgottenPasswordHandlerWithNonexistentUser(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
-	exampleInput := fmt.Sprintf(`
-		{
-			"username": "frankzappa",
-			"password": "%s"
-		}
-	`, examplePassword)
-
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
@@ -1226,154 +635,117 @@ func TestUserForgottenPasswordHandlerWithNonexistentUser(t *testing.T) {
 		Password:  examplePassword,
 	}
 
-	req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleInput))
-	assert.Nil(t, err)
+	t.Run("optimal conditions", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetUserByUsername", mock.Anything, exampleUser.Username).
+			Return(exampleUser, nil)
+		testUtil.MockDB.On("PasswordResetTokenForUserIDExists", mock.Anything, mock.Anything).
+			Return(false, nil)
+		testUtil.MockDB.On("CreatePasswordResetToken", mock.Anything, mock.Anything).
+			Return(exampleUser.ID, generateExampleTimeForTests(), nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, sql.ErrNoRows)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+		req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleInput))
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusOK)
+	})
 
-	assertStatusCode(t, testUtil, http.StatusNotFound)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+	t.Run("with invalid input", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-func TestUserForgottenPasswordHandlerWithErrorRetrievingUserFromDB(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+		req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleGarbageInput))
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusBadRequest)
+	})
 
-	exampleInput := fmt.Sprintf(`
-		{
-			"username": "frankzappa",
-			"password": "%s"
-		}
-	`, examplePassword)
+	t.Run("with nonexistent user", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetUserByUsername", mock.Anything, exampleUser.Username).
+			Return(exampleUser, sql.ErrNoRows)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "Frank",
-		LastName:  "Zappa",
-		Email:     "frank@zappa.com",
-		Username:  "frankzappa",
-		Password:  examplePassword,
-	}
+		req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleInput))
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusNotFound)
+	})
 
-	req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleInput))
-	assert.Nil(t, err)
+	t.Run("with error retrieving user from db", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetUserByUsername", mock.Anything, exampleUser.Username).
+			Return(exampleUser, generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, generateArbitraryError())
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+		req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleInput))
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
 
-	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+	t.Run("with already existent password reset entry", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetUserByUsername", mock.Anything, exampleUser.Username).
+			Return(exampleUser, nil)
+		testUtil.MockDB.On("PasswordResetTokenForUserIDExists", mock.Anything, mock.Anything).
+			Return(true, nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-func TestUserForgottenPasswordHandlerWithAlreadyExistentPasswordResetEntry(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+		req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleInput))
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusBadRequest)
+	})
 
-	exampleInput := fmt.Sprintf(`
-		{
-			"username": "frankzappa",
-			"password": "%s"
-		}
-	`, examplePassword)
+	t.Run("with error creating reset token", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetUserByUsername", mock.Anything, exampleUser.Username).
+			Return(exampleUser, nil)
+		testUtil.MockDB.On("PasswordResetTokenForUserIDExists", mock.Anything, mock.Anything).
+			Return(false, nil)
+		testUtil.MockDB.On("CreatePasswordResetToken", mock.Anything, mock.Anything).
+			Return(exampleUser.ID, generateExampleTimeForTests(), generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "Frank",
-		LastName:  "Zappa",
-		Email:     "frank@zappa.com",
-		Username:  "frankzappa",
-		Password:  examplePassword,
-	}
-	userID := strconv.Itoa(int(exampleUser.ID))
-
-	req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleInput))
-	assert.Nil(t, err)
-
-	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, nil)
-	setExpectationsForPasswordResetEntryExistenceByUserID(testUtil.Mock, userID, true, nil)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-	assertStatusCode(t, testUtil, http.StatusBadRequest)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-func TestUserForgottenPasswordHandlerWithErrorCreatingResetToken(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
-	exampleInput := fmt.Sprintf(`
-		{
-			"username": "frankzappa",
-			"password": "%s"
-		}
-	`, examplePassword)
-
-	exampleUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "Frank",
-		LastName:  "Zappa",
-		Email:     "frank@zappa.com",
-		Username:  "frankzappa",
-		Password:  examplePassword,
-	}
-	userID := strconv.Itoa(int(exampleUser.ID))
-
-	req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleInput))
-	assert.Nil(t, err)
-
-	setExpectationsForUserRetrieval(testUtil.Mock, exampleUser.Username, nil)
-	setExpectationsForPasswordResetEntryExistenceByUserID(testUtil.Mock, userID, false, nil)
-	setExpectationsForPasswordResetCreationWithNoSpecificResetToken(testUtil.Mock, exampleUser.ID, generateArbitraryError())
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-	ensureExpectationsWereMet(t, testUtil.Mock)
+		req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleInput))
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
 }
 
 func TestPasswordResetValidationHandler(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
 	exampleResetToken := "reset-token"
-	req, err := http.NewRequest(http.MethodHead, fmt.Sprintf("/password_reset/%s", exampleResetToken), nil)
-	assert.Nil(t, err)
+	t.Run("optimal conditions", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("PasswordResetTokenWithTokenExists", mock.Anything, exampleResetToken).
+			Return(true, nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	setExpectationsForPasswordResetEntryExistenceByResetToken(testUtil.Mock, exampleResetToken, true, nil)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
+		req, err := http.NewRequest(http.MethodHead, fmt.Sprintf("/password_reset/%s", exampleResetToken), nil)
+		assert.NoError(t, err)
 
-	assertStatusCode(t, testUtil, http.StatusOK)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusOK)
+	})
 
-func TestPasswordResetValidationHandlerForNonexistentToken(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+	t.Run("with nonexistent token", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("PasswordResetTokenWithTokenExists", mock.Anything, exampleResetToken).
+			Return(false, nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	exampleResetToken := "reset-token"
-	req, err := http.NewRequest(http.MethodHead, fmt.Sprintf("/password_reset/%s", exampleResetToken), nil)
-	assert.Nil(t, err)
+		req, err := http.NewRequest(http.MethodHead, fmt.Sprintf("/password_reset/%s", exampleResetToken), nil)
+		assert.NoError(t, err)
 
-	setExpectationsForPasswordResetEntryExistenceByResetToken(testUtil.Mock, exampleResetToken, false, nil)
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-
-	assertStatusCode(t, testUtil, http.StatusNotFound)
-	ensureExpectationsWereMet(t, testUtil.Mock)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusNotFound)
+	})
 }
 
 func TestUserUpdateHandler(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
 	exampleUserUpdateInput := fmt.Sprintf(`
  		{
  			"username": "captain_beefheart",
@@ -1381,12 +753,9 @@ func TestUserUpdateHandler(t *testing.T) {
  		}
  	`, examplePassword)
 
-	examplePasswordChanged := false
-	beforeUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
+	exampleUser := &models.User{
+		ID:        1,
+		CreatedOn: generateExampleTimeForTests(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Username:  "frankzappa",
@@ -1396,267 +765,136 @@ func TestUserUpdateHandler(t *testing.T) {
 		Salt:      dummySalt,
 	}
 
-	afterUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "Frank",
-		LastName:  "Zappa",
-		Username:  "captain_beefheart",
-		Email:     "frank@zappa.com",
-		Password:  hashedExamplePassword,
-		IsAdmin:   true,
-		Salt:      dummySalt,
-	}
+	t.Run("optimal conditions", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetUser", mock.Anything, exampleUser.ID).
+			Return(exampleUser, nil)
+		testUtil.MockDB.On("UpdateUser", mock.Anything, mock.Anything).
+			Return(generateExampleTimeForTests(), nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	setExpectationsForUserRetrievalByID(testUtil.Mock, beforeUser.ID, nil)
-	setExpectationsForUserUpdate(testUtil.Mock, afterUser, examplePasswordChanged, nil)
+		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/user/%d", exampleUser.ID), strings.NewReader(exampleUserUpdateInput))
+		assert.NoError(t, err)
 
-	req, err := http.NewRequest(http.MethodPatch, "/user/1", strings.NewReader(exampleUserUpdateInput))
-	assert.Nil(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusOK)
+	})
 
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assertStatusCode(t, testUtil, http.StatusOK)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+	t.Run("with invalid input", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-func TestUserUpdateHandlerWithInvalidInput(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/user/%d", exampleUser.ID), strings.NewReader(exampleGarbageInput))
+		assert.NoError(t, err)
 
-	req, err := http.NewRequest(http.MethodPatch, "/user/1", strings.NewReader(exampleGarbageInput))
-	assert.Nil(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusBadRequest)
+	})
 
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assertStatusCode(t, testUtil, http.StatusBadRequest)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+	t.Run("with invalid new password", func(*testing.T) {
+		exampleInvalidUserUpdateInput := fmt.Sprintf(`
+			{
+				"new_password": "passwordpasswordpasswordpasswordpasswordpasswordpasswordpassword",
+				"current_password": "%s"
+			}
+		`, examplePassword)
 
-func TestUserUpdateHandlerWhileAttemptingToChangePasswordToAnInvalidPassword(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetUser", mock.Anything, exampleUser.ID).
+			Return(exampleUser, nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	exampleUserUpdateInput := fmt.Sprintf(`
- 		{
- 			"new_password": "passwordpasswordpasswordpasswordpasswordpasswordpasswordpassword",
- 			"current_password": "%s"
- 		}
- 	`, examplePassword)
+		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/user/%d", exampleUser.ID), strings.NewReader(exampleInvalidUserUpdateInput))
+		assert.NoError(t, err)
 
-	req, err := http.NewRequest(http.MethodPatch, "/user/1", strings.NewReader(exampleUserUpdateInput))
-	assert.Nil(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusBadRequest)
+	})
 
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assertStatusCode(t, testUtil, http.StatusBadRequest)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+	t.Run("with nonexistent user", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetUser", mock.Anything, exampleUser.ID).
+			Return(exampleUser, sql.ErrNoRows)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-func TestUserUpdateHandlerForNonexistentUser(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/user/%d", exampleUser.ID), strings.NewReader(exampleUserUpdateInput))
+		assert.NoError(t, err)
 
-	exampleUserUpdateInput := fmt.Sprintf(`
- 		{
- 			"username": "captain_beefheart",
- 			"current_password": "%s"
- 		}
- 	`, examplePassword)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusNotFound)
+	})
 
-	beforeUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "Frank",
-		LastName:  "Zappa",
-		Username:  "frankzappa",
-		Email:     "frank@zappa.com",
-		Password:  hashedExamplePassword,
-		IsAdmin:   true,
-		Salt:      dummySalt,
-	}
+	t.Run("with error retrieving user", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetUser", mock.Anything, exampleUser.ID).
+			Return(exampleUser, generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	setExpectationsForUserRetrievalByID(testUtil.Mock, beforeUser.ID, sql.ErrNoRows)
+		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/user/%d", exampleUser.ID), strings.NewReader(exampleUserUpdateInput))
+		assert.NoError(t, err)
 
-	req, err := http.NewRequest(http.MethodPatch, "/user/1", strings.NewReader(exampleUserUpdateInput))
-	assert.Nil(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
 
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assertStatusCode(t, testUtil, http.StatusNotFound)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+	t.Run("when password does not match expectation", func(*testing.T) {
+		exampleInvalidUserUpdateInput := fmt.Sprintf(`
+			{
+				"username": "captain_beefheart",
+				"current_password": "%s"
+			}
+		`, fmt.Sprintf("%s!", examplePassword))
 
-func TestUserUpdateHandlerWithErrorRetrievingUser(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetUser", mock.Anything, exampleUser.ID).
+			Return(exampleUser, nil)
+		testUtil.MockDB.On("UpdateUser", mock.Anything, mock.Anything).
+			Return(generateExampleTimeForTests(), nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	exampleUserUpdateInput := fmt.Sprintf(`
- 		{
- 			"username": "captain_beefheart",
- 			"current_password": "%s"
- 		}
- 	`, examplePassword)
+		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/user/%d", exampleUser.ID), strings.NewReader(exampleInvalidUserUpdateInput))
+		assert.NoError(t, err)
 
-	beforeUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "Frank",
-		LastName:  "Zappa",
-		Username:  "frankzappa",
-		Email:     "frank@zappa.com",
-		Password:  hashedExamplePassword,
-		IsAdmin:   true,
-		Salt:      dummySalt,
-	}
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusUnauthorized)
+	})
 
-	setExpectationsForUserRetrievalByID(testUtil.Mock, beforeUser.ID, generateArbitraryError())
+	t.Run("optimal conditions", func(*testing.T) {
+		exampleNewPassword := "P@ssw0rdP@ssw0rdP@ssw0rdP@ssw0rdP@ssw0rdP@ssw0rdP@ssw0rdP@ssw0rd"
+		// exampleNewPasswordHashed := "$2a$13$xhhweT6OnsU7l6GyPGdin.YDANUGnFEu7xJQb7eU/zv4KBCiRwWbC"
+		exampleUserUpdateInput := fmt.Sprintf(`
+			{
+				"new_password": "%s",
+				"current_password": "%s"
+			}
+		`, exampleNewPassword, examplePassword)
 
-	req, err := http.NewRequest(http.MethodPatch, "/user/1", strings.NewReader(exampleUserUpdateInput))
-	assert.Nil(t, err)
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetUser", mock.Anything, exampleUser.ID).
+			Return(exampleUser, nil)
+		testUtil.MockDB.On("UpdateUser", mock.Anything, mock.Anything).
+			Return(generateExampleTimeForTests(), nil)
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
+		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/user/%d", exampleUser.ID), strings.NewReader(exampleUserUpdateInput))
+		assert.NoError(t, err)
 
-func TestUserUpdateHandlerWhenPasswordDoesNotMatchExpectation(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusOK)
+	})
 
-	exampleUserUpdateInput := fmt.Sprintf(`
- 		{
- 			"username": "captain_beefheart",
- 			"current_password": "%s"
- 		}
- 	`, fmt.Sprintf("%s!", examplePassword))
+	t.Run("with error updating user", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetUser", mock.Anything, exampleUser.ID).
+			Return(exampleUser, nil)
+		testUtil.MockDB.On("UpdateUser", mock.Anything, mock.Anything).
+			Return(generateExampleTimeForTests(), generateArbitraryError())
+		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
-	beforeUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "Frank",
-		LastName:  "Zappa",
-		Username:  "frankzappa",
-		Email:     "frank@zappa.com",
-		Password:  hashedExamplePassword,
-		IsAdmin:   true,
-		Salt:      dummySalt,
-	}
+		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/user/%d", exampleUser.ID), strings.NewReader(exampleUserUpdateInput))
+		assert.NoError(t, err)
 
-	setExpectationsForUserRetrievalByID(testUtil.Mock, beforeUser.ID, nil)
-
-	req, err := http.NewRequest(http.MethodPatch, "/user/1", strings.NewReader(exampleUserUpdateInput))
-	assert.Nil(t, err)
-
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assertStatusCode(t, testUtil, http.StatusUnauthorized)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-func TestUserUpdateHandlerWithNewPassword(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
-	exampleNewPassword := "P@ssw0rdP@ssw0rdP@ssw0rdP@ssw0rdP@ssw0rdP@ssw0rdP@ssw0rdP@ssw0rd"
-	exampleNewPasswordHashed := "$2a$13$xhhweT6OnsU7l6GyPGdin.YDANUGnFEu7xJQb7eU/zv4KBCiRwWbC"
-	exampleUserUpdateInput := fmt.Sprintf(`
- 		{
- 			"new_password": "%s",
- 			"current_password": "%s"
- 		}
- 	`, exampleNewPassword, examplePassword)
-
-	examplePasswordChanged := true
-	beforeUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "Frank",
-		LastName:  "Zappa",
-		Username:  "frankzappa",
-		Email:     "frank@zappa.com",
-		Password:  hashedExamplePassword,
-		IsAdmin:   true,
-		Salt:      dummySalt,
-	}
-
-	afterUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "Frank",
-		LastName:  "Zappa",
-		Username:  "captain_beefheart",
-		Email:     "frank@zappa.com",
-		Password:  exampleNewPasswordHashed,
-		IsAdmin:   true,
-		Salt:      dummySalt,
-	}
-
-	setExpectationsForUserRetrievalByID(testUtil.Mock, beforeUser.ID, nil)
-	setExpectationsForUserUpdateWithoutSpecifyingPassword(testUtil.Mock, afterUser, examplePasswordChanged, nil)
-
-	req, err := http.NewRequest(http.MethodPatch, "/user/1", strings.NewReader(exampleUserUpdateInput))
-	assert.Nil(t, err)
-
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assertStatusCode(t, testUtil, http.StatusOK)
-	ensureExpectationsWereMet(t, testUtil.Mock)
-}
-
-func TestUserUpdateHandlerWithErrorUpdatingUser(t *testing.T) {
-	t.Parallel()
-	testUtil := setupTestVariables(t)
-
-	exampleUserUpdateInput := fmt.Sprintf(`
- 		{
- 			"username": "captain_beefheart",
- 			"current_password": "%s"
- 		}
- 	`, examplePassword)
-
-	examplePasswordChanged := false
-	beforeUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "Frank",
-		LastName:  "Zappa",
-		Username:  "frankzappa",
-		Email:     "frank@zappa.com",
-		Password:  hashedExamplePassword,
-		IsAdmin:   true,
-		Salt:      dummySalt,
-	}
-
-	afterUser := &User{
-		DBRow: DBRow{
-			ID:        1,
-			CreatedOn: generateExampleTimeForTests(),
-		},
-		FirstName: "Frank",
-		LastName:  "Zappa",
-		Username:  "captain_beefheart",
-		Email:     "frank@zappa.com",
-		Password:  hashedExamplePassword,
-		IsAdmin:   true,
-		Salt:      dummySalt,
-	}
-
-	setExpectationsForUserRetrievalByID(testUtil.Mock, beforeUser.ID, nil)
-	setExpectationsForUserUpdate(testUtil.Mock, afterUser, examplePasswordChanged, generateArbitraryError())
-
-	req, err := http.NewRequest(http.MethodPatch, "/user/1", strings.NewReader(exampleUserUpdateInput))
-	assert.Nil(t, err)
-
-	testUtil.Router.ServeHTTP(testUtil.Response, req)
-	assertStatusCode(t, testUtil, http.StatusInternalServerError)
-	ensureExpectationsWereMet(t, testUtil.Mock)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
 }

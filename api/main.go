@@ -3,7 +3,7 @@
 package main
 
 import (
-	// stdlib
+	"database/sql"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,20 +13,18 @@ import (
 	"strings"
 	"time"
 
-	// dependencies
+	"github.com/dairycart/dairycart/api/storage"
+	"github.com/dairycart/dairycart/api/storage/postgres"
+
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
-	"github.com/jmoiron/sqlx"
-	"github.com/jmoiron/sqlx/reflectx"
+	_ "github.com/lib/pq"
 	"github.com/mattes/migrate"
 	migratePG "github.com/mattes/migrate/database/postgres"
-	"github.com/sirupsen/logrus"
-
-	// unnamed dependencies
-	_ "github.com/lib/pq"
 	_ "github.com/mattes/migrate/source/file"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -54,11 +52,11 @@ func determineMigrationCount() int {
 }
 
 // this function not only waits for the database to accept its incoming connection, but also performs any necessary migrations
-func migrateDatabase(db *sqlx.DB, migrationCount int) {
+func migrateDatabase(db *sql.DB, migrationCount int) {
 	numberOfUnsuccessfulAttempts := 0
 	databaseIsNotMigrated := true
 	for databaseIsNotMigrated {
-		driver, err := migratePG.WithInstance(db.DB, &migratePG.Config{})
+		driver, err := migratePG.WithInstance(db, &migratePG.Config{})
 		if err != nil {
 			log.Printf("waiting half a second for the database")
 			time.Sleep(500 * time.Millisecond)
@@ -84,19 +82,32 @@ func migrateDatabase(db *sqlx.DB, migrationCount int) {
 			databaseIsNotMigrated = false
 		}
 	}
+	log.Println("database migrated!")
 }
 
 func main() {
 	logrus.SetOutput(os.Stdout)
 	logrus.SetLevel(logrus.InfoLevel)
 
+	var (
+		storageClient storage.Storer
+		db            *sql.DB
+		err           error
+	)
+
 	// Connect to the database
-	dbURL := os.Getenv("DAIRYCART_DB_URL")
-	db, err := sqlx.Open("postgres", dbURL)
-	if err != nil {
-		logrus.Fatalf("error encountered connecting to database: %v", err)
+	dbChoice := strings.ToLower(os.Getenv("DB_TO_USE"))
+	switch dbChoice {
+	case "postgres":
+		dbURL := os.Getenv("DAIRYCART_DB_URL")
+		db, err = sql.Open("postgres", dbURL)
+		if err != nil {
+			logrus.Fatalf("error encountered connecting to database: %v", err)
+		}
+		storageClient = postgres.NewPostgres()
+	default:
+		log.Fatalf("invalid database choice: '%s'", dbChoice)
 	}
-	db.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
 
 	// migrate the database
 	migrationCount := determineMigrationCount()
@@ -113,7 +124,7 @@ func main() {
 	v1APIRouter.Use(middleware.RequestID)
 	v1APIRouter.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{Logger: log.New(os.Stdout, "", log.LstdFlags)}))
 
-	SetupAPIRoutes(v1APIRouter, db, store)
+	SetupAPIRoutes(v1APIRouter, db, store, storageClient)
 
 	// serve 'em up a lil' sauce
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "healthy!") })

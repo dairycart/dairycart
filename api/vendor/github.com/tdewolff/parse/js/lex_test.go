@@ -4,34 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"strconv"
 	"testing"
 
 	"github.com/tdewolff/test"
 )
-
-func helperStringify(t *testing.T, input string) string {
-	s := ""
-	l := NewLexer(bytes.NewBufferString(input))
-	for i := 0; i < 10; i++ {
-		tt, data := l.Next()
-		if tt == ErrorToken {
-			if l.Err() != nil {
-				s += tt.String() + "('" + l.Err().Error() + "')"
-			} else {
-				s += tt.String() + "(nil)"
-			}
-			break
-		} else if tt == WhitespaceToken {
-			continue
-		} else {
-			s += tt.String() + "('" + string(data) + "') "
-		}
-	}
-	return s
-}
-
-////////////////////////////////////////////////////////////////
 
 type TTs []TokenType
 
@@ -56,10 +32,15 @@ func TestTokens(t *testing.T) {
 		{"a = /.*/g;", TTs{IdentifierToken, PunctuatorToken, RegexpToken, PunctuatorToken}},
 
 		{"/*co\nm\u2028m/*ent*/ //co//mment\u2029//comment", TTs{CommentToken, CommentToken, LineTerminatorToken, CommentToken}},
+		{"<!-", TTs{PunctuatorToken, PunctuatorToken, PunctuatorToken}},
+		{"1<!--2\n", TTs{NumericToken, CommentToken, LineTerminatorToken}},
+		{"x=y-->10\n", TTs{IdentifierToken, PunctuatorToken, IdentifierToken, PunctuatorToken, PunctuatorToken, NumericToken, LineTerminatorToken}},
+		{"  /*comment*/ -->nothing\n", TTs{CommentToken, CommentToken, LineTerminatorToken}},
+		{"1 /*comment\nmultiline*/ -->nothing\n", TTs{NumericToken, CommentToken, CommentToken, LineTerminatorToken}},
 		{"$ _\u200C \\u2000 \u200C", TTs{IdentifierToken, IdentifierToken, IdentifierToken, UnknownToken}},
 		{">>>=>>>>=", TTs{PunctuatorToken, PunctuatorToken, PunctuatorToken}},
-		{"/", TTs{PunctuatorToken}},
-		{"/=", TTs{PunctuatorToken}},
+		{"1/", TTs{NumericToken, PunctuatorToken}},
+		{"1/=", TTs{NumericToken, PunctuatorToken}},
 		{"010xF", TTs{NumericToken, NumericToken, IdentifierToken}},
 		{"50e+-0", TTs{NumericToken, IdentifierToken, PunctuatorToken, PunctuatorToken, NumericToken}},
 		{"'str\\i\\'ng'", TTs{StringToken}},
@@ -75,6 +56,7 @@ func TestTokens(t *testing.T) {
 		{"`template`", TTs{TemplateToken}},
 		{"`a${x+y}b`", TTs{TemplateToken, IdentifierToken, PunctuatorToken, IdentifierToken, TemplateToken}},
 		{"`temp\nlate`", TTs{TemplateToken}},
+		{"`outer${{x: 10}}bar${ raw`nested${2}endnest` }end`", TTs{TemplateToken, PunctuatorToken, IdentifierToken, PunctuatorToken, NumericToken, PunctuatorToken, TemplateToken, IdentifierToken, TemplateToken, NumericToken, TemplateToken, TemplateToken}},
 
 		// early endings
 		{"'string", TTs{StringToken}},
@@ -100,32 +82,57 @@ func TestTokens(t *testing.T) {
 		{"a=/x/\u200C\u3009", TTs{IdentifierToken, PunctuatorToken, RegexpToken, UnknownToken}},
 		{"a=/x\n", TTs{IdentifierToken, PunctuatorToken, PunctuatorToken, IdentifierToken, LineTerminatorToken}},
 
+		{"return /abc/;", TTs{IdentifierToken, RegexpToken, PunctuatorToken}},
+		{"yield /abc/;", TTs{IdentifierToken, RegexpToken, PunctuatorToken}},
+		{"a/b/g", TTs{IdentifierToken, PunctuatorToken, IdentifierToken, PunctuatorToken, IdentifierToken}},
+		{"{}/1/g", TTs{PunctuatorToken, PunctuatorToken, RegexpToken}},
+		{"i(0)/1/g", TTs{IdentifierToken, PunctuatorToken, NumericToken, PunctuatorToken, PunctuatorToken, NumericToken, PunctuatorToken, IdentifierToken}},
+		{"if(0)/1/g", TTs{IdentifierToken, PunctuatorToken, NumericToken, PunctuatorToken, RegexpToken}},
+		{"a.if(0)/1/g", TTs{IdentifierToken, PunctuatorToken, IdentifierToken, PunctuatorToken, NumericToken, PunctuatorToken, PunctuatorToken, NumericToken, PunctuatorToken, IdentifierToken}},
+		{"while(0)/1/g", TTs{IdentifierToken, PunctuatorToken, NumericToken, PunctuatorToken, RegexpToken}},
+		{"for(;;)/1/g", TTs{IdentifierToken, PunctuatorToken, PunctuatorToken, PunctuatorToken, PunctuatorToken, RegexpToken}},
+		{"with(0)/1/g", TTs{IdentifierToken, PunctuatorToken, NumericToken, PunctuatorToken, RegexpToken}},
+		{"this/1/g", TTs{IdentifierToken, PunctuatorToken, NumericToken, PunctuatorToken, IdentifierToken}},
+		{"case /1/g:", TTs{IdentifierToken, RegexpToken, PunctuatorToken}},
+		{"function f(){}/1/g", TTs{IdentifierToken, IdentifierToken, PunctuatorToken, PunctuatorToken, PunctuatorToken, PunctuatorToken, RegexpToken}},
+		{"this.return/1/g", TTs{IdentifierToken, PunctuatorToken, IdentifierToken, PunctuatorToken, NumericToken, PunctuatorToken, IdentifierToken}},
+		{"(a+b)/1/g", TTs{PunctuatorToken, IdentifierToken, PunctuatorToken, IdentifierToken, PunctuatorToken, PunctuatorToken, NumericToken, PunctuatorToken, IdentifierToken}},
+
 		// go fuzz
 		{"`", TTs{UnknownToken}},
 	}
+
 	for _, tt := range tokenTests {
-		stringify := helperStringify(t, tt.js)
-		l := NewLexer(bytes.NewBufferString(tt.js))
-		i := 0
-		for {
-			token, _ := l.Next()
-			if token == ErrorToken {
-				test.That(t, i == len(tt.expected), "when error occurred we must be at the end in "+stringify)
-				test.Error(t, l.Err(), io.EOF, "in "+stringify)
-				break
-			} else if token == WhitespaceToken {
-				continue
+		t.Run(tt.js, func(t *testing.T) {
+			l := NewLexer(bytes.NewBufferString(tt.js))
+			i := 0
+			j := 0
+			for {
+				token, _ := l.Next()
+				j++
+				if token == ErrorToken {
+					test.T(t, l.Err(), io.EOF)
+					test.T(t, i, len(tt.expected), "when error occurred we must be at the end")
+					break
+				} else if token == WhitespaceToken {
+					continue
+				}
+				if i < len(tt.expected) {
+					if token != tt.expected[i] {
+						test.String(t, token.String(), tt.expected[i].String(), "token types must match")
+						break
+					}
+				} else {
+					test.Fail(t, "index", i, "must not exceed expected token types size", len(tt.expected))
+					break
+				}
+				i++
 			}
-			test.That(t, i < len(tt.expected), "index", i, "must not exceed expected token types size", len(tt.expected), "in "+stringify)
-			if i < len(tt.expected) {
-				test.That(t, token == tt.expected[i], "token types must match at index "+strconv.Itoa(i)+" in "+stringify)
-			}
-			i++
-		}
+		})
 	}
 
-	test.String(t, WhitespaceToken.String(), "Whitespace")
-	test.String(t, TokenType(100).String(), "Invalid(100)")
+	test.T(t, WhitespaceToken.String(), "Whitespace")
+	test.T(t, TokenType(100).String(), "Invalid(100)")
 }
 
 ////////////////////////////////////////////////////////////////
@@ -139,7 +146,6 @@ func ExampleNewLexer() {
 			break
 		}
 		out += string(data)
-		l.Free(len(data))
 	}
 	fmt.Println(out)
 	// Output: var x = 'lorem ipsum';

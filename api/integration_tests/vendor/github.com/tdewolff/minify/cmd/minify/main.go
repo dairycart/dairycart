@@ -12,13 +12,13 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/dustin/go-humanize"
+	humanize "github.com/dustin/go-humanize"
 	"github.com/matryer/try"
 	flag "github.com/spf13/pflag"
 	min "github.com/tdewolff/minify"
@@ -29,6 +29,10 @@ import (
 	"github.com/tdewolff/minify/svg"
 	"github.com/tdewolff/minify/xml"
 )
+
+var Version = "master"
+var Commit = ""
+var Date = ""
 
 var filetypeMime = map[string]string{
 	"css":  "text/css",
@@ -41,14 +45,14 @@ var filetypeMime = map[string]string{
 }
 
 var (
-	m         *min.M
-	recursive bool
 	hidden    bool
 	list      bool
-	verbose   bool
-	watch     bool
-	update    bool
+	m         *min.M
 	pattern   *regexp.Regexp
+	recursive bool
+	verbose   bool
+	version   bool
+	watch     bool
 )
 
 type task struct {
@@ -82,7 +86,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "\nInput:\n  Files or directories, leave blank to use stdin\n")
 	}
 	flag.StringVarP(&output, "output", "o", "", "Output file or directory (must have trailing slash), leave blank to use stdout")
-	flag.StringVar(&mimetype, "mime", "", "Mimetype (text/css, application/javascript, ...), optional for input filenames, has precendence over -type")
+	flag.StringVar(&mimetype, "mime", "", "Mimetype (text/css, application/javascript, ...), optional for input filenames, has precedence over -type")
 	flag.StringVar(&filetype, "type", "", "Filetype (css, html, js, ...), optional for input filenames")
 	flag.StringVar(&match, "match", "", "Filename pattern matching using regular expressions, see https://github.com/google/re2/wiki/Syntax")
 	flag.BoolVarP(&recursive, "recursive", "r", false, "Recursively minify directories")
@@ -90,10 +94,11 @@ func main() {
 	flag.BoolVarP(&list, "list", "l", false, "List all accepted filetypes")
 	flag.BoolVarP(&verbose, "verbose", "v", false, "Verbose")
 	flag.BoolVarP(&watch, "watch", "w", false, "Watch files and minify upon changes")
-	flag.BoolVarP(&update, "update", "u", false, "Update binary")
+	flag.BoolVarP(&version, "version", "", false, "Version")
 
 	flag.StringVar(&siteurl, "url", "", "URL of file to enable URL minification")
 	flag.IntVar(&cssMinifier.Decimals, "css-decimals", -1, "Number of decimals to preserve in numbers, -1 is all")
+	flag.BoolVar(&htmlMinifier.KeepConditionalComments, "html-keep-conditional-comments", false, "Preserve all IE conditional comments")
 	flag.BoolVar(&htmlMinifier.KeepDefaultAttrVals, "html-keep-default-attrvals", false, "Preserve default attribute values")
 	flag.BoolVar(&htmlMinifier.KeepDocumentTags, "html-keep-document-tags", false, "Preserve html, head and body tags")
 	flag.BoolVar(&htmlMinifier.KeepEndTags, "html-keep-end-tags", false, "Preserve all end tags")
@@ -110,9 +115,11 @@ func main() {
 		Info = log.New(ioutil.Discard, "INFO: ", 0)
 	}
 
-	if update {
-		if err := equinoxUpdate(); err != nil {
-			Error.Fatalln(err)
+	if version {
+		if Version == "devel" {
+			fmt.Printf("minify version devel+%.7s %s\n", Commit, Date)
+		} else {
+			fmt.Printf("minify version %s\n", Version)
 		}
 		return
 	}
@@ -192,17 +199,28 @@ func main() {
 			}
 		}
 	} else {
-		var wg sync.WaitGroup
+		numWorkers := 4
+		if n := runtime.NumCPU(); n > numWorkers {
+			numWorkers = n
+		}
+
+		sem := make(chan struct{}, numWorkers)
 		for _, t := range tasks {
-			wg.Add(1)
+			sem <- struct{}{}
 			go func(t task) {
-				defer wg.Done()
+				defer func() {
+					<-sem
+				}()
 				if ok := minify(mimetype, t); !ok {
 					atomic.AddInt32(&fails, 1)
 				}
 			}(t)
 		}
-		wg.Wait()
+
+		// wait for all jobs to be done
+		for i := 0; i < cap(sem); i++ {
+			sem <- struct{}{}
+		}
 	}
 
 	if watch {
@@ -278,7 +296,7 @@ func getMimetype(mimetype, filetype string, useStdin bool) string {
 		}
 	}
 	if mimetype == "" && useStdin {
-		Error.Fatalln("must specify mime or type for stdin")
+		Error.Fatalln("must specify mimetype or filetype for stdin")
 	}
 
 	if verbose {
@@ -523,7 +541,7 @@ func minify(mimetype string, t task) bool {
 		dstName = "stdin"
 	} else {
 		// rename original when overwriting
-		for i, _ := range t.srcs {
+		for i := range t.srcs {
 			if t.srcs[i] == t.dst {
 				t.srcs[i] += ".bak"
 				err := try.Do(func(attempt int) (bool, error) {
@@ -606,7 +624,7 @@ func minify(mimetype string, t task) bool {
 	fw.Close()
 
 	// remove original that was renamed, when overwriting files
-	for i, _ := range t.srcs {
+	for i := range t.srcs {
 		if t.srcs[i] == t.dst+".bak" {
 			if err == nil {
 				if err = os.Remove(t.srcs[i]); err != nil {

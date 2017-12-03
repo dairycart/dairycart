@@ -9,15 +9,16 @@ import (
 	"time"
 	"unicode"
 
-	"golang.org/x/crypto/bcrypt"
+	"github.com/dairycart/dairycart/api/storage"
+	"github.com/dairycart/dairycart/api/storage/models"
 
 	"github.com/dchest/uniuri"
 	"github.com/go-chi/chi"
 	"github.com/gorilla/sessions"
 	"github.com/imdario/mergo"
-	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
+	"golang.org/x/crypto/bcrypt"
 )
 
 const (
@@ -28,45 +29,21 @@ const (
 	sessionAdminKeyName      = "is_admin"
 	sessionUserIDKeyName     = "user_id"
 	sessionAuthorizedKeyName = "authenticated"
-
-	usersTableHeaders       = `id, first_name, last_name, username, email, password, salt, is_admin, password_last_changed_on, created_on, updated_on, archived_on`
-	userExistenceQuery      = `SELECT EXISTS(SELECT 1 FROM users WHERE username = $1 AND archived_on IS NULL)`
-	adminUserExistenceQuery = `SELECT EXISTS(SELECT 1 FROM users WHERE is_admin is true AND archived_on IS NULL)`
-	userExistenceQueryByID  = `SELECT EXISTS(SELECT 1 FROM users WHERE id = $1 AND archived_on IS NULL)`
-	userDeletionQuery       = `UPDATE users SET archived_on = NOW() WHERE id = $1 AND archived_on IS NULL`
-
-	passwordResetExistenceQueryForUserID = `SELECT EXISTS(SELECT 1 FROM password_reset_tokens WHERE user_id = $1 AND NOW() < expires_on)`
-	passwordResetExistenceQuery          = `SELECT EXISTS(SELECT 1 FROM password_reset_tokens WHERE token = $1 AND NOW() < expires_on)`
-
-	loginAttemptExhaustionQuery = `
-		SELECT count(id) FROM login_attempts
-			WHERE username = $1
-			AND created_on < NOW()
-			AND successful IS false
-			AND created_on > (NOW() - (15 * interval '1 minute'))
-	`
 )
 
-// User represents a Dairycart user
-type User struct {
-	DBRow
-	FirstName             string   `json:"first_name"`
-	LastName              string   `json:"last_name"`
-	Username              string   `json:"username"`
-	Email                 string   `json:"email"`
-	Password              string   `json:"password"`
-	Salt                  []byte   `json:"salt"`
-	IsAdmin               bool     `json:"is_admin"`
-	PasswordLastChangedOn NullTime `json:"password_last_changed_on,omitempty"`
-}
-
 // DisplayUser represents a Dairycart user we can return in responses
+// TODO: the main reason for doing this is so we don't end up returning
+// the password hash to the user, but there's bound to be a way to reuse
+// that struct
 type DisplayUser struct {
-	DBRow
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Email     string `json:"email"`
-	IsAdmin   bool   `json:"is_admin"`
+	ID         uint64          `json:"id"`
+	FirstName  string          `json:"first_name"`
+	LastName   string          `json:"last_name"`
+	Email      string          `json:"email"`
+	IsAdmin    bool            `json:"is_admin"`
+	CreatedOn  time.Time       `json:"created_on"`
+	UpdatedOn  models.NullTime `json:"updated_on,omitempty"`
+	ArchivedOn models.NullTime `json:"archived_on,omitempty"`
 }
 
 // UserCreationInput represents the payload used to create a Dairycart user
@@ -126,7 +103,7 @@ func passwordIsValid(s string) bool {
 	return len(s) >= 64 && hasNumber && hasUpper && hasSpecial
 }
 
-func createUserFromInput(in *UserCreationInput) (*User, error) {
+func createUserFromInput(in *UserCreationInput) (*models.User, error) {
 	salt, err := generateSalt()
 	// COVERAGE NOTE: I cannot seem to synthesize this error for the sake of testing, so if you're
 	// seeing this in a coverage report and the line below is red, just know that I tried. :(
@@ -140,7 +117,7 @@ func createUserFromInput(in *UserCreationInput) (*User, error) {
 		return nil, err
 	}
 
-	user := &User{
+	user := &models.User{
 		FirstName: in.FirstName,
 		LastName:  in.LastName,
 		Email:     in.Email,
@@ -152,8 +129,8 @@ func createUserFromInput(in *UserCreationInput) (*User, error) {
 	return user, nil
 }
 
-func createUserFromUpdateInput(in *UserUpdateInput, hashedPassword string) *User {
-	out := &User{
+func createUserFromUpdateInput(in *UserUpdateInput, hashedPassword string) *models.User {
+	out := &models.User{
 		FirstName: in.FirstName,
 		LastName:  in.LastName,
 		Username:  in.Username,
@@ -175,80 +152,13 @@ func saltAndHashPassword(password string, salt []byte) (string, error) {
 	return string(saltedAndHashedPassword), err
 }
 
-func createUserInDB(db *sqlx.DB, u *User) (uint64, time.Time, error) {
-	var newUserID uint64
-	var createdOn time.Time
-	query, args := buildUserCreationQuery(u)
-	err := db.QueryRow(query, args...).Scan(&newUserID, &createdOn)
-	return newUserID, createdOn, err
-}
-
-func retrieveUserFromDB(db *sqlx.DB, username string) (User, error) {
-	var u User
-	query, args := buildUserSelectionQuery(username)
-	err := db.Get(&u, query, args...)
-	return u, err
-}
-
-func retrieveUserFromDBByID(db *sqlx.DB, userID uint64) (User, error) {
-	var u User
-	query, args := buildUserSelectionQueryByID(userID)
-	err := db.Get(&u, query, args...)
-	return u, err
-}
-
-func passwordMatches(password string, u User) bool {
+func passwordMatches(password string, u *models.User) bool {
 	saltedInputPassword := append(u.Salt, password...)
 	err := bcrypt.CompareHashAndPassword([]byte(u.Password), saltedInputPassword)
 	return err == nil
 }
 
-func updateUserInDatabase(db *sqlx.DB, u *User, passwordChanged bool) (time.Time, error) {
-	var updatedOn time.Time
-	userUpdateQuery, queryArgs := buildUserUpdateQuery(u, passwordChanged)
-	err := db.QueryRow(userUpdateQuery, queryArgs...).Scan(&updatedOn)
-	return updatedOn, err
-}
-
-func archiveUser(db *sqlx.DB, id uint64) error {
-	_, err := db.Exec(userDeletionQuery, id)
-	return err
-}
-
-func createPasswordResetEntryInDatabase(db *sqlx.DB, userID uint64, resetToken string) error {
-	/*
-		NOTE: this docstring is mostly for my own future reference
-
-		I will work to implement the creation of these rows and the validation of their contents,
-		but I won't be implementing the actual emailing of users with these reset tokens just yet.
-		Mostly because email is a ~*~spooky business~*~ and I have absolutely no idea how to test
-		that stuff without getting even real complicated. Towards the end of development, when I
-		feel like Dairycart is closer to being ready to release, I will implement this feature and
-		test it manually on occasion. RIP to my sweet test coverage number.
-	*/
-	query, args := buildPasswordResetRowCreationQuery(userID, resetToken)
-	_, err := db.Exec(query, args...)
-	return err
-}
-
-func loginAttemptsHaveBeenExhausted(db *sqlx.DB, username string) (bool, error) {
-	var loginCount uint64
-
-	err := db.QueryRow(loginAttemptExhaustionQuery, username).Scan(&loginCount)
-	if err != nil {
-		return false, err
-	}
-
-	return loginCount >= 10, err
-}
-
-func createLoginAttemptRowInDatabase(db *sqlx.DB, username string, successful bool) error {
-	query, args := buildLoginAttemptCreationQuery(username, successful)
-	_, err := db.Exec(query, args...)
-	return err
-}
-
-func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.HandlerFunc {
+func buildUserCreationHandler(db *sql.DB, client storage.Storer, store *sessions.CookieStore) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		userInput := &UserCreationInput{}
 		err := validateRequestInput(req, userInput)
@@ -277,7 +187,7 @@ func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 		}
 
 		// can't create a user with an email that already exists!
-		exists, err := rowExistsInDB(db, userExistenceQuery, userInput.Username)
+		exists, err := client.UserWithUsernameExists(db, userInput.Username)
 		if err != nil || exists {
 			notifyOfInvalidRequestBody(res, errors.New("username already taken"))
 			return
@@ -290,17 +200,15 @@ func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 			return
 		}
 
-		createdUserID, createdOn, err := createUserInDB(db, newUser)
+		createdUserID, createdOn, err := client.CreateUser(db, newUser)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "insert user in database")
 			return
 		}
 
 		responseUser := &DisplayUser{
-			DBRow: DBRow{
-				ID:        createdUserID,
-				CreatedOn: createdOn,
-			},
+			ID:        createdUserID,
+			CreatedOn: createdOn,
 			FirstName: newUser.FirstName,
 			LastName:  newUser.LastName,
 			Email:     newUser.Email,
@@ -316,7 +224,7 @@ func buildUserCreationHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 	}
 }
 
-func buildUserLoginHandler(db *sqlx.DB, store *sessions.CookieStore) http.HandlerFunc {
+func buildUserLoginHandler(db *sql.DB, client storage.Storer, store *sessions.CookieStore) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		loginInput := &UserLoginInput{}
 		err := validateRequestInput(req, loginInput)
@@ -326,7 +234,7 @@ func buildUserLoginHandler(db *sqlx.DB, store *sessions.CookieStore) http.Handle
 		}
 		username := loginInput.Username
 
-		exhaustedAttempts, err := loginAttemptsHaveBeenExhausted(db, username)
+		exhaustedAttempts, err := client.LoginAttemptsHaveBeenExhausted(db, username)
 		if exhaustedAttempts {
 			notifyOfExaustedAuthenticationAttempts(res)
 			return
@@ -335,7 +243,9 @@ func buildUserLoginHandler(db *sqlx.DB, store *sessions.CookieStore) http.Handle
 			return
 		}
 
-		user, err := retrieveUserFromDB(db, username)
+		// TODO: we should ensure there isn't an unsatisfied password reset token requested before allowing login
+
+		user, err := client.GetUserByUsername(db, username)
 		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "user", username)
 			return
@@ -345,7 +255,7 @@ func buildUserLoginHandler(db *sqlx.DB, store *sessions.CookieStore) http.Handle
 		}
 
 		loginValid := passwordMatches(loginInput.Password, user)
-		err = createLoginAttemptRowInDatabase(db, username, loginValid)
+		_, _, err = client.CreateLoginAttempt(db, &models.LoginAttempt{Username: username, Successful: loginValid})
 		if err != nil {
 			notifyOfInternalIssue(res, err, "create login attempt entry")
 			return
@@ -387,16 +297,20 @@ func buildUserLogoutHandler(store *sessions.CookieStore) http.HandlerFunc {
 	}
 }
 
-func buildUserDeletionHandler(db *sqlx.DB, store *sessions.CookieStore) http.HandlerFunc {
+func buildUserDeletionHandler(db *sql.DB, client storage.Storer, store *sessions.CookieStore) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		userID := chi.URLParam(req, "user_id")
 		// we can eat this error because Mux takes care of validating route params for us
 		userIDInt, _ := strconv.ParseInt(userID, 10, 64)
+		userIDInt64 := uint64(userIDInt)
 
 		// can't delete a user that doesn't already exist!
-		exists, err := rowExistsInDB(db, userExistenceQueryByID, userID)
-		if err != nil || !exists {
+		user, err := client.GetUser(db, userIDInt64)
+		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "user", userID)
+			return
+		} else if err != nil {
+			notifyOfInternalIssue(res, err, "retrieve user")
 			return
 		}
 
@@ -417,18 +331,19 @@ func buildUserDeletionHandler(db *sqlx.DB, store *sessions.CookieStore) http.Han
 			json.NewEncoder(res).Encode(errRes)
 			return
 		} else if admin {
-			err = archiveUser(db, uint64(userIDInt))
+			archivedOn, err := client.DeleteUser(db, userIDInt64)
+			user.ArchivedOn = models.NullTime{NullTime: pq.NullTime{Time: archivedOn, Valid: true}}
 			if err != nil {
 				notifyOfInternalIssue(res, err, "archive user")
 				return
 			}
 		}
 
-		res.WriteHeader(http.StatusOK)
+		json.NewEncoder(res).Encode(user)
 	}
 }
 
-func buildUserForgottenPasswordHandler(db *sqlx.DB) http.HandlerFunc {
+func buildUserForgottenPasswordHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		loginInput := &UserLoginInput{}
 		err := validateRequestInput(req, loginInput)
@@ -438,7 +353,7 @@ func buildUserForgottenPasswordHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 		username := loginInput.Username
 
-		user, err := retrieveUserFromDB(db, username)
+		user, err := client.GetUserByUsername(db, username)
 		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "user", username)
 			return
@@ -447,29 +362,33 @@ func buildUserForgottenPasswordHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		userIDString := strconv.Itoa(int(user.ID))
-		exists, err := rowExistsInDB(db, passwordResetExistenceQueryForUserID, userIDString)
+		exists, err := client.PasswordResetTokenForUserIDExists(db, user.ID)
 		if err != nil || exists {
 			notifyOfInvalidRequestBody(res, errors.New("user has existent, non-expired password reset request"))
 			return
 		}
 
-		resetToken := uniuri.NewLen(resetTokenSize)
-		err = createPasswordResetEntryInDatabase(db, user.ID, resetToken)
+		resetToken := &models.PasswordResetToken{
+			UserID: user.ID,
+			Token:  uniuri.NewLen(resetTokenSize),
+		}
+
+		resetToken.ID, resetToken.CreatedOn, err = client.CreatePasswordResetToken(db, resetToken)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "read session data")
 			return
 		}
 
-		res.WriteHeader(http.StatusOK)
+		json.NewEncoder(res).Encode(resetToken)
 	}
 }
 
-func buildUserPasswordResetTokenValidationHandler(db *sqlx.DB) http.HandlerFunc {
+// TODO: rethinking having this as a mere validation handler, instead of a password resetting handler
+func buildUserPasswordResetTokenValidationHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		resetToken := chi.URLParam(req, "reset_token")
 
-		exists, err := rowExistsInDB(db, passwordResetExistenceQuery, resetToken)
+		exists, err := client.PasswordResetTokenWithTokenExists(db, resetToken)
 		if err != nil || !exists {
 			res.WriteHeader(http.StatusNotFound)
 			return
@@ -479,11 +398,12 @@ func buildUserPasswordResetTokenValidationHandler(db *sqlx.DB) http.HandlerFunc 
 	}
 }
 
-func buildUserInfoUpdateHandler(db *sqlx.DB) http.HandlerFunc {
+func buildUserInfoUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		userID := chi.URLParam(req, "user_id")
 		// eating these errors because Chi should validate these for us.
 		userIDInt, _ := strconv.Atoi(userID)
+		userIDInt64 := uint64(userIDInt)
 
 		updatedUserInfo := &UserUpdateInput{}
 		err := validateRequestInput(req, updatedUserInfo)
@@ -499,7 +419,7 @@ func buildUserInfoUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		existingUser, err := retrieveUserFromDBByID(db, uint64(userIDInt))
+		existingUser, err := client.GetUser(db, userIDInt64)
 		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "user ID", userID)
 			return
@@ -527,15 +447,24 @@ func buildUserInfoUpdateHandler(db *sqlx.DB) http.HandlerFunc {
 		}
 
 		updatedUser := createUserFromUpdateInput(updatedUserInfo, hashedPassword)
-		// eating the error here because we've already validated input
-		mergo.Merge(updatedUser, existingUser)
 
-		updatedOn, err := updateUserInDatabase(db, updatedUser, passwordChanged)
+		err = mergo.Merge(updatedUser, existingUser)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "merge input and existing data")
+			return
+		}
+
+		// FIXME: this isn't how this should be done
+		if passwordChanged {
+			updatedUser.PasswordLastChangedOn = models.NullTime{NullTime: pq.NullTime{Time: time.Now(), Valid: true}}
+		}
+
+		updatedOn, err := client.UpdateUser(db, updatedUser)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "update user")
 			return
 		}
-		updatedUser.UpdatedOn = NullTime{pq.NullTime{Time: updatedOn, Valid: true}}
+		updatedUser.UpdatedOn = models.NullTime{NullTime: pq.NullTime{Time: updatedOn, Valid: true}}
 
 		json.NewEncoder(res).Encode(updatedUser)
 	}

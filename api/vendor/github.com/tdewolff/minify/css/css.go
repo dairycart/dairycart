@@ -16,6 +16,7 @@ var (
 	spaceBytes          = []byte(" ")
 	colonBytes          = []byte(":")
 	semicolonBytes      = []byte(";")
+	commaBytes          = []byte(",")
 	leftBracketBytes    = []byte("{")
 	rightBracketBytes   = []byte("}")
 	zeroBytes           = []byte("0")
@@ -32,6 +33,9 @@ type cssMinifier struct {
 
 ////////////////////////////////////////////////////////////////
 
+// DefaultMinifier is the default minifier.
+var DefaultMinifier = &Minifier{Decimals: -1}
+
 // Minifier is a CSS minifier.
 type Minifier struct {
 	Decimals int
@@ -39,7 +43,7 @@ type Minifier struct {
 
 // Minify minifies CSS data, it reads from r and writes to w.
 func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
-	return (&Minifier{Decimals: -1}).Minify(m, w, r, params)
+	return DefaultMinifier.Minify(m, w, r, params)
 }
 
 // Minify minifies CSS data, it reads from r and writes to w.
@@ -51,6 +55,8 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[stri
 		p: css.NewParser(r, isInline),
 		o: o,
 	}
+	defer c.p.Restore()
+
 	if err := c.minifyGrammar(); err != nil && err != io.EOF {
 		return err
 	}
@@ -62,7 +68,27 @@ func (c *cssMinifier) minifyGrammar() error {
 	for {
 		gt, _, data := c.p.Next()
 		if gt == css.ErrorGrammar {
-			return c.p.Err()
+			if perr, ok := c.p.Err().(*parse.Error); ok && perr.Message == "unexpected token in declaration" {
+				if semicolonQueued {
+					if _, err := c.w.Write(semicolonBytes); err != nil {
+						return err
+					}
+				}
+
+				// write out the offending declaration
+				if _, err := c.w.Write(data); err != nil {
+					return err
+				}
+				for _, val := range c.p.Values() {
+					if _, err := c.w.Write(val.Data); err != nil {
+						return err
+					}
+				}
+				semicolonQueued = true
+				continue
+			} else {
+				return c.p.Err()
+			}
 		} else if gt == css.EndAtRuleGrammar || gt == css.EndRulesetGrammar {
 			if _, err := c.w.Write(rightBracketBytes); err != nil {
 				return err
@@ -100,6 +126,13 @@ func (c *cssMinifier) minifyGrammar() error {
 			if _, err := c.w.Write(leftBracketBytes); err != nil {
 				return err
 			}
+		} else if gt == css.QualifiedRuleGrammar {
+			if err := c.minifySelectors(data, c.p.Values()); err != nil {
+				return err
+			}
+			if _, err := c.w.Write(commaBytes); err != nil {
+				return err
+			}
 		} else if gt == css.BeginRulesetGrammar {
 			if err := c.minifySelectors(data, c.p.Values()); err != nil {
 				return err
@@ -115,6 +148,17 @@ func (c *cssMinifier) minifyGrammar() error {
 				return err
 			}
 			if err := c.minifyDeclaration(data, c.p.Values()); err != nil {
+				return err
+			}
+			semicolonQueued = true
+		} else if gt == css.CustomPropertyGrammar {
+			if _, err := c.w.Write(data); err != nil {
+				return err
+			}
+			if _, err := c.w.Write(colonBytes); err != nil {
+				return err
+			}
+			if _, err := c.w.Write(c.p.Values()[0].Data); err != nil {
 				return err
 			}
 			semicolonQueued = true

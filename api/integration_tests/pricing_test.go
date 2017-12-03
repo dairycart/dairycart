@@ -3,302 +3,240 @@ package dairytest
 import (
 	"fmt"
 	"net/http"
-	"regexp"
-	"strconv"
-	"strings"
 	"testing"
+
+	"github.com/dairycart/dairycart/api/storage/models"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func replaceTimeStringsForDiscountTests(body string) string {
-	re := regexp.MustCompile(`(?U)(,?)"(starts_on|expires_on)":"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z)?"(,?)`)
-	return strings.TrimSpace(re.ReplaceAllString(body, ""))
+func compareDiscounts(t *testing.T, expected, actual models.Discount) {
+	assert.Equal(t, expected.Name, actual.Name, "expected and actual Name should be equal")
+	assert.Equal(t, expected.DiscountType, actual.DiscountType, "expected and actual DiscountType should be equal")
+	assert.Equal(t, expected.Amount, actual.Amount, "expected and actual Amount should be equal")
+	assert.Equal(t, expected.RequiresCode, actual.RequiresCode, "expected and actual RequiresCode should be equal")
+	assert.Equal(t, expected.Code, actual.Code, "expected and actual Code should be equal")
+	assert.Equal(t, expected.LimitedUse, actual.LimitedUse, "expected and actual LimitedUse should be equal")
+	assert.Equal(t, expected.NumberOfUses, actual.NumberOfUses, "expected and actual NumberOfUses should be equal")
+	assert.Equal(t, expected.LoginRequired, actual.LoginRequired, "expected and actual LoginRequired should be equal")
 }
 
-func createDiscountCreationBody(code string) string {
-	output := fmt.Sprintf(`
-		{
-			"name": "Test",
-			"type": "flat_amount",
-			"amount": 12.34,
-			"starts_on": "2016-12-01T12:00:00+05:00",
-			"requires_code": true,
-			"code": "%s"
+func TestDiscountRetrievalRoute(t *testing.T) {
+	t.Parallel()
+
+	t.Run("normal usage", func(*testing.T) {
+		resp, err := getDiscountByID(existentID)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		expected := models.Discount{
+			Name:          `10% off`,
+			DiscountType:  "percentage",
+			Amount:        10,
+			RequiresCode:  false,
+			LimitedUse:    false,
+			LoginRequired: false,
 		}
-	`, code)
-	return output
-}
+		var actual models.Discount
 
-func createDiscountUpdateBody(name string, code string) string {
-	output := fmt.Sprintf(`
-		{
-			"name": "%s",
-			"requires_code": true,
-			"code": "%s"
+		unmarshalBody(t, resp, &actual)
+		compareDiscounts(t, expected, actual)
+	})
+
+	t.Run("for nonexistent discount", func(*testing.T) {
+		resp, err := getDiscountByID(nonexistentID)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+
+		expected := models.ErrorResponse{
+			Status:  http.StatusNotFound,
+			Message: fmt.Sprintf("The discount you were looking for (id '%d') does not exist", nonexistentID),
 		}
-	`, name, code)
-	return output
+		var actual models.ErrorResponse
+
+		unmarshalBody(t, resp, &actual)
+		assert.Equal(t, expected, actual)
+	})
 }
 
-func TestDiscountRetrievalForExistingDiscount(t *testing.T) {
-	t.Parallel()
-	resp, err := getDiscountByID(existentID)
-	assert.Nil(t, err)
-	assertStatusCode(t, resp, http.StatusOK)
-
-	body := turnResponseBodyIntoString(t, resp)
-	removedTimeFields := replaceTimeStringsForTests(body)
-	actual := replaceTimeStringsForDiscountTests(removedTimeFields)
-	expected := minifyJSON(t, `
-		{
-			"id": 1,
-			"name": "10% off",
-			"type": "percentage",
-			"amount": 10,
-			"requires_code": false,
-			"limited_use": false,
-			"login_required": false
-		}
-	`)
-	assert.Equal(t, expected, actual, "discount route should return a serialized discount object")
-}
-
-func TestDiscountRetrievalForNonexistentDiscount(t *testing.T) {
-	t.Parallel()
-	resp, err := getDiscountByID(nonexistentID)
-	assert.Nil(t, err)
-	assertStatusCode(t, resp, http.StatusNotFound)
-
-	body := turnResponseBodyIntoString(t, resp)
-	actual := replaceTimeStringsForTests(body)
-	expected := minifyJSON(t, `
-		{
-			"status": 404,
-			"message": "The discount you were looking for (id '999999999') does not exist"
-		}
-	`)
-	assert.Equal(t, expected, actual, "product option update route should respond with 404 message when you try to delete a product that doesn't exist")
-
-}
-
-func TestDiscountListRetrievalWithDefaultFilter(t *testing.T) {
-	t.Parallel()
-	resp, err := getListOfDiscounts(nil)
-	assert.Nil(t, err)
-	assertStatusCode(t, resp, http.StatusOK)
-
-	body := turnResponseBodyIntoString(t, resp)
-	lr := parseResponseIntoStruct(t, body)
-	assert.True(t, len(lr.Data) <= int(lr.Limit), "discount list route should not return more data than the limit")
-	assert.Equal(t, uint8(25), lr.Limit, "discount list route should respond with the default limit when a ilmit is not specified")
-	assert.Equal(t, uint64(1), lr.Page, "discount list route should respond with the first page when a page is not specified")
-}
-
-func TestDiscountListRouteWithCustomFilter(t *testing.T) {
-	t.Parallel()
-	customFilter := map[string]string{
-		"page":  "2",
-		"limit": "2",
-	}
-	resp, err := getListOfDiscounts(customFilter)
-	assert.Nil(t, err)
-	assertStatusCode(t, resp, http.StatusOK)
-
-	body := turnResponseBodyIntoString(t, resp)
-	lr := parseResponseIntoStruct(t, body)
-	assert.Equal(t, uint8(2), lr.Limit, "discount list route should respond with the specified limit")
-	assert.Equal(t, uint64(2), lr.Page, "discount list route should respond with the specified page")
-}
-
-func TestDiscountCreation(t *testing.T) {
+func TestDiscountListRoute(t *testing.T) {
 	t.Parallel()
 
-	var createdDiscountID uint64
-	testDiscountCode := "TEST"
-
-	testCreateDiscount := func(t *testing.T) {
-		newDiscountJSON := createDiscountCreationBody(testDiscountCode)
-		resp, err := createDiscount(newDiscountJSON)
-		assert.Nil(t, err)
-		assertStatusCode(t, resp, http.StatusCreated)
-
-		body := turnResponseBodyIntoString(t, resp)
-		createdDiscountID = retrieveIDFromResponseBody(t, body)
-
-		actual := replaceTimeStringsForTests(body)
-		expected := minifyJSON(t, fmt.Sprintf(`
-			{
-				"id": %d,
-				"name": "Test",
-				"type": "flat_amount",
-				"amount": 12.34,
-				"requires_code": true,
-				"code": "%s",
-				"limited_use": false,
-				"login_required": false
-			}
-		`, createdDiscountID, testDiscountCode))
-
-		assert.Equal(t, expected, actual, "discount creation route should respond with created product body")
-	}
-
-	testDeleteDiscount := func(t *testing.T) {
-		resp, err := deleteDiscount(strconv.Itoa(int(createdDiscountID)))
-		assert.Nil(t, err)
-		assertStatusCode(t, resp, http.StatusOK)
-	}
-
-	subtests := []subtest{
-		{
-			Message: "create discount",
-			Test:    testCreateDiscount,
-		},
-		{
-			Message: "delete created discount",
-			Test:    testDeleteDiscount,
-		},
-	}
-	runSubtestSuite(t, subtests)
-}
-
-func TestDiscountDeletion(t *testing.T) {
-	t.Parallel()
-
-	var createdDiscountID uint64
-	testDiscountCode := "deletion"
-
-	testCreateDiscount := func(t *testing.T) {
-		newDiscountJSON := createDiscountCreationBody(testDiscountCode)
-		resp, err := createDiscount(newDiscountJSON)
-		assert.Nil(t, err)
-		assertStatusCode(t, resp, http.StatusCreated)
-		body := turnResponseBodyIntoString(t, resp)
-		createdDiscountID = retrieveIDFromResponseBody(t, body)
-	}
-
-	testDeleteDiscount := func(t *testing.T) {
-		resp, err := deleteDiscount(strconv.Itoa(int(createdDiscountID)))
-		assert.Nil(t, err)
+	t.Run("with standard filter", func(*testing.T) {
+		resp, err := getListOfDiscounts(nil)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusOK)
 
-		actual := turnResponseBodyIntoString(t, resp)
-		expected := fmt.Sprintf("Successfully archived discount `%d`", createdDiscountID)
-		assert.Equal(t, expected, actual, "discount deletion route should respond with affirmative message upon successful deletion")
-	}
+		expected := models.ListResponse{
+			Limit: 25,
+			Page:  1,
+		}
+		var actual models.ListResponse
+		unmarshalBody(t, resp, &actual)
+		compareListResponses(t, expected, actual)
+	})
 
-	subtests := []subtest{
-		{
-			Message: "create discount",
-			Test:    testCreateDiscount,
-		},
-		{
-			Message: "delete created discount",
-			Test:    testDeleteDiscount,
-		},
-	}
-	runSubtestSuite(t, subtests)
-}
-
-func TestDiscountDeletionForNonexistentDiscount(t *testing.T) {
-	t.Parallel()
-
-	resp, err := deleteDiscount(nonexistentID)
-	assert.Nil(t, err)
-	assertStatusCode(t, resp, http.StatusNotFound)
-
-	actual := turnResponseBodyIntoString(t, resp)
-	expected := `{"status":404,"message":"The discount you were looking for (id '999999999') does not exist"}`
-	assert.Equal(t, expected, actual, "discount deletion route should respond with affirmative message upon successful deletion")
-}
-
-func TestDiscountCreationWithInvalidInput(t *testing.T) {
-	t.Parallel()
-	resp, err := createDiscount(exampleGarbageInput)
-	assert.Nil(t, err)
-	assertStatusCode(t, resp, http.StatusBadRequest)
-
-	respBody := turnResponseBodyIntoString(t, resp)
-	actual := replaceTimeStringsForTests(respBody)
-	assert.Equal(t, expectedBadRequestResponse, actual, "discount creation route should respond with created product body")
-}
-
-func TestDiscountUpdate(t *testing.T) {
-	t.Parallel()
-
-	var createdDiscountID uint64
-	testDiscountCode := "update"
-
-	testCreateDiscount := func(t *testing.T) {
-		newDiscountJSON := createDiscountCreationBody(testDiscountCode)
-		resp, err := createDiscount(newDiscountJSON)
-		assert.Nil(t, err)
-		assertStatusCode(t, resp, http.StatusCreated)
-		body := turnResponseBodyIntoString(t, resp)
-		createdDiscountID = retrieveIDFromResponseBody(t, body)
-	}
-
-	testUpdateDiscount := func(t *testing.T) {
-		updatedDiscountJSON := createDiscountUpdateBody("new name", testDiscountCode)
-		resp, err := updateDiscount(strconv.Itoa(int(createdDiscountID)), updatedDiscountJSON)
-		assert.Nil(t, err)
+	t.Run("with custom filter", func(*testing.T) {
+		customFilter := map[string]string{
+			"page":  "2",
+			"limit": "5",
+		}
+		resp, err := getListOfDiscounts(customFilter)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusOK)
 
-		body := turnResponseBodyIntoString(t, resp)
-		actual := replaceTimeStringsForTests(body)
-		expected := minifyJSON(t, fmt.Sprintf(`
-			{
-				"id": %d,
-				"name": "new name",
-				"type": "flat_amount",
-				"amount": 12.34,
-				"requires_code": true,
-				"code": "update",
-				"limited_use": false,
-				"login_required": false
-			}
-		`, createdDiscountID))
-		assert.Equal(t, expected, actual, "product option update response should reflect the updated fields")
-	}
-
-	testDeleteDiscount := func(t *testing.T) {
-		resp, err := deleteDiscount(strconv.Itoa(int(createdDiscountID)))
-		assert.Nil(t, err)
-		assertStatusCode(t, resp, http.StatusOK)
-
-		actual := turnResponseBodyIntoString(t, resp)
-		expected := fmt.Sprintf("Successfully archived discount `%d`", createdDiscountID)
-		assert.Equal(t, expected, actual, "discount deletion route should respond with affirmative message upon successful deletion")
-	}
-
-	subtests := []subtest{
-		{
-			Message: "create discount",
-			Test:    testCreateDiscount,
-		},
-		{
-			Message: "update discount",
-			Test:    testUpdateDiscount,
-		},
-		{
-			Message: "delete created discount",
-			Test:    testDeleteDiscount,
-		},
-	}
-	runSubtestSuite(t, subtests)
+		expected := models.ListResponse{
+			Limit: 5,
+			Page:  2,
+		}
+		var actual models.ListResponse
+		unmarshalBody(t, resp, &actual)
+		compareListResponses(t, expected, actual)
+	})
 }
 
-func TestDiscountUpdateInvalidDiscount(t *testing.T) {
+func TestDiscountCreationRoute(t *testing.T) {
 	t.Parallel()
-	updatedDiscountJSON := createDiscountUpdateBody("new name", "TEST")
-	resp, err := updateDiscount(nonexistentID, updatedDiscountJSON)
-	assert.Nil(t, err)
-	assertStatusCode(t, resp, http.StatusNotFound)
+
+	t.Run("normal usage", func(*testing.T) {
+		expected := models.Discount{
+			Name:          "test discount creation",
+			DiscountType:  "percentage",
+			Amount:        5,
+			RequiresCode:  true,
+			Code:          "discount code",
+			LimitedUse:    true,
+			NumberOfUses:  123,
+			LoginRequired: true,
+		}
+
+		discountCreationJSON := createJSONBody(t, expected)
+		resp, err := createDiscount(discountCreationJSON)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusCreated, resp.StatusCode)
+
+		var actual models.Discount
+		unmarshalBody(t, resp, &actual)
+		compareDiscounts(t, expected, actual)
+	})
+
+	t.Run("with invalid input", func(*testing.T) {
+		resp, err := createDiscount(exampleGarbageInput)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+		expected := models.ErrorResponse{
+			Status:  http.StatusBadRequest,
+			Message: expectedBadRequestResponse,
+		}
+		var actual models.ErrorResponse
+		unmarshalBody(t, resp, &actual)
+		assert.Equal(t, expected, actual)
+	})
 }
 
-func TestDiscountUpdateWithInvalidBody(t *testing.T) {
+func TestDiscountUpdateRoute(t *testing.T) {
 	t.Parallel()
-	resp, err := updateDiscount(existentID, exampleGarbageInput)
-	assert.Nil(t, err)
-	assertStatusCode(t, resp, http.StatusBadRequest)
+
+	t.Run("normal usage", func(*testing.T) {
+		exampleInput := models.Discount{
+			Name:          "test discount update",
+			DiscountType:  "percentage",
+			Amount:        5,
+			RequiresCode:  true,
+			Code:          "discount code",
+			LimitedUse:    true,
+			NumberOfUses:  123,
+			LoginRequired: true,
+		}
+
+		discountCreationJSON := createJSONBody(t, exampleInput)
+		resp, err := createDiscount(discountCreationJSON)
+		var expected models.Discount
+		unmarshalBody(t, resp, &expected)
+
+		expected.Code = "this has changed now"
+		updateJSON := createJSONBody(t, expected)
+		resp, err = updateDiscount(expected.ID, updateJSON)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var actual models.Discount
+		unmarshalBody(t, resp, &actual)
+		compareDiscounts(t, expected, actual)
+	})
+
+	t.Run("with garbage input", func(*testing.T) {
+		resp, err := updateDiscount(existentID, exampleGarbageInput)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+		expected := models.ErrorResponse{
+			Status:  http.StatusBadRequest,
+			Message: expectedBadRequestResponse,
+		}
+		var actual models.ErrorResponse
+		unmarshalBody(t, resp, &actual)
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("for nonexistent discount", func(*testing.T) {
+		exampleInput := createJSONBody(t, models.Discount{Name: "test nonexistent discount update"})
+
+		resp, err := updateDiscount(nonexistentID, exampleInput)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+
+		expected := models.ErrorResponse{
+			Status:  http.StatusNotFound,
+			Message: fmt.Sprintf("The discount you were looking for (id '%d') does not exist", nonexistentID),
+		}
+		var actual models.ErrorResponse
+		unmarshalBody(t, resp, &actual)
+		assert.Equal(t, expected, actual)
+	})
+}
+
+func TestDiscountDeletionRoute(t *testing.T) {
+	t.Parallel()
+
+	t.Run("normal usage", func(*testing.T) {
+		exampleInput := models.Discount{
+			Name:          "test discount update",
+			DiscountType:  "percentage",
+			Amount:        5,
+			RequiresCode:  true,
+			Code:          "discount code",
+			LimitedUse:    true,
+			NumberOfUses:  123,
+			LoginRequired: true,
+		}
+
+		discountCreationJSON := createJSONBody(t, exampleInput)
+		resp, err := createDiscount(discountCreationJSON)
+		var expected models.Discount
+		unmarshalBody(t, resp, &expected)
+
+		resp, err = deleteDiscount(expected.ID)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var actual models.Discount
+		unmarshalBody(t, resp, &actual)
+		assert.True(t, actual.ArchivedOn.Valid)
+	})
+
+	t.Run("for nonexistent discount", func(*testing.T) {
+		resp, err := deleteDiscount(nonexistentID)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+
+		expected := models.ErrorResponse{
+			Status:  http.StatusNotFound,
+			Message: fmt.Sprintf("The discount you were looking for (id '%d') does not exist", nonexistentID),
+		}
+		var actual models.ErrorResponse
+		unmarshalBody(t, resp, &actual)
+		assert.Equal(t, expected, actual)
+	})
 }
