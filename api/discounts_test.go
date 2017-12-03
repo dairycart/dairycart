@@ -35,7 +35,7 @@ func TestDiscountRetrievalHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/discount/1", nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusOK)
@@ -48,7 +48,7 @@ func TestDiscountRetrievalHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/discount/1", nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusNotFound)
@@ -61,7 +61,7 @@ func TestDiscountRetrievalHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/discount/1", nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -86,7 +86,7 @@ func TestDiscountListHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/discounts", nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusOK)
@@ -99,7 +99,7 @@ func TestDiscountListHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/discounts", nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -114,7 +114,7 @@ func TestDiscountListHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/discounts", nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -140,7 +140,7 @@ func TestDiscountCreationHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/discount", strings.NewReader(exampleDiscountCreationInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusCreated)
@@ -151,7 +151,7 @@ func TestDiscountCreationHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/discount", strings.NewReader(exampleGarbageInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusBadRequest)
@@ -164,7 +164,7 @@ func TestDiscountCreationHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/discount", strings.NewReader(exampleDiscountCreationInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -189,7 +189,7 @@ func TestDiscountDeletionHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/discount/%d", exampleDiscount.ID), nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusOK)
@@ -202,7 +202,7 @@ func TestDiscountDeletionHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/discount/%d", exampleDiscount.ID), nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusNotFound)
@@ -215,7 +215,7 @@ func TestDiscountDeletionHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/discount/%d", exampleDiscount.ID), nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -230,7 +230,7 @@ func TestDiscountDeletionHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/discount/%d", exampleDiscount.ID), nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -263,7 +263,7 @@ func TestDiscountUpdateHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPatch, "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusOK)
@@ -274,7 +274,7 @@ func TestDiscountUpdateHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPatch, "/v1/discount/1", strings.NewReader(exampleGarbageInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusBadRequest)
@@ -287,7 +287,7 @@ func TestDiscountUpdateHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPatch, "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusNotFound)
@@ -300,7 +300,7 @@ func TestDiscountUpdateHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPatch, "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -315,7 +315,7 @@ func TestDiscountUpdateHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPatch, "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)

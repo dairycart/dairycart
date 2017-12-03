@@ -8,10 +8,8 @@ import (
 	"log"
 	"net/http"
 	"regexp"
-	"strconv"
 	"strings"
 	"testing"
-	// "text/template"
 
 	"github.com/dairycart/dairycart/api/storage/models"
 
@@ -35,26 +33,20 @@ func logBodyAndResetResponse(t *testing.T, resp *http.Response) {
 	resp.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(respStr)))
 }
 
-func createTestProduct(t *testing.T, p models.ProductCreationInput) uint64 {
+func createTestProduct(t *testing.T, p models.ProductCreationInput) models.ProductRoot {
 	t.Helper()
 	newProductJSON := createJSONBody(t, p)
 	resp, err := createProduct(newProductJSON)
 	require.Nil(t, err)
 	assertStatusCode(t, resp, http.StatusCreated)
 
-	var res models.Product
-	unmarshalBody(t, resp, &res)
-	return res.ID
-}
-
-func deleteTestProduct(t *testing.T, sku string) {
-	resp, err := deleteProduct(sku)
-	require.Nil(t, err)
-	assertStatusCode(t, resp, http.StatusOK)
+	var out models.ProductRoot
+	unmarshalBody(t, resp, &out)
+	return out
 }
 
 func deleteTestProductRoot(t *testing.T, productRootID uint64) {
-	resp, err := deleteProductRoot(strconv.Itoa(int(productRootID)))
+	resp, err := deleteProductRoot(productRootID)
 	require.Nil(t, err)
 	assertStatusCode(t, resp, http.StatusOK)
 }
@@ -193,7 +185,7 @@ func TestProductRetrievalRoute(t *testing.T) {
 	// t.Parallel()
 	t.Run("existent product", func(*testing.T) {
 		resp, err := retrieveProduct(existentSKU)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusOK)
 
 		expected := models.Product{
@@ -230,7 +222,7 @@ func TestProductRetrievalRoute(t *testing.T) {
 
 	t.Run("nonexistent product", func(*testing.T) {
 		resp, err := retrieveProduct(nonexistentSKU)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusNotFound)
 
 		var actual models.ErrorResponse
@@ -248,7 +240,7 @@ func TestProductListRoute(t *testing.T) {
 
 	t.Run("with standard filter", func(*testing.T) {
 		resp, err := retrieveListOfProducts(nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusOK)
 
 		expected := models.ListResponse{
@@ -267,7 +259,7 @@ func TestProductListRoute(t *testing.T) {
 	// 		"limit": "5",
 	// 	}
 	// 	resp, err := retrieveListOfProducts(customFilter)
-	// 	assert.Nil(t, err)
+	// 	assert.NoError(t, err)
 	// 	assertStatusCode(t, resp, http.StatusOK)
 
 	// 	expected := models.ListResponse{
@@ -308,14 +300,14 @@ func TestProductUpdateRoute(t *testing.T) {
 			PackageWidth:       9,
 			PackageLength:      9,
 		}
-		productRootID := createTestProduct(t, testProduct)
+		productRoot := createTestProduct(t, testProduct)
 		JSONBody := `{"quantity":666}`
 		resp, err := updateProduct(testSKU, JSONBody)
 		require.Nil(t, err)
 		assertStatusCode(t, resp, http.StatusOK)
 
 		expected := models.Product{
-			ProductRootID:      productRootID,
+			ProductRootID:      productRoot.ID,
 			Name:               "New Product",
 			Subtitle:           "this is a product",
 			Description:        "this product is neat or maybe its not who really knows for sure?",
@@ -341,39 +333,51 @@ func TestProductUpdateRoute(t *testing.T) {
 		var actual models.Product
 		unmarshalBody(t, resp, &actual)
 		compareProducts(t, expected, actual)
-		deleteTestProduct(t, testSKU)
 	})
 
 	t.Run("with invalid input", func(*testing.T) {
 		resp, err := updateProduct(existentSKU, exampleGarbageInput)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusBadRequest)
 
-		actual := turnResponseBodyIntoString(t, resp)
-		assert.Equal(t, expectedBadRequestResponse, actual, "product update route should respond with failure message when you try to update a product with invalid input")
+		expected := models.ErrorResponse{
+			Status:  http.StatusBadRequest,
+			Message: expectedBadRequestResponse,
+		}
+		var actual models.ErrorResponse
+		unmarshalBody(t, resp, &actual)
+		assert.Equal(t, expected, actual)
 	})
 
 	t.Run("with invalid sku", func(*testing.T) {
-		JSONBody := `{"sku": "thí% $kü ïs not åny gõôd"}`
+		badSKUProduct := models.Product{SKU: "thí% $kü ïs not åny gõôd"}
+		JSONBody := createJSONBody(t, badSKUProduct)
 		resp, err := updateProduct(existentSKU, JSONBody)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusBadRequest)
+
+		expected := models.ErrorResponse{
+			Status:  http.StatusBadRequest,
+			Message: fmt.Sprintf("The sku received (%s) is invalid", badSKUProduct.SKU),
+		}
+		var actual models.ErrorResponse
+		unmarshalBody(t, resp, &actual)
+		assert.Equal(t, expected, actual)
 	})
 
 	t.Run("for nonexistent product", func(*testing.T) {
 		JSONBody := `{"quantity":666}`
 		resp, err := updateProduct(nonexistentSKU, JSONBody)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusNotFound)
 
-		actual := turnResponseBodyIntoString(t, resp)
-		expected := minifyJSON(t, `
-			{
-				"status": 404,
-				"message": "The product you were looking for (sku 'nonexistent') does not exist"
-			}
-		`)
-		assert.Equal(t, expected, actual, "trying to update a product that doesn't exist should respond 404")
+		expected := models.ErrorResponse{
+			Status:  http.StatusNotFound,
+			Message: fmt.Sprintf("The product you were looking for (sku '%s') does not exist", nonexistentSKU),
+		}
+		var actual models.ErrorResponse
+		unmarshalBody(t, resp, &actual)
+		assert.Equal(t, expected, actual)
 	})
 }
 
@@ -409,7 +413,7 @@ func TestProductCreationRoute(t *testing.T) {
 
 		newProductJSON := createJSONBody(t, testProduct)
 		resp, err := createProduct(newProductJSON)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusCreated)
 
 		var actual models.ProductRoot
@@ -470,7 +474,7 @@ func TestProductCreationRoute(t *testing.T) {
 
 		newProductJSON := createJSONBody(t, testProduct)
 		resp, err := createProduct(newProductJSON)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusCreated)
 
 		var actual models.ProductRoot
@@ -588,7 +592,7 @@ func TestProductCreationRoute(t *testing.T) {
 
 		newProductJSON := createJSONBody(t, testProduct)
 		resp, err := createProduct(newProductJSON)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusBadRequest)
 
 		expected := models.ErrorResponse{
@@ -602,12 +606,12 @@ func TestProductCreationRoute(t *testing.T) {
 
 	t.Run("with invalid input", func(*testing.T) {
 		resp, err := createProduct(exampleGarbageInput)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusBadRequest)
 
 		expected := models.ErrorResponse{
 			Status:  http.StatusBadRequest,
-			Message: "Invalid input provided in request body",
+			Message: expectedBadRequestResponse,
 		}
 		var actual models.ErrorResponse
 		unmarshalBody(t, resp, &actual)
@@ -624,7 +628,7 @@ func TestProductDeletion(t *testing.T) {
 		createTestProduct(t, testProduct)
 
 		resp, err := deleteProduct(testSKU)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusOK)
 
 		var actual models.Product
@@ -634,7 +638,7 @@ func TestProductDeletion(t *testing.T) {
 
 	t.Run("nonexistent product", func(*testing.T) {
 		resp, err := deleteProduct(nonexistentSKU)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusNotFound)
 
 		expected := models.ErrorResponse{
@@ -652,7 +656,7 @@ func TestProductRootList(t *testing.T) {
 
 	t.Run("no filter", func(*testing.T) {
 		resp, err := retrieveProductRoots(nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusOK)
 
 		expected := models.ListResponse{
@@ -671,7 +675,7 @@ func TestProductRootList(t *testing.T) {
 	// 		"limit": "1",
 	// 	}
 	// 	resp, err := retrieveProductRoots(customFilter)
-	// 	assert.Nil(t, err)
+	// 	assert.NoError(t, err)
 	// 	assertStatusCode(t, resp, http.StatusOK)
 
 	// 	expected := models.ListResponse{
@@ -689,7 +693,7 @@ func TestProductRootRetrievalRoute(t *testing.T) {
 
 	t.Run("normal usage", func(*testing.T) {
 		resp, err := retrieveProductRoot(existentID)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusOK)
 
 		expected := models.ProductRoot{
@@ -939,12 +943,12 @@ func TestProductRootRetrievalRoute(t *testing.T) {
 
 	t.Run("nonexistent product root", func(*testing.T) {
 		resp, err := retrieveProductRoot(nonexistentID)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusNotFound)
 
 		expected := models.ErrorResponse{
 			Status:  http.StatusNotFound,
-			Message: fmt.Sprintf("The product_root you were looking for (identified by '%s') does not exist", nonexistentID),
+			Message: fmt.Sprintf("The product_root you were looking for (identified by '%d') does not exist", nonexistentID),
 		}
 		var actual models.ErrorResponse
 		unmarshalBody(t, resp, &actual)
@@ -961,15 +965,15 @@ func TestProductRootDeletionRoute(t *testing.T) {
 
 		newProductJSON := createJSONBody(t, testProduct)
 		resp, err := createProduct(newProductJSON)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusCreated)
 
 		var createdRoot models.ProductRoot
 		unmarshalBody(t, resp, &createdRoot)
 		assert.True(t, createdRoot.ArchivedOn.Time.IsZero())
 
-		resp, err = deleteProductRoot(strconv.Itoa(int(createdRoot.ID)))
-		assert.Nil(t, err)
+		resp, err = deleteProductRoot(createdRoot.ID)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusOK)
 
 		var actual models.ProductRoot
@@ -979,12 +983,12 @@ func TestProductRootDeletionRoute(t *testing.T) {
 
 	t.Run("nonexistent product root", func(*testing.T) {
 		resp, err := deleteProductRoot(nonexistentID)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusNotFound)
 
 		expected := models.ErrorResponse{
 			Status:  http.StatusNotFound,
-			Message: fmt.Sprintf("The product_root you were looking for (identified by '%s') does not exist", nonexistentID),
+			Message: fmt.Sprintf("The product_root you were looking for (identified by '%d') does not exist", nonexistentID),
 		}
 		var actual models.ErrorResponse
 		unmarshalBody(t, resp, &actual)
@@ -996,8 +1000,8 @@ func TestProductOptionListRoute(t *testing.T) {
 	// 	t.Parallel()
 
 	t.Run("no filter", func(*testing.T) {
-		resp, err := retrieveProductOptions("1", nil)
-		assert.Nil(t, err)
+		resp, err := retrieveProductOptions(1, nil)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusOK)
 
 		expected := models.ListResponse{
@@ -1016,7 +1020,7 @@ func TestProductOptionListRoute(t *testing.T) {
 	// 		"limit": "1",
 	// 	}
 	// 	resp, err := retrieveProductOptions("1", customFilter)
-	// 	assert.Nil(t, err)
+	// 	assert.NoError(t, err)
 	// 	assertStatusCode(t, resp, http.StatusOK)
 
 	// 	expected := models.ListResponse{
@@ -1040,7 +1044,7 @@ func TestProductOptionCreation(t *testing.T) {
 		testProduct := models.ProductCreationInput{SKU: testSKU}
 		newProductJSON := createJSONBody(t, testProduct)
 		resp, err := createProduct(newProductJSON)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusCreated)
 
 		var createdProductRoot models.ProductRoot
@@ -1052,9 +1056,9 @@ func TestProductOptionCreation(t *testing.T) {
 			Values: []string{"one", "two", "three"},
 		}
 		newOptionJSON := createJSONBody(t, testOption)
-		resp, err = createProductOptionForProduct(strconv.Itoa(int(createdProductRoot.ID)), newOptionJSON)
+		resp, err = createProductOptionForProduct(createdProductRoot.ID, newOptionJSON)
 
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusCreated)
 
 		expected := models.ProductOption{
@@ -1074,7 +1078,7 @@ func TestProductOptionCreation(t *testing.T) {
 		testProduct := models.ProductCreationInput{SKU: testSKU}
 		newProductJSON := createJSONBody(t, testProduct)
 		resp, err := createProduct(newProductJSON)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusCreated)
 
 		var createdProductRoot models.ProductRoot
@@ -1086,9 +1090,9 @@ func TestProductOptionCreation(t *testing.T) {
 			Values: []string{"one", "two", "three"},
 		}
 		newOptionJSON := createJSONBody(t, testOption)
-		resp, err = createProductOptionForProduct(strconv.Itoa(int(createdProductRoot.ID)), newOptionJSON)
+		resp, err = createProductOptionForProduct(createdProductRoot.ID, newOptionJSON)
 
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusCreated)
 
 		expected := models.ProductOption{
@@ -1100,19 +1104,19 @@ func TestProductOptionCreation(t *testing.T) {
 		compareProductOptions(t, expected, actual)
 
 		// create option again
-		resp, err = createProductOptionForProduct(strconv.Itoa(int(createdProductRoot.ID)), newOptionJSON)
-		assert.Nil(t, err)
+		resp, err = createProductOptionForProduct(createdProductRoot.ID, newOptionJSON)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusBadRequest)
 	})
 
 	t.Run("with invalid input", func(*testing.T) {
 		resp, err := createProductOptionForProduct(existentID, exampleGarbageInput)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusBadRequest)
 
 		expected := models.ErrorResponse{
 			Status:  http.StatusBadRequest,
-			Message: "Invalid input provided in request body",
+			Message: expectedBadRequestResponse,
 		}
 		var actual models.ErrorResponse
 		unmarshalBody(t, resp, &actual)
@@ -1129,12 +1133,12 @@ func TestProductOptionCreation(t *testing.T) {
 		newOptionJSON := createJSONBody(t, testOption)
 		resp, err := createProductOptionForProduct(nonexistentID, newOptionJSON)
 
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusNotFound)
 
 		expected := models.ErrorResponse{
 			Status:  http.StatusNotFound,
-			Message: fmt.Sprintf("The product root you were looking for (id '%s') does not exist", nonexistentID),
+			Message: fmt.Sprintf("The product root you were looking for (id '%d') does not exist", nonexistentID),
 		}
 		var actual models.ErrorResponse
 		unmarshalBody(t, resp, &actual)
@@ -1153,7 +1157,7 @@ func TestProductOptionDeletion(t *testing.T) {
 		testProduct := models.ProductCreationInput{SKU: testSKU}
 		newProductJSON := createJSONBody(t, testProduct)
 		resp, err := createProduct(newProductJSON)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusCreated)
 
 		var createdProductRoot models.ProductRoot
@@ -1165,15 +1169,15 @@ func TestProductOptionDeletion(t *testing.T) {
 			Values: []string{"one", "two", "three"},
 		}
 		newOptionJSON := createJSONBody(t, testOption)
-		resp, err = createProductOptionForProduct(strconv.Itoa(int(createdProductRoot.ID)), newOptionJSON)
-		assert.Nil(t, err)
+		resp, err = createProductOptionForProduct(createdProductRoot.ID, newOptionJSON)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusCreated)
 
 		var created models.ProductOption
 		unmarshalBody(t, resp, &created)
 
 		// clean up after yourself
-		resp, err = deleteProductOption(strconv.Itoa(int(created.ID)))
+		resp, err = deleteProductOption(created.ID)
 
 		var actual models.ProductOption
 		assert.False(t, actual.ArchivedOn.Valid)
@@ -1183,12 +1187,12 @@ func TestProductOptionDeletion(t *testing.T) {
 
 	t.Run("for nonexistent product option", func(*testing.T) {
 		resp, err := deleteProductOption(nonexistentID)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusNotFound)
 
 		expected := models.ErrorResponse{
 			Status:  http.StatusNotFound,
-			Message: fmt.Sprintf("The product option you were looking for (id '%s') does not exist", nonexistentID),
+			Message: fmt.Sprintf("The product option you were looking for (id '%d') does not exist", nonexistentID),
 		}
 		var actual models.ErrorResponse
 		unmarshalBody(t, resp, &actual)
@@ -1204,14 +1208,7 @@ func TestProductOptionUpdate(t *testing.T) {
 		testOptionName := "example_option_to_update"
 
 		// create product to attach option to
-		testProduct := models.ProductCreationInput{SKU: testSKU}
-		newProductJSON := createJSONBody(t, testProduct)
-		resp, err := createProduct(newProductJSON)
-		assert.Nil(t, err)
-		assertStatusCode(t, resp, http.StatusCreated)
-
-		var createdProductRoot models.ProductRoot
-		unmarshalBody(t, resp, &createdProductRoot)
+		createdProductRoot := createTestProduct(t, models.ProductCreationInput{SKU: testSKU})
 
 		// create option
 		testOption := models.ProductOptionCreationInput{
@@ -1219,8 +1216,8 @@ func TestProductOptionUpdate(t *testing.T) {
 			Values: []string{"one", "two", "three"},
 		}
 		newOptionJSON := createJSONBody(t, testOption)
-		resp, err = createProductOptionForProduct(strconv.Itoa(int(createdProductRoot.ID)), newOptionJSON)
-		assert.Nil(t, err)
+		resp, err := createProductOptionForProduct(createdProductRoot.ID, newOptionJSON)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusCreated)
 
 		var createdOption models.ProductOption
@@ -1229,9 +1226,9 @@ func TestProductOptionUpdate(t *testing.T) {
 		// update product option
 		optionUpdate := models.ProductOption{Name: "not_the_same"} // `{"name": "not_the_same"}`
 		optionUpdateJSON := createJSONBody(t, optionUpdate)
-		resp, err = updateProductOption(strconv.Itoa(int(createdOption.ID)), optionUpdateJSON)
+		resp, err = updateProductOption(createdOption.ID, optionUpdateJSON)
 
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusOK)
 
 		expected := models.ProductOption{
@@ -1246,17 +1243,17 @@ func TestProductOptionUpdate(t *testing.T) {
 		compareProductOptions(t, expected, actual)
 
 		// clean up after yourself
-		deleteProductOption(strconv.Itoa(int(createdOption.ID)))
+		deleteProductOption(createdOption.ID)
 	})
 
 	t.Run("with invalid input", func(*testing.T) {
 		resp, err := updateProductOption(existentID, exampleGarbageInput)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusBadRequest)
 
 		expected := models.ErrorResponse{
 			Status:  http.StatusBadRequest,
-			Message: "Invalid input provided in request body",
+			Message: expectedBadRequestResponse,
 		}
 		var actual models.ErrorResponse
 		unmarshalBody(t, resp, &actual)
@@ -1268,12 +1265,12 @@ func TestProductOptionUpdate(t *testing.T) {
 		testOptionJSON := createJSONBody(t, testOption)
 
 		resp, err := updateProductOption(nonexistentID, testOptionJSON)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assertStatusCode(t, resp, http.StatusNotFound)
 
 		expected := models.ErrorResponse{
 			Status:  http.StatusNotFound,
-			Message: fmt.Sprintf("The product option you were looking for (id '%s') does not exist", nonexistentID),
+			Message: fmt.Sprintf("The product option you were looking for (id '%d') does not exist", nonexistentID),
 		}
 		var actual models.ErrorResponse
 		unmarshalBody(t, resp, &actual)
@@ -1282,103 +1279,264 @@ func TestProductOptionUpdate(t *testing.T) {
 }
 
 func TestProductOptionValueCreation(t *testing.T) {
-	// t.Paralle()
+	// t.Parallel()
 
 	t.Run("normal usage", func(*testing.T) {
 		testOptionName := "example_option_value_to_create"
 		testSKU := "test-option-value-creation-sku"
+		testValue := "test value"
 
 		// create product to attach option to
 		testProduct := models.ProductCreationInput{SKU: testSKU}
-		newProductJSON := createJSONBody(t, testProduct)
-		resp, err := createProduct(newProductJSON)
-		require.Nil(t, err)
-
-		var createdProductRoot models.ProductRoot
-		unmarshalBody(t, resp, &createdProductRoot)
+		createdProductRoot := createTestProduct(t, testProduct)
 
 		// create option
-		testOption := models.ProductOptionCreationInput{
-			Name:   testOptionName,
-			Values: []string{"one", "two", "three"},
-		}
+		testOption := models.ProductOptionCreationInput{Name: testOptionName, Values: []string{"one", "two", "three"}}
 		newOptionJSON := createJSONBody(t, testOption)
-		resp, err = createProductOptionForProduct(strconv.Itoa(int(createdProductRoot.ID)), newOptionJSON)
+		resp, err := createProductOptionForProduct(createdProductRoot.ID, newOptionJSON)
 		require.Nil(t, err)
 
-		expected := models.ProductOption{
-			Name:   testOptionName,
-			Values: []models.ProductOptionValue{{Value: "one"}, {Value: "two"}, {Value: "three"}},
-		}
-		var actual models.ProductOption
-		unmarshalBody(t, resp, &actual)
-		compareProductOptions(t, expected, actual)
+		var option models.ProductOption
+		unmarshalBody(t, resp, &option)
 
-		// newOptionValueJSON := createProductOptionValueBody(testValue)
-		// resp, err := createProductOptionValueForOption(existentID, newOptionValueJSON)
-		// assert.Nil(t, err)
-		// assertStatusCode(t, resp, http.StatusCreated)
+		expected := models.ProductOptionValue{
+			ProductOptionID: option.ID,
+			Value:           testValue,
+		}
+
+		newOptionValueJSON := createJSONBody(t, expected)
+		resp, err = createProductOptionValueForOption(option.ID, newOptionValueJSON)
+		assert.NoError(t, err)
+
+		var actual models.ProductOptionValue
+		unmarshalBody(t, resp, &actual)
+		compareProductOptionValues(t, expected, actual)
 	})
 
 	t.Run("with invalid input", func(*testing.T) {
+		testOptionName := "example_option_value_with_invalid_input"
+		testSKU := "test-option-value-creation-invalid-input-sku"
 
+		// create product to attach option to
+		testProduct := models.ProductCreationInput{SKU: testSKU}
+		createdProductRoot := createTestProduct(t, testProduct)
+
+		// create option
+		testOption := models.ProductOptionCreationInput{Name: testOptionName, Values: []string{"one", "two", "three"}}
+		newOptionJSON := createJSONBody(t, testOption)
+		resp, err := createProductOptionForProduct(createdProductRoot.ID, newOptionJSON)
+		require.Nil(t, err)
+
+		var option models.ProductOption
+		unmarshalBody(t, resp, &option)
+
+		resp, err = createProductOptionValueForOption(option.ID, exampleGarbageInput)
+		assert.NoError(t, err)
+		assertStatusCode(t, resp, http.StatusBadRequest)
+
+		expected := models.ErrorResponse{
+			Status:  http.StatusBadRequest,
+			Message: expectedBadRequestResponse,
+		}
+		var actual models.ErrorResponse
+		unmarshalBody(t, resp, &actual)
+		assert.Equal(t, expected, actual)
 	})
 
 	t.Run("for nonexistent option", func(*testing.T) {
+		newOptionValueJSON := createJSONBody(t, models.ProductOptionValue{ProductOptionID: existentID})
+		resp, err := createProductOptionValueForOption(nonexistentID, newOptionValueJSON)
+		assert.NoError(t, err)
+		assertStatusCode(t, resp, http.StatusNotFound)
 
+		expected := models.ErrorResponse{
+			Status:  http.StatusNotFound,
+			Message: fmt.Sprintf("The product option you were looking for (id '%d') does not exist", nonexistentID),
+		}
+		var actual models.ErrorResponse
+		unmarshalBody(t, resp, &actual)
+		assert.Equal(t, expected, actual)
 	})
 
 	t.Run("with duplicate value", func(*testing.T) {
+		testOptionName := "example_option_value_fails_with_duplicates"
+		testSKU := "example-option-value-fails-with-duplicates"
+		testValue := "test value"
 
+		// create product to attach option to
+		createdProductRoot := createTestProduct(t, models.ProductCreationInput{SKU: testSKU})
+
+		// create option
+		testOption := models.ProductOptionCreationInput{Name: testOptionName, Values: []string{"one", "two", "three"}}
+		newOptionJSON := createJSONBody(t, testOption)
+		resp, err := createProductOptionForProduct(createdProductRoot.ID, newOptionJSON)
+		require.Nil(t, err)
+
+		var option models.ProductOption
+		unmarshalBody(t, resp, &option)
+
+		productOptionValue := models.ProductOptionValue{
+			ProductOptionID: option.ID,
+			Value:           testValue,
+		}
+
+		newOptionValueJSON := createJSONBody(t, productOptionValue)
+		_, err = createProductOptionValueForOption(option.ID, newOptionValueJSON)
+		assert.NoError(t, err)
+		resp, err = createProductOptionValueForOption(option.ID, newOptionValueJSON)
+		assert.NoError(t, err)
+
+		expected := models.ErrorResponse{
+			Status:  http.StatusBadRequest,
+			Message: fmt.Sprintf("product option value 'test value' already exists for option ID %d", option.ID),
+		}
+		var actual models.ErrorResponse
+		unmarshalBody(t, resp, &actual)
+		assert.Equal(t, expected, actual)
 	})
 }
 
+func createTestProductOptionValue(t *testing.T, sku, optionName string, value models.ProductOptionValue) models.ProductOptionValue {
+	// create product to attach option to
+	testProduct := models.ProductCreationInput{SKU: sku}
+	createdProductRoot := createTestProduct(t, testProduct)
+
+	// create option
+	newOptionJSON := createJSONBody(t, models.ProductOptionCreationInput{Name: optionName, Values: []string{"one", "two", "three"}})
+	resp, err := createProductOptionForProduct(createdProductRoot.ID, newOptionJSON)
+	require.Nil(t, err)
+
+	var option models.ProductOption
+	unmarshalBody(t, resp, &option)
+
+	value.ProductOptionID = option.ID
+	newOptionValueJSON := createJSONBody(t, option)
+	resp, err = createProductOptionValueForOption(option.ID, newOptionValueJSON)
+	assert.NoError(t, err)
+
+	var actual models.ProductOptionValue
+	unmarshalBody(t, resp, &actual)
+
+	return actual
+}
+
 func TestProductOptionValueUpdate(t *testing.T) {
-	// t.Paralle()
+	// t.Parallel()
 
 	t.Run("normal usage", func(*testing.T) {
-		// newOptionJSON := createProductOptionCreationBody(testOptionName)
-		// createdProductRootIDString := strconv.Itoa(int(createdProductRootID))
-		// resp, err := createProductOptionForProduct(createdProductRootIDString, newOptionJSON)
-		// assert.Nil(t, err)
-		// assertStatusCode(t, resp, http.StatusCreated)
+		testOptionName := "example_option_value_to_update"
+		testSKU := "test-option-value-update-sku"
+		testValue := "test value updating"
+
+		exampleInput := models.ProductOptionValue{Value: testValue}
+		optionValue := createTestProductOptionValue(t, testSKU, testOptionName, exampleInput)
+
+		expected := models.ProductOptionValue{
+			ProductOptionID: optionValue.ProductOptionID,
+			Value:           "new value",
+		}
+		updatedOptionJSON := createJSONBody(t, expected)
+
+		resp, err := updateProductOptionValueForOption(optionValue.ProductOptionID, updatedOptionJSON)
+		assert.NoError(t, err)
+
+		var actual models.ProductOptionValue
+		unmarshalBody(t, resp, &actual)
+		compareProductOptionValues(t, expected, actual)
 	})
 
 	t.Run("with invalid input", func(*testing.T) {
+		testOptionName := "example_option_value_to_update_with_invalid_input"
+		testSKU := "test-option-value-update-with-invalid-input-sku"
+		testValue := "test value updating with invalid input"
 
+		exampleInput := models.ProductOptionValue{Value: testValue}
+		optionValue := createTestProductOptionValue(t, testSKU, testOptionName, exampleInput)
+
+		resp, err := updateProductOptionValueForOption(optionValue.ProductOptionID, exampleGarbageInput)
+		assert.NoError(t, err)
+
+		expected := models.ErrorResponse{
+			Status:  http.StatusBadRequest,
+			Message: expectedBadRequestResponse,
+		}
+		var actual models.ErrorResponse
+		unmarshalBody(t, resp, &actual)
+		assert.Equal(t, expected, actual)
 	})
 
 	t.Run("for nonexistent option value", func(*testing.T) {
+		exampleInput := models.ProductOptionValue{
+			ProductOptionID: nonexistentID,
+			Value:           "new value",
+		}
+		updatedOptionJSON := createJSONBody(t, exampleInput)
 
+		resp, err := updateProductOptionValueForOption(nonexistentID, updatedOptionJSON)
+		assert.NoError(t, err)
+
+		expected := models.ErrorResponse{
+			Status:  http.StatusNotFound,
+			Message: fmt.Sprintf("The product option value you were looking for (id '%d') does not exist", nonexistentID),
+		}
+		var actual models.ErrorResponse
+		unmarshalBody(t, resp, &actual)
+		assert.Equal(t, expected, actual)
 	})
 
 	t.Run("with duplicate value", func(*testing.T) {
-		// 	// Say you have a product option called `color`, and it has three values (`red`, `green`, and `blue`).
-		// 	// Let's say you try to change `red` to `blue` for whatever reason. That will fail at the database level,
-		// 	// because the schema ensures a unique combination of value and option ID and archived date.
+		// Say you have a product option called `color`, and it has three values (`red`, `green`, and `blue`).
+		// Let's say you try to change `red` to `blue` for whatever reason. That will fail at the database level,
+		// because the schema ensures a unique combination of value and option ID and archived date.
+		exampleInput := models.ProductOptionValue{
+			ProductOptionID: existentID,
+			Value:           "green",
+		}
+		updatedOptionJSON := createJSONBody(t, exampleInput)
+		resp, err := updateProductOptionValueForOption(existentID, updatedOptionJSON)
+		assert.NoError(t, err)
 
+		expected := models.ErrorResponse{
+			Status:  http.StatusInternalServerError,
+			Message: expectedInternalErrorResponse,
+		}
+		var actual models.ErrorResponse
+		unmarshalBody(t, resp, &actual)
+		assert.Equal(t, expected, actual)
 	})
 }
 
 func TestProductOptionValueDeletion(t *testing.T) {
-	// t.Paralle()
+	// t.Parallel()
 
 	t.Run("normal usage", func(*testing.T) {
-		// newOptionValueJSON := createProductOptionValueBody(testValue)
-		// resp, err := createProductOptionValueForOption(existentID, newOptionValueJSON)
-		// assert.Nil(t, err)
-		// assertStatusCode(t, resp, http.StatusCreated)
-		// body := turnResponseBodyIntoString(t, resp)
-		// createdOptionValueID = retrieveIDFromResponseBody(t, body)
+		testOptionName := "example_option_value_to_delete"
+		testSKU := "test-option-value-delete-sku"
+		testValue := "test value deletion"
 
-		// resp, err := deleteProductOptionValueForOption(strconv.Itoa(int(createdOptionValueID)))
-		// assert.Nil(t, err)
-		// assertStatusCode(t, resp, http.StatusOK)
+		exampleInput := models.ProductOptionValue{Value: testValue}
+		optionValue := createTestProductOptionValue(t, testSKU, testOptionName, exampleInput)
+
+		resp, err := deleteProductOptionValueForOption(optionValue.ID)
+		assert.NoError(t, err)
+		assertStatusCode(t, resp, http.StatusOK)
+
+		var actual models.Product
+		unmarshalBody(t, resp, &actual)
+		assert.False(t, actual.ArchivedOn.Time.IsZero())
 	})
 
 	t.Run("for nonexistent option value", func(*testing.T) {
-		// 	resp, err := deleteProductOptionValueForOption(nonexistentID)
-		// 	assert.Nil(t, err)
-		// 	assertStatusCode(t, resp, http.StatusNotFound)
+		resp, err := deleteProductOptionValueForOption(nonexistentID)
+		assert.NoError(t, err)
+		assertStatusCode(t, resp, http.StatusNotFound)
+
+		expected := models.ErrorResponse{
+			Status:  http.StatusNotFound,
+			Message: fmt.Sprintf("The product option value you were looking for (id '%d') does not exist", nonexistentID),
+		}
+		var actual models.ErrorResponse
+		unmarshalBody(t, resp, &actual)
+		assert.Equal(t, expected, actual)
 	})
 }

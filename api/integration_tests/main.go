@@ -65,8 +65,18 @@ func init() {
 //                                                    //
 ////////////////////////////////////////////////////////
 
-func buildPath(parts ...string) string {
-	return fmt.Sprintf("%s/%s/%s", baseURL, currentAPIVersion, strings.Join(parts, "/"))
+func buildPath(parts ...interface{}) string {
+	stringParts := []string{}
+	for _, p := range parts {
+		switch part := p.(type) {
+		case string:
+			stringParts = append(stringParts, part)
+		case uint64:
+			stringParts = append(stringParts, fmt.Sprintf("%d", part))
+		}
+	}
+
+	return fmt.Sprintf("%s/%s/%s", baseURL, currentAPIVersion, strings.Join(stringParts, "/"))
 }
 
 func buildVersionlessPath(parts ...string) string {
@@ -241,7 +251,7 @@ func deleteProduct(sku string) (*http.Response, error) {
 //                                                    //
 ////////////////////////////////////////////////////////
 
-func retrieveProductRoot(rootID string) (*http.Response, error) {
+func retrieveProductRoot(rootID uint64) (*http.Response, error) {
 	u := buildPath("product_root", rootID)
 	req, _ := http.NewRequest(http.MethodGet, u, nil)
 	return requester.ExecuteRequestAsRegularUser(req)
@@ -254,7 +264,7 @@ func retrieveProductRoots(queryFilter map[string]string) (*http.Response, error)
 	return requester.ExecuteRequestAsRegularUser(req)
 }
 
-func deleteProductRoot(rootID string) (*http.Response, error) {
+func deleteProductRoot(rootID uint64) (*http.Response, error) {
 	u := buildPath("product_root", rootID)
 	req, _ := http.NewRequest(http.MethodDelete, u, nil)
 	return requester.ExecuteRequestAsRegularUser(req)
@@ -266,28 +276,28 @@ func deleteProductRoot(rootID string) (*http.Response, error) {
 //                                                    //
 ////////////////////////////////////////////////////////
 
-func retrieveProductOptions(productID string, queryFilter map[string]string) (*http.Response, error) {
+func retrieveProductOptions(productID uint64, queryFilter map[string]string) (*http.Response, error) {
 	path := buildPath("product", productID, "options")
 	u := buildURL(path, queryFilter)
 	req, _ := http.NewRequest(http.MethodGet, u, nil)
 	return requester.ExecuteRequestAsRegularUser(req)
 }
 
-func createProductOptionForProduct(productID string, JSONBody string) (*http.Response, error) {
+func createProductOptionForProduct(productID uint64, JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
 	u := buildPath("product", productID, "options")
 	req, _ := http.NewRequest(http.MethodPost, u, body)
 	return requester.ExecuteRequestAsRegularUser(req)
 }
 
-func updateProductOption(optionID string, JSONBody string) (*http.Response, error) {
+func updateProductOption(optionID uint64, JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
 	u := buildPath("product_options", optionID)
 	req, _ := http.NewRequest(http.MethodPatch, u, body)
 	return requester.ExecuteRequestAsRegularUser(req)
 }
 
-func deleteProductOption(optionID string) (*http.Response, error) {
+func deleteProductOption(optionID uint64) (*http.Response, error) {
 	u := buildPath("product_options", optionID)
 	req, _ := http.NewRequest(http.MethodDelete, u, nil)
 	return requester.ExecuteRequestAsRegularUser(req)
@@ -299,22 +309,22 @@ func deleteProductOption(optionID string) (*http.Response, error) {
 //                                                    //
 ////////////////////////////////////////////////////////
 
-func createProductOptionValueForOption(optionID string, JSONBody string) (*http.Response, error) {
+func createProductOptionValueForOption(optionID uint64, JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
 	u := buildPath("product_options", optionID, "value")
 	req, _ := http.NewRequest(http.MethodPost, u, body)
 	return requester.ExecuteRequestAsRegularUser(req)
 }
 
-func updateProductOptionValueForOption(valueID string, JSONBody string) (*http.Response, error) {
+func updateProductOptionValueForOption(valueID uint64, JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
 	u := buildPath("product_option_values", valueID)
 	req, _ := http.NewRequest(http.MethodPatch, u, body)
 	return requester.ExecuteRequestAsRegularUser(req)
 }
 
-func deleteProductOptionValueForOption(optionID string) (*http.Response, error) {
-	u := buildPath("product_option_values", optionID)
+func deleteProductOptionValueForOption(optionValueID uint64) (*http.Response, error) {
+	u := buildPath("product_option_values", optionValueID)
 	req, _ := http.NewRequest(http.MethodDelete, u, nil)
 	return requester.ExecuteRequestAsRegularUser(req)
 }
@@ -325,7 +335,7 @@ func deleteProductOptionValueForOption(optionID string) (*http.Response, error) 
 //                                                    //
 ////////////////////////////////////////////////////////
 
-func getDiscountByID(discountID string) (*http.Response, error) {
+func getDiscountByID(discountID uint64) (*http.Response, error) {
 	u := buildPath("discount", discountID)
 	req, _ := http.NewRequest(http.MethodGet, u, nil)
 	return requester.ExecuteRequestAsRegularUser(req)
@@ -345,14 +355,14 @@ func createDiscount(JSONBody string) (*http.Response, error) {
 	return requester.ExecuteRequestAsRegularUser(req)
 }
 
-func updateDiscount(discountID string, JSONBody string) (*http.Response, error) {
+func updateDiscount(discountID uint64, JSONBody string) (*http.Response, error) {
 	u := buildPath("discount", discountID)
 	body := strings.NewReader(JSONBody)
 	req, _ := http.NewRequest(http.MethodPatch, u, body)
 	return requester.ExecuteRequestAsRegularUser(req)
 }
 
-func deleteDiscount(discountID string) (*http.Response, error) {
+func deleteDiscount(discountID uint64) (*http.Response, error) {
 	u := buildPath("discount", discountID)
 	req, _ := http.NewRequest(http.MethodDelete, u, nil)
 	return requester.ExecuteRequestAsRegularUser(req)

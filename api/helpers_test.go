@@ -104,7 +104,7 @@ func buildCookieForRequest(t *testing.T, store *sessions.CookieStore, authorized
 	session.Values[sessionAdminKeyName] = admin
 
 	encoded, err := securecookie.EncodeMulti(session.Name(), session.Values, store.Codecs...)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	cookie := sessions.NewCookie(session.Name(), encoded, session.Options)
 
 	return cookie, nil
@@ -357,7 +357,7 @@ func TestValidateRequestInput(t *testing.T) {
 	actual := &UserCreationInput{}
 	err := validateRequestInput(req, actual)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, actual)
 }
 

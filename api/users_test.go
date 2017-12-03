@@ -39,10 +39,10 @@ func TestValidateSessionCookieMiddleware(t *testing.T) {
 	testUtil := setupTestVariablesWithMock(t)
 
 	req, err := http.NewRequest(http.MethodGet, "", nil)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	session, err := testUtil.Store.Get(req, dairycartCookieName)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	session.Values[sessionAuthorizedKeyName] = true
 	session.Save(req, testUtil.Response)
 
@@ -61,7 +61,7 @@ func TestValidateSessionCookieMiddlewareWithInvalidCookie(t *testing.T) {
 	testUtil := setupTestVariablesWithMock(t)
 
 	req, err := http.NewRequest(http.MethodGet, "", nil)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	validateSessionCookieMiddleware(testUtil.Response, req, testUtil.Store, exampleHandler)
 	assert.False(t, handlerWasCalled)
@@ -105,7 +105,7 @@ func TestCreateUserFromInput(t *testing.T) {
 	}
 
 	actual, err := createUserFromInput(exampleUserInput)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	assert.Equal(t, expected.FirstName, actual.FirstName, "FirstName fields should match")
 	assert.Equal(t, expected.LastName, actual.LastName, "LastName fields should match")
@@ -139,7 +139,7 @@ func TestCreateUserFromUpdateInput(t *testing.T) {
 func TestGenerateSalt(t *testing.T) {
 	t.Parallel()
 	salt, err := generateSalt()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, saltSize, len(salt), fmt.Sprintf("Generated salt should be %d bytes large", saltSize))
 }
 
@@ -149,7 +149,7 @@ func TestSaltAndHashPassword(t *testing.T) {
 	saltedPass := append(salt, examplePassword...)
 
 	actual, err := saltAndHashPassword(examplePassword, salt)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Nil(t, bcrypt.CompareHashAndPassword([]byte(actual), saltedPass))
 }
 
@@ -157,7 +157,7 @@ func TestPasswordMatches(t *testing.T) {
 	t.Parallel()
 
 	saltedPasswordHash, err := saltAndHashPassword(examplePassword, dummySalt)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	exampleUser := &models.User{
 		Password: saltedPasswordHash,
 		Salt:     dummySalt,
@@ -171,7 +171,7 @@ func TestPasswordMatchesFailsWhenPasswordsDoNotMatch(t *testing.T) {
 	t.Parallel()
 
 	saltedPasswordHash, err := saltAndHashPassword(examplePassword, dummySalt)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	exampleUser := &models.User{
 		Password: saltedPasswordHash,
 		Salt:     dummySalt,
@@ -185,7 +185,7 @@ func TestPasswordMatchesWithVeryLongPassword(t *testing.T) {
 	t.Parallel()
 
 	saltedPasswordHash, err := saltAndHashPassword(examplePassword, dummySalt)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	exampleUser := &models.User{
 		Password: saltedPasswordHash,
 		Salt:     dummySalt,
@@ -242,7 +242,7 @@ func TestUserCreationHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusCreated)
 	})
@@ -254,7 +254,7 @@ func TestUserCreationHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusBadRequest)
 	})
@@ -266,7 +266,7 @@ func TestUserCreationHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleAdminInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusForbidden)
 	})
@@ -276,7 +276,7 @@ func TestUserCreationHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleGarbageInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusBadRequest)
 	})
@@ -286,7 +286,7 @@ func TestUserCreationHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		attachBadCookieToRequest(req)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusBadRequest)
@@ -301,7 +301,7 @@ func TestUserCreationHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	})
@@ -338,7 +338,7 @@ func TestUserLoginHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assert.Contains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
 		assertStatusCode(t, testUtil, http.StatusOK)
@@ -355,7 +355,7 @@ func TestUserLoginHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleGarbageInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
 		assertStatusCode(t, testUtil, http.StatusBadRequest)
@@ -368,7 +368,7 @@ func TestUserLoginHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
 		assertStatusCode(t, testUtil, http.StatusUnauthorized)
@@ -381,7 +381,7 @@ func TestUserLoginHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -396,7 +396,7 @@ func TestUserLoginHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
 		assertStatusCode(t, testUtil, http.StatusNotFound)
@@ -411,7 +411,7 @@ func TestUserLoginHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -428,7 +428,7 @@ func TestUserLoginHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -453,7 +453,7 @@ func TestUserLoginHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(invalidInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
 		assertStatusCode(t, testUtil, http.StatusUnauthorized)
@@ -471,7 +471,7 @@ func TestUserLoginHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		attachBadCookieToRequest(req)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assert.NotContains(t, testUtil.Response.HeaderMap, "Set-Cookie", "login handler should attach a cookie when request is valid")
@@ -485,7 +485,7 @@ func TestUserLogoutHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/logout", nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 		assert.Contains(t, testUtil.Response.HeaderMap, "Set-Cookie", "logout handler should attach a cookie when request is valid")
@@ -497,7 +497,7 @@ func TestUserLogoutHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/logout", nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		attachBadCookieToRequest(req)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
@@ -519,10 +519,10 @@ func TestUserDeletionHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		cookie, err := buildCookieForRequest(t, testUtil.Store, true, true)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		req.AddCookie(cookie)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -536,7 +536,7 @@ func TestUserDeletionHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusNotFound)
@@ -551,7 +551,7 @@ func TestUserDeletionHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		attachBadCookieToRequest(req)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -567,9 +567,9 @@ func TestUserDeletionHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		cookie, err := buildCookieForRequest(t, testUtil.Store, true, false)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		req.AddCookie(cookie)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -585,10 +585,10 @@ func TestUserDeletionHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		cookie, err := buildCookieForRequest(t, testUtil.Store, true, true)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		req.AddCookie(cookie)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -625,7 +625,7 @@ func TestUserForgottenPasswordHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusOK)
 	})
@@ -635,7 +635,7 @@ func TestUserForgottenPasswordHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleGarbageInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusBadRequest)
 	})
@@ -647,7 +647,7 @@ func TestUserForgottenPasswordHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusNotFound)
 	})
@@ -659,7 +659,7 @@ func TestUserForgottenPasswordHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	})
@@ -673,7 +673,7 @@ func TestUserForgottenPasswordHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusBadRequest)
 	})
@@ -689,7 +689,7 @@ func TestUserForgottenPasswordHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	})
@@ -704,7 +704,7 @@ func TestPasswordResetValidationHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodHead, fmt.Sprintf("/password_reset/%s", exampleResetToken), nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusOK)
@@ -717,7 +717,7 @@ func TestPasswordResetValidationHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodHead, fmt.Sprintf("/password_reset/%s", exampleResetToken), nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusNotFound)
@@ -753,7 +753,7 @@ func TestUserUpdateHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/user/%d", exampleUser.ID), strings.NewReader(exampleUserUpdateInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusOK)
@@ -764,7 +764,7 @@ func TestUserUpdateHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/user/%d", exampleUser.ID), strings.NewReader(exampleGarbageInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusBadRequest)
@@ -784,7 +784,7 @@ func TestUserUpdateHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/user/%d", exampleUser.ID), strings.NewReader(exampleInvalidUserUpdateInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusBadRequest)
@@ -797,7 +797,7 @@ func TestUserUpdateHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/user/%d", exampleUser.ID), strings.NewReader(exampleUserUpdateInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusNotFound)
@@ -810,7 +810,7 @@ func TestUserUpdateHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/user/%d", exampleUser.ID), strings.NewReader(exampleUserUpdateInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -832,7 +832,7 @@ func TestUserUpdateHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/user/%d", exampleUser.ID), strings.NewReader(exampleInvalidUserUpdateInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusUnauthorized)
@@ -856,7 +856,7 @@ func TestUserUpdateHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/user/%d", exampleUser.ID), strings.NewReader(exampleUserUpdateInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusOK)
@@ -871,7 +871,7 @@ func TestUserUpdateHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/user/%d", exampleUser.ID), strings.NewReader(exampleUserUpdateInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)

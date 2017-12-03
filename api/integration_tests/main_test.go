@@ -1,20 +1,19 @@
 package dairytest
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"regexp"
-	"bytes"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tdewolff/minify"
-
-	jsonMinify "github.com/tdewolff/minify/json"
 	"github.com/stretchr/testify/require"
+	"github.com/tdewolff/minify"
+	jsonMinify "github.com/tdewolff/minify/json"
 )
 
 const (
@@ -29,14 +28,14 @@ const (
 	timeFieldReplacementPattern         = `(?U)(,?)"(created_on|updated_on|archived_on)":"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z)?"(,?)`
 	discountTimeFieldReplacementPattern = `(?U)(,?)"(starts_on|expires_on)":"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?(Z|\+\d{2}:\d{2}))?"(,?)`
 
-	existentID     = "1"
-	nonexistentID  = "999999999"
+	existentID     = uint64(1)
+	nonexistentID  = uint64(999999999)
 	existentSKU    = "t-shirt-small-red"
 	nonexistentSKU = "nonexistent"
 
 	exampleGarbageInput           = `{"testing_garbage_input": true}`
-	expectedBadRequestResponse    = `{"status":400,"message":"Invalid input provided in request body"}`
-	expectedInternalErrorResponse = `{"status":500,"message":"Unexpected internal error occurred"}`
+	expectedBadRequestResponse    = `Invalid input provided in request body`
+	expectedInternalErrorResponse = `Unexpected internal error occurred`
 )
 
 type listResponse struct {
@@ -98,7 +97,7 @@ func retrieveProductIDFromResponseBody(t *testing.T, body string) uint64 {
 		} `json:"products"`
 	}{}
 	err := json.Unmarshal([]byte(body), &idContainer)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotEmpty(t, idContainer)
 	assert.NotZero(t, idContainer.Products[0].ID, fmt.Sprintf("ID should not be zero, body is:\n%s", body))
 
@@ -111,7 +110,7 @@ func retrieveIDFromResponseBody(t *testing.T, body string) uint64 {
 		ID uint64 `json:"id"`
 	}{}
 	err := json.Unmarshal([]byte(body), &idContainer)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotEmpty(t, idContainer)
 	assert.NotZero(t, idContainer.ID, fmt.Sprintf("ID should not be zero, body is:\n%s", body))
 
@@ -124,7 +123,7 @@ func retrieveProductRootIDFromResponseBody(t *testing.T, body string) uint64 {
 		ID uint64 `json:"product_root_id"`
 	}{}
 	err := json.Unmarshal([]byte(body), &idContainer)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotEmpty(t, idContainer)
 	assert.NotZero(t, idContainer.ID, fmt.Sprintf("ID should not be zero, body is:\n%s", body))
 
@@ -135,7 +134,7 @@ func parseResponseIntoStruct(t *testing.T, body string) listResponse {
 	t.Helper()
 	lr := listResponse{}
 	err := json.Unmarshal([]byte(body), &lr)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotEmpty(t, lr)
 
 	return lr

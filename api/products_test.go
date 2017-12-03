@@ -43,10 +43,10 @@ func TestCreateProductsInDBFromOptionRows(t *testing.T) {
 			Return(nil)
 
 		tx, err := testUtil.PlainDB.Begin()
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		actual, err := createProductsInDBFromOptionRows(testUtil.MockDB, tx, exampleProductRoot, exampleProduct)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, actual)
 	})
 
@@ -58,7 +58,7 @@ func TestCreateProductsInDBFromOptionRows(t *testing.T) {
 			Return(exampleID, generateExampleTimeForTests(), generateExampleTimeForTests(), generateArbitraryError())
 
 		tx, err := testUtil.PlainDB.Begin()
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		_, err = createProductsInDBFromOptionRows(testUtil.MockDB, tx, exampleProductRoot, exampleProduct)
 		assert.NotNil(t, err)
@@ -74,7 +74,7 @@ func TestProductExistenceHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest("HEAD", "/v1/product/example", nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 		assertStatusCode(t, testUtil, http.StatusOK)
@@ -85,7 +85,7 @@ func TestProductExistenceHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest("HEAD", "/v1/product/example", nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 		assertStatusCode(t, testUtil, http.StatusNotFound)
@@ -96,7 +96,7 @@ func TestProductExistenceHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest("HEAD", "/v1/product/example", nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 		assertStatusCode(t, testUtil, http.StatusNotFound)
@@ -131,7 +131,7 @@ func TestProductRetrievalHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusOK)
@@ -144,7 +144,7 @@ func TestProductRetrievalHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -157,7 +157,7 @@ func TestProductRetrievalHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusNotFound)
@@ -196,7 +196,7 @@ func TestProductListHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/products", nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusOK)
@@ -208,7 +208,7 @@ func TestProductListHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/products", nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -222,7 +222,7 @@ func TestProductListHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/products", nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -267,7 +267,7 @@ func TestProductUpdateHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), strings.NewReader(exampleProductUpdateInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 		assertStatusCode(t, testUtil, http.StatusOK)
@@ -280,7 +280,7 @@ func TestProductUpdateHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), strings.NewReader(exampleProductUpdateInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusNotFound)
@@ -292,7 +292,7 @@ func TestProductUpdateHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), strings.NewReader(exampleProductUpdateInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -303,7 +303,7 @@ func TestProductUpdateHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPatch, "/v1/product/example", strings.NewReader(exampleGarbageInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusBadRequest)
@@ -315,7 +315,7 @@ func TestProductUpdateHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPatch, "/v1/product/skateboard", strings.NewReader(badSKUUpdateJSON))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusBadRequest)
@@ -328,7 +328,7 @@ func TestProductUpdateHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), strings.NewReader(exampleProductUpdateInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -356,7 +356,7 @@ func TestProductDeletionHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusOK)
@@ -369,7 +369,7 @@ func TestProductDeletionHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusNotFound)
@@ -382,7 +382,7 @@ func TestProductDeletionHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -396,7 +396,7 @@ func TestProductDeletionHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -413,7 +413,7 @@ func TestProductDeletionHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -434,7 +434,7 @@ func TestProductDeletionHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -453,7 +453,7 @@ func TestProductDeletionHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -598,7 +598,7 @@ func TestProductCreationHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 		assertStatusCode(t, testUtil, http.StatusCreated)
@@ -619,7 +619,7 @@ func TestProductCreationHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 		assertStatusCode(t, testUtil, http.StatusCreated)
@@ -631,7 +631,7 @@ func TestProductCreationHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleGarbageInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 		assertStatusCode(t, testUtil, http.StatusBadRequest)
@@ -643,7 +643,7 @@ func TestProductCreationHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(badSKUUpdateJSON))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 		assertStatusCode(t, testUtil, http.StatusBadRequest)
@@ -655,7 +655,7 @@ func TestProductCreationHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 		assertStatusCode(t, testUtil, http.StatusBadRequest)
@@ -669,7 +669,7 @@ func TestProductCreationHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -686,7 +686,7 @@ func TestProductCreationHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -705,7 +705,7 @@ func TestProductCreationHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInput))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -725,7 +725,7 @@ func TestProductCreationHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -745,7 +745,7 @@ func TestProductCreationHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -770,7 +770,7 @@ func TestProductCreationHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
@@ -795,7 +795,7 @@ func TestProductCreationHandler(t *testing.T) {
 		SetupAPIRoutes(testUtil.Router, testUtil.PlainDB, testUtil.Store, testUtil.MockDB)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
