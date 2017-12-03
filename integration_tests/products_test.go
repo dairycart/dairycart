@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dairycart/dairymodels"
+	"github.com/dairycart/dairycart/api/storage/models"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

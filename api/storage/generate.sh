@@ -1,6 +1,6 @@
 set -e
 gnorm gen --config="gnorm.toml" # --verbose
-cp -rf models ../../integration_tests/vendor/github.com/dairycart/dairymodels
+cp -rf models ../../integration_tests/vendor/github.com/dairycart/dairycart/api/storage/models
 
 if [ -z "$1" ]; then
     go test github.com/dairycart/dairycart/api/storage/postgres -cover
