@@ -76,24 +76,23 @@ func TestDiscountListRoute(t *testing.T) {
 		compareListResponses(t, expected, actual)
 	})
 
-	// FIXME
-	// t.Run("with custom filter", func(*testing.T) {
-	// 	customFilter := map[string]string{
-	// 		"page":  "2",
-	// 		"limit": "5",
-	// 	}
-	// 	resp, err := getListOfDiscounts(customFilter)
-	// 	assert.NoError(t, err)
-	// 	assertStatusCode(t, resp, http.StatusOK)
+	t.Run("with custom filter", func(*testing.T) {
+		customFilter := map[string]string{
+			"page":  "2",
+			"limit": "5",
+		}
+		resp, err := getListOfDiscounts(customFilter)
+		assert.NoError(t, err)
+		assertStatusCode(t, resp, http.StatusOK)
 
-	// 	expected := models.ListResponse{
-	// 		Limit: 5,
-	// 		Page:  2,
-	// 	}
-	// 	var actual models.ListResponse
-	// 	unmarshalBody(t, resp, &actual)
-	// 	compareListResponses(t, expected, actual)
-	// })
+		expected := models.ListResponse{
+			Limit: 5,
+			Page:  2,
+		}
+		var actual models.ListResponse
+		unmarshalBody(t, resp, &actual)
+		compareListResponses(t, expected, actual)
+	})
 }
 
 func TestDiscountCreationRoute(t *testing.T) {

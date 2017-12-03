@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"net/http"
 	"net/url"
@@ -13,9 +14,9 @@ import (
 
 	"github.com/dairycart/dairycart/api/storage/models"
 
-	validator "github.com/asaskevich/govalidator"
+	"github.com/asaskevich/govalidator"
 	"github.com/fatih/structs"
-	log "github.com/sirupsen/logrus"
+	// log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -68,7 +69,7 @@ func parseRawFilterParams(rawFilterParams url.Values) *models.QueryFilter {
 		if err != nil {
 			log.Printf("encountered error when trying to parse query filter param %s: %v", `Limit`, err)
 		} else {
-			qf.Limit = uint8(math.Max(math.Min(i, MaxLimit), DefaultLimit))
+			qf.Limit = uint8(math.Max(math.Min(i, MaxLimit), 0))
 		}
 	}
 
@@ -137,7 +138,7 @@ func validateRequestInput(req *http.Request, output interface{}) error {
 		return errors.New("Invalid input provided in request body")
 	}
 
-	_, err = validator.ValidateStruct(output)
+	_, err = govalidator.ValidateStruct(output)
 	if err != nil {
 		return errors.New("invalid request input")
 	}

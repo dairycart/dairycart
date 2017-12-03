@@ -252,24 +252,23 @@ func TestProductListRoute(t *testing.T) {
 		compareListResponses(t, expected, actual)
 	})
 
-	// FIXME
-	// t.Run("with nonstandard filter", func(*testing.T) {
-	// 	customFilter := map[string]string{
-	// 		"page":  "2",
-	// 		"limit": "5",
-	// 	}
-	// 	resp, err := retrieveListOfProducts(customFilter)
-	// 	assert.NoError(t, err)
-	// 	assertStatusCode(t, resp, http.StatusOK)
+	t.Run("with nonstandard filter", func(*testing.T) {
+		customFilter := map[string]string{
+			"page":  "2",
+			"limit": "5",
+		}
+		resp, err := retrieveListOfProducts(customFilter)
+		assert.NoError(t, err)
+		assertStatusCode(t, resp, http.StatusOK)
 
-	// 	expected := models.ListResponse{
-	// 		Limit: 5,
-	// 		Page:  2,
-	// 	}
-	// 	var actual models.ListResponse
-	// 	unmarshalBody(t, resp, &actual)
-	// 	compareListResponses(t, expected, actual)
-	// })
+		expected := models.ListResponse{
+			Limit: 5,
+			Page:  2,
+		}
+		var actual models.ListResponse
+		unmarshalBody(t, resp, &actual)
+		compareListResponses(t, expected, actual)
+	})
 }
 
 func TestProductUpdateRoute(t *testing.T) {
@@ -668,24 +667,23 @@ func TestProductRootList(t *testing.T) {
 		compareListResponses(t, expected, actual)
 	})
 
-	// FIXME
-	// t.Run("custom filter", func(*testing.T) {
-	// 	customFilter := map[string]string{
-	// 		"page":  "2",
-	// 		"limit": "1",
-	// 	}
-	// 	resp, err := retrieveProductRoots(customFilter)
-	// 	assert.NoError(t, err)
-	// 	assertStatusCode(t, resp, http.StatusOK)
+	t.Run("custom filter", func(*testing.T) {
+		customFilter := map[string]string{
+			"page":  "2",
+			"limit": "1",
+		}
+		resp, err := retrieveProductRoots(customFilter)
+		assert.NoError(t, err)
+		assertStatusCode(t, resp, http.StatusOK)
 
-	// 	expected := models.ListResponse{
-	// 		Limit: 1,
-	// 		Page:  2,
-	// 	}
-	// 	var actual models.ListResponse
-	// 	unmarshalBody(t, resp, &actual)
-	// 	compareListResponses(t, expected, actual)
-	// })
+		expected := models.ListResponse{
+			Limit: 1,
+			Page:  2,
+		}
+		var actual models.ListResponse
+		unmarshalBody(t, resp, &actual)
+		compareListResponses(t, expected, actual)
+	})
 }
 
 func TestProductRootRetrievalRoute(t *testing.T) {
@@ -714,17 +712,7 @@ func TestProductRootRetrievalRoute(t *testing.T) {
 			PackageWidth:       5,
 			PackageLength:      5,
 			QuantityPerPackage: 1,
-			Options: []models.ProductOption{
-				{
-					Name: "color",
-					// FIXME:
-					// Values: []models.ProductOptionValue{{Value: "red"}, {Value: "green"}, {Value: "blue"}}},
-				},
-				{
-					Name: "size",
-					// Values: []models.ProductOptionValue{{Value: "small"}, {Value: "medium"}, {Value: "large"}}},
-				},
-			},
+			Options:            []models.ProductOption{{Name: "color"}, {Name: "size"}},
 			Products: []models.Product{
 				{
 					Name:               "Your Favorite Band's T-Shirt",
@@ -747,8 +735,6 @@ func TestProductRootRetrievalRoute(t *testing.T) {
 					PackageWidth:       5,
 					PackageLength:      5,
 					QuantityPerPackage: 1,
-					// FIXME:
-					// ApplicableOptionValues: []models.ProductOptionValue{{Value: "small"}, {Value: "red"}},
 				},
 				{
 					Name:               "Your Favorite Band's T-Shirt",
@@ -771,7 +757,6 @@ func TestProductRootRetrievalRoute(t *testing.T) {
 					PackageWidth:       5,
 					PackageLength:      5,
 					QuantityPerPackage: 1,
-					// ApplicableOptionValues: []models.ProductOptionValue{{Value: "medium"}, {Value: "red"}},
 				},
 				{
 					Name:               "Your Favorite Band's T-Shirt",
@@ -794,7 +779,6 @@ func TestProductRootRetrievalRoute(t *testing.T) {
 					PackageWidth:       5,
 					PackageLength:      5,
 					QuantityPerPackage: 1,
-					// ApplicableOptionValues: []models.ProductOptionValue{{Value: "large"}, {Value: "red"}},
 				},
 				{
 					Name:               "Your Favorite Band's T-Shirt",
@@ -817,7 +801,6 @@ func TestProductRootRetrievalRoute(t *testing.T) {
 					PackageWidth:       5,
 					PackageLength:      5,
 					QuantityPerPackage: 1,
-					// ApplicableOptionValues: []models.ProductOptionValue{{Value: "small"}, {Value: "blue"}},
 				},
 				{
 					Name:               "Your Favorite Band's T-Shirt",
@@ -840,7 +823,6 @@ func TestProductRootRetrievalRoute(t *testing.T) {
 					PackageWidth:       5,
 					PackageLength:      5,
 					QuantityPerPackage: 1,
-					// ApplicableOptionValues: []models.ProductOptionValue{{Value: "medium"}, {Value: "blue"}},
 				},
 				{
 					Name:               "Your Favorite Band's T-Shirt",
@@ -863,7 +845,6 @@ func TestProductRootRetrievalRoute(t *testing.T) {
 					PackageWidth:       5,
 					PackageLength:      5,
 					QuantityPerPackage: 1,
-					// ApplicableOptionValues: []models.ProductOptionValue{{Value: "large"}, {Value: "blue"}},
 				},
 				{
 					Name:               "Your Favorite Band's T-Shirt",
@@ -886,7 +867,6 @@ func TestProductRootRetrievalRoute(t *testing.T) {
 					PackageWidth:       5,
 					PackageLength:      5,
 					QuantityPerPackage: 1,
-					// ApplicableOptionValues: []models.ProductOptionValue{{Value: "small"}, {Value: "green"}},
 				},
 				{
 					Name:               "Your Favorite Band's T-Shirt",
@@ -909,7 +889,6 @@ func TestProductRootRetrievalRoute(t *testing.T) {
 					PackageWidth:       5,
 					PackageLength:      5,
 					QuantityPerPackage: 1,
-					// ApplicableOptionValues: []models.ProductOptionValue{{Value: "medium"}, {Value: "green"}},
 				},
 				{
 					Name:               "Your Favorite Band's T-Shirt",
@@ -932,7 +911,6 @@ func TestProductRootRetrievalRoute(t *testing.T) {
 					PackageWidth:       5,
 					PackageLength:      5,
 					QuantityPerPackage: 1,
-					// ApplicableOptionValues: []models.ProductOptionValue{{Value: "large"}, {Value: "green"}},
 				},
 			},
 		}
@@ -1013,24 +991,23 @@ func TestProductOptionListRoute(t *testing.T) {
 		compareListResponses(t, expected, actual)
 	})
 
-	// FIXME
-	// t.Run("custom filter", func(*testing.T) {
-	// 	customFilter := map[string]string{
-	// 		"page":  "2",
-	// 		"limit": "1",
-	// 	}
-	// 	resp, err := retrieveProductOptions("1", customFilter)
-	// 	assert.NoError(t, err)
-	// 	assertStatusCode(t, resp, http.StatusOK)
+	t.Run("custom filter", func(*testing.T) {
+		customFilter := map[string]string{
+			"page":  "2",
+			"limit": "1",
+		}
+		resp, err := retrieveProductOptions(existentID, customFilter)
+		assert.NoError(t, err)
+		assertStatusCode(t, resp, http.StatusOK)
 
-	// 	expected := models.ListResponse{
-	// 		Limit: 1,
-	// 		Page:  2,
-	// 	}
-	// 	var actual models.ListResponse
-	// 	unmarshalBody(t, resp, &actual)
-	// 	compareListResponses(t, expected, actual)
-	// })
+		expected := models.ListResponse{
+			Limit: 1,
+			Page:  2,
+		}
+		var actual models.ListResponse
+		unmarshalBody(t, resp, &actual)
+		compareListResponses(t, expected, actual)
+	})
 }
 
 func TestProductOptionCreation(t *testing.T) {
