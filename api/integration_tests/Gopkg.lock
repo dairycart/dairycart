@@ -2,7 +2,7 @@
 
 
 [[projects]]
-  branch = "storage-interfaces"
+  branch = "master"
   name = "github.com/dairycart/dairycart"
   packages = ["api/storage/models"]
   revision = "0ab2f60ba567e79f0e0e267b94ef29c2d300ac38"
