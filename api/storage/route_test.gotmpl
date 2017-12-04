@@ -1,0 +1,314 @@
+package main
+
+import (
+	"database/sql"
+	"fmt"
+	"net/http"
+	"strings"
+	"testing"
+
+	"github.com/dairycart/dairycart/api/storage/models"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+)
+
+{{ $modelName := pascal (trimSuffix .Table.Name "s") -}}
+{{ $lowerName := toLower $modelName -}}
+{{ if eq $modelName "" }}
+////////////////////////////////////////////////////////
+//                                                    //
+//                 HTTP Handler Tests                 //
+//                                                    //
+////////////////////////////////////////////////////////
+
+func Test{{ $modelName }}RetrievalHandler(t *testing.T) {
+	example{{ $modelName }} := &models.{{ $modelName }}{}
+
+	t.Run("optimal conditions", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("Get{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
+			Return(example{{ $modelName }}, nil)
+		config := buildServerConfigFromTestUtil(testUtil)
+		SetupAPIRoutes(config)
+
+		req, err := http.NewRequest(http.MethodGet, "/v1/{{ $lowerName }}/1", nil)
+		assert.NoError(t, err)
+
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusOK)
+	})
+
+	t.Run("with nonexistent {{ $lowerName }}", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("Get{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
+			Return(example{{ $modelName }}, sql.ErrNoRows)
+		config := buildServerConfigFromTestUtil(testUtil)
+		SetupAPIRoutes(config)
+
+		req, err := http.NewRequest(http.MethodGet, "/v1/{{ $lowerName }}/1", nil)
+		assert.NoError(t, err)
+
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusNotFound)
+	})
+
+	t.Run("with error retrieving {{ $lowerName }}", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("Get{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
+			Return(example{{ $modelName }}, generateArbitraryError())
+		config := buildServerConfigFromTestUtil(testUtil)
+		SetupAPIRoutes(config)
+
+		req, err := http.NewRequest(http.MethodGet, "/v1/{{ $lowerName }}/1", nil)
+		assert.NoError(t, err)
+
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
+}
+
+func Test{{ $modelName }}ListHandler(t *testing.T) {
+	example{{ $modelName }} := models.{{ $modelName }}{}
+
+	t.Run("optimal conditions", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("Get{{ $modelName }}Count", mock.Anything, mock.Anything).
+			Return(uint64(3), nil)
+		testUtil.MockDB.On("Get{{ $modelName }}List", mock.Anything, mock.Anything).
+			Return([]models.{{ $modelName }}{example{{ $modelName }}}, nil)
+		config := buildServerConfigFromTestUtil(testUtil)
+		SetupAPIRoutes(config)
+
+		req, err := http.NewRequest(http.MethodGet, "/v1/{{ $lowerName }}s", nil)
+		assert.NoError(t, err)
+
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusOK)
+	})
+
+	t.Run("with error retrieving {{ $lowerName }} count", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("Get{{ $modelName }}Count", mock.Anything, mock.Anything).
+			Return(uint64(3), generateArbitraryError())
+		config := buildServerConfigFromTestUtil(testUtil)
+		SetupAPIRoutes(config)
+
+		req, err := http.NewRequest(http.MethodGet, "/v1/{{ $lowerName }}s", nil)
+		assert.NoError(t, err)
+
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
+
+	t.Run("with error retrieving {{ $lowerName }} list", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("Get{{ $modelName }}Count", mock.Anything, mock.Anything).
+			Return(uint64(3), nil)
+		testUtil.MockDB.On("Get{{ $modelName }}List", mock.Anything, mock.Anything).
+			Return([]models.{{ $modelName }}{}, generateArbitraryError())
+		config := buildServerConfigFromTestUtil(testUtil)
+		SetupAPIRoutes(config)
+
+		req, err := http.NewRequest(http.MethodGet, "/v1/{{ $lowerName }}s", nil)
+		assert.NoError(t, err)
+
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
+}
+
+func Test{{ $modelName }}CreationHandler(t *testing.T) {
+	example{{ $modelName }}CreationInput := `
+		{
+
+		}
+	`
+
+	t.Run("optimal conditions", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("Create{{ $modelName }}", mock.Anything, mock.Anything).
+			Return(uint64(1), generateExampleTimeForTests(), nil)
+		config := buildServerConfigFromTestUtil(testUtil)
+		SetupAPIRoutes(config)
+
+		req, err := http.NewRequest(http.MethodPost, "/v1/{{ $lowerName }}", strings.NewReader(example{{ $modelName }}CreationInput))
+		assert.NoError(t, err)
+
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusCreated)
+	})
+
+	t.Run("with invalid input", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		config := buildServerConfigFromTestUtil(testUtil)
+		SetupAPIRoutes(config)
+
+		req, err := http.NewRequest(http.MethodPost, "/v1/{{ $lowerName }}", strings.NewReader(exampleGarbageInput))
+		assert.NoError(t, err)
+
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusBadRequest)
+	})
+
+	t.Run("with error creating {{ $lowerName }}", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("Create{{ $modelName }}", mock.Anything, mock.Anything).
+			Return(uint64(1), generateExampleTimeForTests(), generateArbitraryError())
+		config := buildServerConfigFromTestUtil(testUtil)
+		SetupAPIRoutes(config)
+
+		req, err := http.NewRequest(http.MethodPost, "/v1/{{ $lowerName }}", strings.NewReader(example{{ $modelName }}CreationInput))
+		assert.NoError(t, err)
+
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
+}
+
+func Test{{ $modelName }}DeletionHandler(t *testing.T) {
+	example{{ $modelName }} := &models.{{ $modelName }}{}
+
+	t.Run("optimal conditions", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("Get{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
+			Return(example{{ $modelName }}, nil)
+		testUtil.MockDB.On("Delete{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
+			Return(generateExampleTimeForTests(), nil)
+		config := buildServerConfigFromTestUtil(testUtil)
+		SetupAPIRoutes(config)
+
+		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/{{ $lowerName }}/%d", example{{ $modelName }}.ID), nil)
+		assert.NoError(t, err)
+
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusOK)
+	})
+
+	t.Run("with nonexistent {{ $lowerName }}", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("Get{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
+			Return(example{{ $modelName }}, sql.ErrNoRows)
+		config := buildServerConfigFromTestUtil(testUtil)
+		SetupAPIRoutes(config)
+
+		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/{{ $lowerName }}/%d", example{{ $modelName }}.ID), nil)
+		assert.NoError(t, err)
+
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusNotFound)
+	})
+
+	t.Run("with error retrieving {{ $lowerName }}", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("Get{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
+			Return(example{{ $modelName }}, generateArbitraryError())
+		config := buildServerConfigFromTestUtil(testUtil)
+		SetupAPIRoutes(config)
+
+		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/{{ $lowerName }}/%d", example{{ $modelName }}.ID), nil)
+		assert.NoError(t, err)
+
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
+
+	t.Run("with error deleting {{ $lowerName }}", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("Get{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
+			Return(example{{ $modelName }}, nil)
+		testUtil.MockDB.On("Delete{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
+			Return(generateExampleTimeForTests(), generateArbitraryError())
+		config := buildServerConfigFromTestUtil(testUtil)
+		SetupAPIRoutes(config)
+
+		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/{{ $lowerName }}/%d", example{{ $modelName }}.ID), nil)
+		assert.NoError(t, err)
+
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
+}
+
+func Test{{ $modelName }}UpdateHandler(t *testing.T) {
+	example{{ $modelName }} := &models.{{ $modelName }}{}
+
+	example{{ $modelName }}UpdateInput := `
+		{
+
+		}
+	`
+
+	t.Run("optimal conditions", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("Get{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
+			Return(example{{ $modelName }}, nil)
+		testUtil.MockDB.On("Update{{ $modelName }}", mock.Anything, mock.Anything).
+			Return(generateExampleTimeForTests(), nil)
+		config := buildServerConfigFromTestUtil(testUtil)
+		SetupAPIRoutes(config)
+
+		req, err := http.NewRequest(http.MethodPatch, "/v1/{{ $lowerName }}/1", strings.NewReader(example{{ $modelName }}UpdateInput))
+		assert.NoError(t, err)
+
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusOK)
+	})
+
+	t.Run("with invalid input", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		config := buildServerConfigFromTestUtil(testUtil)
+		SetupAPIRoutes(config)
+
+		req, err := http.NewRequest(http.MethodPatch, "/v1/{{ $lowerName }}/1", strings.NewReader(exampleGarbageInput))
+		assert.NoError(t, err)
+
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusBadRequest)
+	})
+
+	t.Run("with nonexistent error", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("Get{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
+			Return(example{{ $modelName }}, sql.ErrNoRows)
+		config := buildServerConfigFromTestUtil(testUtil)
+		SetupAPIRoutes(config)
+
+		req, err := http.NewRequest(http.MethodPatch, "/v1/{{ $lowerName }}/1", strings.NewReader(example{{ $modelName }}UpdateInput))
+		assert.NoError(t, err)
+
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusNotFound)
+	})
+
+	t.Run("with error retrieving {{ $lowerName }}", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("Get{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
+			Return(example{{ $modelName }}, generateArbitraryError())
+		config := buildServerConfigFromTestUtil(testUtil)
+		SetupAPIRoutes(config)
+
+		req, err := http.NewRequest(http.MethodPatch, "/v1/{{ $lowerName }}/1", strings.NewReader(example{{ $modelName }}UpdateInput))
+		assert.NoError(t, err)
+
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
+
+	t.Run("with error updating {{ $lowerName }}", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("Get{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
+			Return(example{{ $modelName }}, nil)
+		testUtil.MockDB.On("Update{{ $modelName }}", mock.Anything, mock.Anything).
+			Return(generateExampleTimeForTests(), generateArbitraryError())
+		config := buildServerConfigFromTestUtil(testUtil)
+		SetupAPIRoutes(config)
+
+		req, err := http.NewRequest(http.MethodPatch, "/v1/{{ $lowerName }}/1", strings.NewReader(example{{ $modelName }}UpdateInput))
+		assert.NoError(t, err)
+
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
+}
+{{ end }}

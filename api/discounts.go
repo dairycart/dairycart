@@ -141,7 +141,7 @@ func buildDiscountUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerF
 
 		updatedOn, err := client.UpdateDiscount(db, updatedDiscount)
 		if err != nil {
-			notifyOfInternalIssue(res, err, "update product in database")
+			notifyOfInternalIssue(res, err, "update discount in database")
 			return
 		}
 		updatedDiscount.UpdatedOn = models.NullTime{NullTime: pq.NullTime{Time: updatedOn, Valid: true}}

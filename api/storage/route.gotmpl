@@ -1,0 +1,154 @@
+package main
+
+import (
+	"database/sql"
+	"encoding/json"
+	"net/http"
+	"strconv"
+
+	"github.com/dairycart/dairycart/api/storage"
+	"github.com/dairycart/dairycart/api/storage/models"
+
+	"github.com/go-chi/chi"
+	"github.com/imdario/mergo"
+	"github.com/lib/pq"
+)
+{{ $modelName := pascal (trimSuffix .Table.Name "s") -}}
+{{ $lowerName := toLower $modelName -}}
+{{ if eq $modelName "" }}
+func build{{ $modelName }}RetrievalHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+	// {{ $modelName }}RetrievalHandler is a request handler that returns a single {{ $modelName }}
+	return func(res http.ResponseWriter, req *http.Request) {
+		{{ $lowerName }}IDStr := chi.URLParam(req, "{{ $lowerName }}_id")
+		// eating this error because the router should have ensured this is an integer
+		{{ $lowerName }}ID, _ := strconv.ParseUint({{ $lowerName }}IDStr, 10, 64)
+
+		{{ $lowerName }}, err := client.Get{{ $modelName }}(db, {{ $lowerName }}ID)
+		if err == sql.ErrNoRows {
+			respondThatRowDoesNotExist(req, res, "{{ $lowerName }}", {{ $lowerName }}IDStr)
+			return
+		} else if err != nil {
+			notifyOfInternalIssue(res, err, "retrieving {{ $lowerName }} from database")
+			return
+		}
+
+		json.NewEncoder(res).Encode({{ $lowerName }})
+	}
+}
+
+func build{{ $modelName }}ListRetrievalHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+	// {{ $modelName }}ListRetrievalHandler is a request handler that returns a list of {{ $modelName }}s
+	return func(res http.ResponseWriter, req *http.Request) {
+		rawFilterParams := req.URL.Query()
+		queryFilter := parseRawFilterParams(rawFilterParams)
+
+		count, err := client.Get{{ $modelName }}Count(db, queryFilter)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "retrieve count of {{ $lowerName }}s from the database")
+			return
+		}
+
+		{{ $lowerName }}s, err := client.Get{{ $modelName }}List(db, queryFilter)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "retrieve {{ $lowerName }}s from the database")
+			return
+		}
+
+		{{ $lowerName }}sResponse := &ListResponse{
+			Page:  queryFilter.Page,
+			Limit: queryFilter.Limit,
+			Count: count,
+			Data:  {{ $lowerName }}s,
+		}
+		json.NewEncoder(res).Encode({{ $lowerName }}sResponse)
+	}
+}
+
+func build{{ $modelName }}CreationHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+	// {{ $modelName }}CreationHandler is a request handler that creates a {{ $modelName }} from user input
+	return func(res http.ResponseWriter, req *http.Request) {
+		new{{ $modelName }} := &models.{{ $modelName }}{}
+		err := validateRequestInput(req, new{{ $modelName }})
+		if err != nil {
+			notifyOfInvalidRequestBody(res, err)
+			return
+		}
+
+		new{{ $modelName }}.ID, new{{ $modelName }}.CreatedOn, err = client.Create{{ $modelName }}(db, new{{ $modelName }})
+		if err != nil {
+			notifyOfInternalIssue(res, err, "insert {{ $lowerName }} into database")
+			return
+		}
+
+		res.WriteHeader(http.StatusCreated)
+		json.NewEncoder(res).Encode(new{{ $modelName }})
+	}
+}
+
+func build{{ $modelName }}DeletionHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+	// ProductDeletionHandler is a request handler that deletes a single product
+	return func(res http.ResponseWriter, req *http.Request) {
+		{{ $lowerName }}IDStr := chi.URLParam(req, "{{ $lowerName }}_id")
+		// eating this error because the router should have ensured this is an integer
+		{{ $lowerName }}ID, _ := strconv.ParseUint({{ $lowerName }}IDStr, 10, 64)
+
+		{{ $lowerName }}, err := client.Get{{ $modelName }}(db, {{ $lowerName }}ID)
+		if err == sql.ErrNoRows {
+			respondThatRowDoesNotExist(req, res, "{{ $lowerName }}", {{ $lowerName }}IDStr)
+			return
+		} else if err != nil {
+			notifyOfInternalIssue(res, err, "retrieving {{ $lowerName }} from database")
+			return
+		}
+
+		archivedOn, err := client.Delete{{ $modelName }}(db, {{ $lowerName }}ID)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "archive {{ $lowerName }} in database")
+			return
+		}
+		{{ $lowerName }}.ArchivedOn = models.NullTime{NullTime: pq.NullTime{Time: archivedOn, Valid: true}}
+
+		json.NewEncoder(res).Encode({{ $lowerName }})
+	}
+}
+
+func build{{ $modelName }}UpdateHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+	// {{ $modelName }}UpdateHandler is a request handler that can update {{ $lowerName }}s
+	return func(res http.ResponseWriter, req *http.Request) {
+		{{ $lowerName }}IDStr := chi.URLParam(req, "{{ $lowerName }}_id")
+		// eating this error because the router should have ensured this is an integer
+		{{ $lowerName }}ID, _ := strconv.ParseUint({{ $lowerName }}IDStr, 10, 64)
+
+		updated{{ $modelName }} := &models.{{ $modelName }}{}
+		err := validateRequestInput(req, updated{{ $modelName }})
+		if err != nil {
+			notifyOfInvalidRequestBody(res, err)
+			return
+		}
+
+		existing{{ $modelName }}, err := client.Get{{ $modelName }}(db, {{ $lowerName }}ID)
+		if err == sql.ErrNoRows {
+			respondThatRowDoesNotExist(req, res, "{{ $lowerName }}", {{ $lowerName }}IDStr)
+			return
+		} else if err != nil {
+			notifyOfInternalIssue(res, err, "retrieve {{ $lowerName }} from database")
+			return
+		}
+
+		err = mergo.Merge(updated{{ $modelName }}, existing{{ $modelName }})
+		if err != nil {
+			notifyOfInternalIssue(res, err, "merge input and existing data")
+			return
+		}
+
+		updatedOn, err := client.Update{{ $modelName }}(db, updated{{ $modelName }})
+		if err != nil {
+			notifyOfInternalIssue(res, err, "update {{ $lowerName }} in database")
+			return
+		}
+		updated{{ $modelName }}.UpdatedOn = models.NullTime{NullTime: pq.NullTime{Time: updatedOn, Valid: true}}
+
+		json.NewEncoder(res).Encode(updated{{ $modelName }})
+	}
+}
+{{ end }}

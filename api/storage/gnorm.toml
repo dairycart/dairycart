@@ -60,6 +60,8 @@ PluginDirs = ["/Users/jeffrey/golang/src/github.com/verygoodsoftwarenotvirus/gno
 "postgres/{{snake .Table}}.go" = "pg_table.gotmpl"
 "mock/{{snake .Table}}.go" = "mock_table.gotmpl"
 "postgres/{{snake .Table}}_test.go" = "pg_table_test.gotmpl"
+"../{{snake .Table}}.go" = "route.gotmpl"
+"../{{snake .Table}}_test.go" = "route_test.gotmpl"
 
 # SchemaPaths iis a map of output paths to template paths that tells Gnorm how
 # to render and output its schema info.  Each template will be rendered with
@@ -122,13 +124,6 @@ PluginDirs = ["/Users/jeffrey/golang/src/github.com/verygoodsoftwarenotvirus/gno
 # Example for mapping postgres types to Go types:
 [NullableTypeMap]
 "timestamp without time zone" = "NullTime"
-# "text" = "sql.NullString"
-# "boolean" = "sql.NullBool"
-# "uuid" = "uuid.NullUUID"
-# "character varying" = "sql.NullString"
-# "integer" = "sql.NullInt64"
-# "numeric" = "sql.NullFloat64"
-
 
 # Params contains any data you may want to pass to your templates.  This is a
 # good way to make templates reusable with different configuration values for
