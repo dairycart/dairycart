@@ -27,3 +27,4 @@ dairycart
 .idea
 coverage.out
 .DS_STORE
+api/storage/routes

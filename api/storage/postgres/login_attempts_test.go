@@ -86,6 +86,7 @@ func TestLoginAttemptExists(t *testing.T) {
 		assert.True(t, actual)
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with no rows found", func(t *testing.T) {
 		setLoginAttemptExistenceQueryExpectation(t, mock, exampleID, true, sql.ErrNoRows)
 		actual, err := client.LoginAttemptExists(mockDB, exampleID)
@@ -94,6 +95,7 @@ func TestLoginAttemptExists(t *testing.T) {
 		assert.False(t, actual)
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with a database error", func(t *testing.T) {
 		setLoginAttemptExistenceQueryExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
 		actual, err := client.LoginAttemptExists(mockDB, exampleID)

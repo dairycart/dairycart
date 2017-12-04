@@ -15,253 +15,55 @@ import (
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
-func setDiscountReadQueryExpectationByCode(t *testing.T, mock sqlmock.Sqlmock, code string, toReturn *models.Discount, err error) {
-	t.Helper()
-	query := formatQueryForSQLMock(discountQueryByCode)
-
+func setWebhookReadQueryExpectationByEventType(t *testing.T, mock sqlmock.Sqlmock, example *models.Webhook, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
 		"id",
-		"name",
-		"discount_type",
-		"amount",
-		"starts_on",
-		"expires_on",
-		"requires_code",
-		"code",
-		"limited_use",
-		"number_of_uses",
-		"login_required",
-		"created_on",
-		"updated_on",
-		"archived_on",
-	}).AddRow(
-		toReturn.ID,
-		toReturn.Name,
-		toReturn.DiscountType,
-		toReturn.Amount,
-		toReturn.StartsOn,
-		toReturn.ExpiresOn,
-		toReturn.RequiresCode,
-		toReturn.Code,
-		toReturn.LimitedUse,
-		toReturn.NumberOfUses,
-		toReturn.LoginRequired,
-		toReturn.CreatedOn,
-		toReturn.UpdatedOn,
-		toReturn.ArchivedOn,
-	)
-	mock.ExpectQuery(query).WithArgs(code).WillReturnRows(exampleRows).WillReturnError(err)
-}
-
-func TestGetDiscountByCode(t *testing.T) {
-	t.Parallel()
-	mockDB, mock, err := sqlmock.New()
-	assert.NoError(t, err)
-	defer mockDB.Close()
-	client := NewPostgres()
-
-	exampleCode := "welcome"
-	expected := &models.Discount{Code: exampleCode}
-
-	t.Run("optimal behavior", func(t *testing.T) {
-		setDiscountReadQueryExpectationByCode(t, mock, exampleCode, expected, nil)
-		actual, err := client.GetDiscountByCode(mockDB, exampleCode)
-
-		assert.NoError(t, err)
-		assert.Equal(t, expected, actual, "expected discount did not match actual discount")
-		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
-	})
-}
-
-func setDiscountExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, shouldExist bool, err error) {
-	t.Helper()
-	query := formatQueryForSQLMock(discountExistenceQuery)
-
-	mock.ExpectQuery(query).
-		WithArgs(id).
-		WillReturnRows(sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(shouldExist))).
-		WillReturnError(err)
-}
-
-func TestDiscountExists(t *testing.T) {
-	t.Parallel()
-	mockDB, mock, err := sqlmock.New()
-	assert.NoError(t, err)
-	defer mockDB.Close()
-	exampleID := uint64(1)
-	client := NewPostgres()
-
-	t.Run("existing", func(t *testing.T) {
-		setDiscountExistenceQueryExpectation(t, mock, exampleID, true, nil)
-		actual, err := client.DiscountExists(mockDB, exampleID)
-
-		assert.NoError(t, err)
-		assert.True(t, actual)
-		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
-	})
-
-	t.Run("with no rows found", func(t *testing.T) {
-		setDiscountExistenceQueryExpectation(t, mock, exampleID, true, sql.ErrNoRows)
-		actual, err := client.DiscountExists(mockDB, exampleID)
-
-		assert.NoError(t, err)
-		assert.False(t, actual)
-		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
-	})
-
-	t.Run("with a database error", func(t *testing.T) {
-		setDiscountExistenceQueryExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
-		actual, err := client.DiscountExists(mockDB, exampleID)
-
-		assert.NotNil(t, err)
-		assert.False(t, actual)
-		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
-	})
-}
-
-func setDiscountReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, toReturn *models.Discount, err error) {
-	t.Helper()
-	query := formatQueryForSQLMock(discountSelectionQuery)
-
-	exampleRows := sqlmock.NewRows([]string{
-		"id",
-		"name",
-		"discount_type",
-		"amount",
-		"starts_on",
-		"expires_on",
-		"requires_code",
-		"code",
-		"limited_use",
-		"number_of_uses",
-		"login_required",
-		"created_on",
-		"updated_on",
-		"archived_on",
-	}).AddRow(
-		toReturn.ID,
-		toReturn.Name,
-		toReturn.DiscountType,
-		toReturn.Amount,
-		toReturn.StartsOn,
-		toReturn.ExpiresOn,
-		toReturn.RequiresCode,
-		toReturn.Code,
-		toReturn.LimitedUse,
-		toReturn.NumberOfUses,
-		toReturn.LoginRequired,
-		toReturn.CreatedOn,
-		toReturn.UpdatedOn,
-		toReturn.ArchivedOn,
-	)
-	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
-}
-
-func TestGetDiscount(t *testing.T) {
-	t.Parallel()
-	mockDB, mock, err := sqlmock.New()
-	assert.NoError(t, err)
-	defer mockDB.Close()
-	exampleID := uint64(1)
-	expected := &models.Discount{ID: exampleID}
-	client := NewPostgres()
-
-	t.Run("optimal behavior", func(t *testing.T) {
-		setDiscountReadQueryExpectation(t, mock, exampleID, expected, nil)
-		actual, err := client.GetDiscount(mockDB, exampleID)
-
-		assert.NoError(t, err)
-		assert.Equal(t, expected, actual, "expected discount did not match actual discount")
-		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
-	})
-}
-
-func setDiscountListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.Discount, rowErr error, err error) {
-	exampleRows := sqlmock.NewRows([]string{
-		"id",
-		"name",
-		"discount_type",
-		"amount",
-		"starts_on",
-		"expires_on",
-		"requires_code",
-		"code",
-		"limited_use",
-		"number_of_uses",
-		"login_required",
+		"url",
+		"event_type",
 		"created_on",
 		"updated_on",
 		"archived_on",
 	}).AddRow(
 		example.ID,
-		example.Name,
-		example.DiscountType,
-		example.Amount,
-		example.StartsOn,
-		example.ExpiresOn,
-		example.RequiresCode,
-		example.Code,
-		example.LimitedUse,
-		example.NumberOfUses,
-		example.LoginRequired,
+		example.URL,
+		example.EventType,
 		example.CreatedOn,
 		example.UpdatedOn,
 		example.ArchivedOn,
 	).AddRow(
 		example.ID,
-		example.Name,
-		example.DiscountType,
-		example.Amount,
-		example.StartsOn,
-		example.ExpiresOn,
-		example.RequiresCode,
-		example.Code,
-		example.LimitedUse,
-		example.NumberOfUses,
-		example.LoginRequired,
+		example.URL,
+		example.EventType,
 		example.CreatedOn,
 		example.UpdatedOn,
 		example.ArchivedOn,
 	).AddRow(
 		example.ID,
-		example.Name,
-		example.DiscountType,
-		example.Amount,
-		example.StartsOn,
-		example.ExpiresOn,
-		example.RequiresCode,
-		example.Code,
-		example.LimitedUse,
-		example.NumberOfUses,
-		example.LoginRequired,
+		example.URL,
+		example.EventType,
 		example.CreatedOn,
 		example.UpdatedOn,
 		example.ArchivedOn,
 	).RowError(1, rowErr)
 
-	query, _ := buildDiscountListRetrievalQuery(qf)
-
-	mock.ExpectQuery(formatQueryForSQLMock(query)).
+	mock.ExpectQuery(formatQueryForSQLMock(webhookQueryByEventType)).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
 }
 
-func TestGetDiscountList(t *testing.T) {
+func TestGetWebhooksByEventType(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
 	assert.NoError(t, err)
 	defer mockDB.Close()
-	exampleID := uint64(1)
-	example := &models.Discount{ID: exampleID}
 	client := NewPostgres()
-	exampleQF := &models.QueryFilter{
-		Limit: 25,
-		Page:  1,
-	}
+
+	exampleEventType := "product_updated"
+	example := &models.Webhook{}
 
 	t.Run("optimal behavior", func(t *testing.T) {
-		setDiscountListReadQueryExpectation(t, mock, exampleQF, example, nil, nil)
-		actual, err := client.GetDiscountList(mockDB, exampleQF)
+		setWebhookReadQueryExpectationByEventType(t, mock, example, nil, nil)
+		actual, err := client.GetWebhooksByEventType(mockDB, exampleEventType)
 
 		assert.NoError(t, err)
 		assert.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
@@ -269,8 +71,8 @@ func TestGetDiscountList(t *testing.T) {
 	})
 
 	t.Run("with error executing query", func(t *testing.T) {
-		setDiscountListReadQueryExpectation(t, mock, exampleQF, example, nil, errors.New("pineapple on pizza"))
-		actual, err := client.GetDiscountList(mockDB, exampleQF)
+		setWebhookReadQueryExpectationByEventType(t, mock, example, nil, errors.New("pineapple on pizza"))
+		actual, err := client.GetWebhooksByEventType(mockDB, exampleEventType)
 
 		assert.NotNil(t, err)
 		assert.Nil(t, actual)
@@ -279,11 +81,10 @@ func TestGetDiscountList(t *testing.T) {
 
 	t.Run("with error scanning values", func(t *testing.T) {
 		exampleRows := sqlmock.NewRows([]string{"things"}).AddRow("stuff")
-		query, _ := buildDiscountListRetrievalQuery(exampleQF)
-		mock.ExpectQuery(formatQueryForSQLMock(query)).
+		mock.ExpectQuery(formatQueryForSQLMock(webhookQueryByEventType)).
 			WillReturnRows(exampleRows)
 
-		actual, err := client.GetDiscountList(mockDB, exampleQF)
+		actual, err := client.GetWebhooksByEventType(mockDB, exampleEventType)
 
 		assert.NotNil(t, err)
 		assert.Nil(t, actual)
@@ -291,8 +92,8 @@ func TestGetDiscountList(t *testing.T) {
 	})
 
 	t.Run("with with row errors", func(t *testing.T) {
-		setDiscountListReadQueryExpectation(t, mock, exampleQF, example, errors.New("pineapple on pizza"), nil)
-		actual, err := client.GetDiscountList(mockDB, exampleQF)
+		setWebhookReadQueryExpectationByEventType(t, mock, example, errors.New("pineapple on pizza"), nil)
+		actual, err := client.GetWebhooksByEventType(mockDB, exampleEventType)
 
 		assert.NotNil(t, err)
 		assert.Nil(t, actual)
@@ -300,22 +101,201 @@ func TestGetDiscountList(t *testing.T) {
 	})
 }
 
-func TestBuildDiscountCountRetrievalQuery(t *testing.T) {
+func setWebhookExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, shouldExist bool, err error) {
+	t.Helper()
+	query := formatQueryForSQLMock(webhookExistenceQuery)
+
+	mock.ExpectQuery(query).
+		WithArgs(id).
+		WillReturnRows(sqlmock.NewRows([]string{""}).AddRow(strconv.FormatBool(shouldExist))).
+		WillReturnError(err)
+}
+
+func TestWebhookExists(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer mockDB.Close()
+	exampleID := uint64(1)
+	client := NewPostgres()
+
+	t.Run("existing", func(t *testing.T) {
+		setWebhookExistenceQueryExpectation(t, mock, exampleID, true, nil)
+		actual, err := client.WebhookExists(mockDB, exampleID)
+
+		assert.NoError(t, err)
+		assert.True(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+
+	t.Run("with no rows found", func(t *testing.T) {
+		setWebhookExistenceQueryExpectation(t, mock, exampleID, true, sql.ErrNoRows)
+		actual, err := client.WebhookExists(mockDB, exampleID)
+
+		assert.NoError(t, err)
+		assert.False(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+
+	t.Run("with a database error", func(t *testing.T) {
+		setWebhookExistenceQueryExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
+		actual, err := client.WebhookExists(mockDB, exampleID)
+
+		assert.NotNil(t, err)
+		assert.False(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
+
+func setWebhookReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, toReturn *models.Webhook, err error) {
+	t.Helper()
+	query := formatQueryForSQLMock(webhookSelectionQuery)
+
+	exampleRows := sqlmock.NewRows([]string{
+		"id",
+		"url",
+		"event_type",
+		"created_on",
+		"updated_on",
+		"archived_on",
+	}).AddRow(
+		toReturn.ID,
+		toReturn.URL,
+		toReturn.EventType,
+		toReturn.CreatedOn,
+		toReturn.UpdatedOn,
+		toReturn.ArchivedOn,
+	)
+	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
+}
+
+func TestGetWebhook(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer mockDB.Close()
+	exampleID := uint64(1)
+	expected := &models.Webhook{ID: exampleID}
+	client := NewPostgres()
+
+	t.Run("optimal behavior", func(t *testing.T) {
+		setWebhookReadQueryExpectation(t, mock, exampleID, expected, nil)
+		actual, err := client.GetWebhook(mockDB, exampleID)
+
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual, "expected webhook did not match actual webhook")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
+
+func setWebhookListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.Webhook, rowErr error, err error) {
+	exampleRows := sqlmock.NewRows([]string{
+		"id",
+		"url",
+		"event_type",
+		"created_on",
+		"updated_on",
+		"archived_on",
+	}).AddRow(
+		example.ID,
+		example.URL,
+		example.EventType,
+		example.CreatedOn,
+		example.UpdatedOn,
+		example.ArchivedOn,
+	).AddRow(
+		example.ID,
+		example.URL,
+		example.EventType,
+		example.CreatedOn,
+		example.UpdatedOn,
+		example.ArchivedOn,
+	).AddRow(
+		example.ID,
+		example.URL,
+		example.EventType,
+		example.CreatedOn,
+		example.UpdatedOn,
+		example.ArchivedOn,
+	).RowError(1, rowErr)
+
+	query, _ := buildWebhookListRetrievalQuery(qf)
+
+	mock.ExpectQuery(formatQueryForSQLMock(query)).
+		WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
+func TestGetWebhookList(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer mockDB.Close()
+	exampleID := uint64(1)
+	example := &models.Webhook{ID: exampleID}
+	client := NewPostgres()
+	exampleQF := &models.QueryFilter{
+		Limit: 25,
+		Page:  1,
+	}
+
+	t.Run("optimal behavior", func(t *testing.T) {
+		setWebhookListReadQueryExpectation(t, mock, exampleQF, example, nil, nil)
+		actual, err := client.GetWebhookList(mockDB, exampleQF)
+
+		assert.NoError(t, err)
+		assert.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+
+	t.Run("with error executing query", func(t *testing.T) {
+		setWebhookListReadQueryExpectation(t, mock, exampleQF, example, nil, errors.New("pineapple on pizza"))
+		actual, err := client.GetWebhookList(mockDB, exampleQF)
+
+		assert.NotNil(t, err)
+		assert.Nil(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+
+	t.Run("with error scanning values", func(t *testing.T) {
+		exampleRows := sqlmock.NewRows([]string{"things"}).AddRow("stuff")
+		query, _ := buildWebhookListRetrievalQuery(exampleQF)
+		mock.ExpectQuery(formatQueryForSQLMock(query)).
+			WillReturnRows(exampleRows)
+
+		actual, err := client.GetWebhookList(mockDB, exampleQF)
+
+		assert.NotNil(t, err)
+		assert.Nil(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+
+	t.Run("with with row errors", func(t *testing.T) {
+		setWebhookListReadQueryExpectation(t, mock, exampleQF, example, errors.New("pineapple on pizza"), nil)
+		actual, err := client.GetWebhookList(mockDB, exampleQF)
+
+		assert.NotNil(t, err)
+		assert.Nil(t, actual)
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
+
+func TestBuildWebhookCountRetrievalQuery(t *testing.T) {
 	t.Parallel()
 
 	exampleQF := &models.QueryFilter{
 		Limit: 25,
 		Page:  1,
 	}
-	expected := `SELECT count(id) FROM discounts WHERE archived_on IS NULL LIMIT 25`
-	actual, _ := buildDiscountCountRetrievalQuery(exampleQF)
+	expected := `SELECT count(id) FROM webhooks WHERE archived_on IS NULL LIMIT 25`
+	actual, _ := buildWebhookCountRetrievalQuery(exampleQF)
 
 	assert.Equal(t, expected, actual, "expected and actual queries should match")
 }
 
-func setDiscountCountRetrievalQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, count uint64, err error) {
+func setWebhookCountRetrievalQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, count uint64, err error) {
 	t.Helper()
-	query, args := buildDiscountCountRetrievalQuery(qf)
+	query, args := buildWebhookCountRetrievalQuery(qf)
 	query = formatQueryForSQLMock(query)
 
 	var argsToExpect []driver.Value
@@ -327,7 +307,7 @@ func setDiscountCountRetrievalQueryExpectation(t *testing.T, mock sqlmock.Sqlmoc
 	mock.ExpectQuery(query).WithArgs(argsToExpect...).WillReturnRows(exampleRow).WillReturnError(err)
 }
 
-func TestGetDiscountCount(t *testing.T) {
+func TestGetWebhookCount(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
 	assert.NoError(t, err)
@@ -340,8 +320,8 @@ func TestGetDiscountCount(t *testing.T) {
 	}
 
 	t.Run("optimal behavior", func(t *testing.T) {
-		setDiscountCountRetrievalQueryExpectation(t, mock, exampleQF, expected, nil)
-		actual, err := client.GetDiscountCount(mockDB, exampleQF)
+		setWebhookCountRetrievalQueryExpectation(t, mock, exampleQF, expected, nil)
+		actual, err := client.GetWebhookCount(mockDB, exampleQF)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expected, actual, "count retrieval method should return the expected value")
@@ -349,40 +329,32 @@ func TestGetDiscountCount(t *testing.T) {
 	})
 }
 
-func setDiscountCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.Discount, err error) {
+func setWebhookCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.Webhook, err error) {
 	t.Helper()
-	query := formatQueryForSQLMock(discountCreationQuery)
+	query := formatQueryForSQLMock(webhookCreationQuery)
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), generateExampleTimeForTests(t))
 	mock.ExpectQuery(query).
 		WithArgs(
-			toCreate.Name,
-			toCreate.DiscountType,
-			toCreate.Amount,
-			toCreate.StartsOn,
-			toCreate.ExpiresOn,
-			toCreate.RequiresCode,
-			toCreate.Code,
-			toCreate.LimitedUse,
-			toCreate.NumberOfUses,
-			toCreate.LoginRequired,
+			toCreate.URL,
+			toCreate.EventType,
 		).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
 }
 
-func TestCreateDiscount(t *testing.T) {
+func TestCreateWebhook(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
 	assert.NoError(t, err)
 	defer mockDB.Close()
 	expectedID := uint64(1)
-	exampleInput := &models.Discount{ID: expectedID}
+	exampleInput := &models.Webhook{ID: expectedID}
 	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
-		setDiscountCreationQueryExpectation(t, mock, exampleInput, nil)
+		setWebhookCreationQueryExpectation(t, mock, exampleInput, nil)
 		expected := generateExampleTimeForTests(t)
-		actualID, actualCreationDate, err := client.CreateDiscount(mockDB, exampleInput)
+		actualID, actualCreationDate, err := client.CreateWebhook(mockDB, exampleInput)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
@@ -392,40 +364,32 @@ func TestCreateDiscount(t *testing.T) {
 	})
 }
 
-func setDiscountUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate *models.Discount, err error) {
+func setWebhookUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate *models.Webhook, err error) {
 	t.Helper()
-	query := formatQueryForSQLMock(discountUpdateQuery)
+	query := formatQueryForSQLMock(webhookUpdateQuery)
 	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests(t))
 	mock.ExpectQuery(query).
 		WithArgs(
-			toUpdate.Name,
-			toUpdate.DiscountType,
-			toUpdate.Amount,
-			toUpdate.StartsOn,
-			toUpdate.ExpiresOn,
-			toUpdate.RequiresCode,
-			toUpdate.Code,
-			toUpdate.LimitedUse,
-			toUpdate.NumberOfUses,
-			toUpdate.LoginRequired,
+			toUpdate.URL,
+			toUpdate.EventType,
 			toUpdate.ID,
 		).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
 }
 
-func TestUpdateDiscountByID(t *testing.T) {
+func TestUpdateWebhookByID(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
 	assert.NoError(t, err)
 	defer mockDB.Close()
-	exampleInput := &models.Discount{ID: uint64(1)}
+	exampleInput := &models.Webhook{ID: uint64(1)}
 	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
-		setDiscountUpdateQueryExpectation(t, mock, exampleInput, nil)
+		setWebhookUpdateQueryExpectation(t, mock, exampleInput, nil)
 		expected := generateExampleTimeForTests(t)
-		actual, err := client.UpdateDiscount(mockDB, exampleInput)
+		actual, err := client.UpdateWebhook(mockDB, exampleInput)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
@@ -433,14 +397,14 @@ func TestUpdateDiscountByID(t *testing.T) {
 	})
 }
 
-func setDiscountDeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
+func setWebhookDeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
 	t.Helper()
-	query := formatQueryForSQLMock(discountDeletionQuery)
+	query := formatQueryForSQLMock(webhookDeletionQuery)
 	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
-func TestDeleteDiscountByID(t *testing.T) {
+func TestDeleteWebhookByID(t *testing.T) {
 	t.Parallel()
 	mockDB, mock, err := sqlmock.New()
 	assert.NoError(t, err)
@@ -449,9 +413,9 @@ func TestDeleteDiscountByID(t *testing.T) {
 	client := NewPostgres()
 
 	t.Run("optimal behavior", func(t *testing.T) {
-		setDiscountDeletionQueryExpectation(t, mock, exampleID, nil)
+		setWebhookDeletionQueryExpectation(t, mock, exampleID, nil)
 		expected := generateExampleTimeForTests(t)
-		actual, err := client.DeleteDiscount(mockDB, exampleID)
+		actual, err := client.DeleteWebhook(mockDB, exampleID)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")
@@ -460,11 +424,11 @@ func TestDeleteDiscountByID(t *testing.T) {
 
 	t.Run("with transaction", func(t *testing.T) {
 		mock.ExpectBegin()
-		setDiscountDeletionQueryExpectation(t, mock, exampleID, nil)
+		setWebhookDeletionQueryExpectation(t, mock, exampleID, nil)
 		expected := generateExampleTimeForTests(t)
 		tx, err := mockDB.Begin()
 		assert.NoError(t, err, "no error should be returned setting up a transaction in the mock DB")
-		actual, err := client.DeleteDiscount(tx, exampleID)
+		actual, err := client.DeleteWebhook(tx, exampleID)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expected, actual, "expected deletion time did not match actual deletion time")

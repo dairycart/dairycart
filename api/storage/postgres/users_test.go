@@ -94,6 +94,7 @@ func TestUserWithUsernameExists(t *testing.T) {
 		assert.True(t, actual)
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with no rows found", func(t *testing.T) {
 		setUserWithUsernameExistenceQueryExpectation(t, mock, exampleUsername, true, sql.ErrNoRows)
 		actual, err := client.UserWithUsernameExists(mockDB, exampleUsername)
@@ -102,6 +103,7 @@ func TestUserWithUsernameExists(t *testing.T) {
 		assert.False(t, actual)
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with a database error", func(t *testing.T) {
 		setUserWithUsernameExistenceQueryExpectation(t, mock, exampleUsername, true, errors.New("pineapple on pizza"))
 		actual, err := client.UserWithUsernameExists(mockDB, exampleUsername)
@@ -138,6 +140,7 @@ func TestUserExists(t *testing.T) {
 		assert.True(t, actual)
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with no rows found", func(t *testing.T) {
 		setUserExistenceQueryExpectation(t, mock, exampleID, true, sql.ErrNoRows)
 		actual, err := client.UserExists(mockDB, exampleID)
@@ -146,6 +149,7 @@ func TestUserExists(t *testing.T) {
 		assert.False(t, actual)
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with a database error", func(t *testing.T) {
 		setUserExistenceQueryExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
 		actual, err := client.UserExists(mockDB, exampleID)

@@ -40,7 +40,7 @@ ExcludeTables = ["schema_migrations"]
 # that was just generated.
 # Example to run goimports on each output file:
 # PostRun = ["goimports", "-w", "$GNORMFILE"]
-PostRun = ["gofmt", "-s", "-w", "$GNORMFILE"] # , "&&", "goimports", "-w", "$GNORMFILE"]
+PostRun = ["gofmt", "-s", "-w", "$GNORMFILE"]
 
 PluginDirs = ["/Users/jeffrey/golang/src/github.com/verygoodsoftwarenotvirus/gnorm-dairymodels/dairyplugin"]
 
@@ -60,8 +60,8 @@ PluginDirs = ["/Users/jeffrey/golang/src/github.com/verygoodsoftwarenotvirus/gno
 "postgres/{{snake .Table}}.go" = "pg_table.gotmpl"
 "mock/{{snake .Table}}.go" = "mock_table.gotmpl"
 "postgres/{{snake .Table}}_test.go" = "pg_table_test.gotmpl"
-"../{{snake .Table}}.go" = "route.gotmpl"
-"../{{snake .Table}}_test.go" = "route_test.gotmpl"
+"routes/{{snake .Table}}.go" = "route.gotmpl"
+"routes/{{snake .Table}}_test.go" = "route_test.gotmpl"
 
 # SchemaPaths iis a map of output paths to template paths that tells Gnorm how
 # to render and output its schema info.  Each template will be rendered with
@@ -113,6 +113,7 @@ PluginDirs = ["/Users/jeffrey/golang/src/github.com/verygoodsoftwarenotvirus/gno
 "numeric" = "float64"
 # custom types
 "discount_type" = "string"
+"webhook_event" = "string"
 
 # NullableTypeMap is a mapping of database type names to replacement type names
 # (generally types from your language for deserialization), specifically for

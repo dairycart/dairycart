@@ -5,6 +5,7 @@ package postgres
 {{- $shortVarName := toLower (sliceString $modelName 0 1) }}
 {{- $isUser := eq $modelName "User" }}
 {{- $isProduct := eq $modelName "Product" }}
+{{- $isWebhook := eq $modelName "Webhook" }}
 {{- $isDiscount := eq $modelName "Discount" }}
 {{- $isProductRoot := eq $modelName "ProductRoot" }}
 {{- $isLoginAttempt := eq $modelName "LoginAttempt" }}
@@ -326,6 +327,48 @@ func (pg *postgres) {{ $modelName }}WithTokenExists(db storage.Querier, token st
 	}
 
 	return exists == "true", err
+}
+{{- end }}
+
+{{- if $isWebhook }}
+{{ $byEventTypeVarName := printf "%sQueryByEventType" ( camel $modelName ) -}}
+const {{ $byEventTypeVarName }} = `
+    SELECT
+    {{ $lastCol := dec (len .Table.Columns.DBNames) -}}
+    {{ range $x, $col := .Table.Columns.DBNames }}    {{ $col }}{{ if ne $x $lastCol }},
+    {{ end }}{{ end }}
+    FROM
+        {{ .Table.Name }}
+    WHERE
+        event_type = $1
+`
+
+func (pg *postgres) Get{{ $modelName }}sByEventType(db storage.Querier, eventType string) ([]models.{{ $modelName }}, error) {
+	var list []models.{{ $modelName }}
+
+    rows, err := db.Query({{ $byEventTypeVarName }}, eventType)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+    for rows.Next() {
+        var {{ $shortVarName }} models.{{ $modelName }}
+        err := rows.Scan(
+            {{ $lastCol := dec (len .Table.Columns.DBNames) -}}
+            {{ range $x, $col := .Table.Columns.DBNames }}&{{ $shortVarName }}.{{ pascal $col }},
+            {{ end }}
+        )
+        if err != nil {
+            return nil, err
+        }
+        list = append(list, {{ $shortVarName }})
+    }
+    err = rows.Err()
+    if err != nil {
+        return nil, err
+    }
+
+	return list, err
 }
 {{- end }}
 

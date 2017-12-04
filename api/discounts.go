@@ -84,7 +84,7 @@ func buildDiscountCreationHandler(db *sql.DB, client storage.Storer) http.Handle
 }
 
 func buildDiscountDeletionHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
-	// ProductDeletionHandler is a request handler that deletes a single product
+	// DiscountDeletionHandler is a request handler that deletes a single discount
 	return func(res http.ResponseWriter, req *http.Request) {
 		discountIDStr := chi.URLParam(req, "discount_id")
 		// eating this error because the router should have ensured this is an integer

@@ -19,6 +19,7 @@ type Storer interface {
         {{- $modelName := pascal (trimSuffix .Name "s") -}}
         {{- $isUser := eq $modelName "User" -}}
         {{- $isProduct := eq $modelName "Product" -}}
+        {{- $isWebhook := eq $modelName "Webhook" -}}
         {{- $isDiscount := eq $modelName "Discount" -}}
         {{- $isProductRoot := eq $modelName "ProductRoot" -}}
         {{- $isLoginAttempt := eq $modelName "LoginAttempt" -}}
@@ -72,6 +73,9 @@ type Storer interface {
         {{- end -}}
         {{- if $isLoginAttempt }}
             {{ $modelName }}sHaveBeenExhausted(Querier, string) (bool, error)
+        {{- end -}}
+        {{- if $isWebhook }}
+            Get{{ $modelName }}sByEventType(db Querier, eventType string) ([]models.{{ $modelName }}, error)
         {{- end -}}
         {{ "\n " }}
     {{ end -}}

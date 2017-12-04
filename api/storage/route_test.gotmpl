@@ -1,4 +1,7 @@
-package main
+{{ $modelName := pascal (trimSuffix .Table.Name "s") -}}
+{{ $lowerName := toLower $modelName -}}
+package routes
+{{ if eq $modelName "Webhook" }}
 
 import (
 	"database/sql"
@@ -13,9 +16,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-{{ $modelName := pascal (trimSuffix .Table.Name "s") -}}
-{{ $lowerName := toLower $modelName -}}
-{{ if eq $modelName "" }}
 ////////////////////////////////////////////////////////
 //                                                    //
 //                 HTTP Handler Tests                 //

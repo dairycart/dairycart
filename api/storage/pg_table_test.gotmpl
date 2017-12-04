@@ -3,6 +3,7 @@ package postgres
 {{- $modelName := pascal (trimSuffix .Table.Name "s") }}
 {{- $isUser := eq $modelName "User" }}
 {{- $isProduct := eq $modelName "Product" }}
+{{- $isWebhook := eq $modelName "Webhook" }}
 {{- $isDiscount := eq $modelName "Discount" }}
 {{- $isProductRoot := eq $modelName "ProductRoot" }}
 {{- $isLoginAttempt := eq $modelName "LoginAttempt" }}
@@ -108,7 +109,8 @@ func TestGet{{ $modelName }}sByProductRootID(t *testing.T) {
         assert.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
-    t.Run("with error executing query", func(t *testing.T) {
+
+	t.Run("with error executing query", func(t *testing.T) {
         set{{ $modelName }}ReadQueryExpectationByProductRootID(t, mock, example, nil, errors.New("pineapple on pizza"))
         actual, err := client.Get{{ $modelName }}sByProductRootID(mockDB, exampleProductRootID)
 
@@ -116,7 +118,8 @@ func TestGet{{ $modelName }}sByProductRootID(t *testing.T) {
         assert.Nil(t, actual)
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
-    t.Run("with error scanning values", func(t *testing.T) {
+
+	t.Run("with error scanning values", func(t *testing.T) {
         exampleRows := sqlmock.NewRows([]string{"things"}).AddRow("stuff")
         mock.ExpectQuery(formatQueryForSQLMock({{ $byProductRootIDVarName }})).
             WillReturnRows(exampleRows)
@@ -127,7 +130,8 @@ func TestGet{{ $modelName }}sByProductRootID(t *testing.T) {
         assert.Nil(t, actual)
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
-    t.Run("with with row errors", func(t *testing.T) {
+
+	t.Run("with with row errors", func(t *testing.T) {
         set{{ $modelName }}ReadQueryExpectationByProductRootID(t, mock, example, errors.New("pineapple on pizza"), nil)
         actual, err := client.Get{{ $modelName }}sByProductRootID(mockDB, exampleProductRootID)
 
@@ -200,7 +204,8 @@ func Test{{ $modelName }}WithUsernameExists(t *testing.T) {
         assert.True(t, actual)
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
-    t.Run("with no rows found", func(t *testing.T) {
+
+	t.Run("with no rows found", func(t *testing.T) {
         set{{ $modelName }}WithUsernameExistenceQueryExpectation(t, mock, exampleUsername, true, sql.ErrNoRows)
         actual, err := client.{{ $modelName }}WithUsernameExists(mockDB, exampleUsername)
 
@@ -208,7 +213,8 @@ func Test{{ $modelName }}WithUsernameExists(t *testing.T) {
         assert.False(t, actual)
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
-    t.Run("with a database error", func(t *testing.T) {
+
+	t.Run("with a database error", func(t *testing.T) {
         set{{ $modelName }}WithUsernameExistenceQueryExpectation(t, mock, exampleUsername, true, errors.New("pineapple on pizza"))
         actual, err := client.{{ $modelName }}WithUsernameExists(mockDB, exampleUsername)
 
@@ -284,7 +290,8 @@ func Test{{ $modelName }}WithSKUExists(t *testing.T) {
         assert.True(t, actual)
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
-    t.Run("with no rows found", func(t *testing.T) {
+
+	t.Run("with no rows found", func(t *testing.T) {
         set{{ $modelName }}WithSKUExistenceQueryExpectation(t, mock, exampleSKU, true, sql.ErrNoRows)
         actual, err := client.{{ $modelName }}WithSKUExists(mockDB, exampleSKU)
 
@@ -292,7 +299,8 @@ func Test{{ $modelName }}WithSKUExists(t *testing.T) {
         assert.False(t, actual)
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
-    t.Run("with a database error", func(t *testing.T) {
+
+	t.Run("with a database error", func(t *testing.T) {
         set{{ $modelName }}WithSKUExistenceQueryExpectation(t, mock, exampleSKU, true, errors.New("pineapple on pizza"))
         actual, err := client.{{ $modelName }}WithSKUExists(mockDB, exampleSKU)
 
@@ -333,7 +341,8 @@ func Test{{ $modelName }}WithNameExistsForProductRoot(t *testing.T) {
         assert.True(t, actual)
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
-    t.Run("with no rows found", func(t *testing.T) {
+
+	t.Run("with no rows found", func(t *testing.T) {
         set{{ $modelName }}WithNameProductIDExistenceQueryExpectation(t, mock, exampleProductRootID, exampleName, true, sql.ErrNoRows)
         actual, err := client.{{ $modelName }}WithNameExistsForProductRoot(mockDB, exampleName, exampleProductRootID)
 
@@ -341,7 +350,8 @@ func Test{{ $modelName }}WithNameExistsForProductRoot(t *testing.T) {
         assert.False(t, actual)
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
-    t.Run("with a database error", func(t *testing.T) {
+
+	t.Run("with a database error", func(t *testing.T) {
         set{{ $modelName }}WithNameProductIDExistenceQueryExpectation(t, mock, exampleProductRootID, exampleName, true, errors.New("pineapple on pizza"))
         actual, err := client.{{ $modelName }}WithNameExistsForProductRoot(mockDB, exampleName, exampleProductRootID)
 
@@ -382,7 +392,8 @@ func Test{{ $modelName }}ForOptionIDExists(t *testing.T) {
         assert.True(t, actual)
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
-    t.Run("with no rows found", func(t *testing.T) {
+
+	t.Run("with no rows found", func(t *testing.T) {
         set{{ $modelName }}ForOptionIDExistenceQueryExpectation(t, mock, exampleOptionID, exampleValue, true, sql.ErrNoRows)
         actual, err := client.{{ $modelName }}ForOptionIDExists(mockDB, exampleOptionID, exampleValue)
 
@@ -390,7 +401,8 @@ func Test{{ $modelName }}ForOptionIDExists(t *testing.T) {
         assert.False(t, actual)
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
-    t.Run("with a database error", func(t *testing.T) {
+
+	t.Run("with a database error", func(t *testing.T) {
         set{{ $modelName }}ForOptionIDExistenceQueryExpectation(t, mock, exampleOptionID, exampleValue, true, errors.New("pineapple on pizza"))
         actual, err := client.{{ $modelName }}ForOptionIDExists(mockDB, exampleOptionID, exampleValue)
 
@@ -466,7 +478,8 @@ func TestGet{{ $modelName }}sForOption(t *testing.T) {
         assert.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
-    t.Run("with error executing query", func(t *testing.T) {
+
+	t.Run("with error executing query", func(t *testing.T) {
         set{{ $modelName }}ForOptionIDReadQueryExpectation(t, mock, exampleID, example, nil, errors.New("pineapple on pizza"))
         actual, err := client.Get{{ $modelName }}sForOption(mockDB, exampleID)
 
@@ -474,7 +487,8 @@ func TestGet{{ $modelName }}sForOption(t *testing.T) {
         assert.Nil(t, actual)
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
-    t.Run("with error scanning values", func(t *testing.T) {
+
+	t.Run("with error scanning values", func(t *testing.T) {
         exampleRows := sqlmock.NewRows([]string{"things"}).AddRow("stuff")
         mock.ExpectQuery(formatQueryForSQLMock({{ $getValuesByOptionIDVarName }})).
             WillReturnRows(exampleRows)
@@ -484,7 +498,8 @@ func TestGet{{ $modelName }}sForOption(t *testing.T) {
         assert.Nil(t, actual)
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
-    t.Run("with with row errors", func(t *testing.T) {
+
+	t.Run("with with row errors", func(t *testing.T) {
         set{{ $modelName }}ForOptionIDReadQueryExpectation(t, mock, exampleID, example, errors.New("pineapple on pizza"), nil)
         actual, err := client.Get{{ $modelName }}sForOption(mockDB, exampleID)
 
@@ -523,7 +538,8 @@ func Test{{ $modelName }}WithSKUExists(t *testing.T) {
         assert.True(t, actual)
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
-    t.Run("with no rows found", func(t *testing.T) {
+
+	t.Run("with no rows found", func(t *testing.T) {
         set{{ $modelName }}WithSKUPrefixExistenceQueryExpectation(t, mock, exampleSKUPrefix, true, sql.ErrNoRows)
         actual, err := client.{{ $modelName }}WithSKUPrefixExists(mockDB, exampleSKUPrefix)
 
@@ -531,7 +547,8 @@ func Test{{ $modelName }}WithSKUExists(t *testing.T) {
         assert.False(t, actual)
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
-    t.Run("with a database error", func(t *testing.T) {
+
+	t.Run("with a database error", func(t *testing.T) {
         set{{ $modelName }}WithSKUPrefixExistenceQueryExpectation(t, mock, exampleSKUPrefix, true, errors.New("pineapple on pizza"))
         actual, err := client.{{ $modelName }}WithSKUPrefixExists(mockDB, exampleSKUPrefix)
 
@@ -617,6 +634,7 @@ func Test{{ $modelName }}ForUserIDExists(t *testing.T) {
         assert.True(t, actual)
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
+
     t.Run("with no rows found", func(t *testing.T) {
         set{{ $modelName }}ExistenceQueryByUserIDExpectation(t, mock, exampleID, true, sql.ErrNoRows)
         actual, err := client.{{ $modelName }}ForUserIDExists(mockDB, exampleID)
@@ -625,6 +643,7 @@ func Test{{ $modelName }}ForUserIDExists(t *testing.T) {
         assert.False(t, actual)
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
+
     t.Run("with a database error", func(t *testing.T) {
         set{{ $modelName }}ExistenceQueryByUserIDExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
         actual, err := client.{{ $modelName }}ForUserIDExists(mockDB, exampleID)
@@ -662,6 +681,7 @@ func Test{{ $modelName }}WithTokenExists(t *testing.T) {
         assert.True(t, actual)
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
+
     t.Run("with no rows found", func(t *testing.T) {
         set{{ $modelName }}ExistenceQueryByTokenExpectation(t, mock, exampleToken, true, sql.ErrNoRows)
         actual, err := client.{{ $modelName }}WithTokenExists(mockDB, exampleToken)
@@ -670,12 +690,86 @@ func Test{{ $modelName }}WithTokenExists(t *testing.T) {
         assert.False(t, actual)
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
+
     t.Run("with a database error", func(t *testing.T) {
         set{{ $modelName }}ExistenceQueryByTokenExpectation(t, mock, exampleToken, true, errors.New("pineapple on pizza"))
         actual, err := client.{{ $modelName }}WithTokenExists(mockDB, exampleToken)
 
         assert.NotNil(t, err)
         assert.False(t, actual)
+        assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+}
+{{- end }}
+
+{{- if $isWebhook }}
+{{ $byEventTypeVarName := printf "%sQueryByEventType" ( camel $modelName ) -}}
+func set{{ $modelName }}ReadQueryExpectationByEventType(t *testing.T, mock sqlmock.Sqlmock, example *models.{{ $modelName }}, rowErr error, err error) {
+    exampleRows := sqlmock.NewRows([]string{
+        {{ range $_, $x := .Table.Columns.DBNames }}{{ printf "\"%s\"" $x }},
+        {{ end }}
+    }).AddRow(
+        {{ range $_, $x := .Table.Columns.DBNames }}example.{{ pascal $x }},
+        {{ end }}
+    ).AddRow(
+        {{ range $_, $x := .Table.Columns.DBNames }}example.{{ pascal $x }},
+        {{ end }}
+    ).AddRow(
+        {{ range $_, $x := .Table.Columns.DBNames }}example.{{ pascal $x }},
+        {{ end }}
+    ).RowError(1, rowErr)
+
+	mock.ExpectQuery(formatQueryForSQLMock({{ $byEventTypeVarName }})).
+        WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
+func TestGet{{ $modelName }}sByEventType(t *testing.T) {
+    t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+    assert.NoError(t, err)
+    defer mockDB.Close()
+    client := NewPostgres()
+
+    exampleEventType := "product_updated"
+    example := &models.{{ $modelName }}{}
+
+    t.Run("optimal behavior", func(t *testing.T) {
+        set{{ $modelName }}ReadQueryExpectationByEventType(t, mock, example, nil, nil)
+        actual, err := client.Get{{ $modelName }}sByEventType(mockDB, exampleEventType)
+
+        assert.NoError(t, err)
+        assert.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
+        assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+
+    t.Run("with error executing query", func(t *testing.T) {
+        set{{ $modelName }}ReadQueryExpectationByEventType(t, mock, example, nil, errors.New("pineapple on pizza"))
+        actual, err := client.Get{{ $modelName }}sByEventType(mockDB, exampleEventType)
+
+        assert.NotNil(t, err)
+        assert.Nil(t, actual)
+        assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+
+    t.Run("with error scanning values", func(t *testing.T) {
+        exampleRows := sqlmock.NewRows([]string{"things"}).AddRow("stuff")
+        mock.ExpectQuery(formatQueryForSQLMock({{ $byEventTypeVarName }})).
+            WillReturnRows(exampleRows)
+
+        actual, err := client.Get{{ $modelName }}sByEventType(mockDB, exampleEventType)
+
+        assert.NotNil(t, err)
+        assert.Nil(t, actual)
+        assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+
+    t.Run("with with row errors", func(t *testing.T) {
+        set{{ $modelName }}ReadQueryExpectationByEventType(t, mock, example, errors.New("pineapple on pizza"), nil)
+        actual, err := client.Get{{ $modelName }}sByEventType(mockDB, exampleEventType)
+
+        assert.NotNil(t, err)
+        assert.Nil(t, actual)
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
 }
@@ -708,7 +802,8 @@ func Test{{ $modelName }}Exists(t *testing.T) {
         assert.True(t, actual)
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
-    t.Run("with no rows found", func(t *testing.T) {
+
+	t.Run("with no rows found", func(t *testing.T) {
         set{{ $modelName }}ExistenceQueryExpectation(t, mock, exampleID, true, sql.ErrNoRows)
         actual, err := client.{{ $modelName }}Exists(mockDB, exampleID)
 
@@ -716,7 +811,8 @@ func Test{{ $modelName }}Exists(t *testing.T) {
         assert.False(t, actual)
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
-    t.Run("with a database error", func(t *testing.T) {
+
+	t.Run("with a database error", func(t *testing.T) {
         set{{ $modelName }}ExistenceQueryExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
         actual, err := client.{{ $modelName }}Exists(mockDB, exampleID)
 

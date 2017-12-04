@@ -841,3 +841,14 @@ VALUES
     NOW(),
     null
 );
+
+INSERT INTO webhooks
+(
+    "url",
+    "event"
+)
+VALUES
+(
+    'http://www.example.com/updated',
+    'product_updated'
+);
