@@ -1,16 +1,11 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"strings"
 
-	// internal dependencies
-	"github.com/dairycart/dairycart/api/storage"
-
 	// external dependencies
 	"github.com/go-chi/chi"
-	"github.com/gorilla/sessions"
 )
 
 const (
@@ -25,54 +20,54 @@ func buildRoute(routeVersion string, routeParts ...string) string {
 }
 
 // SetupAPIRoutes takes a mux router and a database connection and creates all the API routes for the API
-func SetupAPIRoutes(router *chi.Mux, db *sql.DB, cookies *sessions.CookieStore, client storage.Storer) {
+func SetupAPIRoutes(config *ServerConfig) {
 	// Auth
-	router.Post("/login", buildUserLoginHandler(db, client, cookies))
-	router.Post("/logout", buildUserLogoutHandler(cookies))
-	router.Post("/user", buildUserCreationHandler(db, client, cookies))
-	router.Patch(fmt.Sprintf("/user/{user_id:%s}", NumericPattern), buildUserInfoUpdateHandler(db, client))
-	router.Post("/password_reset", buildUserForgottenPasswordHandler(db, client))
-	router.Head("/password_reset/{reset_token}", buildUserPasswordResetTokenValidationHandler(db, client))
+	config.Router.Post("/login", buildUserLoginHandler(config.DB, config.Dairyclient, config.CookieStore))
+	config.Router.Post("/logout", buildUserLogoutHandler(config.CookieStore))
+	config.Router.Post("/user", buildUserCreationHandler(config.DB, config.Dairyclient, config.CookieStore))
+	config.Router.Patch(fmt.Sprintf("/user/{user_id:%s}", NumericPattern), buildUserInfoUpdateHandler(config.DB, config.Dairyclient))
+	config.Router.Post("/password_reset", buildUserForgottenPasswordHandler(config.DB, config.Dairyclient))
+	config.Router.Head("/password_reset/{reset_token}", buildUserPasswordResetTokenValidationHandler(config.DB, config.Dairyclient))
 
-	router.Route("/v1", func(r chi.Router) {
+	config.Router.Route("/v1", func(r chi.Router) {
 		// Users
-		r.Delete(fmt.Sprintf("/user/{user_id:%s}", NumericPattern), buildUserDeletionHandler(db, client, cookies))
+		r.Delete(fmt.Sprintf("/user/{user_id:%s}", NumericPattern), buildUserDeletionHandler(config.DB, config.Dairyclient, config.CookieStore))
 
 		// Product Roots
 		specificProductRootRoute := fmt.Sprintf("/product_root/{product_root_id:%s}", NumericPattern)
-		r.Get("/product_roots", buildProductRootListHandler(db, client))
-		r.Get(specificProductRootRoute, buildSingleProductRootHandler(db, client))
-		r.Delete(specificProductRootRoute, buildProductRootDeletionHandler(db, client))
+		r.Get("/product_roots", buildProductRootListHandler(config.DB, config.Dairyclient))
+		r.Get(specificProductRootRoute, buildSingleProductRootHandler(config.DB, config.Dairyclient))
+		r.Delete(specificProductRootRoute, buildProductRootDeletionHandler(config.DB, config.Dairyclient))
 
 		// Products
 		specificProductRoute := fmt.Sprintf("/product/{sku:%s}", ValidURLCharactersPattern)
-		r.Get("/products", buildProductListHandler(db, client))
-		r.Post("/product", buildProductCreationHandler(db, client))
-		r.Get(specificProductRoute, buildSingleProductHandler(db, client))
-		r.Patch(specificProductRoute, buildProductUpdateHandler(db, client))
-		r.Head(specificProductRoute, buildProductExistenceHandler(db, client))
-		r.Delete(specificProductRoute, buildProductDeletionHandler(db, client))
+		r.Get("/products", buildProductListHandler(config.DB, config.Dairyclient))
+		r.Post("/product", buildProductCreationHandler(config.DB, config.Dairyclient))
+		r.Get(specificProductRoute, buildSingleProductHandler(config.DB, config.Dairyclient))
+		r.Patch(specificProductRoute, buildProductUpdateHandler(config.DB, config.Dairyclient))
+		r.Head(specificProductRoute, buildProductExistenceHandler(config.DB, config.Dairyclient))
+		r.Delete(specificProductRoute, buildProductDeletionHandler(config.DB, config.Dairyclient))
 
 		// Product Options
 		optionsListRoute := fmt.Sprintf("/product/{product_root_id:%s}/options", NumericPattern)
 		specificOptionRoute := fmt.Sprintf("/product_options/{option_id:%s}", NumericPattern)
-		r.Get(optionsListRoute, buildProductOptionListHandler(db, client))
-		r.Post(optionsListRoute, buildProductOptionCreationHandler(db, client))
-		r.Patch(specificOptionRoute, buildProductOptionUpdateHandler(db, client))
-		r.Delete(specificOptionRoute, buildProductOptionDeletionHandler(db, client))
+		r.Get(optionsListRoute, buildProductOptionListHandler(config.DB, config.Dairyclient))
+		r.Post(optionsListRoute, buildProductOptionCreationHandler(config.DB, config.Dairyclient))
+		r.Patch(specificOptionRoute, buildProductOptionUpdateHandler(config.DB, config.Dairyclient))
+		r.Delete(specificOptionRoute, buildProductOptionDeletionHandler(config.DB, config.Dairyclient))
 
 		// Product Option Values
 		specificOptionValueRoute := fmt.Sprintf("/product_option_values/{option_value_id:%s}", NumericPattern)
-		r.Post(fmt.Sprintf("/product_options/{option_id:%s}/value", NumericPattern), buildProductOptionValueCreationHandler(db, client))
-		r.Patch(specificOptionValueRoute, buildProductOptionValueUpdateHandler(db, client))
-		r.Delete(specificOptionValueRoute, buildProductOptionValueDeletionHandler(db, client))
+		r.Post(fmt.Sprintf("/product_options/{option_id:%s}/value", NumericPattern), buildProductOptionValueCreationHandler(config.DB, config.Dairyclient))
+		r.Patch(specificOptionValueRoute, buildProductOptionValueUpdateHandler(config.DB, config.Dairyclient))
+		r.Delete(specificOptionValueRoute, buildProductOptionValueDeletionHandler(config.DB, config.Dairyclient))
 
 		// Discounts
 		specificDiscountRoute := fmt.Sprintf("/discount/{discount_id:%s}", NumericPattern)
-		r.Get(specificDiscountRoute, buildDiscountRetrievalHandler(db, client))
-		r.Patch(specificDiscountRoute, buildDiscountUpdateHandler(db, client))
-		r.Delete(specificDiscountRoute, buildDiscountDeletionHandler(db, client))
-		r.Get("/discounts", buildDiscountListRetrievalHandler(db, client))
-		r.Post("/discount", buildDiscountCreationHandler(db, client))
+		r.Get(specificDiscountRoute, buildDiscountRetrievalHandler(config.DB, config.Dairyclient))
+		r.Patch(specificDiscountRoute, buildDiscountUpdateHandler(config.DB, config.Dairyclient))
+		r.Delete(specificDiscountRoute, buildDiscountDeletionHandler(config.DB, config.Dairyclient))
+		r.Get("/discounts", buildDiscountListRetrievalHandler(config.DB, config.Dairyclient))
+		r.Post("/discount", buildDiscountCreationHandler(config.DB, config.Dairyclient))
 	})
 }

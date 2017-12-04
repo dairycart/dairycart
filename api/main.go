@@ -13,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairycart/api/storage/postgres"
 
 	"github.com/go-chi/chi"
@@ -52,7 +51,8 @@ func determineMigrationCount() int {
 }
 
 // this function not only waits for the database to accept its incoming connection, but also performs any necessary migrations
-func migrateDatabase(db *sql.DB, migrationCount int) {
+func migrateDatabase(db *sql.DB) {
+	migrationCount := determineMigrationCount()
 	numberOfUnsuccessfulAttempts := 0
 	databaseIsNotMigrated := true
 	for databaseIsNotMigrated {
@@ -85,52 +85,52 @@ func migrateDatabase(db *sql.DB, migrationCount int) {
 	log.Println("database migrated!")
 }
 
-func main() {
-	logrus.SetOutput(os.Stdout)
-	logrus.SetLevel(logrus.InfoLevel)
-
-	var (
-		storageClient storage.Storer
-		db            *sql.DB
-		err           error
-	)
-
+func buildServerConfig() *ServerConfig {
 	// Connect to the database
 	dbChoice := strings.ToLower(os.Getenv("DB_TO_USE"))
 	switch dbChoice {
 	case "postgres":
 		dbURL := os.Getenv("DAIRYCART_DB_URL")
-		db, err = sql.Open("postgres", dbURL)
+		db, err := sql.Open("postgres", dbURL)
 		if err != nil {
 			logrus.Fatalf("error encountered connecting to database: %v", err)
 		}
-		storageClient = postgres.NewPostgres()
+
+		return &ServerConfig{
+			DB:          db,
+			Dairyclient: postgres.NewPostgres(),
+		}
 	default:
-		log.Fatalf("invalid database choice: '%s'", dbChoice)
+		logrus.Fatalf("invalid database choice: '%s'", dbChoice)
 	}
+	return nil
+}
 
-	// migrate the database
-	migrationCount := determineMigrationCount()
-	migrateDatabase(db, migrationCount)
-
+func setupCookieStorage() *sessions.CookieStore {
 	secret := os.Getenv("DAIRYSECRET")
 	if len(secret) < 32 {
 		logrus.Fatalf("Something is up with your app secret: `%s`", secret)
 	}
-	store := sessions.NewCookieStore([]byte(secret))
+	return sessions.NewCookieStore([]byte(secret))
+}
 
-	v1APIRouter := chi.NewRouter()
+func main() {
+	logrus.SetOutput(os.Stdout)
+	logrus.SetLevel(logrus.InfoLevel)
+	config := buildServerConfig()
 
-	v1APIRouter.Use(middleware.RequestID)
-	v1APIRouter.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{Logger: log.New(os.Stdout, "", log.LstdFlags)}))
+	// migrate the database
+	migrateDatabase(config.DB)
 
-	SetupAPIRoutes(v1APIRouter, db, store, storageClient)
+	config.CookieStore = setupCookieStorage()
+	config.Router = chi.NewRouter()
+	config.Router.Use(middleware.RequestID)
+	config.Router.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{Logger: log.New(os.Stdout, "", log.LstdFlags)}))
+	SetupAPIRoutes(config)
 
-	// serve 'em up a lil' sauce
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "healthy!") })
-
-	http.Handle("/", context.ClearHandler(v1APIRouter))
 	port := 4321
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "healthy!") })
+	http.Handle("/", context.ClearHandler(config.Router))
 	log.Printf("API now listening for requests on port %d\n", port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }

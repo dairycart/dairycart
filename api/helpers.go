@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,10 +12,13 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairycart/api/storage/models"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/fatih/structs"
+	"github.com/go-chi/chi"
+	"github.com/gorilla/sessions"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -26,10 +30,6 @@ const (
 
 	dataValidationPattern = `^[a-zA-Z\-_]{1,50}$`
 )
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-//    ¸,ø¤º°º¤ø,¸¸,ø¤º°   Everything after this point is not borrowed.   °º¤ø,¸¸,ø¤º°º¤ø,¸    //
-////////////////////////////////////////////////////////////////////////////////////////////////
 
 // ListResponse is a generic list response struct containing values that represent
 // pagination, meant to be embedded into other object response structs
@@ -44,6 +44,13 @@ type ListResponse struct {
 type ErrorResponse struct {
 	Status  int    `json:"status"`
 	Message string `json:"message"`
+}
+
+type ServerConfig struct {
+	Router      *chi.Mux
+	DB          *sql.DB
+	CookieStore *sessions.CookieStore
+	Dairyclient storage.Storer
 }
 
 func parseRawFilterParams(rawFilterParams url.Values) *models.QueryFilter {

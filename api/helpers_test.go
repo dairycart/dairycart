@@ -86,6 +86,15 @@ func setupTestVariablesWithMock(t *testing.T) *TestUtil {
 	}
 }
 
+func buildServerConfigFromTestUtil(testUtil *TestUtil) *ServerConfig {
+	return &ServerConfig{
+		Router:      testUtil.Router,
+		DB:          testUtil.PlainDB,
+		CookieStore: testUtil.Store,
+		Dairyclient: testUtil.MockDB,
+	}
+}
+
 func ensureExpectationsWereMet(t *testing.T, mock sqlmock.Sqlmock) {
 	t.Helper()
 	if err := mock.ExpectationsWereMet(); err != nil {
