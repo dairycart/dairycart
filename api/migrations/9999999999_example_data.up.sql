@@ -842,13 +842,21 @@ VALUES
     null
 );
 
--- INSERT INTO webhooks
--- (
---     "url",
---     "event_type"
--- )
--- VALUES
--- (
---     'http://www.example.com/updated',
---     'product_updated'
--- );
+INSERT INTO webhooks
+(
+    "url",
+    "event_type"
+)
+VALUES
+(
+    'http://httpbin/status/200',
+    'product_created'
+),
+(
+    'http://httpbin/status/200',
+    'product_updated'
+),
+(
+    'http://httpbin/status/200',
+    'product_archived'
+);
