@@ -120,13 +120,13 @@ func buildProductListHandler(db *sql.DB, client storage.Storer) http.HandlerFunc
 	}
 }
 
-func buildProductDeletionHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildProductDeletionHandler(db *sql.DB, client storage.Storer, webhookExecutor WebhookExecutor) http.HandlerFunc {
 	// ProductDeletionHandler is a request handler that deletes a single product
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := chi.URLParam(req, "sku")
 
 		// can't delete a product that doesn't exist!
-		existingProduct, err := client.GetProductBySKU(db, sku)
+		product, err := client.GetProductBySKU(db, sku)
 		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "product", sku)
 			return
@@ -141,14 +141,14 @@ func buildProductDeletionHandler(db *sql.DB, client storage.Storer) http.Handler
 			return
 		}
 
-		_, err = client.DeleteProductVariantBridgeByProductID(tx, existingProduct.ID)
+		_, err = client.DeleteProductVariantBridgeByProductID(tx, product.ID)
 		if err != nil && err != sql.ErrNoRows {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "archive product variant bridges in database")
 			return
 		}
 
-		archiveTime, err := client.DeleteProduct(tx, existingProduct.ID)
+		archiveTime, err := client.DeleteProduct(tx, product.ID)
 		if err != nil {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "archive product in database")
@@ -160,8 +160,19 @@ func buildProductDeletionHandler(db *sql.DB, client storage.Storer) http.Handler
 			notifyOfInternalIssue(res, err, "close out transaction")
 			return
 		}
-		existingProduct.ArchivedOn = models.NullTime{NullTime: pq.NullTime{Time: archiveTime, Valid: true}}
-		json.NewEncoder(res).Encode(existingProduct)
+		product.ArchivedOn = models.NullTime{NullTime: pq.NullTime{Time: archiveTime, Valid: true}}
+
+		webhooks, err := client.GetWebhooksByEventType(db, ProductArchivedWebhookEvent)
+		if err != nil && err != sql.ErrNoRows {
+			notifyOfInternalIssue(res, err, "retrieve webhooks from database")
+			return
+		}
+
+		for _, wh := range webhooks {
+			go webhookExecutor.CallWebhook(wh, product, client)
+		}
+
+		json.NewEncoder(res).Encode(product)
 	}
 }
 
@@ -205,13 +216,13 @@ func buildProductUpdateHandler(db *sql.DB, client storage.Storer, webhookExecuto
 		updatedProduct.UpdatedOn = models.NullTime{NullTime: pq.NullTime{Time: updatedTime, Valid: true}}
 
 		webhooks, err := client.GetWebhooksByEventType(db, ProductUpdatedWebhookEvent)
-		if err != nil {
+		if err != nil && err != sql.ErrNoRows {
 			notifyOfInternalIssue(res, err, "retrieve webhooks from database")
 			return
 		}
 
 		for _, wh := range webhooks {
-			go webhookExecutor.CallWebhook(wh, updatedProduct)
+			go webhookExecutor.CallWebhook(wh, updatedProduct, client)
 		}
 
 		json.NewEncoder(res).Encode(updatedProduct)
@@ -246,7 +257,7 @@ func createProductsInDBFromOptionRows(client storage.Storer, tx *sql.Tx, r *mode
 	return createdProducts, nil
 }
 
-func buildProductCreationHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildProductCreationHandler(db *sql.DB, client storage.Storer, webhookExecutor WebhookExecutor) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		productInput := &models.ProductCreationInput{}
 		err := validateRequestInput(req, productInput)
@@ -315,6 +326,16 @@ func buildProductCreationHandler(db *sql.DB, client storage.Storer) http.Handler
 		if err != nil {
 			notifyOfInternalIssue(res, err, "close out transaction")
 			return
+		}
+
+		webhooks, err := client.GetWebhooksByEventType(db, ProductCreatedWebhookEvent)
+		if err != nil && err != sql.ErrNoRows {
+			notifyOfInternalIssue(res, err, "retrieve webhooks from database")
+			return
+		}
+
+		for _, wh := range webhooks {
+			go webhookExecutor.CallWebhook(wh, productRoot, client)
 		}
 
 		res.WriteHeader(http.StatusCreated)

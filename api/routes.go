@@ -42,11 +42,11 @@ func SetupAPIRoutes(config *ServerConfig) {
 		// Products
 		specificProductRoute := fmt.Sprintf("/product/{sku:%s}", ValidURLCharactersPattern)
 		r.Get("/products", buildProductListHandler(config.DB, config.Dairyclient))
-		r.Post("/product", buildProductCreationHandler(config.DB, config.Dairyclient))
+		r.Post("/product", buildProductCreationHandler(config.DB, config.Dairyclient, config.WebhookExecutor))
 		r.Get(specificProductRoute, buildSingleProductHandler(config.DB, config.Dairyclient))
 		r.Patch(specificProductRoute, buildProductUpdateHandler(config.DB, config.Dairyclient, config.WebhookExecutor))
 		r.Head(specificProductRoute, buildProductExistenceHandler(config.DB, config.Dairyclient))
-		r.Delete(specificProductRoute, buildProductDeletionHandler(config.DB, config.Dairyclient))
+		r.Delete(specificProductRoute, buildProductDeletionHandler(config.DB, config.Dairyclient, config.WebhookExecutor))
 
 		// Product Options
 		optionsListRoute := fmt.Sprintf("/product/{product_root_id:%s}/options", NumericPattern)

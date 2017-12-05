@@ -8,20 +8,21 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairycart/api/storage/models"
 
 	"github.com/pkg/errors"
 )
 
 type WebhookExecutor interface {
-	CallWebhook(models.Webhook, interface{}) error
+	CallWebhook(models.Webhook, interface{}, storage.Storer) error
 }
 
 type webhookExecutor struct{}
 
 var _ WebhookExecutor = (*webhookExecutor)(nil)
 
-func (whe *webhookExecutor) CallWebhook(wh models.Webhook, object interface{}) error {
+func (whe *webhookExecutor) CallWebhook(wh models.Webhook, object interface{}, client storage.Storer) error {
 	var body []byte
 	var err error
 
