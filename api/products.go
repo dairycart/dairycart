@@ -14,6 +14,12 @@ import (
 	"github.com/lib/pq"
 )
 
+const (
+	ProductCreatedWebhookEvent  = "product_created"
+	ProductUpdatedWebhookEvent  = "product_updated"
+	ProductArchivedWebhookEvent = "product_archived"
+)
+
 // newProductFromCreationInput creates a new product from a ProductCreationInput
 func newProductFromCreationInput(in *models.ProductCreationInput) *models.Product {
 	np := &models.Product{
@@ -159,13 +165,13 @@ func buildProductDeletionHandler(db *sql.DB, client storage.Storer) http.Handler
 	}
 }
 
-func buildProductUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildProductUpdateHandler(db *sql.DB, client storage.Storer, webhookExecutor WebhookExecutor) http.HandlerFunc {
 	// ProductUpdateHandler is a request handler that can update products
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := chi.URLParam(req, "sku")
 
-		newerProduct := &models.Product{}
-		err := validateRequestInput(req, newerProduct)
+		updatedProduct := &models.Product{}
+		err := validateRequestInput(req, updatedProduct)
 		if err != nil {
 			notifyOfInvalidRequestBody(res, err)
 			return
@@ -180,25 +186,35 @@ func buildProductUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerFu
 			return
 		}
 
-		err = mergo.Merge(newerProduct, existingProduct)
+		err = mergo.Merge(updatedProduct, existingProduct)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "merge input and existing data")
 			return
 		}
 
-		if !restrictedStringIsValid(newerProduct.SKU) {
-			notifyOfInvalidRequestBody(res, fmt.Errorf("The sku received (%s) is invalid", newerProduct.SKU))
+		if !restrictedStringIsValid(updatedProduct.SKU) {
+			notifyOfInvalidRequestBody(res, fmt.Errorf("The sku received (%s) is invalid", updatedProduct.SKU))
 			return
 		}
 
-		updatedTime, err := client.UpdateProduct(db, newerProduct)
+		updatedTime, err := client.UpdateProduct(db, updatedProduct)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "update product in database")
 			return
 		}
-		newerProduct.UpdatedOn = models.NullTime{NullTime: pq.NullTime{Time: updatedTime, Valid: true}}
+		updatedProduct.UpdatedOn = models.NullTime{NullTime: pq.NullTime{Time: updatedTime, Valid: true}}
 
-		json.NewEncoder(res).Encode(newerProduct)
+		webhooks, err := client.GetWebhooksByEventType(db, ProductUpdatedWebhookEvent)
+		if err != nil {
+			notifyOfInternalIssue(res, err, "retrieve webhooks from database")
+			return
+		}
+
+		for _, wh := range webhooks {
+			go webhookExecutor.CallWebhook(wh, updatedProduct)
+		}
+
+		json.NewEncoder(res).Encode(updatedProduct)
 	}
 }
 

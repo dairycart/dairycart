@@ -114,6 +114,7 @@ PluginDirs = ["/Users/jeffrey/golang/src/github.com/verygoodsoftwarenotvirus/gno
 # custom types
 "discount_type" = "string"
 "webhook_event" = "string"
+"content_type" = "string"
 
 # NullableTypeMap is a mapping of database type names to replacement type names
 # (generally types from your language for deserialization), specifically for

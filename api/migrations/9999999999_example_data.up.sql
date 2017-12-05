@@ -842,13 +842,13 @@ VALUES
     null
 );
 
-INSERT INTO webhooks
-(
-    "url",
-    "event"
-)
-VALUES
-(
-    'http://www.example.com/updated',
-    'product_updated'
-);
+-- INSERT INTO webhooks
+-- (
+--     "url",
+--     "event_type"
+-- )
+-- VALUES
+-- (
+--     'http://www.example.com/updated',
+--     'product_updated'
+-- );

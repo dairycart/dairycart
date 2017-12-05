@@ -20,6 +20,7 @@ func setWebhookReadQueryExpectationByEventType(t *testing.T, mock sqlmock.Sqlmoc
 		"id",
 		"url",
 		"event_type",
+		"content_type",
 		"created_on",
 		"updated_on",
 		"archived_on",
@@ -27,6 +28,7 @@ func setWebhookReadQueryExpectationByEventType(t *testing.T, mock sqlmock.Sqlmoc
 		example.ID,
 		example.URL,
 		example.EventType,
+		example.ContentType,
 		example.CreatedOn,
 		example.UpdatedOn,
 		example.ArchivedOn,
@@ -34,6 +36,7 @@ func setWebhookReadQueryExpectationByEventType(t *testing.T, mock sqlmock.Sqlmoc
 		example.ID,
 		example.URL,
 		example.EventType,
+		example.ContentType,
 		example.CreatedOn,
 		example.UpdatedOn,
 		example.ArchivedOn,
@@ -41,6 +44,7 @@ func setWebhookReadQueryExpectationByEventType(t *testing.T, mock sqlmock.Sqlmoc
 		example.ID,
 		example.URL,
 		example.EventType,
+		example.ContentType,
 		example.CreatedOn,
 		example.UpdatedOn,
 		example.ArchivedOn,
@@ -155,6 +159,7 @@ func setWebhookReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint6
 		"id",
 		"url",
 		"event_type",
+		"content_type",
 		"created_on",
 		"updated_on",
 		"archived_on",
@@ -162,6 +167,7 @@ func setWebhookReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint6
 		toReturn.ID,
 		toReturn.URL,
 		toReturn.EventType,
+		toReturn.ContentType,
 		toReturn.CreatedOn,
 		toReturn.UpdatedOn,
 		toReturn.ArchivedOn,
@@ -193,6 +199,7 @@ func setWebhookListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *
 		"id",
 		"url",
 		"event_type",
+		"content_type",
 		"created_on",
 		"updated_on",
 		"archived_on",
@@ -200,6 +207,7 @@ func setWebhookListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *
 		example.ID,
 		example.URL,
 		example.EventType,
+		example.ContentType,
 		example.CreatedOn,
 		example.UpdatedOn,
 		example.ArchivedOn,
@@ -207,6 +215,7 @@ func setWebhookListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *
 		example.ID,
 		example.URL,
 		example.EventType,
+		example.ContentType,
 		example.CreatedOn,
 		example.UpdatedOn,
 		example.ArchivedOn,
@@ -214,6 +223,7 @@ func setWebhookListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *
 		example.ID,
 		example.URL,
 		example.EventType,
+		example.ContentType,
 		example.CreatedOn,
 		example.UpdatedOn,
 		example.ArchivedOn,
@@ -337,6 +347,7 @@ func setWebhookCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCr
 		WithArgs(
 			toCreate.URL,
 			toCreate.EventType,
+			toCreate.ContentType,
 		).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
@@ -372,6 +383,7 @@ func setWebhookUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpda
 		WithArgs(
 			toUpdate.URL,
 			toUpdate.EventType,
+			toUpdate.ContentType,
 			toUpdate.ID,
 		).
 		WillReturnRows(exampleRows).

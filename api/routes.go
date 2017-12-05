@@ -44,7 +44,7 @@ func SetupAPIRoutes(config *ServerConfig) {
 		r.Get("/products", buildProductListHandler(config.DB, config.Dairyclient))
 		r.Post("/product", buildProductCreationHandler(config.DB, config.Dairyclient))
 		r.Get(specificProductRoute, buildSingleProductHandler(config.DB, config.Dairyclient))
-		r.Patch(specificProductRoute, buildProductUpdateHandler(config.DB, config.Dairyclient))
+		r.Patch(specificProductRoute, buildProductUpdateHandler(config.DB, config.Dairyclient, config.WebhookExecutor))
 		r.Head(specificProductRoute, buildProductExistenceHandler(config.DB, config.Dairyclient))
 		r.Delete(specificProductRoute, buildProductDeletionHandler(config.DB, config.Dairyclient))
 

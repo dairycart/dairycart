@@ -15,6 +15,7 @@ const webhookQueryByEventType = `
         id,
         url,
         event_type,
+        content_type,
         created_on,
         updated_on,
         archived_on
@@ -38,6 +39,7 @@ func (pg *postgres) GetWebhooksByEventType(db storage.Querier, eventType string)
 			&w.ID,
 			&w.URL,
 			&w.EventType,
+			&w.ContentType,
 			&w.CreatedOn,
 			&w.UpdatedOn,
 			&w.ArchivedOn,
@@ -75,6 +77,7 @@ const webhookSelectionQuery = `
         id,
         url,
         event_type,
+        content_type,
         created_on,
         updated_on,
         archived_on
@@ -89,7 +92,7 @@ const webhookSelectionQuery = `
 func (pg *postgres) GetWebhook(db storage.Querier, id uint64) (*models.Webhook, error) {
 	w := &models.Webhook{}
 
-	err := db.QueryRow(webhookSelectionQuery, id).Scan(&w.ID, &w.URL, &w.EventType, &w.CreatedOn, &w.UpdatedOn, &w.ArchivedOn)
+	err := db.QueryRow(webhookSelectionQuery, id).Scan(&w.ID, &w.URL, &w.EventType, &w.ContentType, &w.CreatedOn, &w.UpdatedOn, &w.ArchivedOn)
 
 	return w, err
 }
@@ -101,6 +104,7 @@ func buildWebhookListRetrievalQuery(qf *models.QueryFilter) (string, []interface
 			"id",
 			"url",
 			"event_type",
+			"content_type",
 			"created_on",
 			"updated_on",
 			"archived_on",
@@ -126,6 +130,7 @@ func (pg *postgres) GetWebhookList(db storage.Querier, qf *models.QueryFilter) (
 			&w.ID,
 			&w.URL,
 			&w.EventType,
+			&w.ContentType,
 			&w.CreatedOn,
 			&w.UpdatedOn,
 			&w.ArchivedOn,
@@ -162,11 +167,11 @@ func (pg *postgres) GetWebhookCount(db storage.Querier, qf *models.QueryFilter) 
 const webhookCreationQuery = `
     INSERT INTO webhooks
         (
-            url, event_type
+            url, event_type, content_type
         )
     VALUES
         (
-            $1, $2
+            $1, $2, $3
         )
     RETURNING
         id, created_on;
@@ -178,7 +183,7 @@ func (pg *postgres) CreateWebhook(db storage.Querier, nu *models.Webhook) (uint6
 		createdAt time.Time
 	)
 
-	err := db.QueryRow(webhookCreationQuery, &nu.URL, &nu.EventType).Scan(&createdID, &createdAt)
+	err := db.QueryRow(webhookCreationQuery, &nu.URL, &nu.EventType, &nu.ContentType).Scan(&createdID, &createdAt)
 	return createdID, createdAt, err
 }
 
@@ -187,14 +192,15 @@ const webhookUpdateQuery = `
     SET
         url = $1, 
         event_type = $2, 
+        content_type = $3, 
         updated_on = NOW()
-    WHERE id = $3
+    WHERE id = $4
     RETURNING updated_on;
 `
 
 func (pg *postgres) UpdateWebhook(db storage.Querier, updated *models.Webhook) (time.Time, error) {
 	var t time.Time
-	err := db.QueryRow(webhookUpdateQuery, &updated.URL, &updated.EventType, &updated.ID).Scan(&t)
+	err := db.QueryRow(webhookUpdateQuery, &updated.URL, &updated.EventType, &updated.ContentType, &updated.ID).Scan(&t)
 	return t, err
 }
 

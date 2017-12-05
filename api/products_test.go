@@ -273,6 +273,7 @@ func TestProductUpdateHandler(t *testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).Return(exampleProduct, nil).Once()
 		testUtil.MockDB.On("UpdateProduct", mock.Anything, mock.Anything).Return(generateExampleTimeForTests(), nil).Once()
+		testUtil.MockDB.On("GetWebhooksByEventType", mock.Anything, ProductUpdatedWebhookEvent).Return([]models.Webhook{}, nil).Once()
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -339,6 +340,21 @@ func TestProductUpdateHandler(t *testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).Return(exampleProduct, nil).Once()
 		testUtil.MockDB.On("UpdateProduct", mock.Anything, mock.Anything).Return(generateExampleTimeForTests(), generateArbitraryError()).Once()
+		config := buildServerConfigFromTestUtil(testUtil)
+		SetupAPIRoutes(config)
+
+		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), strings.NewReader(exampleProductUpdateInput))
+		assert.NoError(t, err)
+
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
+
+	t.Run("with error retrieving webhooks", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).Return(exampleProduct, nil).Once()
+		testUtil.MockDB.On("UpdateProduct", mock.Anything, mock.Anything).Return(generateExampleTimeForTests(), nil).Once()
+		testUtil.MockDB.On("GetWebhooksByEventType", mock.Anything, ProductUpdatedWebhookEvent).Return([]models.Webhook{}, generateArbitraryError()).Once()
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
