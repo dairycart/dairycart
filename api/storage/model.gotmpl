@@ -4,7 +4,7 @@ package models
 {{- $allColumns := join (.Table.Columns.Names.Sprintf "%s") ", " -}}
 
 import(
-    {{ if contains $allColumns "archived_on" }}
+    {{ if or (contains $allColumns "archived_on") (contains $allColumns "executed_on") }}
         "time"
     {{ else if contains $allColumns "created_on" }}
         "time"

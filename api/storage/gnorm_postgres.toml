@@ -1,8 +1,4 @@
 # ConnStr is the connection string for the database.
-# MySQL example:
-# ConnStr = "root:admin@tcp/"
-# Postgres example:
-# ConnStr = "dbname=dairycart host=127.0.0.1 sslmode=disable user=dairycart pass=hunter2 port=2345"
 ConnStr = "postgresql://dairycart:hunter2@localhost:2345/dairycart?sslmode=disable"
 
 # DBType holds the type of db you're connecting to.  Possible values are

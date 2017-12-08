@@ -169,7 +169,7 @@ func buildProductDeletionHandler(db *sql.DB, client storage.Storer, webhookExecu
 		}
 
 		for _, wh := range webhooks {
-			go webhookExecutor.CallWebhook(wh, product, client)
+			go webhookExecutor.CallWebhook(wh, product, db, client)
 		}
 
 		json.NewEncoder(res).Encode(product)
@@ -222,7 +222,7 @@ func buildProductUpdateHandler(db *sql.DB, client storage.Storer, webhookExecuto
 		}
 
 		for _, wh := range webhooks {
-			go webhookExecutor.CallWebhook(wh, updatedProduct, client)
+			go webhookExecutor.CallWebhook(wh, updatedProduct, db, client)
 		}
 
 		json.NewEncoder(res).Encode(updatedProduct)
@@ -335,7 +335,7 @@ func buildProductCreationHandler(db *sql.DB, client storage.Storer, webhookExecu
 		}
 
 		for _, wh := range webhooks {
-			go webhookExecutor.CallWebhook(wh, productRoot, client)
+			go webhookExecutor.CallWebhook(wh, productRoot, db, client)
 		}
 
 		res.WriteHeader(http.StatusCreated)

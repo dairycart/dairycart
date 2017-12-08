@@ -89,7 +89,7 @@ func setupTestVariablesWithMock(t *testing.T) *TestUtil {
 
 func buildServerConfigFromTestUtil(testUtil *TestUtil) *ServerConfig {
 	whe := &mockWebhookExecutor{}
-	whe.On("CallWebhook", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	whe.On("CallWebhook", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 	return &ServerConfig{
 		Router:          testUtil.Router,
 		DB:              testUtil.PlainDB,
