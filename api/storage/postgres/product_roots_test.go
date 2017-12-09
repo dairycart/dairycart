@@ -41,6 +41,7 @@ func TestProductRootWithSKUExists(t *testing.T) {
 		assert.True(t, actual)
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with no rows found", func(t *testing.T) {
 		setProductRootWithSKUPrefixExistenceQueryExpectation(t, mock, exampleSKUPrefix, true, sql.ErrNoRows)
 		actual, err := client.ProductRootWithSKUPrefixExists(mockDB, exampleSKUPrefix)
@@ -49,6 +50,7 @@ func TestProductRootWithSKUExists(t *testing.T) {
 		assert.False(t, actual)
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with a database error", func(t *testing.T) {
 		setProductRootWithSKUPrefixExistenceQueryExpectation(t, mock, exampleSKUPrefix, true, errors.New("pineapple on pizza"))
 		actual, err := client.ProductRootWithSKUPrefixExists(mockDB, exampleSKUPrefix)
@@ -85,6 +87,7 @@ func TestProductRootExists(t *testing.T) {
 		assert.True(t, actual)
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with no rows found", func(t *testing.T) {
 		setProductRootExistenceQueryExpectation(t, mock, exampleID, true, sql.ErrNoRows)
 		actual, err := client.ProductRootExists(mockDB, exampleID)
@@ -93,6 +96,7 @@ func TestProductRootExists(t *testing.T) {
 		assert.False(t, actual)
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with a database error", func(t *testing.T) {
 		setProductRootExistenceQueryExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
 		actual, err := client.ProductRootExists(mockDB, exampleID)

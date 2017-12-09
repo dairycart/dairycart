@@ -1,5 +1,5 @@
 set -e
-gnorm gen --config="gnorm.toml" # --verbose
+gnorm gen --config="gnorm_postgres.toml"  # --verbose
 mkdir -p ../../integration_tests/vendor/github.com/dairycart/dairycart/api/storage/models
 cp -rf models ../../integration_tests/vendor/github.com/dairycart/dairycart/api/storage/models
 

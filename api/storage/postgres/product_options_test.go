@@ -69,6 +69,7 @@ func TestGetProductOptionsByProductRootID(t *testing.T) {
 		assert.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with error executing query", func(t *testing.T) {
 		setProductOptionReadQueryExpectationByProductRootID(t, mock, example, nil, errors.New("pineapple on pizza"))
 		actual, err := client.GetProductOptionsByProductRootID(mockDB, exampleProductRootID)
@@ -77,6 +78,7 @@ func TestGetProductOptionsByProductRootID(t *testing.T) {
 		assert.Nil(t, actual)
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with error scanning values", func(t *testing.T) {
 		exampleRows := sqlmock.NewRows([]string{"things"}).AddRow("stuff")
 		mock.ExpectQuery(formatQueryForSQLMock(productOptionQueryByProductRootID)).
@@ -88,6 +90,7 @@ func TestGetProductOptionsByProductRootID(t *testing.T) {
 		assert.Nil(t, actual)
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with with row errors", func(t *testing.T) {
 		setProductOptionReadQueryExpectationByProductRootID(t, mock, example, errors.New("pineapple on pizza"), nil)
 		actual, err := client.GetProductOptionsByProductRootID(mockDB, exampleProductRootID)
@@ -125,6 +128,7 @@ func TestProductOptionWithNameExistsForProductRoot(t *testing.T) {
 		assert.True(t, actual)
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with no rows found", func(t *testing.T) {
 		setProductOptionWithNameProductIDExistenceQueryExpectation(t, mock, exampleProductRootID, exampleName, true, sql.ErrNoRows)
 		actual, err := client.ProductOptionWithNameExistsForProductRoot(mockDB, exampleName, exampleProductRootID)
@@ -133,6 +137,7 @@ func TestProductOptionWithNameExistsForProductRoot(t *testing.T) {
 		assert.False(t, actual)
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with a database error", func(t *testing.T) {
 		setProductOptionWithNameProductIDExistenceQueryExpectation(t, mock, exampleProductRootID, exampleName, true, errors.New("pineapple on pizza"))
 		actual, err := client.ProductOptionWithNameExistsForProductRoot(mockDB, exampleName, exampleProductRootID)
@@ -169,6 +174,7 @@ func TestProductOptionExists(t *testing.T) {
 		assert.True(t, actual)
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with no rows found", func(t *testing.T) {
 		setProductOptionExistenceQueryExpectation(t, mock, exampleID, true, sql.ErrNoRows)
 		actual, err := client.ProductOptionExists(mockDB, exampleID)
@@ -177,6 +183,7 @@ func TestProductOptionExists(t *testing.T) {
 		assert.False(t, actual)
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with a database error", func(t *testing.T) {
 		setProductOptionExistenceQueryExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
 		actual, err := client.ProductOptionExists(mockDB, exampleID)

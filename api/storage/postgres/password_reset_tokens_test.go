@@ -41,6 +41,7 @@ func TestPasswordResetTokenForUserIDExists(t *testing.T) {
 		assert.True(t, actual)
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with no rows found", func(t *testing.T) {
 		setPasswordResetTokenExistenceQueryByUserIDExpectation(t, mock, exampleID, true, sql.ErrNoRows)
 		actual, err := client.PasswordResetTokenForUserIDExists(mockDB, exampleID)
@@ -49,6 +50,7 @@ func TestPasswordResetTokenForUserIDExists(t *testing.T) {
 		assert.False(t, actual)
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with a database error", func(t *testing.T) {
 		setPasswordResetTokenExistenceQueryByUserIDExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
 		actual, err := client.PasswordResetTokenForUserIDExists(mockDB, exampleID)
@@ -85,6 +87,7 @@ func TestPasswordResetTokenWithTokenExists(t *testing.T) {
 		assert.True(t, actual)
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with no rows found", func(t *testing.T) {
 		setPasswordResetTokenExistenceQueryByTokenExpectation(t, mock, exampleToken, true, sql.ErrNoRows)
 		actual, err := client.PasswordResetTokenWithTokenExists(mockDB, exampleToken)
@@ -93,6 +96,7 @@ func TestPasswordResetTokenWithTokenExists(t *testing.T) {
 		assert.False(t, actual)
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with a database error", func(t *testing.T) {
 		setPasswordResetTokenExistenceQueryByTokenExpectation(t, mock, exampleToken, true, errors.New("pineapple on pizza"))
 		actual, err := client.PasswordResetTokenWithTokenExists(mockDB, exampleToken)
@@ -129,6 +133,7 @@ func TestPasswordResetTokenExists(t *testing.T) {
 		assert.True(t, actual)
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with no rows found", func(t *testing.T) {
 		setPasswordResetTokenExistenceQueryExpectation(t, mock, exampleID, true, sql.ErrNoRows)
 		actual, err := client.PasswordResetTokenExists(mockDB, exampleID)
@@ -137,6 +142,7 @@ func TestPasswordResetTokenExists(t *testing.T) {
 		assert.False(t, actual)
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
+
 	t.Run("with a database error", func(t *testing.T) {
 		setPasswordResetTokenExistenceQueryExpectation(t, mock, exampleID, true, errors.New("pineapple on pizza"))
 		actual, err := client.PasswordResetTokenExists(mockDB, exampleID)

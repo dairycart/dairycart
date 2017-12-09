@@ -10,6 +10,7 @@ import (
 {{- $modelName := pascal (trimSuffix .Table.Name "s") }}
 {{- $isUser := eq $modelName "User" }}
 {{- $isProduct := eq $modelName "Product" }}
+{{- $isWebhook := eq $modelName "Webhook" }}
 {{- $isDiscount := eq $modelName "Discount" }}
 {{- $isProductRoot := eq $modelName "ProductRoot" }}
 {{- $isLoginAttempt := eq $modelName "LoginAttempt" }}
@@ -160,3 +161,10 @@ func (m *MockDB) Delete{{ $modelName }}ByProductID(db storage.Querier, productID
 	return args.Get(0).(time.Time), args.Error(1)
 }
 {{- end }}
+
+{{- if $isWebhook }}
+func (m *MockDB) Get{{ $modelName }}sByEventType(db storage.Querier, eventType string) ([]models.{{ $modelName }}, error) {
+    args := m.Called(db, eventType)
+    return args.Get(0).([]models.{{ $modelName }}), args.Error(1)
+}
+{{- end -}}

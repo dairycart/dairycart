@@ -448,11 +448,7 @@ func buildUserInfoUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerF
 
 		updatedUser := createUserFromUpdateInput(updatedUserInfo, hashedPassword)
 
-		err = mergo.Merge(updatedUser, existingUser)
-		if err != nil {
-			notifyOfInternalIssue(res, err, "merge input and existing data")
-			return
-		}
+		mergo.Merge(updatedUser, existingUser)
 
 		// FIXME: this isn't how this should be done
 		if passwordChanged {

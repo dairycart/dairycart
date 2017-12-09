@@ -47,10 +47,11 @@ type ErrorResponse struct {
 }
 
 type ServerConfig struct {
-	Router      *chi.Mux
-	DB          *sql.DB
-	CookieStore *sessions.CookieStore
-	Dairyclient storage.Storer
+	Router          *chi.Mux
+	DB              *sql.DB
+	CookieStore     *sessions.CookieStore
+	Dairyclient     storage.Storer
+	WebhookExecutor WebhookExecutor
 }
 
 func parseRawFilterParams(rawFilterParams url.Values) *models.QueryFilter {

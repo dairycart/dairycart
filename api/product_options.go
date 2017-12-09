@@ -148,11 +148,7 @@ func buildProductOptionUpdateHandler(db *sql.DB, client storage.Storer) http.Han
 			return
 		}
 
-		err = mergo.MergeWithOverwrite(existingOption, updatedOptionData)
-		if err != nil {
-			notifyOfInternalIssue(res, err, "merge input and existing data")
-			return
-		}
+		mergo.MergeWithOverwrite(existingOption, updatedOptionData)
 
 		updatedOn, err := client.UpdateProductOption(db, existingOption)
 		if err != nil {
