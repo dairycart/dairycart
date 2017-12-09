@@ -99,7 +99,7 @@ func buildServerConfig() *ServerConfig {
 		return &ServerConfig{
 			DB:              db,
 			Dairyclient:     postgres.NewPostgres(),
-			WebhookExecutor: &webhookExecutor{},
+			WebhookExecutor: &webhookExecutor{Client: http.DefaultClient},
 		}
 	default:
 		logrus.Fatalf("invalid database choice: '%s'", dbChoice)
