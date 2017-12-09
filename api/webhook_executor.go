@@ -16,35 +16,35 @@ type WebhookExecutor interface {
 	CallWebhook(models.Webhook, interface{}, storage.Querier, storage.Storer)
 }
 
-type webhookExecutor struct{}
+type webhookExecutor struct {
+	*http.Client
+}
 
 var _ WebhookExecutor = (*webhookExecutor)(nil)
 
 func (whe *webhookExecutor) CallWebhook(wh models.Webhook, object interface{}, db storage.Querier, client storage.Storer) {
-	var body []byte
-	var err error
+	var (
+		body        []byte
+		err         error
+		marshalFunc func(v interface{}) ([]byte, error)
+	)
 
 	wel := &models.WebhookExecutionLog{WebhookID: wh.ID}
 
 	switch strings.ToLower(wh.ContentType) {
-	case "application/json":
-		body, err = json.Marshal(object)
-		if err != nil {
-			log.Printf("error encountered executing webhook: %v", err)
-			return
-		}
 	case "application/xml":
-		body, err = xml.Marshal(object)
-		if err != nil {
-			log.Printf("error encountered executing webhook: %v", err)
-			return
-		}
+		marshalFunc = xml.Marshal
 	default:
-		log.Printf("invalid content type: %s", wh.ContentType)
+		marshalFunc = json.Marshal
+	}
+
+	body, err = marshalFunc(object)
+	if err != nil {
+		log.Printf("error encountered executing webhook: %v", err)
 		return
 	}
 
-	res, err := http.Post(wh.URL, wh.ContentType, bytes.NewBuffer(body))
+	res, err := whe.Client.Post(wh.URL, wh.ContentType, bytes.NewBuffer(body))
 	if err != nil {
 		log.Printf("error encountered executing webhook: %v", err)
 		return

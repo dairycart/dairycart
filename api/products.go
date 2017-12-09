@@ -197,11 +197,7 @@ func buildProductUpdateHandler(db *sql.DB, client storage.Storer, webhookExecuto
 			return
 		}
 
-		err = mergo.Merge(updatedProduct, existingProduct)
-		if err != nil {
-			notifyOfInternalIssue(res, err, "merge input and existing data")
-			return
-		}
+		mergo.Merge(updatedProduct, existingProduct)
 
 		if !restrictedStringIsValid(updatedProduct.SKU) {
 			notifyOfInvalidRequestBody(res, fmt.Errorf("The sku received (%s) is invalid", updatedProduct.SKU))

@@ -133,11 +133,7 @@ func buildDiscountUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerF
 			return
 		}
 
-		err = mergo.Merge(updatedDiscount, existingDiscount)
-		if err != nil {
-			notifyOfInternalIssue(res, err, "merge input and existing data")
-			return
-		}
+		mergo.Merge(updatedDiscount, existingDiscount)
 
 		updatedOn, err := client.UpdateDiscount(db, updatedDiscount)
 		if err != nil {
