@@ -72,12 +72,12 @@ func buildDiscountCreationHandler(db *sql.DB, client storage.Storer) http.Handle
 		}
 
 		newID, createdOn, err := client.CreateDiscount(db, newDiscount)
-		newDiscount.ID = newID
-		newDiscount.CreatedOn = &models.Dairytime{Time: createdOn}
 		if err != nil {
 			notifyOfInternalIssue(res, err, "insert discount into database")
 			return
 		}
+		newDiscount.ID = newID
+		newDiscount.CreatedOn = &models.Dairytime{Time: createdOn}
 
 		res.WriteHeader(http.StatusCreated)
 		json.NewEncoder(res).Encode(newDiscount)

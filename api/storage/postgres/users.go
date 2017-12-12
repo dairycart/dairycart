@@ -12,18 +12,18 @@ import (
 
 const userQueryByUsername = `
     SELECT
-        email,
-        created_on,
-        archived_on,
-        first_name,
-        updated_on,
         id,
-        username,
-        password_last_changed_on,
-        salt,
+        first_name,
         last_name,
+        username,
+        email,
+        password,
+        salt,
         is_admin,
-        password
+        password_last_changed_on,
+        created_on,
+        updated_on,
+        archived_on
     FROM
         users
     WHERE
@@ -34,7 +34,7 @@ const userQueryByUsername = `
 
 func (pg *postgres) GetUserByUsername(db storage.Querier, username string) (*models.User, error) {
 	u := &models.User{}
-	err := db.QueryRow(userQueryByUsername, username).Scan(&u.Email, &u.CreatedOn, &u.ArchivedOn, &u.FirstName, &u.UpdatedOn, &u.ID, &u.Username, &u.PasswordLastChangedOn, &u.Salt, &u.LastName, &u.IsAdmin, &u.Password)
+	err := db.QueryRow(userQueryByUsername, username).Scan(&u.ID, &u.FirstName, &u.LastName, &u.Username, &u.Email, &u.Password, &u.Salt, &u.IsAdmin, &u.PasswordLastChangedOn, &u.CreatedOn, &u.UpdatedOn, &u.ArchivedOn)
 	return u, err
 }
 
@@ -70,18 +70,18 @@ func (pg *postgres) UserExists(db storage.Querier, id uint64) (bool, error) {
 
 const userSelectionQuery = `
     SELECT
-        email,
-        created_on,
-        archived_on,
-        first_name,
-        updated_on,
         id,
-        username,
-        password_last_changed_on,
-        salt,
+        first_name,
         last_name,
+        username,
+        email,
+        password,
+        salt,
         is_admin,
-        password
+        password_last_changed_on,
+        created_on,
+        updated_on,
+        archived_on
     FROM
         users
     WHERE
@@ -93,7 +93,7 @@ const userSelectionQuery = `
 func (pg *postgres) GetUser(db storage.Querier, id uint64) (*models.User, error) {
 	u := &models.User{}
 
-	err := db.QueryRow(userSelectionQuery, id).Scan(&u.Email, &u.CreatedOn, &u.ArchivedOn, &u.FirstName, &u.UpdatedOn, &u.ID, &u.Username, &u.PasswordLastChangedOn, &u.Salt, &u.LastName, &u.IsAdmin, &u.Password)
+	err := db.QueryRow(userSelectionQuery, id).Scan(&u.ID, &u.FirstName, &u.LastName, &u.Username, &u.Email, &u.Password, &u.Salt, &u.IsAdmin, &u.PasswordLastChangedOn, &u.CreatedOn, &u.UpdatedOn, &u.ArchivedOn)
 
 	return u, err
 }
@@ -102,18 +102,18 @@ func buildUserListRetrievalQuery(qf *models.QueryFilter) (string, []interface{})
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Select(
-			"email",
-			"created_on",
-			"archived_on",
-			"first_name",
-			"updated_on",
 			"id",
-			"username",
-			"password_last_changed_on",
-			"salt",
+			"first_name",
 			"last_name",
-			"is_admin",
+			"username",
+			"email",
 			"password",
+			"salt",
+			"is_admin",
+			"password_last_changed_on",
+			"created_on",
+			"updated_on",
+			"archived_on",
 		).
 		From("users")
 
@@ -133,18 +133,18 @@ func (pg *postgres) GetUserList(db storage.Querier, qf *models.QueryFilter) ([]m
 	for rows.Next() {
 		var u models.User
 		err := rows.Scan(
-			&u.Email,
-			&u.CreatedOn,
-			&u.ArchivedOn,
-			&u.FirstName,
-			&u.UpdatedOn,
 			&u.ID,
-			&u.Username,
-			&u.PasswordLastChangedOn,
-			&u.Salt,
+			&u.FirstName,
 			&u.LastName,
-			&u.IsAdmin,
+			&u.Username,
+			&u.Email,
 			&u.Password,
+			&u.Salt,
+			&u.IsAdmin,
+			&u.PasswordLastChangedOn,
+			&u.CreatedOn,
+			&u.UpdatedOn,
+			&u.ArchivedOn,
 		)
 		if err != nil {
 			return nil, err
@@ -178,7 +178,7 @@ func (pg *postgres) GetUserCount(db storage.Querier, qf *models.QueryFilter) (ui
 const userCreationQuery = `
     INSERT INTO users
         (
-            email, first_name, username, password_last_changed_on, salt, last_name, is_admin, password
+            first_name, last_name, username, email, password, salt, is_admin, password_last_changed_on
         )
     VALUES
         (
@@ -194,29 +194,29 @@ func (pg *postgres) CreateUser(db storage.Querier, nu *models.User) (uint64, tim
 		createdAt time.Time
 	)
 
-	err := db.QueryRow(userCreationQuery, &nu.Email, &nu.FirstName, &nu.Username, &nu.PasswordLastChangedOn, &nu.Salt, &nu.LastName, &nu.IsAdmin, &nu.Password).Scan(&createdID, &createdAt)
+	err := db.QueryRow(userCreationQuery, &nu.FirstName, &nu.LastName, &nu.Username, &nu.Email, &nu.Password, &nu.Salt, &nu.IsAdmin, &nu.PasswordLastChangedOn).Scan(&createdID, &createdAt)
 	return createdID, createdAt, err
 }
 
 const userUpdateQuery = `
     UPDATE users
     SET
-        email = $1, 
-        first_name = $2, 
-        updated_on = NOW()
-        username = $4, 
-        password_last_changed_on = $5, 
+        first_name = $1, 
+        last_name = $2, 
+        username = $3, 
+        email = $4, 
+        password = $5, 
         salt = $6, 
-        last_name = $7, 
-        is_admin = $8, 
-        password = $9
+        is_admin = $7, 
+        password_last_changed_on = $8, 
+        updated_on = NOW()
     WHERE id = $9
     RETURNING updated_on;
 `
 
 func (pg *postgres) UpdateUser(db storage.Querier, updated *models.User) (time.Time, error) {
 	var t time.Time
-	err := db.QueryRow(userUpdateQuery, &updated.Email, &updated.FirstName, &updated.Username, &updated.PasswordLastChangedOn, &updated.Salt, &updated.LastName, &updated.IsAdmin, &updated.Password, &updated.ID).Scan(&t)
+	err := db.QueryRow(userUpdateQuery, &updated.FirstName, &updated.LastName, &updated.Username, &updated.Email, &updated.Password, &updated.Salt, &updated.IsAdmin, &updated.PasswordLastChangedOn, &updated.ID).Scan(&t)
 	return t, err
 }
 

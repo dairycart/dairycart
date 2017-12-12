@@ -19,31 +19,31 @@ func setUserReadQueryExpectationByUsername(t *testing.T, mock sqlmock.Sqlmock, u
 	t.Helper()
 	query := formatQueryForSQLMock(userQueryByUsername)
 	exampleRows := sqlmock.NewRows([]string{
-		"email",
-		"created_on",
-		"archived_on",
-		"first_name",
-		"updated_on",
 		"id",
-		"username",
-		"password_last_changed_on",
-		"salt",
+		"first_name",
 		"last_name",
-		"is_admin",
+		"username",
+		"email",
 		"password",
+		"salt",
+		"is_admin",
+		"password_last_changed_on",
+		"created_on",
+		"updated_on",
+		"archived_on",
 	}).AddRow(
-		toReturn.Email,
-		toReturn.CreatedOn,
-		toReturn.ArchivedOn,
-		toReturn.FirstName,
-		toReturn.UpdatedOn,
 		toReturn.ID,
-		toReturn.Username,
-		toReturn.PasswordLastChangedOn,
-		toReturn.Salt,
+		toReturn.FirstName,
 		toReturn.LastName,
-		toReturn.IsAdmin,
+		toReturn.Username,
+		toReturn.Email,
 		toReturn.Password,
+		toReturn.Salt,
+		toReturn.IsAdmin,
+		toReturn.PasswordLastChangedOn,
+		toReturn.CreatedOn,
+		toReturn.UpdatedOn,
+		toReturn.ArchivedOn,
 	)
 	mock.ExpectQuery(query).WithArgs(username).WillReturnRows(exampleRows).WillReturnError(err)
 }
@@ -165,31 +165,31 @@ func setUserReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, 
 	query := formatQueryForSQLMock(userSelectionQuery)
 
 	exampleRows := sqlmock.NewRows([]string{
-		"email",
-		"created_on",
-		"archived_on",
-		"first_name",
-		"updated_on",
 		"id",
-		"username",
-		"password_last_changed_on",
-		"salt",
+		"first_name",
 		"last_name",
-		"is_admin",
+		"username",
+		"email",
 		"password",
+		"salt",
+		"is_admin",
+		"password_last_changed_on",
+		"created_on",
+		"updated_on",
+		"archived_on",
 	}).AddRow(
-		toReturn.Email,
-		toReturn.CreatedOn,
-		toReturn.ArchivedOn,
-		toReturn.FirstName,
-		toReturn.UpdatedOn,
 		toReturn.ID,
-		toReturn.Username,
-		toReturn.PasswordLastChangedOn,
-		toReturn.Salt,
+		toReturn.FirstName,
 		toReturn.LastName,
-		toReturn.IsAdmin,
+		toReturn.Username,
+		toReturn.Email,
 		toReturn.Password,
+		toReturn.Salt,
+		toReturn.IsAdmin,
+		toReturn.PasswordLastChangedOn,
+		toReturn.CreatedOn,
+		toReturn.UpdatedOn,
+		toReturn.ArchivedOn,
 	)
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
@@ -215,57 +215,57 @@ func TestGetUser(t *testing.T) {
 
 func setUserListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.User, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
-		"email",
-		"created_on",
-		"archived_on",
-		"first_name",
-		"updated_on",
 		"id",
-		"username",
-		"password_last_changed_on",
-		"salt",
+		"first_name",
 		"last_name",
-		"is_admin",
+		"username",
+		"email",
 		"password",
+		"salt",
+		"is_admin",
+		"password_last_changed_on",
+		"created_on",
+		"updated_on",
+		"archived_on",
 	}).AddRow(
-		example.Email,
-		example.CreatedOn,
-		example.ArchivedOn,
-		example.FirstName,
-		example.UpdatedOn,
 		example.ID,
-		example.Username,
-		example.PasswordLastChangedOn,
-		example.Salt,
+		example.FirstName,
 		example.LastName,
-		example.IsAdmin,
+		example.Username,
+		example.Email,
 		example.Password,
+		example.Salt,
+		example.IsAdmin,
+		example.PasswordLastChangedOn,
+		example.CreatedOn,
+		example.UpdatedOn,
+		example.ArchivedOn,
 	).AddRow(
-		example.Email,
-		example.CreatedOn,
-		example.ArchivedOn,
-		example.FirstName,
-		example.UpdatedOn,
 		example.ID,
-		example.Username,
-		example.PasswordLastChangedOn,
-		example.Salt,
+		example.FirstName,
 		example.LastName,
-		example.IsAdmin,
+		example.Username,
+		example.Email,
 		example.Password,
+		example.Salt,
+		example.IsAdmin,
+		example.PasswordLastChangedOn,
+		example.CreatedOn,
+		example.UpdatedOn,
+		example.ArchivedOn,
 	).AddRow(
-		example.Email,
-		example.CreatedOn,
-		example.ArchivedOn,
-		example.FirstName,
-		example.UpdatedOn,
 		example.ID,
-		example.Username,
-		example.PasswordLastChangedOn,
-		example.Salt,
+		example.FirstName,
 		example.LastName,
-		example.IsAdmin,
+		example.Username,
+		example.Email,
 		example.Password,
+		example.Salt,
+		example.IsAdmin,
+		example.PasswordLastChangedOn,
+		example.CreatedOn,
+		example.UpdatedOn,
+		example.ArchivedOn,
 	).RowError(1, rowErr)
 
 	query, _ := buildUserListRetrievalQuery(qf)
@@ -385,14 +385,14 @@ func setUserCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreat
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), tt)
 	mock.ExpectQuery(query).
 		WithArgs(
-			toCreate.Email,
 			toCreate.FirstName,
-			toCreate.Username,
-			toCreate.PasswordLastChangedOn,
-			toCreate.Salt,
 			toCreate.LastName,
-			toCreate.IsAdmin,
+			toCreate.Username,
+			toCreate.Email,
 			toCreate.Password,
+			toCreate.Salt,
+			toCreate.IsAdmin,
+			toCreate.PasswordLastChangedOn,
 		).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
@@ -409,12 +409,13 @@ func TestCreateUser(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setUserCreationQueryExpectation(t, mock, exampleInput, nil)
-		expected := buildTestTime(t)
-		actualID, actualCreationDate, err := client.CreateUser(mockDB, exampleInput)
+		expectedCreatedOn := buildTestTime(t)
+
+		actualID, actualCreatedOn, err := client.CreateUser(mockDB, exampleInput)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
-		assert.Equal(t, expected, actualCreationDate, "expected creation time did not match actual creation time")
+		assert.Equal(t, expectedCreatedOn, actualCreatedOn, "expected creation time did not match actual creation time")
 
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
@@ -426,14 +427,14 @@ func setUserUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate 
 	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).
 		WithArgs(
-			toUpdate.Email,
 			toUpdate.FirstName,
-			toUpdate.Username,
-			toUpdate.PasswordLastChangedOn,
-			toUpdate.Salt,
 			toUpdate.LastName,
-			toUpdate.IsAdmin,
+			toUpdate.Username,
+			toUpdate.Email,
 			toUpdate.Password,
+			toUpdate.Salt,
+			toUpdate.IsAdmin,
+			toUpdate.PasswordLastChangedOn,
 			toUpdate.ID,
 		).
 		WillReturnRows(exampleRows).

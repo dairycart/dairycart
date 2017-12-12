@@ -367,13 +367,12 @@ func buildUserForgottenPasswordHandler(db *sql.DB, client storage.Storer) http.H
 		}
 
 		newID, createdOn, err := client.CreatePasswordResetToken(db, resetToken)
-		resetToken.ID = newID
-		resetToken.CreatedOn = &models.Dairytime{Time: createdOn}
 		if err != nil {
 			notifyOfInternalIssue(res, err, "read session data")
 			return
 		}
-
+		resetToken.ID = newID
+		resetToken.CreatedOn = &models.Dairytime{Time: createdOn}
 		json.NewEncoder(res).Encode(resetToken)
 	}
 }

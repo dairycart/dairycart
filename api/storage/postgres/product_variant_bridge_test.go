@@ -66,17 +66,17 @@ func setProductVariantBridgeReadQueryExpectation(t *testing.T, mock sqlmock.Sqlm
 	query := formatQueryForSQLMock(productVariantBridgeSelectionQuery)
 
 	exampleRows := sqlmock.NewRows([]string{
-		"archived_on",
+		"id",
 		"product_id",
 		"product_option_value_id",
 		"created_on",
-		"id",
+		"archived_on",
 	}).AddRow(
-		toReturn.ArchivedOn,
+		toReturn.ID,
 		toReturn.ProductID,
 		toReturn.ProductOptionValueID,
 		toReturn.CreatedOn,
-		toReturn.ID,
+		toReturn.ArchivedOn,
 	)
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
@@ -102,29 +102,29 @@ func TestGetProductVariantBridge(t *testing.T) {
 
 func setProductVariantBridgeListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.ProductVariantBridge, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
-		"archived_on",
+		"id",
 		"product_id",
 		"product_option_value_id",
 		"created_on",
-		"id",
+		"archived_on",
 	}).AddRow(
-		example.ArchivedOn,
+		example.ID,
 		example.ProductID,
 		example.ProductOptionValueID,
 		example.CreatedOn,
-		example.ID,
+		example.ArchivedOn,
 	).AddRow(
-		example.ArchivedOn,
+		example.ID,
 		example.ProductID,
 		example.ProductOptionValueID,
 		example.CreatedOn,
-		example.ID,
+		example.ArchivedOn,
 	).AddRow(
-		example.ArchivedOn,
+		example.ID,
 		example.ProductID,
 		example.ProductOptionValueID,
 		example.CreatedOn,
-		example.ID,
+		example.ArchivedOn,
 	).RowError(1, rowErr)
 
 	query, _ := buildProductVariantBridgeListRetrievalQuery(qf)
@@ -262,12 +262,13 @@ func TestCreateProductVariantBridge(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductVariantBridgeCreationQueryExpectation(t, mock, exampleInput, nil)
-		expected := buildTestTime(t)
-		actualID, actualCreationDate, err := client.CreateProductVariantBridge(mockDB, exampleInput)
+		expectedCreatedOn := buildTestTime(t)
+
+		actualID, actualCreatedOn, err := client.CreateProductVariantBridge(mockDB, exampleInput)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
-		assert.Equal(t, expected, actualCreationDate, "expected creation time did not match actual creation time")
+		assert.Equal(t, expectedCreatedOn, actualCreatedOn, "expected creation time did not match actual creation time")
 
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})

@@ -238,12 +238,12 @@ func createProductsInDBFromOptionRows(client storage.Storer, tx *sql.Tx, r *mode
 
 		var err error
 		newID, availableOn, createdOn, err := client.CreateProduct(tx, p)
-		p.ID = newID
-		p.AvailableOn = &models.Dairytime{Time: availableOn}
-		p.CreatedOn = &models.Dairytime{Time: createdOn}
 		if err != nil {
 			return nil, err
 		}
+		p.ID = newID
+		p.AvailableOn = &models.Dairytime{Time: availableOn}
+		p.CreatedOn = createdOn
 
 		err = client.CreateMultipleProductVariantBridgesForProductID(tx, p.ID, option.IDs)
 		// err = createBridgeEntryForProductValues(tx, p.ID, option.IDs)
@@ -285,13 +285,13 @@ func buildProductCreationHandler(db *sql.DB, client storage.Storer, webhookExecu
 		newProduct := newProductFromCreationInput(productInput)
 		productRoot := createProductRootFromProduct(newProduct)
 		newID, createdOn, err := client.CreateProductRoot(tx, productRoot)
-		productRoot.ID = newID
-		productRoot.CreatedOn = &models.Dairytime{Time: createdOn}
 		if err != nil {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "insert product options and values in database")
 			return
 		}
+		productRoot.ID = newID
+		productRoot.CreatedOn = &models.Dairytime{Time: createdOn}
 
 		for _, optionAndValues := range productInput.Options {
 			o, err := createProductOptionAndValuesInDBFromInput(tx, optionAndValues, productRoot.ID, client)
@@ -305,15 +305,15 @@ func buildProductCreationHandler(db *sql.DB, client storage.Storer, webhookExecu
 
 		if len(productInput.Options) == 0 {
 			newProduct.ProductRootID = productRoot.ID
-			newID, availableOn, createdOn, err := client.CreateProduct(tx, newProduct)
+			newID, createdOn, availableOn, err := client.CreateProduct(tx, newProduct)
 			if err != nil {
 				tx.Rollback()
 				notifyOfInternalIssue(res, err, "insert product in database")
 				return
 			}
 			newProduct.ID = newID
-			newProduct.AvailableOn = &models.Dairytime{Time: availableOn}
 			newProduct.CreatedOn = &models.Dairytime{Time: createdOn}
+			newProduct.AvailableOn = availableOn
 
 			productRoot.Options = []models.ProductOption{} // so this won't be Marshaled as null
 			productRoot.Products = []models.Product{*newProduct}

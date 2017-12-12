@@ -158,19 +158,19 @@ func setPasswordResetTokenReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmoc
 	query := formatQueryForSQLMock(passwordResetTokenSelectionQuery)
 
 	exampleRows := sqlmock.NewRows([]string{
-		"password_reset_on",
-		"token",
 		"id",
-		"created_on",
 		"user_id",
+		"token",
+		"created_on",
 		"expires_on",
+		"password_reset_on",
 	}).AddRow(
-		toReturn.PasswordResetOn,
-		toReturn.Token,
 		toReturn.ID,
-		toReturn.CreatedOn,
 		toReturn.UserID,
+		toReturn.Token,
+		toReturn.CreatedOn,
 		toReturn.ExpiresOn,
+		toReturn.PasswordResetOn,
 	)
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
@@ -196,33 +196,33 @@ func TestGetPasswordResetToken(t *testing.T) {
 
 func setPasswordResetTokenListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.PasswordResetToken, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
-		"password_reset_on",
-		"token",
 		"id",
-		"created_on",
 		"user_id",
+		"token",
+		"created_on",
 		"expires_on",
+		"password_reset_on",
 	}).AddRow(
-		example.PasswordResetOn,
-		example.Token,
 		example.ID,
-		example.CreatedOn,
 		example.UserID,
+		example.Token,
+		example.CreatedOn,
 		example.ExpiresOn,
+		example.PasswordResetOn,
 	).AddRow(
-		example.PasswordResetOn,
-		example.Token,
 		example.ID,
-		example.CreatedOn,
 		example.UserID,
+		example.Token,
+		example.CreatedOn,
 		example.ExpiresOn,
+		example.PasswordResetOn,
 	).AddRow(
-		example.PasswordResetOn,
-		example.Token,
 		example.ID,
-		example.CreatedOn,
 		example.UserID,
+		example.Token,
+		example.CreatedOn,
 		example.ExpiresOn,
+		example.PasswordResetOn,
 	).RowError(1, rowErr)
 
 	query, _ := buildPasswordResetTokenListRetrievalQuery(qf)
@@ -342,10 +342,10 @@ func setPasswordResetTokenCreationQueryExpectation(t *testing.T, mock sqlmock.Sq
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), tt)
 	mock.ExpectQuery(query).
 		WithArgs(
-			toCreate.PasswordResetOn,
-			toCreate.Token,
 			toCreate.UserID,
+			toCreate.Token,
 			toCreate.ExpiresOn,
+			toCreate.PasswordResetOn,
 		).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
@@ -362,12 +362,13 @@ func TestCreatePasswordResetToken(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setPasswordResetTokenCreationQueryExpectation(t, mock, exampleInput, nil)
-		expected := buildTestTime(t)
-		actualID, actualCreationDate, err := client.CreatePasswordResetToken(mockDB, exampleInput)
+		expectedCreatedOn := buildTestTime(t)
+
+		actualID, actualCreatedOn, err := client.CreatePasswordResetToken(mockDB, exampleInput)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
-		assert.Equal(t, expected, actualCreationDate, "expected creation time did not match actual creation time")
+		assert.Equal(t, expectedCreatedOn, actualCreatedOn, "expected creation time did not match actual creation time")
 
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
@@ -379,10 +380,10 @@ func setPasswordResetTokenUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlm
 	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).
 		WithArgs(
-			toUpdate.PasswordResetOn,
-			toUpdate.Token,
 			toUpdate.UserID,
+			toUpdate.Token,
 			toUpdate.ExpiresOn,
+			toUpdate.PasswordResetOn,
 			toUpdate.ID,
 		).
 		WillReturnRows(exampleRows).

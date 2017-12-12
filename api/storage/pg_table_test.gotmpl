@@ -1008,13 +1008,14 @@ func TestCreate{{ $modelName }}(t *testing.T) {
 
     t.Run("optimal behavior", func(t *testing.T) {
         set{{ $modelName }}CreationQueryExpectation(t, mock, exampleInput, nil)
-        expected := buildTestTime(t)
-        actualID, actualCreationDate,{{- if $isProduct }} actualAvailableOn, {{ end }}err := client.Create{{ $modelName }}(mockDB, exampleInput)
+        expectedCreatedOn := buildTestTime(t)
+        {{ if $isProduct -}}expectedAvailableOn := &models.Dairytime{Time: buildTestTime(t)}{{ end }}
+        actualID, actualCreatedOn, {{- if $isProduct }} actualAvailableOn, {{ end }} err := client.Create{{ $modelName }}(mockDB, exampleInput)
 
         assert.NoError(t, err)
         assert.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
-        assert.Equal(t, expected, actualCreationDate, "expected creation time did not match actual creation time")
-        {{ if $isProduct -}}assert.Equal(t, expected, actualAvailableOn, "expected availability time did not match actual availability time"){{ end }}
+        assert.Equal(t, expectedCreatedOn, actualCreatedOn, "expected creation time did not match actual creation time")
+        {{ if $isProduct -}}assert.Equal(t, expectedAvailableOn, actualAvailableOn, "expected availability time did not match actual availability time"){{ end }}
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
 }

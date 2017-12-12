@@ -90,33 +90,33 @@ func TestArchiveProductOptionValuesForOption(t *testing.T) {
 
 func setProductOptionValueForOptionIDReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, optionID uint64, example *models.ProductOptionValue, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
+		"id",
+		"product_option_id",
 		"value",
 		"created_on",
-		"id",
-		"archived_on",
 		"updated_on",
-		"product_option_id",
+		"archived_on",
 	}).AddRow(
+		example.ID,
+		example.ProductOptionID,
 		example.Value,
 		example.CreatedOn,
-		example.ID,
-		example.ArchivedOn,
 		example.UpdatedOn,
-		example.ProductOptionID,
+		example.ArchivedOn,
 	).AddRow(
+		example.ID,
+		example.ProductOptionID,
 		example.Value,
 		example.CreatedOn,
-		example.ID,
-		example.ArchivedOn,
 		example.UpdatedOn,
-		example.ProductOptionID,
+		example.ArchivedOn,
 	).AddRow(
+		example.ID,
+		example.ProductOptionID,
 		example.Value,
 		example.CreatedOn,
-		example.ID,
-		example.ArchivedOn,
 		example.UpdatedOn,
-		example.ProductOptionID,
+		example.ArchivedOn,
 	).RowError(1, rowErr)
 
 	mock.ExpectQuery(formatQueryForSQLMock(productOptionValueRetrievalQueryByOptionID)).
@@ -224,19 +224,19 @@ func setProductOptionValueReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmoc
 	query := formatQueryForSQLMock(productOptionValueSelectionQuery)
 
 	exampleRows := sqlmock.NewRows([]string{
+		"id",
+		"product_option_id",
 		"value",
 		"created_on",
-		"id",
-		"archived_on",
 		"updated_on",
-		"product_option_id",
+		"archived_on",
 	}).AddRow(
+		toReturn.ID,
+		toReturn.ProductOptionID,
 		toReturn.Value,
 		toReturn.CreatedOn,
-		toReturn.ID,
-		toReturn.ArchivedOn,
 		toReturn.UpdatedOn,
-		toReturn.ProductOptionID,
+		toReturn.ArchivedOn,
 	)
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
@@ -262,33 +262,33 @@ func TestGetProductOptionValue(t *testing.T) {
 
 func setProductOptionValueListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.ProductOptionValue, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
+		"id",
+		"product_option_id",
 		"value",
 		"created_on",
-		"id",
-		"archived_on",
 		"updated_on",
-		"product_option_id",
+		"archived_on",
 	}).AddRow(
+		example.ID,
+		example.ProductOptionID,
 		example.Value,
 		example.CreatedOn,
-		example.ID,
-		example.ArchivedOn,
 		example.UpdatedOn,
-		example.ProductOptionID,
+		example.ArchivedOn,
 	).AddRow(
+		example.ID,
+		example.ProductOptionID,
 		example.Value,
 		example.CreatedOn,
-		example.ID,
-		example.ArchivedOn,
 		example.UpdatedOn,
-		example.ProductOptionID,
+		example.ArchivedOn,
 	).AddRow(
+		example.ID,
+		example.ProductOptionID,
 		example.Value,
 		example.CreatedOn,
-		example.ID,
-		example.ArchivedOn,
 		example.UpdatedOn,
-		example.ProductOptionID,
+		example.ArchivedOn,
 	).RowError(1, rowErr)
 
 	query, _ := buildProductOptionValueListRetrievalQuery(qf)
@@ -408,8 +408,8 @@ func setProductOptionValueCreationQueryExpectation(t *testing.T, mock sqlmock.Sq
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), tt)
 	mock.ExpectQuery(query).
 		WithArgs(
-			toCreate.Value,
 			toCreate.ProductOptionID,
+			toCreate.Value,
 		).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
@@ -426,12 +426,13 @@ func TestCreateProductOptionValue(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductOptionValueCreationQueryExpectation(t, mock, exampleInput, nil)
-		expected := buildTestTime(t)
-		actualID, actualCreationDate, err := client.CreateProductOptionValue(mockDB, exampleInput)
+		expectedCreatedOn := buildTestTime(t)
+
+		actualID, actualCreatedOn, err := client.CreateProductOptionValue(mockDB, exampleInput)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
-		assert.Equal(t, expected, actualCreationDate, "expected creation time did not match actual creation time")
+		assert.Equal(t, expectedCreatedOn, actualCreatedOn, "expected creation time did not match actual creation time")
 
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
@@ -443,8 +444,8 @@ func setProductOptionValueUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlm
 	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).
 		WithArgs(
-			toUpdate.Value,
 			toUpdate.ProductOptionID,
+			toUpdate.Value,
 			toUpdate.ID,
 		).
 		WillReturnRows(exampleRows).

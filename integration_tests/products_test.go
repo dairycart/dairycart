@@ -927,7 +927,7 @@ func TestProductRootDeletionRoute(t *testing.T) {
 
 		var createdRoot models.ProductRoot
 		unmarshalBody(t, resp, &createdRoot)
-		assert.True(t, createdRoot.ArchivedOn.Time.IsZero())
+		assert.Nil(t, createdRoot.ArchivedOn)
 
 		resp, err = deleteProductRoot(createdRoot.ID)
 		assert.NoError(t, err)
@@ -1193,9 +1193,9 @@ func TestProductOptionUpdate(t *testing.T) {
 		}
 
 		var actual models.ProductOption
-		assert.Nil(t, actual.ArchivedOn)
+		assert.Nil(t, actual.UpdatedOn)
 		unmarshalBody(t, resp, &actual)
-		assert.NotNil(t, actual.ArchivedOn)
+		assert.NotNil(t, actual.UpdatedOn)
 		compareProductOptions(t, expected, actual)
 
 		// clean up after yourself

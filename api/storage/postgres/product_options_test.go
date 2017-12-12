@@ -17,33 +17,33 @@ import (
 
 func setProductOptionReadQueryExpectationByProductRootID(t *testing.T, mock sqlmock.Sqlmock, example *models.ProductOption, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
+		"id",
+		"name",
 		"product_root_id",
 		"created_on",
-		"id",
-		"archived_on",
 		"updated_on",
-		"name",
+		"archived_on",
 	}).AddRow(
+		example.ID,
+		example.Name,
 		example.ProductRootID,
 		example.CreatedOn,
-		example.ID,
-		example.ArchivedOn,
 		example.UpdatedOn,
-		example.Name,
+		example.ArchivedOn,
 	).AddRow(
+		example.ID,
+		example.Name,
 		example.ProductRootID,
 		example.CreatedOn,
-		example.ID,
-		example.ArchivedOn,
 		example.UpdatedOn,
-		example.Name,
+		example.ArchivedOn,
 	).AddRow(
+		example.ID,
+		example.Name,
 		example.ProductRootID,
 		example.CreatedOn,
-		example.ID,
-		example.ArchivedOn,
 		example.UpdatedOn,
-		example.Name,
+		example.ArchivedOn,
 	).RowError(1, rowErr)
 
 	mock.ExpectQuery(formatQueryForSQLMock(productOptionQueryByProductRootID)).
@@ -199,19 +199,19 @@ func setProductOptionReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id
 	query := formatQueryForSQLMock(productOptionSelectionQuery)
 
 	exampleRows := sqlmock.NewRows([]string{
+		"id",
+		"name",
 		"product_root_id",
 		"created_on",
-		"id",
-		"archived_on",
 		"updated_on",
-		"name",
+		"archived_on",
 	}).AddRow(
+		toReturn.ID,
+		toReturn.Name,
 		toReturn.ProductRootID,
 		toReturn.CreatedOn,
-		toReturn.ID,
-		toReturn.ArchivedOn,
 		toReturn.UpdatedOn,
-		toReturn.Name,
+		toReturn.ArchivedOn,
 	)
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
@@ -237,33 +237,33 @@ func TestGetProductOption(t *testing.T) {
 
 func setProductOptionListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.ProductOption, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
+		"id",
+		"name",
 		"product_root_id",
 		"created_on",
-		"id",
-		"archived_on",
 		"updated_on",
-		"name",
+		"archived_on",
 	}).AddRow(
+		example.ID,
+		example.Name,
 		example.ProductRootID,
 		example.CreatedOn,
-		example.ID,
-		example.ArchivedOn,
 		example.UpdatedOn,
-		example.Name,
+		example.ArchivedOn,
 	).AddRow(
+		example.ID,
+		example.Name,
 		example.ProductRootID,
 		example.CreatedOn,
-		example.ID,
-		example.ArchivedOn,
 		example.UpdatedOn,
-		example.Name,
+		example.ArchivedOn,
 	).AddRow(
+		example.ID,
+		example.Name,
 		example.ProductRootID,
 		example.CreatedOn,
-		example.ID,
-		example.ArchivedOn,
 		example.UpdatedOn,
-		example.Name,
+		example.ArchivedOn,
 	).RowError(1, rowErr)
 
 	query, _ := buildProductOptionListRetrievalQuery(qf)
@@ -383,8 +383,8 @@ func setProductOptionCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), tt)
 	mock.ExpectQuery(query).
 		WithArgs(
-			toCreate.ProductRootID,
 			toCreate.Name,
+			toCreate.ProductRootID,
 		).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
@@ -401,12 +401,13 @@ func TestCreateProductOption(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductOptionCreationQueryExpectation(t, mock, exampleInput, nil)
-		expected := buildTestTime(t)
-		actualID, actualCreationDate, err := client.CreateProductOption(mockDB, exampleInput)
+		expectedCreatedOn := buildTestTime(t)
+
+		actualID, actualCreatedOn, err := client.CreateProductOption(mockDB, exampleInput)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
-		assert.Equal(t, expected, actualCreationDate, "expected creation time did not match actual creation time")
+		assert.Equal(t, expectedCreatedOn, actualCreatedOn, "expected creation time did not match actual creation time")
 
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
@@ -418,8 +419,8 @@ func setProductOptionUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, 
 	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).
 		WithArgs(
-			toUpdate.ProductRootID,
 			toUpdate.Name,
+			toUpdate.ProductRootID,
 			toUpdate.ID,
 		).
 		WillReturnRows(exampleRows).

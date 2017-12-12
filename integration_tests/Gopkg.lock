@@ -3,6 +3,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/dairycart/dairyclient"
+  packages = ["v1"]
+  revision = "2833468a130aa8fc1515c049fdc492fa1814bd35"
+
+[[projects]]
+  branch = "master"
   name = "github.com/dairycart/dairymodels"
   packages = ["v1"]
   revision = "4000ccfa603d36dde296f5273871f390465f3997"
@@ -37,21 +43,9 @@
   revision = "69483b4bd14f5845b5a1e55bca19e954e827f1d0"
   version = "v1.1.4"
 
-[[projects]]
-  name = "github.com/tdewolff/minify"
-  packages = [".","json"]
-  revision = "222672169d634c440a73abc47685074e1a9daa60"
-  version = "v2.3.4"
-
-[[projects]]
-  name = "github.com/tdewolff/parse"
-  packages = [".","buffer","json","strconv"]
-  revision = "639f6272aec6b52094db77b9ec488214b0b4b1a1"
-  version = "v2.3.2"
-
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "24eec531fd1665e882435d3f473cc51fb8c0e3c25bc05899060afe0a0d427328"
+  inputs-digest = "0ec205a034f0f84bca7e4f6a72e4ef7ff7820f387e73f88ac07dde11c97eaed7"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -44,9 +44,9 @@ func (pg *postgres) LoginAttemptExists(db storage.Querier, id uint64) (bool, err
 
 const loginAttemptSelectionQuery = `
     SELECT
+        id,
         username,
         successful,
-        id,
         created_on
     FROM
         login_attempts
@@ -59,7 +59,7 @@ const loginAttemptSelectionQuery = `
 func (pg *postgres) GetLoginAttempt(db storage.Querier, id uint64) (*models.LoginAttempt, error) {
 	l := &models.LoginAttempt{}
 
-	err := db.QueryRow(loginAttemptSelectionQuery, id).Scan(&l.Username, &l.Successful, &l.ID, &l.CreatedOn)
+	err := db.QueryRow(loginAttemptSelectionQuery, id).Scan(&l.ID, &l.Username, &l.Successful, &l.CreatedOn)
 
 	return l, err
 }
@@ -68,9 +68,9 @@ func buildLoginAttemptListRetrievalQuery(qf *models.QueryFilter) (string, []inte
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Select(
+			"id",
 			"username",
 			"successful",
-			"id",
 			"created_on",
 		).
 		From("login_attempts")
@@ -91,9 +91,9 @@ func (pg *postgres) GetLoginAttemptList(db storage.Querier, qf *models.QueryFilt
 	for rows.Next() {
 		var l models.LoginAttempt
 		err := rows.Scan(
+			&l.ID,
 			&l.Username,
 			&l.Successful,
-			&l.ID,
 			&l.CreatedOn,
 		)
 		if err != nil {

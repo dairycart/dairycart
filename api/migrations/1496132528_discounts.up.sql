@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS discounts (
     "name" text NOT NULL,
     "discount_type" discount_type NOT NULL DEFAULT 'percentage',
     "amount" numeric(15, 2) NOT NULL DEFAULT 0,
-    "starts_on" timestamp NOT NULL,
+    "starts_on" timestamp DEFAULT NOW(),
     "expires_on" timestamp,
     "requires_code" boolean NOT NULL DEFAULT FALSE,
     "code" text NOT NULL DEFAULT '' CONSTRAINT code_must_be_provided CHECK(

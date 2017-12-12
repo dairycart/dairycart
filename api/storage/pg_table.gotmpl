@@ -488,15 +488,15 @@ const {{ $creationQueryVarName }} = `
         id, created_on{{ if $isProduct }}, available_on{{ end }};
 `
 
-func (pg *postgres) Create{{ $modelName }}(db storage.Querier, nu *models.{{ $modelName }}) (uint64, time.Time, {{- if $isProduct }}time.Time, {{ end }}error) {
+func (pg *postgres) Create{{ $modelName }}(db storage.Querier, nu *models.{{ $modelName }}) (uint64, time.Time, {{- if $isProduct }}*models.Dairytime, {{ end }}error) {
     var (
         createdID uint64
         createdAt time.Time
-        {{ if $isProduct -}}availableOn time.Time{{ end -}}
+        {{ if $isProduct -}}availableOn models.Dairytime{{ end -}}
     )
 
     err := db.QueryRow({{ $creationQueryVarName }}, {{ range $x, $col := $creationColumns -}}&nu.{{- if or (eq $col "upc") (eq $col "sku") -}}{{ toUpper $col }}{{ else if eq $col "sku_prefix" }}SKUPrefix{{ else }}{{ pascal $col -}}{{ end }}{{ if ne $lastCol $x }},{{ end }}{{ end }}).Scan(&createdID, &createdAt{{- if $isProduct }}, &availableOn{{ end }})
-    return createdID, createdAt, {{- if $isProduct }}availableOn, {{ end }}err
+    return createdID, createdAt, {{- if $isProduct }}&availableOn, {{ end }}err
 }
 
 {{ if $isProductVariantBridge -}}
@@ -543,7 +543,6 @@ func (pg *postgres) CreateMultiple{{ $modelName }}sForProductID(db storage.Queri
     _, err := db.Exec(query, args...)
     return err
 }
-
 {{ end -}}
 
 {{ $updateColumns := .Table.Columns.Names.Except (makeSlice "id" "created_on" "archived_on") -}}

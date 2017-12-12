@@ -67,12 +67,12 @@ func buildWebhookCreationHandler(db *sql.DB, client storage.Storer) http.Handler
 		}
 
 		newID, createdOn, err := client.CreateWebhook(db, newWebhook)
-		newWebhook.ID = newID
-		newWebhook.CreatedOn = &models.Dairytime{Time: createdOn}
 		if err != nil {
 			notifyOfInternalIssue(res, err, "insert webhook into database")
 			return
 		}
+		newWebhook.ID = newID
+		newWebhook.CreatedOn = &models.Dairytime{Time: createdOn}
 
 		res.WriteHeader(http.StatusCreated)
 		json.NewEncoder(res).Encode(newWebhook)

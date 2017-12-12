@@ -41,9 +41,9 @@ func (m *MockDB) GetProductCount(db storage.Querier, qf *models.QueryFilter) (ui
 	return args.Get(0).(uint64), args.Error(1)
 }
 
-func (m *MockDB) CreateProduct(db storage.Querier, nu *models.Product) (uint64, time.Time, time.Time, error) {
+func (m *MockDB) CreateProduct(db storage.Querier, nu *models.Product) (uint64, time.Time, *models.Dairytime, error) {
 	args := m.Called(db, nu)
-	return args.Get(0).(uint64), args.Get(1).(time.Time), args.Get(2).(time.Time), args.Error(3)
+	return args.Get(0).(uint64), args.Get(1).(time.Time), args.Get(2).(*models.Dairytime), args.Error(3)
 }
 
 func (m *MockDB) UpdateProduct(db storage.Querier, updated *models.Product) (time.Time, error) {

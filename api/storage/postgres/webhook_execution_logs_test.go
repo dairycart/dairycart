@@ -67,16 +67,16 @@ func setWebhookExecutionLogReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmo
 
 	exampleRows := sqlmock.NewRows([]string{
 		"id",
-		"succeeded",
-		"status_code",
-		"executed_on",
 		"webhook_id",
+		"status_code",
+		"succeeded",
+		"executed_on",
 	}).AddRow(
 		toReturn.ID,
-		toReturn.Succeeded,
-		toReturn.StatusCode,
-		toReturn.ExecutedOn,
 		toReturn.WebhookID,
+		toReturn.StatusCode,
+		toReturn.Succeeded,
+		toReturn.ExecutedOn,
 	)
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
@@ -103,28 +103,28 @@ func TestGetWebhookExecutionLog(t *testing.T) {
 func setWebhookExecutionLogListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.WebhookExecutionLog, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
 		"id",
-		"succeeded",
-		"status_code",
-		"executed_on",
 		"webhook_id",
+		"status_code",
+		"succeeded",
+		"executed_on",
 	}).AddRow(
 		example.ID,
-		example.Succeeded,
-		example.StatusCode,
-		example.ExecutedOn,
 		example.WebhookID,
+		example.StatusCode,
+		example.Succeeded,
+		example.ExecutedOn,
 	).AddRow(
 		example.ID,
-		example.Succeeded,
-		example.StatusCode,
-		example.ExecutedOn,
 		example.WebhookID,
+		example.StatusCode,
+		example.Succeeded,
+		example.ExecutedOn,
 	).AddRow(
 		example.ID,
-		example.Succeeded,
-		example.StatusCode,
-		example.ExecutedOn,
 		example.WebhookID,
+		example.StatusCode,
+		example.Succeeded,
+		example.ExecutedOn,
 	).RowError(1, rowErr)
 
 	query, _ := buildWebhookExecutionLogListRetrievalQuery(qf)
@@ -244,10 +244,10 @@ func setWebhookExecutionLogCreationQueryExpectation(t *testing.T, mock sqlmock.S
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), tt)
 	mock.ExpectQuery(query).
 		WithArgs(
-			toCreate.Succeeded,
-			toCreate.StatusCode,
-			toCreate.ExecutedOn,
 			toCreate.WebhookID,
+			toCreate.StatusCode,
+			toCreate.Succeeded,
+			toCreate.ExecutedOn,
 		).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
@@ -264,12 +264,13 @@ func TestCreateWebhookExecutionLog(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setWebhookExecutionLogCreationQueryExpectation(t, mock, exampleInput, nil)
-		expected := buildTestTime(t)
-		actualID, actualCreationDate, err := client.CreateWebhookExecutionLog(mockDB, exampleInput)
+		expectedCreatedOn := buildTestTime(t)
+
+		actualID, actualCreatedOn, err := client.CreateWebhookExecutionLog(mockDB, exampleInput)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
-		assert.Equal(t, expected, actualCreationDate, "expected creation time did not match actual creation time")
+		assert.Equal(t, expectedCreatedOn, actualCreatedOn, "expected creation time did not match actual creation time")
 
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
@@ -281,10 +282,10 @@ func setWebhookExecutionLogUpdateQueryExpectation(t *testing.T, mock sqlmock.Sql
 	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).
 		WithArgs(
-			toUpdate.Succeeded,
-			toUpdate.StatusCode,
-			toUpdate.ExecutedOn,
 			toUpdate.WebhookID,
+			toUpdate.StatusCode,
+			toUpdate.Succeeded,
+			toUpdate.ExecutedOn,
 			toUpdate.ID,
 		).
 		WillReturnRows(exampleRows).

@@ -171,23 +171,23 @@ func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in models.ProductOpti
 	var err error
 	newProductOption := &models.ProductOption{Name: in.Name, ProductRootID: productRootID}
 	newID, createdOn, err := client.CreateProductOption(tx, newProductOption)
-	newProductOption.ID = newID
-	newProductOption.CreatedOn = &models.Dairytime{Time: createdOn}
 	if err != nil {
 		return models.ProductOption{}, err
 	}
+	newProductOption.ID = newID
+	newProductOption.CreatedOn = &models.Dairytime{Time: createdOn}
 
 	for _, value := range in.Values {
 		newOptionValue := models.ProductOptionValue{
 			ProductOptionID: newProductOption.ID,
 			Value:           value,
 		}
-		newOptionValueID, optionCreatedOn, err := client.CreateProductOptionValue(tx, &newOptionValue)
+		newID, createdOn, err := client.CreateProductOptionValue(tx, &newOptionValue)
 		if err != nil {
 			return models.ProductOption{}, err
 		}
-		newOptionValue.ID = newOptionValueID
-		newOptionValue.CreatedOn = &models.Dairytime{Time: optionCreatedOn}
+		newOptionValue.ID = newID
+		newOptionValue.CreatedOn = &models.Dairytime{Time: createdOn}
 		newProductOption.Values = append(newProductOption.Values, newOptionValue)
 	}
 

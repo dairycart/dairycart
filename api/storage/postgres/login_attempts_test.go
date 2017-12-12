@@ -111,14 +111,14 @@ func setLoginAttemptReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id 
 	query := formatQueryForSQLMock(loginAttemptSelectionQuery)
 
 	exampleRows := sqlmock.NewRows([]string{
+		"id",
 		"username",
 		"successful",
-		"id",
 		"created_on",
 	}).AddRow(
+		toReturn.ID,
 		toReturn.Username,
 		toReturn.Successful,
-		toReturn.ID,
 		toReturn.CreatedOn,
 	)
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
@@ -145,24 +145,24 @@ func TestGetLoginAttempt(t *testing.T) {
 
 func setLoginAttemptListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.LoginAttempt, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
+		"id",
 		"username",
 		"successful",
-		"id",
 		"created_on",
 	}).AddRow(
+		example.ID,
 		example.Username,
 		example.Successful,
-		example.ID,
 		example.CreatedOn,
 	).AddRow(
+		example.ID,
 		example.Username,
 		example.Successful,
-		example.ID,
 		example.CreatedOn,
 	).AddRow(
+		example.ID,
 		example.Username,
 		example.Successful,
-		example.ID,
 		example.CreatedOn,
 	).RowError(1, rowErr)
 
@@ -301,12 +301,13 @@ func TestCreateLoginAttempt(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setLoginAttemptCreationQueryExpectation(t, mock, exampleInput, nil)
-		expected := buildTestTime(t)
-		actualID, actualCreationDate, err := client.CreateLoginAttempt(mockDB, exampleInput)
+		expectedCreatedOn := buildTestTime(t)
+
+		actualID, actualCreatedOn, err := client.CreateLoginAttempt(mockDB, exampleInput)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
-		assert.Equal(t, expected, actualCreationDate, "expected creation time did not match actual creation time")
+		assert.Equal(t, expectedCreatedOn, actualCreatedOn, "expected creation time did not match actual creation time")
 
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
