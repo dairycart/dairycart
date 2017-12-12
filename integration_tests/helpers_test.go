@@ -1,8 +1,10 @@
 package dairytest
 
 import (
+	"bytes"
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"reflect"
 	"testing"
@@ -33,6 +35,17 @@ func unmarshalBody(t *testing.T, res *http.Response, dest interface{}) {
 	require.Nil(t, err)
 
 	require.Nil(t, json.Unmarshal(bodyBytes, &dest))
+}
+
+func logBodyAndResetResponse(t *testing.T, resp *http.Response) {
+	t.Helper()
+	respStr := turnResponseBodyIntoString(t, resp)
+	log.Printf(`
+
+		'%s'
+
+	`, respStr)
+	resp.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(respStr)))
 }
 
 func convertCreationInputToProduct(in models.ProductCreationInput) models.Product {

@@ -58,6 +58,7 @@ func SetupAPIRoutes(config *ServerConfig) {
 
 		// Product Option Values
 		specificOptionValueRoute := fmt.Sprintf("/product_option_values/{option_value_id:%s}", NumericPattern)
+		// r.Get(fmt.Sprintf("/product_options/{option_id:%s}/values", NumericPattern), buildProductOptionValueListRetrievalHandler(config.DB, config.Dairyclient))
 		r.Post(fmt.Sprintf("/product_options/{option_id:%s}/value", NumericPattern), buildProductOptionValueCreationHandler(config.DB, config.Dairyclient))
 		r.Patch(specificOptionValueRoute, buildProductOptionValueUpdateHandler(config.DB, config.Dairyclient))
 		r.Delete(specificOptionValueRoute, buildProductOptionValueDeletionHandler(config.DB, config.Dairyclient))

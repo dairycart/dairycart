@@ -1,11 +1,8 @@
 package dairytest
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -20,17 +17,6 @@ import (
 func replaceTimeStringsForProductTests(body string) string {
 	re := regexp.MustCompile(`(?U)(,?)"(available_on)":"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z)?"(,?)`)
 	return strings.TrimSpace(re.ReplaceAllString(body, ""))
-}
-
-func logBodyAndResetResponse(t *testing.T, resp *http.Response) {
-	t.Helper()
-	respStr := turnResponseBodyIntoString(t, resp)
-	log.Printf(`
-
-		'%s'
-
-	`, respStr)
-	resp.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(respStr)))
 }
 
 func createTestProduct(t *testing.T, p models.ProductCreationInput) models.ProductRoot {
