@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/dairycart/dairycart/api/storage"
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/Masterminds/squirrel"
 )
@@ -13,19 +13,19 @@ import (
 const discountQueryByCode = `
     SELECT
         id,
-        name,
-        discount_type,
         amount,
-        starts_on,
-        expires_on,
-        requires_code,
-        code,
         limited_use,
-        number_of_uses,
-        login_required,
-        created_on,
+        requires_code,
+        discount_type,
+        archived_on,
+        code,
+        expires_on,
         updated_on,
-        archived_on
+        starts_on,
+        created_on,
+        number_of_uses,
+        name,
+        login_required
     FROM
         discounts
     WHERE
@@ -36,7 +36,7 @@ const discountQueryByCode = `
 
 func (pg *postgres) GetDiscountByCode(db storage.Querier, code string) (*models.Discount, error) {
 	d := &models.Discount{}
-	err := db.QueryRow(discountQueryByCode, code).Scan(&d.ID, &d.Name, &d.DiscountType, &d.Amount, &d.StartsOn, &d.ExpiresOn, &d.RequiresCode, &d.Code, &d.LimitedUse, &d.NumberOfUses, &d.LoginRequired, &d.CreatedOn, &d.UpdatedOn, &d.ArchivedOn)
+	err := db.QueryRow(discountQueryByCode, code).Scan(&d.ID, &d.Amount, &d.LimitedUse, &d.RequiresCode, &d.DiscountType, &d.ArchivedOn, &d.Code, &d.ExpiresOn, &d.UpdatedOn, &d.StartsOn, &d.CreatedOn, &d.NumberOfUses, &d.Name, &d.LoginRequired)
 	return d, err
 }
 
@@ -58,19 +58,19 @@ func (pg *postgres) DiscountExists(db storage.Querier, id uint64) (bool, error) 
 const discountSelectionQuery = `
     SELECT
         id,
-        name,
-        discount_type,
         amount,
-        starts_on,
-        expires_on,
-        requires_code,
-        code,
         limited_use,
-        number_of_uses,
-        login_required,
-        created_on,
+        requires_code,
+        discount_type,
+        archived_on,
+        code,
+        expires_on,
         updated_on,
-        archived_on
+        starts_on,
+        created_on,
+        number_of_uses,
+        name,
+        login_required
     FROM
         discounts
     WHERE
@@ -82,7 +82,7 @@ const discountSelectionQuery = `
 func (pg *postgres) GetDiscount(db storage.Querier, id uint64) (*models.Discount, error) {
 	d := &models.Discount{}
 
-	err := db.QueryRow(discountSelectionQuery, id).Scan(&d.ID, &d.Name, &d.DiscountType, &d.Amount, &d.StartsOn, &d.ExpiresOn, &d.RequiresCode, &d.Code, &d.LimitedUse, &d.NumberOfUses, &d.LoginRequired, &d.CreatedOn, &d.UpdatedOn, &d.ArchivedOn)
+	err := db.QueryRow(discountSelectionQuery, id).Scan(&d.ID, &d.Amount, &d.LimitedUse, &d.RequiresCode, &d.DiscountType, &d.ArchivedOn, &d.Code, &d.ExpiresOn, &d.UpdatedOn, &d.StartsOn, &d.CreatedOn, &d.NumberOfUses, &d.Name, &d.LoginRequired)
 
 	return d, err
 }
@@ -92,19 +92,19 @@ func buildDiscountListRetrievalQuery(qf *models.QueryFilter) (string, []interfac
 	queryBuilder := sqlBuilder.
 		Select(
 			"id",
-			"name",
-			"discount_type",
 			"amount",
-			"starts_on",
-			"expires_on",
-			"requires_code",
-			"code",
 			"limited_use",
-			"number_of_uses",
-			"login_required",
-			"created_on",
-			"updated_on",
+			"requires_code",
+			"discount_type",
 			"archived_on",
+			"code",
+			"expires_on",
+			"updated_on",
+			"starts_on",
+			"created_on",
+			"number_of_uses",
+			"name",
+			"login_required",
 		).
 		From("discounts")
 
@@ -125,19 +125,19 @@ func (pg *postgres) GetDiscountList(db storage.Querier, qf *models.QueryFilter) 
 		var d models.Discount
 		err := rows.Scan(
 			&d.ID,
-			&d.Name,
-			&d.DiscountType,
 			&d.Amount,
-			&d.StartsOn,
-			&d.ExpiresOn,
-			&d.RequiresCode,
-			&d.Code,
 			&d.LimitedUse,
-			&d.NumberOfUses,
-			&d.LoginRequired,
-			&d.CreatedOn,
-			&d.UpdatedOn,
+			&d.RequiresCode,
+			&d.DiscountType,
 			&d.ArchivedOn,
+			&d.Code,
+			&d.ExpiresOn,
+			&d.UpdatedOn,
+			&d.StartsOn,
+			&d.CreatedOn,
+			&d.NumberOfUses,
+			&d.Name,
+			&d.LoginRequired,
 		)
 		if err != nil {
 			return nil, err
@@ -171,7 +171,7 @@ func (pg *postgres) GetDiscountCount(db storage.Querier, qf *models.QueryFilter)
 const discountCreationQuery = `
     INSERT INTO discounts
         (
-            name, discount_type, amount, starts_on, expires_on, requires_code, code, limited_use, number_of_uses, login_required
+            amount, limited_use, requires_code, discount_type, code, expires_on, starts_on, number_of_uses, name, login_required
         )
     VALUES
         (
@@ -187,31 +187,31 @@ func (pg *postgres) CreateDiscount(db storage.Querier, nu *models.Discount) (uin
 		createdAt time.Time
 	)
 
-	err := db.QueryRow(discountCreationQuery, &nu.Name, &nu.DiscountType, &nu.Amount, &nu.StartsOn, &nu.ExpiresOn, &nu.RequiresCode, &nu.Code, &nu.LimitedUse, &nu.NumberOfUses, &nu.LoginRequired).Scan(&createdID, &createdAt)
+	err := db.QueryRow(discountCreationQuery, &nu.Amount, &nu.LimitedUse, &nu.RequiresCode, &nu.DiscountType, &nu.Code, &nu.ExpiresOn, &nu.StartsOn, &nu.NumberOfUses, &nu.Name, &nu.LoginRequired).Scan(&createdID, &createdAt)
 	return createdID, createdAt, err
 }
 
 const discountUpdateQuery = `
     UPDATE discounts
     SET
-        name = $1, 
-        discount_type = $2, 
-        amount = $3, 
-        starts_on = $4, 
-        expires_on = $5, 
-        requires_code = $6, 
-        code = $7, 
-        limited_use = $8, 
-        number_of_uses = $9, 
-        login_required = $10, 
+        amount = $1, 
+        limited_use = $2, 
+        requires_code = $3, 
+        discount_type = $4, 
+        code = $5, 
+        expires_on = $6, 
         updated_on = NOW()
+        starts_on = $8, 
+        number_of_uses = $9, 
+        name = $10, 
+        login_required = $11
     WHERE id = $11
     RETURNING updated_on;
 `
 
 func (pg *postgres) UpdateDiscount(db storage.Querier, updated *models.Discount) (time.Time, error) {
 	var t time.Time
-	err := db.QueryRow(discountUpdateQuery, &updated.Name, &updated.DiscountType, &updated.Amount, &updated.StartsOn, &updated.ExpiresOn, &updated.RequiresCode, &updated.Code, &updated.LimitedUse, &updated.NumberOfUses, &updated.LoginRequired, &updated.ID).Scan(&t)
+	err := db.QueryRow(discountUpdateQuery, &updated.Amount, &updated.LimitedUse, &updated.RequiresCode, &updated.DiscountType, &updated.Code, &updated.ExpiresOn, &updated.StartsOn, &updated.NumberOfUses, &updated.Name, &updated.LoginRequired, &updated.ID).Scan(&t)
 	return t, err
 }
 

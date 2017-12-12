@@ -5,42 +5,42 @@ import (
 	"time"
 
 	"github.com/dairycart/dairycart/api/storage"
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/Masterminds/squirrel"
 )
 
 const productQueryBySKU = `
     SELECT
-        id,
-        product_root_id,
-        name,
-        subtitle,
-        description,
-        option_summary,
-        sku,
-        upc,
-        manufacturer,
-        brand,
-        quantity,
-        taxable,
-        price,
-        on_sale,
-        sale_price,
-        cost,
-        product_weight,
-        product_height,
         product_width,
-        product_length,
-        package_weight,
-        package_height,
-        package_width,
         package_length,
-        quantity_per_package,
-        available_on,
+        sale_price,
+        description,
+        package_weight,
+        price,
+        product_weight,
+        quantity,
+        product_root_id,
+        product_height,
+        taxable,
+        brand,
+        product_length,
         created_on,
+        available_on,
+        quantity_per_package,
+        on_sale,
+        name,
+        sku,
+        manufacturer,
+        subtitle,
+        package_width,
+        cost,
+        id,
+        package_height,
+        archived_on,
+        option_summary,
         updated_on,
-        archived_on
+        upc
     FROM
         products
     WHERE
@@ -52,7 +52,7 @@ const productQueryBySKU = `
 func (pg *postgres) GetProductBySKU(db storage.Querier, sku string) (*models.Product, error) {
 	p := &models.Product{}
 
-	err := db.QueryRow(productQueryBySKU, sku).Scan(&p.ID, &p.ProductRootID, &p.Name, &p.Subtitle, &p.Description, &p.OptionSummary, &p.SKU, &p.UPC, &p.Manufacturer, &p.Brand, &p.Quantity, &p.Taxable, &p.Price, &p.OnSale, &p.SalePrice, &p.Cost, &p.ProductWeight, &p.ProductHeight, &p.ProductWidth, &p.ProductLength, &p.PackageWeight, &p.PackageHeight, &p.PackageWidth, &p.PackageLength, &p.QuantityPerPackage, &p.AvailableOn, &p.CreatedOn, &p.UpdatedOn, &p.ArchivedOn)
+	err := db.QueryRow(productQueryBySKU, sku).Scan(&p.ProductWidth, &p.PackageLength, &p.SalePrice, &p.Description, &p.PackageWeight, &p.Price, &p.ProductWeight, &p.Quantity, &p.ProductRootID, &p.ProductHeight, &p.Taxable, &p.Brand, &p.ProductLength, &p.CreatedOn, &p.AvailableOn, &p.QuantityPerPackage, &p.OnSale, &p.Name, &p.SKU, &p.Manufacturer, &p.Subtitle, &p.PackageWidth, &p.Cost, &p.ID, &p.PackageHeight, &p.ArchivedOn, &p.OptionSummary, &p.UpdatedOn, &p.UPC)
 
 	return p, err
 }
@@ -74,35 +74,35 @@ func (pg *postgres) ProductWithSKUExists(db storage.Querier, sku string) (bool, 
 
 const productQueryByProductRootID = `
     SELECT
-        id,
-        product_root_id,
-        name,
-        subtitle,
-        description,
-        option_summary,
-        sku,
-        upc,
-        manufacturer,
-        brand,
-        quantity,
-        taxable,
-        price,
-        on_sale,
-        sale_price,
-        cost,
-        product_weight,
-        product_height,
         product_width,
-        product_length,
-        package_weight,
-        package_height,
-        package_width,
         package_length,
-        quantity_per_package,
-        available_on,
+        sale_price,
+        description,
+        package_weight,
+        price,
+        product_weight,
+        quantity,
+        product_root_id,
+        product_height,
+        taxable,
+        brand,
+        product_length,
         created_on,
+        available_on,
+        quantity_per_package,
+        on_sale,
+        name,
+        sku,
+        manufacturer,
+        subtitle,
+        package_width,
+        cost,
+        id,
+        package_height,
+        archived_on,
+        option_summary,
         updated_on,
-        archived_on
+        upc
     FROM
         products
     WHERE
@@ -120,35 +120,35 @@ func (pg *postgres) GetProductsByProductRootID(db storage.Querier, productRootID
 	for rows.Next() {
 		var p models.Product
 		err := rows.Scan(
-			&p.ID,
-			&p.ProductRootID,
-			&p.Name,
-			&p.Subtitle,
-			&p.Description,
-			&p.OptionSummary,
-			&p.SKU,
-			&p.UPC,
-			&p.Manufacturer,
-			&p.Brand,
-			&p.Quantity,
-			&p.Taxable,
-			&p.Price,
-			&p.OnSale,
-			&p.SalePrice,
-			&p.Cost,
-			&p.ProductWeight,
-			&p.ProductHeight,
 			&p.ProductWidth,
-			&p.ProductLength,
-			&p.PackageWeight,
-			&p.PackageHeight,
-			&p.PackageWidth,
 			&p.PackageLength,
-			&p.QuantityPerPackage,
-			&p.AvailableOn,
+			&p.SalePrice,
+			&p.Description,
+			&p.PackageWeight,
+			&p.Price,
+			&p.ProductWeight,
+			&p.Quantity,
+			&p.ProductRootID,
+			&p.ProductHeight,
+			&p.Taxable,
+			&p.Brand,
+			&p.ProductLength,
 			&p.CreatedOn,
-			&p.UpdatedOn,
+			&p.AvailableOn,
+			&p.QuantityPerPackage,
+			&p.OnSale,
+			&p.Name,
+			&p.SKU,
+			&p.Manufacturer,
+			&p.Subtitle,
+			&p.PackageWidth,
+			&p.Cost,
+			&p.ID,
+			&p.PackageHeight,
 			&p.ArchivedOn,
+			&p.OptionSummary,
+			&p.UpdatedOn,
+			&p.UPC,
 		)
 		if err != nil {
 			return nil, err
@@ -180,35 +180,35 @@ func (pg *postgres) ProductExists(db storage.Querier, id uint64) (bool, error) {
 
 const productSelectionQuery = `
     SELECT
-        id,
-        product_root_id,
-        name,
-        subtitle,
-        description,
-        option_summary,
-        sku,
-        upc,
-        manufacturer,
-        brand,
-        quantity,
-        taxable,
-        price,
-        on_sale,
-        sale_price,
-        cost,
-        product_weight,
-        product_height,
         product_width,
-        product_length,
-        package_weight,
-        package_height,
-        package_width,
         package_length,
-        quantity_per_package,
-        available_on,
+        sale_price,
+        description,
+        package_weight,
+        price,
+        product_weight,
+        quantity,
+        product_root_id,
+        product_height,
+        taxable,
+        brand,
+        product_length,
         created_on,
+        available_on,
+        quantity_per_package,
+        on_sale,
+        name,
+        sku,
+        manufacturer,
+        subtitle,
+        package_width,
+        cost,
+        id,
+        package_height,
+        archived_on,
+        option_summary,
         updated_on,
-        archived_on
+        upc
     FROM
         products
     WHERE
@@ -220,7 +220,7 @@ const productSelectionQuery = `
 func (pg *postgres) GetProduct(db storage.Querier, id uint64) (*models.Product, error) {
 	p := &models.Product{}
 
-	err := db.QueryRow(productSelectionQuery, id).Scan(&p.ID, &p.ProductRootID, &p.Name, &p.Subtitle, &p.Description, &p.OptionSummary, &p.SKU, &p.UPC, &p.Manufacturer, &p.Brand, &p.Quantity, &p.Taxable, &p.Price, &p.OnSale, &p.SalePrice, &p.Cost, &p.ProductWeight, &p.ProductHeight, &p.ProductWidth, &p.ProductLength, &p.PackageWeight, &p.PackageHeight, &p.PackageWidth, &p.PackageLength, &p.QuantityPerPackage, &p.AvailableOn, &p.CreatedOn, &p.UpdatedOn, &p.ArchivedOn)
+	err := db.QueryRow(productSelectionQuery, id).Scan(&p.ProductWidth, &p.PackageLength, &p.SalePrice, &p.Description, &p.PackageWeight, &p.Price, &p.ProductWeight, &p.Quantity, &p.ProductRootID, &p.ProductHeight, &p.Taxable, &p.Brand, &p.ProductLength, &p.CreatedOn, &p.AvailableOn, &p.QuantityPerPackage, &p.OnSale, &p.Name, &p.SKU, &p.Manufacturer, &p.Subtitle, &p.PackageWidth, &p.Cost, &p.ID, &p.PackageHeight, &p.ArchivedOn, &p.OptionSummary, &p.UpdatedOn, &p.UPC)
 
 	return p, err
 }
@@ -229,35 +229,35 @@ func buildProductListRetrievalQuery(qf *models.QueryFilter) (string, []interface
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Select(
-			"id",
-			"product_root_id",
-			"name",
-			"subtitle",
-			"description",
-			"option_summary",
-			"sku",
-			"upc",
-			"manufacturer",
-			"brand",
-			"quantity",
-			"taxable",
-			"price",
-			"on_sale",
-			"sale_price",
-			"cost",
-			"product_weight",
-			"product_height",
 			"product_width",
-			"product_length",
-			"package_weight",
-			"package_height",
-			"package_width",
 			"package_length",
-			"quantity_per_package",
-			"available_on",
+			"sale_price",
+			"description",
+			"package_weight",
+			"price",
+			"product_weight",
+			"quantity",
+			"product_root_id",
+			"product_height",
+			"taxable",
+			"brand",
+			"product_length",
 			"created_on",
-			"updated_on",
+			"available_on",
+			"quantity_per_package",
+			"on_sale",
+			"name",
+			"sku",
+			"manufacturer",
+			"subtitle",
+			"package_width",
+			"cost",
+			"id",
+			"package_height",
 			"archived_on",
+			"option_summary",
+			"updated_on",
+			"upc",
 		).
 		From("products")
 
@@ -277,35 +277,35 @@ func (pg *postgres) GetProductList(db storage.Querier, qf *models.QueryFilter) (
 	for rows.Next() {
 		var p models.Product
 		err := rows.Scan(
-			&p.ID,
-			&p.ProductRootID,
-			&p.Name,
-			&p.Subtitle,
-			&p.Description,
-			&p.OptionSummary,
-			&p.SKU,
-			&p.UPC,
-			&p.Manufacturer,
-			&p.Brand,
-			&p.Quantity,
-			&p.Taxable,
-			&p.Price,
-			&p.OnSale,
-			&p.SalePrice,
-			&p.Cost,
-			&p.ProductWeight,
-			&p.ProductHeight,
 			&p.ProductWidth,
-			&p.ProductLength,
-			&p.PackageWeight,
-			&p.PackageHeight,
-			&p.PackageWidth,
 			&p.PackageLength,
-			&p.QuantityPerPackage,
-			&p.AvailableOn,
+			&p.SalePrice,
+			&p.Description,
+			&p.PackageWeight,
+			&p.Price,
+			&p.ProductWeight,
+			&p.Quantity,
+			&p.ProductRootID,
+			&p.ProductHeight,
+			&p.Taxable,
+			&p.Brand,
+			&p.ProductLength,
 			&p.CreatedOn,
-			&p.UpdatedOn,
+			&p.AvailableOn,
+			&p.QuantityPerPackage,
+			&p.OnSale,
+			&p.Name,
+			&p.SKU,
+			&p.Manufacturer,
+			&p.Subtitle,
+			&p.PackageWidth,
+			&p.Cost,
+			&p.ID,
+			&p.PackageHeight,
 			&p.ArchivedOn,
+			&p.OptionSummary,
+			&p.UpdatedOn,
+			&p.UPC,
 		)
 		if err != nil {
 			return nil, err
@@ -339,7 +339,7 @@ func (pg *postgres) GetProductCount(db storage.Querier, qf *models.QueryFilter) 
 const productCreationQuery = `
     INSERT INTO products
         (
-            product_root_id, name, subtitle, description, option_summary, sku, upc, manufacturer, brand, quantity, taxable, price, on_sale, sale_price, cost, product_weight, product_height, product_width, product_length, package_weight, package_height, package_width, package_length, quantity_per_package, available_on
+            product_width, package_length, sale_price, description, package_weight, price, product_weight, quantity, product_root_id, product_height, taxable, brand, product_length, available_on, quantity_per_package, on_sale, name, sku, manufacturer, subtitle, package_width, cost, package_height, option_summary, upc
         )
     VALUES
         (
@@ -356,46 +356,46 @@ func (pg *postgres) CreateProduct(db storage.Querier, nu *models.Product) (uint6
 		availableOn time.Time
 	)
 
-	err := db.QueryRow(productCreationQuery, &nu.ProductRootID, &nu.Name, &nu.Subtitle, &nu.Description, &nu.OptionSummary, &nu.SKU, &nu.UPC, &nu.Manufacturer, &nu.Brand, &nu.Quantity, &nu.Taxable, &nu.Price, &nu.OnSale, &nu.SalePrice, &nu.Cost, &nu.ProductWeight, &nu.ProductHeight, &nu.ProductWidth, &nu.ProductLength, &nu.PackageWeight, &nu.PackageHeight, &nu.PackageWidth, &nu.PackageLength, &nu.QuantityPerPackage, &nu.AvailableOn).Scan(&createdID, &createdAt, &availableOn)
+	err := db.QueryRow(productCreationQuery, &nu.ProductWidth, &nu.PackageLength, &nu.SalePrice, &nu.Description, &nu.PackageWeight, &nu.Price, &nu.ProductWeight, &nu.Quantity, &nu.ProductRootID, &nu.ProductHeight, &nu.Taxable, &nu.Brand, &nu.ProductLength, &nu.AvailableOn, &nu.QuantityPerPackage, &nu.OnSale, &nu.Name, &nu.SKU, &nu.Manufacturer, &nu.Subtitle, &nu.PackageWidth, &nu.Cost, &nu.PackageHeight, &nu.OptionSummary, &nu.UPC).Scan(&createdID, &createdAt, &availableOn)
 	return createdID, createdAt, availableOn, err
 }
 
 const productUpdateQuery = `
     UPDATE products
     SET
-        product_root_id = $1, 
-        name = $2, 
-        subtitle = $3, 
+        product_width = $1, 
+        package_length = $2, 
+        sale_price = $3, 
         description = $4, 
-        option_summary = $5, 
-        sku = $6, 
-        upc = $7, 
-        manufacturer = $8, 
-        brand = $9, 
-        quantity = $10, 
+        package_weight = $5, 
+        price = $6, 
+        product_weight = $7, 
+        quantity = $8, 
+        product_root_id = $9, 
+        product_height = $10, 
         taxable = $11, 
-        price = $12, 
-        on_sale = $13, 
-        sale_price = $14, 
-        cost = $15, 
-        product_weight = $16, 
-        product_height = $17, 
-        product_width = $18, 
-        product_length = $19, 
-        package_weight = $20, 
-        package_height = $21, 
-        package_width = $22, 
-        package_length = $23, 
-        quantity_per_package = $24, 
-        available_on = $25, 
+        brand = $12, 
+        product_length = $13, 
+        available_on = $14, 
+        quantity_per_package = $15, 
+        on_sale = $16, 
+        name = $17, 
+        sku = $18, 
+        manufacturer = $19, 
+        subtitle = $20, 
+        package_width = $21, 
+        cost = $22, 
+        package_height = $23, 
+        option_summary = $24, 
         updated_on = NOW()
+        upc = $26
     WHERE id = $26
     RETURNING updated_on;
 `
 
 func (pg *postgres) UpdateProduct(db storage.Querier, updated *models.Product) (time.Time, error) {
 	var t time.Time
-	err := db.QueryRow(productUpdateQuery, &updated.ProductRootID, &updated.Name, &updated.Subtitle, &updated.Description, &updated.OptionSummary, &updated.SKU, &updated.UPC, &updated.Manufacturer, &updated.Brand, &updated.Quantity, &updated.Taxable, &updated.Price, &updated.OnSale, &updated.SalePrice, &updated.Cost, &updated.ProductWeight, &updated.ProductHeight, &updated.ProductWidth, &updated.ProductLength, &updated.PackageWeight, &updated.PackageHeight, &updated.PackageWidth, &updated.PackageLength, &updated.QuantityPerPackage, &updated.AvailableOn, &updated.ID).Scan(&t)
+	err := db.QueryRow(productUpdateQuery, &updated.ProductWidth, &updated.PackageLength, &updated.SalePrice, &updated.Description, &updated.PackageWeight, &updated.Price, &updated.ProductWeight, &updated.Quantity, &updated.ProductRootID, &updated.ProductHeight, &updated.Taxable, &updated.Brand, &updated.ProductLength, &updated.AvailableOn, &updated.QuantityPerPackage, &updated.OnSale, &updated.Name, &updated.SKU, &updated.Manufacturer, &updated.Subtitle, &updated.PackageWidth, &updated.Cost, &updated.PackageHeight, &updated.OptionSummary, &updated.UPC, &updated.ID).Scan(&t)
 	return t, err
 }
 

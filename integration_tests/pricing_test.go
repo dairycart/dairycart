@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -223,7 +223,7 @@ func TestDiscountDeletionRoute(t *testing.T) {
 
 		var actual models.Discount
 		unmarshalBody(t, resp, &actual)
-		assert.True(t, actual.ArchivedOn.Valid)
+		assert.NotNil(t, actual.ArchivedOn)
 	})
 
 	t.Run("for nonexistent discount", func(*testing.T) {

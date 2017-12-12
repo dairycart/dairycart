@@ -26,8 +26,8 @@
   version = "1.0.0"
 
 [[constraint]]
-  name = "github.com/asaskevich/govalidator"
-  version = "8.0.0"
+  branch = "master"
+  name = "github.com/dairycart/dairymodels"
 
 [[constraint]]
   branch = "master"
@@ -71,15 +71,11 @@
 
 [[constraint]]
   name = "github.com/sirupsen/logrus"
-  version = "1.0.3"
+  version = "1.0.4"
 
 [[constraint]]
   name = "github.com/stretchr/testify"
   version = "1.1.4"
-
-[[constraint]]
-  name = "github.com/tdewolff/minify"
-  version = "2.3.3"
 
 [[constraint]]
   branch = "master"

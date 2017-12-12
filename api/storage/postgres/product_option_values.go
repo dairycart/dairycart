@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/dairycart/dairycart/api/storage"
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/Masterminds/squirrel"
 )
@@ -39,12 +39,12 @@ func (pg *postgres) ArchiveProductOptionValuesForOption(db storage.Querier, opti
 
 const productOptionValueRetrievalQueryByOptionID = `
     SELECT
-        id,
-        product_option_id,
         value,
         created_on,
+        id,
+        archived_on,
         updated_on,
-        archived_on
+        product_option_id
     FROM
         product_option_values
     WHERE
@@ -64,12 +64,12 @@ func (pg *postgres) GetProductOptionValuesForOption(db storage.Querier, optionID
 	for rows.Next() {
 		var p models.ProductOptionValue
 		err := rows.Scan(
-			&p.ID,
-			&p.ProductOptionID,
 			&p.Value,
 			&p.CreatedOn,
-			&p.UpdatedOn,
+			&p.ID,
 			&p.ArchivedOn,
+			&p.UpdatedOn,
+			&p.ProductOptionID,
 		)
 		if err != nil {
 			return nil, err
@@ -101,12 +101,12 @@ func (pg *postgres) ProductOptionValueExists(db storage.Querier, id uint64) (boo
 
 const productOptionValueSelectionQuery = `
     SELECT
-        id,
-        product_option_id,
         value,
         created_on,
+        id,
+        archived_on,
         updated_on,
-        archived_on
+        product_option_id
     FROM
         product_option_values
     WHERE
@@ -118,7 +118,7 @@ const productOptionValueSelectionQuery = `
 func (pg *postgres) GetProductOptionValue(db storage.Querier, id uint64) (*models.ProductOptionValue, error) {
 	p := &models.ProductOptionValue{}
 
-	err := db.QueryRow(productOptionValueSelectionQuery, id).Scan(&p.ID, &p.ProductOptionID, &p.Value, &p.CreatedOn, &p.UpdatedOn, &p.ArchivedOn)
+	err := db.QueryRow(productOptionValueSelectionQuery, id).Scan(&p.Value, &p.CreatedOn, &p.ID, &p.ArchivedOn, &p.UpdatedOn, &p.ProductOptionID)
 
 	return p, err
 }
@@ -127,12 +127,12 @@ func buildProductOptionValueListRetrievalQuery(qf *models.QueryFilter) (string, 
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Select(
-			"id",
-			"product_option_id",
 			"value",
 			"created_on",
-			"updated_on",
+			"id",
 			"archived_on",
+			"updated_on",
+			"product_option_id",
 		).
 		From("product_option_values")
 
@@ -152,12 +152,12 @@ func (pg *postgres) GetProductOptionValueList(db storage.Querier, qf *models.Que
 	for rows.Next() {
 		var p models.ProductOptionValue
 		err := rows.Scan(
-			&p.ID,
-			&p.ProductOptionID,
 			&p.Value,
 			&p.CreatedOn,
-			&p.UpdatedOn,
+			&p.ID,
 			&p.ArchivedOn,
+			&p.UpdatedOn,
+			&p.ProductOptionID,
 		)
 		if err != nil {
 			return nil, err
@@ -188,10 +188,10 @@ func (pg *postgres) GetProductOptionValueCount(db storage.Querier, qf *models.Qu
 	return count, err
 }
 
-const productoptionvalueCreationQuery = `
+const productOptionValueCreationQuery = `
     INSERT INTO product_option_values
         (
-            product_option_id, value
+            value, product_option_id
         )
     VALUES
         (
@@ -207,23 +207,23 @@ func (pg *postgres) CreateProductOptionValue(db storage.Querier, nu *models.Prod
 		createdAt time.Time
 	)
 
-	err := db.QueryRow(productoptionvalueCreationQuery, &nu.ProductOptionID, &nu.Value).Scan(&createdID, &createdAt)
+	err := db.QueryRow(productOptionValueCreationQuery, &nu.Value, &nu.ProductOptionID).Scan(&createdID, &createdAt)
 	return createdID, createdAt, err
 }
 
 const productOptionValueUpdateQuery = `
     UPDATE product_option_values
     SET
-        product_option_id = $1, 
-        value = $2, 
+        value = $1, 
         updated_on = NOW()
+        product_option_id = $3
     WHERE id = $3
     RETURNING updated_on;
 `
 
 func (pg *postgres) UpdateProductOptionValue(db storage.Querier, updated *models.ProductOptionValue) (time.Time, error) {
 	var t time.Time
-	err := db.QueryRow(productOptionValueUpdateQuery, &updated.ProductOptionID, &updated.Value, &updated.ID).Scan(&t)
+	err := db.QueryRow(productOptionValueUpdateQuery, &updated.Value, &updated.ProductOptionID, &updated.ID).Scan(&t)
 	return t, err
 }
 

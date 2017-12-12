@@ -23,7 +23,7 @@
 
 [[constraint]]
   branch = "master"
-  name = "github.com/dairycart/dairycart"
+  name = "github.com/dairycart/dairymodels"
 
 [[constraint]]
   branch = "master"

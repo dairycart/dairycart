@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	// internal dependencies
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	// external dependencies
 	"github.com/stretchr/testify/assert"
@@ -17,37 +17,37 @@ import (
 
 func setWebhookReadQueryExpectationByEventType(t *testing.T, mock sqlmock.Sqlmock, example *models.Webhook, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
-		"id",
-		"url",
-		"event_type",
-		"content_type",
-		"created_on",
-		"updated_on",
 		"archived_on",
+		"event_type",
+		"id",
+		"content_type",
+		"updated_on",
+		"created_on",
+		"url",
 	}).AddRow(
-		example.ID,
-		example.URL,
-		example.EventType,
-		example.ContentType,
-		example.CreatedOn,
-		example.UpdatedOn,
 		example.ArchivedOn,
+		example.EventType,
+		example.ID,
+		example.ContentType,
+		example.UpdatedOn,
+		example.CreatedOn,
+		example.URL,
 	).AddRow(
-		example.ID,
-		example.URL,
-		example.EventType,
-		example.ContentType,
-		example.CreatedOn,
-		example.UpdatedOn,
 		example.ArchivedOn,
+		example.EventType,
+		example.ID,
+		example.ContentType,
+		example.UpdatedOn,
+		example.CreatedOn,
+		example.URL,
 	).AddRow(
-		example.ID,
-		example.URL,
-		example.EventType,
-		example.ContentType,
-		example.CreatedOn,
-		example.UpdatedOn,
 		example.ArchivedOn,
+		example.EventType,
+		example.ID,
+		example.ContentType,
+		example.UpdatedOn,
+		example.CreatedOn,
+		example.URL,
 	).RowError(1, rowErr)
 
 	mock.ExpectQuery(formatQueryForSQLMock(webhookQueryByEventType)).
@@ -156,21 +156,21 @@ func setWebhookReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint6
 	query := formatQueryForSQLMock(webhookSelectionQuery)
 
 	exampleRows := sqlmock.NewRows([]string{
-		"id",
-		"url",
-		"event_type",
-		"content_type",
-		"created_on",
-		"updated_on",
 		"archived_on",
+		"event_type",
+		"id",
+		"content_type",
+		"updated_on",
+		"created_on",
+		"url",
 	}).AddRow(
-		toReturn.ID,
-		toReturn.URL,
-		toReturn.EventType,
-		toReturn.ContentType,
-		toReturn.CreatedOn,
-		toReturn.UpdatedOn,
 		toReturn.ArchivedOn,
+		toReturn.EventType,
+		toReturn.ID,
+		toReturn.ContentType,
+		toReturn.UpdatedOn,
+		toReturn.CreatedOn,
+		toReturn.URL,
 	)
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
@@ -196,37 +196,37 @@ func TestGetWebhook(t *testing.T) {
 
 func setWebhookListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.Webhook, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
-		"id",
-		"url",
-		"event_type",
-		"content_type",
-		"created_on",
-		"updated_on",
 		"archived_on",
+		"event_type",
+		"id",
+		"content_type",
+		"updated_on",
+		"created_on",
+		"url",
 	}).AddRow(
-		example.ID,
-		example.URL,
-		example.EventType,
-		example.ContentType,
-		example.CreatedOn,
-		example.UpdatedOn,
 		example.ArchivedOn,
+		example.EventType,
+		example.ID,
+		example.ContentType,
+		example.UpdatedOn,
+		example.CreatedOn,
+		example.URL,
 	).AddRow(
-		example.ID,
-		example.URL,
-		example.EventType,
-		example.ContentType,
-		example.CreatedOn,
-		example.UpdatedOn,
 		example.ArchivedOn,
+		example.EventType,
+		example.ID,
+		example.ContentType,
+		example.UpdatedOn,
+		example.CreatedOn,
+		example.URL,
 	).AddRow(
-		example.ID,
-		example.URL,
-		example.EventType,
-		example.ContentType,
-		example.CreatedOn,
-		example.UpdatedOn,
 		example.ArchivedOn,
+		example.EventType,
+		example.ID,
+		example.ContentType,
+		example.UpdatedOn,
+		example.CreatedOn,
+		example.URL,
 	).RowError(1, rowErr)
 
 	query, _ := buildWebhookListRetrievalQuery(qf)
@@ -342,12 +342,13 @@ func TestGetWebhookCount(t *testing.T) {
 func setWebhookCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.Webhook, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(webhookCreationQuery)
-	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), generateExampleTimeForTests(t))
+	tt := buildTestTime(t)
+	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), tt)
 	mock.ExpectQuery(query).
 		WithArgs(
-			toCreate.URL,
 			toCreate.EventType,
 			toCreate.ContentType,
+			toCreate.URL,
 		).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
@@ -364,7 +365,7 @@ func TestCreateWebhook(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setWebhookCreationQueryExpectation(t, mock, exampleInput, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actualID, actualCreationDate, err := client.CreateWebhook(mockDB, exampleInput)
 
 		assert.NoError(t, err)
@@ -378,12 +379,12 @@ func TestCreateWebhook(t *testing.T) {
 func setWebhookUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate *models.Webhook, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(webhookUpdateQuery)
-	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests(t))
+	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).
 		WithArgs(
-			toUpdate.URL,
 			toUpdate.EventType,
 			toUpdate.ContentType,
+			toUpdate.URL,
 			toUpdate.ID,
 		).
 		WillReturnRows(exampleRows).
@@ -400,7 +401,7 @@ func TestUpdateWebhookByID(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setWebhookUpdateQueryExpectation(t, mock, exampleInput, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actual, err := client.UpdateWebhook(mockDB, exampleInput)
 
 		assert.NoError(t, err)
@@ -412,7 +413,7 @@ func TestUpdateWebhookByID(t *testing.T) {
 func setWebhookDeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(webhookDeletionQuery)
-	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
+	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
@@ -426,7 +427,7 @@ func TestDeleteWebhookByID(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setWebhookDeletionQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actual, err := client.DeleteWebhook(mockDB, exampleID)
 
 		assert.NoError(t, err)
@@ -437,7 +438,7 @@ func TestDeleteWebhookByID(t *testing.T) {
 	t.Run("with transaction", func(t *testing.T) {
 		mock.ExpectBegin()
 		setWebhookDeletionQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		tx, err := mockDB.Begin()
 		assert.NoError(t, err, "no error should be returned setting up a transaction in the mock DB")
 		actual, err := client.DeleteWebhook(tx, exampleID)

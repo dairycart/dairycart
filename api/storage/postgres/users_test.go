@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	// internal dependencies
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	// external dependencies
 	"github.com/stretchr/testify/assert"
@@ -19,31 +19,31 @@ func setUserReadQueryExpectationByUsername(t *testing.T, mock sqlmock.Sqlmock, u
 	t.Helper()
 	query := formatQueryForSQLMock(userQueryByUsername)
 	exampleRows := sqlmock.NewRows([]string{
-		"id",
-		"first_name",
-		"last_name",
-		"username",
 		"email",
-		"password",
-		"salt",
-		"is_admin",
-		"password_last_changed_on",
 		"created_on",
-		"updated_on",
 		"archived_on",
+		"first_name",
+		"updated_on",
+		"id",
+		"username",
+		"password_last_changed_on",
+		"salt",
+		"last_name",
+		"is_admin",
+		"password",
 	}).AddRow(
-		toReturn.ID,
-		toReturn.FirstName,
-		toReturn.LastName,
-		toReturn.Username,
 		toReturn.Email,
-		toReturn.Password,
-		toReturn.Salt,
-		toReturn.IsAdmin,
-		toReturn.PasswordLastChangedOn,
 		toReturn.CreatedOn,
-		toReturn.UpdatedOn,
 		toReturn.ArchivedOn,
+		toReturn.FirstName,
+		toReturn.UpdatedOn,
+		toReturn.ID,
+		toReturn.Username,
+		toReturn.PasswordLastChangedOn,
+		toReturn.Salt,
+		toReturn.LastName,
+		toReturn.IsAdmin,
+		toReturn.Password,
 	)
 	mock.ExpectQuery(query).WithArgs(username).WillReturnRows(exampleRows).WillReturnError(err)
 }
@@ -165,31 +165,31 @@ func setUserReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, 
 	query := formatQueryForSQLMock(userSelectionQuery)
 
 	exampleRows := sqlmock.NewRows([]string{
-		"id",
-		"first_name",
-		"last_name",
-		"username",
 		"email",
-		"password",
-		"salt",
-		"is_admin",
-		"password_last_changed_on",
 		"created_on",
-		"updated_on",
 		"archived_on",
+		"first_name",
+		"updated_on",
+		"id",
+		"username",
+		"password_last_changed_on",
+		"salt",
+		"last_name",
+		"is_admin",
+		"password",
 	}).AddRow(
-		toReturn.ID,
-		toReturn.FirstName,
-		toReturn.LastName,
-		toReturn.Username,
 		toReturn.Email,
-		toReturn.Password,
-		toReturn.Salt,
-		toReturn.IsAdmin,
-		toReturn.PasswordLastChangedOn,
 		toReturn.CreatedOn,
-		toReturn.UpdatedOn,
 		toReturn.ArchivedOn,
+		toReturn.FirstName,
+		toReturn.UpdatedOn,
+		toReturn.ID,
+		toReturn.Username,
+		toReturn.PasswordLastChangedOn,
+		toReturn.Salt,
+		toReturn.LastName,
+		toReturn.IsAdmin,
+		toReturn.Password,
 	)
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
@@ -215,57 +215,57 @@ func TestGetUser(t *testing.T) {
 
 func setUserListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.User, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
-		"id",
-		"first_name",
-		"last_name",
-		"username",
 		"email",
-		"password",
-		"salt",
-		"is_admin",
-		"password_last_changed_on",
 		"created_on",
-		"updated_on",
 		"archived_on",
+		"first_name",
+		"updated_on",
+		"id",
+		"username",
+		"password_last_changed_on",
+		"salt",
+		"last_name",
+		"is_admin",
+		"password",
 	}).AddRow(
-		example.ID,
-		example.FirstName,
-		example.LastName,
-		example.Username,
 		example.Email,
-		example.Password,
-		example.Salt,
-		example.IsAdmin,
-		example.PasswordLastChangedOn,
 		example.CreatedOn,
-		example.UpdatedOn,
 		example.ArchivedOn,
+		example.FirstName,
+		example.UpdatedOn,
+		example.ID,
+		example.Username,
+		example.PasswordLastChangedOn,
+		example.Salt,
+		example.LastName,
+		example.IsAdmin,
+		example.Password,
 	).AddRow(
-		example.ID,
-		example.FirstName,
-		example.LastName,
-		example.Username,
 		example.Email,
-		example.Password,
-		example.Salt,
-		example.IsAdmin,
-		example.PasswordLastChangedOn,
 		example.CreatedOn,
-		example.UpdatedOn,
 		example.ArchivedOn,
+		example.FirstName,
+		example.UpdatedOn,
+		example.ID,
+		example.Username,
+		example.PasswordLastChangedOn,
+		example.Salt,
+		example.LastName,
+		example.IsAdmin,
+		example.Password,
 	).AddRow(
-		example.ID,
-		example.FirstName,
-		example.LastName,
-		example.Username,
 		example.Email,
-		example.Password,
-		example.Salt,
-		example.IsAdmin,
-		example.PasswordLastChangedOn,
 		example.CreatedOn,
-		example.UpdatedOn,
 		example.ArchivedOn,
+		example.FirstName,
+		example.UpdatedOn,
+		example.ID,
+		example.Username,
+		example.PasswordLastChangedOn,
+		example.Salt,
+		example.LastName,
+		example.IsAdmin,
+		example.Password,
 	).RowError(1, rowErr)
 
 	query, _ := buildUserListRetrievalQuery(qf)
@@ -381,17 +381,18 @@ func TestGetUserCount(t *testing.T) {
 func setUserCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.User, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(userCreationQuery)
-	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), generateExampleTimeForTests(t))
+	tt := buildTestTime(t)
+	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), tt)
 	mock.ExpectQuery(query).
 		WithArgs(
-			toCreate.FirstName,
-			toCreate.LastName,
-			toCreate.Username,
 			toCreate.Email,
-			toCreate.Password,
-			toCreate.Salt,
-			toCreate.IsAdmin,
+			toCreate.FirstName,
+			toCreate.Username,
 			toCreate.PasswordLastChangedOn,
+			toCreate.Salt,
+			toCreate.LastName,
+			toCreate.IsAdmin,
+			toCreate.Password,
 		).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
@@ -408,7 +409,7 @@ func TestCreateUser(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setUserCreationQueryExpectation(t, mock, exampleInput, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actualID, actualCreationDate, err := client.CreateUser(mockDB, exampleInput)
 
 		assert.NoError(t, err)
@@ -422,17 +423,17 @@ func TestCreateUser(t *testing.T) {
 func setUserUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate *models.User, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(userUpdateQuery)
-	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests(t))
+	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).
 		WithArgs(
-			toUpdate.FirstName,
-			toUpdate.LastName,
-			toUpdate.Username,
 			toUpdate.Email,
-			toUpdate.Password,
-			toUpdate.Salt,
-			toUpdate.IsAdmin,
+			toUpdate.FirstName,
+			toUpdate.Username,
 			toUpdate.PasswordLastChangedOn,
+			toUpdate.Salt,
+			toUpdate.LastName,
+			toUpdate.IsAdmin,
+			toUpdate.Password,
 			toUpdate.ID,
 		).
 		WillReturnRows(exampleRows).
@@ -449,7 +450,7 @@ func TestUpdateUserByID(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setUserUpdateQueryExpectation(t, mock, exampleInput, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actual, err := client.UpdateUser(mockDB, exampleInput)
 
 		assert.NoError(t, err)
@@ -461,7 +462,7 @@ func TestUpdateUserByID(t *testing.T) {
 func setUserDeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(userDeletionQuery)
-	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
+	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
@@ -475,7 +476,7 @@ func TestDeleteUserByID(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setUserDeletionQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actual, err := client.DeleteUser(mockDB, exampleID)
 
 		assert.NoError(t, err)
@@ -486,7 +487,7 @@ func TestDeleteUserByID(t *testing.T) {
 	t.Run("with transaction", func(t *testing.T) {
 		mock.ExpectBegin()
 		setUserDeletionQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		tx, err := mockDB.Begin()
 		assert.NoError(t, err, "no error should be returned setting up a transaction in the mock DB")
 		actual, err := client.DeleteUser(tx, exampleID)

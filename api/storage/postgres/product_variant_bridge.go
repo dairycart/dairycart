@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/dairycart/dairycart/api/storage"
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/Masterminds/squirrel"
 )
@@ -28,11 +28,11 @@ func (pg *postgres) ProductVariantBridgeExists(db storage.Querier, id uint64) (b
 
 const productVariantBridgeSelectionQuery = `
     SELECT
-        id,
+        archived_on,
         product_id,
         product_option_value_id,
         created_on,
-        archived_on
+        id
     FROM
         product_variant_bridge
     WHERE
@@ -44,7 +44,7 @@ const productVariantBridgeSelectionQuery = `
 func (pg *postgres) GetProductVariantBridge(db storage.Querier, id uint64) (*models.ProductVariantBridge, error) {
 	p := &models.ProductVariantBridge{}
 
-	err := db.QueryRow(productVariantBridgeSelectionQuery, id).Scan(&p.ID, &p.ProductID, &p.ProductOptionValueID, &p.CreatedOn, &p.ArchivedOn)
+	err := db.QueryRow(productVariantBridgeSelectionQuery, id).Scan(&p.ArchivedOn, &p.ProductID, &p.ProductOptionValueID, &p.CreatedOn, &p.ID)
 
 	return p, err
 }
@@ -53,11 +53,11 @@ func buildProductVariantBridgeListRetrievalQuery(qf *models.QueryFilter) (string
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Select(
-			"id",
+			"archived_on",
 			"product_id",
 			"product_option_value_id",
 			"created_on",
-			"archived_on",
+			"id",
 		).
 		From("product_variant_bridge")
 
@@ -77,11 +77,11 @@ func (pg *postgres) GetProductVariantBridgeList(db storage.Querier, qf *models.Q
 	for rows.Next() {
 		var p models.ProductVariantBridge
 		err := rows.Scan(
-			&p.ID,
+			&p.ArchivedOn,
 			&p.ProductID,
 			&p.ProductOptionValueID,
 			&p.CreatedOn,
-			&p.ArchivedOn,
+			&p.ID,
 		)
 		if err != nil {
 			return nil, err
@@ -112,7 +112,7 @@ func (pg *postgres) GetProductVariantBridgeCount(db storage.Querier, qf *models.
 	return count, err
 }
 
-const productvariantbridgeCreationQuery = `
+const productVariantBridgeCreationQuery = `
     INSERT INTO product_variant_bridge
         (
             product_id, product_option_value_id
@@ -131,7 +131,7 @@ func (pg *postgres) CreateProductVariantBridge(db storage.Querier, nu *models.Pr
 		createdAt time.Time
 	)
 
-	err := db.QueryRow(productvariantbridgeCreationQuery, &nu.ProductID, &nu.ProductOptionValueID).Scan(&createdID, &createdAt)
+	err := db.QueryRow(productVariantBridgeCreationQuery, &nu.ProductID, &nu.ProductOptionValueID).Scan(&createdID, &createdAt)
 	return createdID, createdAt, err
 }
 

@@ -52,7 +52,6 @@ PluginDirs = ["/Users/jeffrey/golang/src/github.com/verygoodsoftwarenotvirus/gno
 # "tables.gotmpl" would render tables.gotmpl template with data from the the
 # "public.users" table to ./public/users/users.go.
 [TablePaths]
-"models/{{snake .Table}}.go" = "model.gotmpl"
 "postgres/{{snake .Table}}.go" = "pg_table.gotmpl"
 "mock/{{snake .Table}}.go" = "mock_table.gotmpl"
 "postgres/{{snake .Table}}_test.go" = "pg_table_test.gotmpl"
@@ -98,7 +97,7 @@ PluginDirs = ["/Users/jeffrey/golang/src/github.com/verygoodsoftwarenotvirus/gno
 # of your configuration file.
 # Example for mapping postgres types to Go types:
 [TypeMap]
-"timestamp without time zone" = "time.Time"
+"timestamp without time zone" = "*Dairytime"
 "text" = "string"
 "bigint" = "uint64"
 "bytea" = "[]byte"
@@ -121,7 +120,7 @@ PluginDirs = ["/Users/jeffrey/golang/src/github.com/verygoodsoftwarenotvirus/gno
 # of your configuration file.
 # Example for mapping postgres types to Go types:
 [NullableTypeMap]
-"timestamp without time zone" = "NullTime"
+"timestamp without time zone" = "*Dairytime"
 
 # Params contains any data you may want to pass to your templates.  This is a
 # good way to make templates reusable with different configuration values for

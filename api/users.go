@@ -5,26 +5,27 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"net/mail"
 	"strconv"
 	"time"
 	"unicode"
 
 	"github.com/dairycart/dairycart/api/storage"
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/dchest/uniuri"
 	"github.com/go-chi/chi"
 	"github.com/gorilla/sessions"
 	"github.com/imdario/mergo"
-	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 )
 
 const (
-	saltSize                 = 1 << 5
 	hashCost                 = bcrypt.DefaultCost + 3
-	resetTokenSize           = 1 << 7
+	saltSize                 = 32
+	resetTokenSize           = 128
+	minimumPasswordSize      = 64
 	dairycartCookieName      = "dairycart"
 	sessionAdminKeyName      = "is_admin"
 	sessionUserIDKeyName     = "user_id"
@@ -36,40 +37,20 @@ const (
 // the password hash to the user, but there's bound to be a way to reuse
 // that struct
 type DisplayUser struct {
-	ID         uint64          `json:"id"`
-	FirstName  string          `json:"first_name"`
-	LastName   string          `json:"last_name"`
-	Email      string          `json:"email"`
-	IsAdmin    bool            `json:"is_admin"`
-	CreatedOn  time.Time       `json:"created_on"`
-	UpdatedOn  models.NullTime `json:"updated_on,omitempty"`
-	ArchivedOn models.NullTime `json:"archived_on,omitempty"`
-}
-
-// UserCreationInput represents the payload used to create a Dairycart user
-type UserCreationInput struct {
-	FirstName string `json:"first_name" valid:"required"`
-	LastName  string `json:"last_name"  valid:"required"`
-	Username  string `json:"username"   valid:"required"`
-	Email     string `json:"email"      valid:"required,email"`
-	Password  string `json:"password"   valid:"required,length(64|8192)"`
-	IsAdmin   bool   `json:"is_admin"`
+	ID         uint64            `json:"id"`
+	FirstName  string            `json:"first_name"`
+	LastName   string            `json:"last_name"`
+	Email      string            `json:"email"`
+	IsAdmin    bool              `json:"is_admin"`
+	CreatedOn  time.Time         `json:"created_on"`
+	UpdatedOn  *models.Dairytime `json:"updated_on,omitempty"`
+	ArchivedOn *models.Dairytime `json:"archived_on,omitempty"`
 }
 
 // UserLoginInput represents the payload used to log in a Dairycart user
 type UserLoginInput struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
-}
-
-// UserUpdateInput represents the payload used to update a Dairycart user
-type UserUpdateInput struct {
-	FirstName       string `json:"first_name"`
-	LastName        string `json:"last_name"`
-	Username        string `json:"username"`
-	Email           string `json:"email"            valid:"email,optional"`
-	CurrentPassword string `json:"current_password" valid:"required,length(64|8192)"`
-	NewPassword     string `json:"new_password"     valid:"length(64|8192),optional"`
 }
 
 func validateSessionCookieMiddleware(res http.ResponseWriter, req *http.Request, store *sessions.CookieStore, next http.HandlerFunc) {
@@ -100,10 +81,10 @@ func passwordIsValid(s string) bool {
 			hasSpecial = true
 		}
 	}
-	return len(s) >= 64 && hasNumber && hasUpper && hasSpecial
+	return len(s) >= minimumPasswordSize && hasNumber && hasUpper && hasSpecial
 }
 
-func createUserFromInput(in *UserCreationInput) (*models.User, error) {
+func createUserFromInput(in *models.UserCreationInput) (*models.User, error) {
 	salt, err := generateSalt()
 	// COVERAGE NOTE: I cannot seem to synthesize this error for the sake of testing, so if you're
 	// seeing this in a coverage report and the line below is red, just know that I tried. :(
@@ -129,7 +110,7 @@ func createUserFromInput(in *UserCreationInput) (*models.User, error) {
 	return user, nil
 }
 
-func createUserFromUpdateInput(in *UserUpdateInput, hashedPassword string) *models.User {
+func createUserFromUpdateInput(in *models.UserUpdateInput, hashedPassword string) *models.User {
 	out := &models.User{
 		FirstName: in.FirstName,
 		LastName:  in.LastName,
@@ -158,11 +139,23 @@ func passwordMatches(password string, u *models.User) bool {
 	return err == nil
 }
 
+func userCreationIsValid(in *models.UserCreationInput) bool {
+	_, err := mail.ParseAddress(in.Email)
+	if in.FirstName != "" &&
+		in.LastName != "" &&
+		in.Username != "" &&
+		err == nil &&
+		len(in.Password) >= minimumPasswordSize {
+		return true
+	}
+	return false
+}
+
 func buildUserCreationHandler(db *sql.DB, client storage.Storer, store *sessions.CookieStore) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		userInput := &UserCreationInput{}
+		userInput := &models.UserCreationInput{}
 		err := validateRequestInput(req, userInput)
-		if err != nil {
+		if err != nil || !userCreationIsValid(userInput) {
 			notifyOfInvalidRequestBody(res, err)
 			return
 		}
@@ -332,7 +325,7 @@ func buildUserDeletionHandler(db *sql.DB, client storage.Storer, store *sessions
 			return
 		} else if admin {
 			archivedOn, err := client.DeleteUser(db, userIDInt64)
-			user.ArchivedOn = models.NullTime{NullTime: pq.NullTime{Time: archivedOn, Valid: true}}
+			user.ArchivedOn = &models.Dairytime{Time: archivedOn}
 			if err != nil {
 				notifyOfInternalIssue(res, err, "archive user")
 				return
@@ -373,7 +366,9 @@ func buildUserForgottenPasswordHandler(db *sql.DB, client storage.Storer) http.H
 			Token:  uniuri.NewLen(resetTokenSize),
 		}
 
-		resetToken.ID, resetToken.CreatedOn, err = client.CreatePasswordResetToken(db, resetToken)
+		newID, createdOn, err := client.CreatePasswordResetToken(db, resetToken)
+		resetToken.ID = newID
+		resetToken.CreatedOn = &models.Dairytime{Time: createdOn}
 		if err != nil {
 			notifyOfInternalIssue(res, err, "read session data")
 			return
@@ -398,14 +393,14 @@ func buildUserPasswordResetTokenValidationHandler(db *sql.DB, client storage.Sto
 	}
 }
 
-func buildUserInfoUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildUserUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		userID := chi.URLParam(req, "user_id")
 		// eating these errors because Chi should validate these for us.
 		userIDInt, _ := strconv.Atoi(userID)
 		userIDInt64 := uint64(userIDInt)
 
-		updatedUserInfo := &UserUpdateInput{}
+		updatedUserInfo := &models.UserUpdateInput{}
 		err := validateRequestInput(req, updatedUserInfo)
 		if err != nil {
 			notifyOfInvalidRequestBody(res, err)
@@ -452,7 +447,7 @@ func buildUserInfoUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerF
 
 		// FIXME: this isn't how this should be done
 		if passwordChanged {
-			updatedUser.PasswordLastChangedOn = models.NullTime{NullTime: pq.NullTime{Time: time.Now(), Valid: true}}
+			updatedUser.PasswordLastChangedOn = &models.Dairytime{Time: time.Now()}
 		}
 
 		updatedOn, err := client.UpdateUser(db, updatedUser)
@@ -460,7 +455,7 @@ func buildUserInfoUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerF
 			notifyOfInternalIssue(res, err, "update user")
 			return
 		}
-		updatedUser.UpdatedOn = models.NullTime{NullTime: pq.NullTime{Time: updatedOn, Valid: true}}
+		updatedUser.UpdatedOn = &models.Dairytime{Time: updatedOn}
 
 		json.NewEncoder(res).Encode(updatedUser)
 	}

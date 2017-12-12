@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	// internal dependencies
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	// external dependencies
 	"github.com/stretchr/testify/assert"
@@ -112,51 +112,51 @@ func setProductRootReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id u
 	query := formatQueryForSQLMock(productRootSelectionQuery)
 
 	exampleRows := sqlmock.NewRows([]string{
-		"id",
-		"name",
-		"subtitle",
-		"description",
-		"sku_prefix",
-		"manufacturer",
-		"brand",
-		"taxable",
-		"cost",
-		"product_weight",
-		"product_height",
-		"product_width",
-		"product_length",
-		"package_weight",
-		"package_height",
-		"package_width",
-		"package_length",
-		"quantity_per_package",
 		"available_on",
-		"created_on",
+		"product_length",
 		"updated_on",
+		"sku_prefix",
+		"package_height",
+		"product_weight",
+		"product_width",
+		"quantity_per_package",
+		"name",
+		"product_height",
+		"package_length",
+		"created_on",
+		"cost",
+		"brand",
+		"subtitle",
+		"package_weight",
 		"archived_on",
+		"id",
+		"package_width",
+		"description",
+		"manufacturer",
+		"taxable",
 	}).AddRow(
-		toReturn.ID,
-		toReturn.Name,
-		toReturn.Subtitle,
-		toReturn.Description,
-		toReturn.SKUPrefix,
-		toReturn.Manufacturer,
-		toReturn.Brand,
-		toReturn.Taxable,
-		toReturn.Cost,
-		toReturn.ProductWeight,
-		toReturn.ProductHeight,
-		toReturn.ProductWidth,
-		toReturn.ProductLength,
-		toReturn.PackageWeight,
-		toReturn.PackageHeight,
-		toReturn.PackageWidth,
-		toReturn.PackageLength,
-		toReturn.QuantityPerPackage,
 		toReturn.AvailableOn,
-		toReturn.CreatedOn,
+		toReturn.ProductLength,
 		toReturn.UpdatedOn,
+		toReturn.SKUPrefix,
+		toReturn.PackageHeight,
+		toReturn.ProductWeight,
+		toReturn.ProductWidth,
+		toReturn.QuantityPerPackage,
+		toReturn.Name,
+		toReturn.ProductHeight,
+		toReturn.PackageLength,
+		toReturn.CreatedOn,
+		toReturn.Cost,
+		toReturn.Brand,
+		toReturn.Subtitle,
+		toReturn.PackageWeight,
 		toReturn.ArchivedOn,
+		toReturn.ID,
+		toReturn.PackageWidth,
+		toReturn.Description,
+		toReturn.Manufacturer,
+		toReturn.Taxable,
 	)
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
@@ -182,97 +182,97 @@ func TestGetProductRoot(t *testing.T) {
 
 func setProductRootListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.ProductRoot, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
-		"id",
-		"name",
-		"subtitle",
-		"description",
-		"sku_prefix",
-		"manufacturer",
-		"brand",
-		"taxable",
-		"cost",
-		"product_weight",
-		"product_height",
-		"product_width",
-		"product_length",
-		"package_weight",
-		"package_height",
-		"package_width",
-		"package_length",
-		"quantity_per_package",
 		"available_on",
-		"created_on",
+		"product_length",
 		"updated_on",
+		"sku_prefix",
+		"package_height",
+		"product_weight",
+		"product_width",
+		"quantity_per_package",
+		"name",
+		"product_height",
+		"package_length",
+		"created_on",
+		"cost",
+		"brand",
+		"subtitle",
+		"package_weight",
 		"archived_on",
+		"id",
+		"package_width",
+		"description",
+		"manufacturer",
+		"taxable",
 	}).AddRow(
-		example.ID,
-		example.Name,
-		example.Subtitle,
-		example.Description,
-		example.SKUPrefix,
-		example.Manufacturer,
-		example.Brand,
-		example.Taxable,
-		example.Cost,
-		example.ProductWeight,
-		example.ProductHeight,
-		example.ProductWidth,
-		example.ProductLength,
-		example.PackageWeight,
-		example.PackageHeight,
-		example.PackageWidth,
-		example.PackageLength,
-		example.QuantityPerPackage,
 		example.AvailableOn,
-		example.CreatedOn,
+		example.ProductLength,
 		example.UpdatedOn,
+		example.SKUPrefix,
+		example.PackageHeight,
+		example.ProductWeight,
+		example.ProductWidth,
+		example.QuantityPerPackage,
+		example.Name,
+		example.ProductHeight,
+		example.PackageLength,
+		example.CreatedOn,
+		example.Cost,
+		example.Brand,
+		example.Subtitle,
+		example.PackageWeight,
 		example.ArchivedOn,
+		example.ID,
+		example.PackageWidth,
+		example.Description,
+		example.Manufacturer,
+		example.Taxable,
 	).AddRow(
-		example.ID,
-		example.Name,
-		example.Subtitle,
-		example.Description,
-		example.SKUPrefix,
-		example.Manufacturer,
-		example.Brand,
-		example.Taxable,
-		example.Cost,
-		example.ProductWeight,
-		example.ProductHeight,
-		example.ProductWidth,
-		example.ProductLength,
-		example.PackageWeight,
-		example.PackageHeight,
-		example.PackageWidth,
-		example.PackageLength,
-		example.QuantityPerPackage,
 		example.AvailableOn,
-		example.CreatedOn,
+		example.ProductLength,
 		example.UpdatedOn,
+		example.SKUPrefix,
+		example.PackageHeight,
+		example.ProductWeight,
+		example.ProductWidth,
+		example.QuantityPerPackage,
+		example.Name,
+		example.ProductHeight,
+		example.PackageLength,
+		example.CreatedOn,
+		example.Cost,
+		example.Brand,
+		example.Subtitle,
+		example.PackageWeight,
 		example.ArchivedOn,
+		example.ID,
+		example.PackageWidth,
+		example.Description,
+		example.Manufacturer,
+		example.Taxable,
 	).AddRow(
-		example.ID,
-		example.Name,
-		example.Subtitle,
-		example.Description,
-		example.SKUPrefix,
-		example.Manufacturer,
-		example.Brand,
-		example.Taxable,
-		example.Cost,
-		example.ProductWeight,
-		example.ProductHeight,
-		example.ProductWidth,
-		example.ProductLength,
-		example.PackageWeight,
-		example.PackageHeight,
-		example.PackageWidth,
-		example.PackageLength,
-		example.QuantityPerPackage,
 		example.AvailableOn,
-		example.CreatedOn,
+		example.ProductLength,
 		example.UpdatedOn,
+		example.SKUPrefix,
+		example.PackageHeight,
+		example.ProductWeight,
+		example.ProductWidth,
+		example.QuantityPerPackage,
+		example.Name,
+		example.ProductHeight,
+		example.PackageLength,
+		example.CreatedOn,
+		example.Cost,
+		example.Brand,
+		example.Subtitle,
+		example.PackageWeight,
 		example.ArchivedOn,
+		example.ID,
+		example.PackageWidth,
+		example.Description,
+		example.Manufacturer,
+		example.Taxable,
 	).RowError(1, rowErr)
 
 	query, _ := buildProductRootListRetrievalQuery(qf)
@@ -387,28 +387,29 @@ func TestGetProductRootCount(t *testing.T) {
 
 func setProductRootCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.ProductRoot, err error) {
 	t.Helper()
-	query := formatQueryForSQLMock(productrootCreationQuery)
-	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), generateExampleTimeForTests(t))
+	query := formatQueryForSQLMock(productRootCreationQuery)
+	tt := buildTestTime(t)
+	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), tt)
 	mock.ExpectQuery(query).
 		WithArgs(
-			toCreate.Name,
-			toCreate.Subtitle,
-			toCreate.Description,
-			toCreate.SKUPrefix,
-			toCreate.Manufacturer,
-			toCreate.Brand,
-			toCreate.Taxable,
-			toCreate.Cost,
-			toCreate.ProductWeight,
-			toCreate.ProductHeight,
-			toCreate.ProductWidth,
-			toCreate.ProductLength,
-			toCreate.PackageWeight,
-			toCreate.PackageHeight,
-			toCreate.PackageWidth,
-			toCreate.PackageLength,
-			toCreate.QuantityPerPackage,
 			toCreate.AvailableOn,
+			toCreate.ProductLength,
+			toCreate.SKUPrefix,
+			toCreate.PackageHeight,
+			toCreate.ProductWeight,
+			toCreate.ProductWidth,
+			toCreate.QuantityPerPackage,
+			toCreate.Name,
+			toCreate.ProductHeight,
+			toCreate.PackageLength,
+			toCreate.Cost,
+			toCreate.Brand,
+			toCreate.Subtitle,
+			toCreate.PackageWeight,
+			toCreate.PackageWidth,
+			toCreate.Description,
+			toCreate.Manufacturer,
+			toCreate.Taxable,
 		).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
@@ -425,7 +426,7 @@ func TestCreateProductRoot(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductRootCreationQueryExpectation(t, mock, exampleInput, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actualID, actualCreationDate, err := client.CreateProductRoot(mockDB, exampleInput)
 
 		assert.NoError(t, err)
@@ -439,27 +440,27 @@ func TestCreateProductRoot(t *testing.T) {
 func setProductRootUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate *models.ProductRoot, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productRootUpdateQuery)
-	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests(t))
+	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).
 		WithArgs(
-			toUpdate.Name,
-			toUpdate.Subtitle,
-			toUpdate.Description,
-			toUpdate.SKUPrefix,
-			toUpdate.Manufacturer,
-			toUpdate.Brand,
-			toUpdate.Taxable,
-			toUpdate.Cost,
-			toUpdate.ProductWeight,
-			toUpdate.ProductHeight,
-			toUpdate.ProductWidth,
-			toUpdate.ProductLength,
-			toUpdate.PackageWeight,
-			toUpdate.PackageHeight,
-			toUpdate.PackageWidth,
-			toUpdate.PackageLength,
-			toUpdate.QuantityPerPackage,
 			toUpdate.AvailableOn,
+			toUpdate.ProductLength,
+			toUpdate.SKUPrefix,
+			toUpdate.PackageHeight,
+			toUpdate.ProductWeight,
+			toUpdate.ProductWidth,
+			toUpdate.QuantityPerPackage,
+			toUpdate.Name,
+			toUpdate.ProductHeight,
+			toUpdate.PackageLength,
+			toUpdate.Cost,
+			toUpdate.Brand,
+			toUpdate.Subtitle,
+			toUpdate.PackageWeight,
+			toUpdate.PackageWidth,
+			toUpdate.Description,
+			toUpdate.Manufacturer,
+			toUpdate.Taxable,
 			toUpdate.ID,
 		).
 		WillReturnRows(exampleRows).
@@ -476,7 +477,7 @@ func TestUpdateProductRootByID(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductRootUpdateQueryExpectation(t, mock, exampleInput, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actual, err := client.UpdateProductRoot(mockDB, exampleInput)
 
 		assert.NoError(t, err)
@@ -488,7 +489,7 @@ func TestUpdateProductRootByID(t *testing.T) {
 func setProductRootDeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productRootDeletionQuery)
-	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
+	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
@@ -502,7 +503,7 @@ func TestDeleteProductRootByID(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductRootDeletionQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actual, err := client.DeleteProductRoot(mockDB, exampleID)
 
 		assert.NoError(t, err)
@@ -513,7 +514,7 @@ func TestDeleteProductRootByID(t *testing.T) {
 	t.Run("with transaction", func(t *testing.T) {
 		mock.ExpectBegin()
 		setProductRootDeletionQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		tx, err := mockDB.Begin()
 		assert.NoError(t, err, "no error should be returned setting up a transaction in the mock DB")
 		actual, err := client.DeleteProductRoot(tx, exampleID)

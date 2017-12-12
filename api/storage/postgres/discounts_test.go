@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	// internal dependencies
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	// external dependencies
 	"github.com/stretchr/testify/assert"
@@ -21,34 +21,34 @@ func setDiscountReadQueryExpectationByCode(t *testing.T, mock sqlmock.Sqlmock, c
 
 	exampleRows := sqlmock.NewRows([]string{
 		"id",
-		"name",
-		"discount_type",
 		"amount",
-		"starts_on",
-		"expires_on",
-		"requires_code",
-		"code",
 		"limited_use",
-		"number_of_uses",
-		"login_required",
-		"created_on",
-		"updated_on",
+		"requires_code",
+		"discount_type",
 		"archived_on",
+		"code",
+		"expires_on",
+		"updated_on",
+		"starts_on",
+		"created_on",
+		"number_of_uses",
+		"name",
+		"login_required",
 	}).AddRow(
 		toReturn.ID,
-		toReturn.Name,
-		toReturn.DiscountType,
 		toReturn.Amount,
-		toReturn.StartsOn,
-		toReturn.ExpiresOn,
-		toReturn.RequiresCode,
-		toReturn.Code,
 		toReturn.LimitedUse,
-		toReturn.NumberOfUses,
-		toReturn.LoginRequired,
-		toReturn.CreatedOn,
-		toReturn.UpdatedOn,
+		toReturn.RequiresCode,
+		toReturn.DiscountType,
 		toReturn.ArchivedOn,
+		toReturn.Code,
+		toReturn.ExpiresOn,
+		toReturn.UpdatedOn,
+		toReturn.StartsOn,
+		toReturn.CreatedOn,
+		toReturn.NumberOfUses,
+		toReturn.Name,
+		toReturn.LoginRequired,
 	)
 	mock.ExpectQuery(query).WithArgs(code).WillReturnRows(exampleRows).WillReturnError(err)
 }
@@ -125,34 +125,34 @@ func setDiscountReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint
 
 	exampleRows := sqlmock.NewRows([]string{
 		"id",
-		"name",
-		"discount_type",
 		"amount",
-		"starts_on",
-		"expires_on",
-		"requires_code",
-		"code",
 		"limited_use",
-		"number_of_uses",
-		"login_required",
-		"created_on",
-		"updated_on",
+		"requires_code",
+		"discount_type",
 		"archived_on",
+		"code",
+		"expires_on",
+		"updated_on",
+		"starts_on",
+		"created_on",
+		"number_of_uses",
+		"name",
+		"login_required",
 	}).AddRow(
 		toReturn.ID,
-		toReturn.Name,
-		toReturn.DiscountType,
 		toReturn.Amount,
-		toReturn.StartsOn,
-		toReturn.ExpiresOn,
-		toReturn.RequiresCode,
-		toReturn.Code,
 		toReturn.LimitedUse,
-		toReturn.NumberOfUses,
-		toReturn.LoginRequired,
-		toReturn.CreatedOn,
-		toReturn.UpdatedOn,
+		toReturn.RequiresCode,
+		toReturn.DiscountType,
 		toReturn.ArchivedOn,
+		toReturn.Code,
+		toReturn.ExpiresOn,
+		toReturn.UpdatedOn,
+		toReturn.StartsOn,
+		toReturn.CreatedOn,
+		toReturn.NumberOfUses,
+		toReturn.Name,
+		toReturn.LoginRequired,
 	)
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
@@ -179,64 +179,64 @@ func TestGetDiscount(t *testing.T) {
 func setDiscountListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.Discount, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
 		"id",
-		"name",
-		"discount_type",
 		"amount",
-		"starts_on",
-		"expires_on",
-		"requires_code",
-		"code",
 		"limited_use",
-		"number_of_uses",
-		"login_required",
-		"created_on",
-		"updated_on",
+		"requires_code",
+		"discount_type",
 		"archived_on",
+		"code",
+		"expires_on",
+		"updated_on",
+		"starts_on",
+		"created_on",
+		"number_of_uses",
+		"name",
+		"login_required",
 	}).AddRow(
 		example.ID,
-		example.Name,
-		example.DiscountType,
 		example.Amount,
-		example.StartsOn,
-		example.ExpiresOn,
-		example.RequiresCode,
-		example.Code,
 		example.LimitedUse,
-		example.NumberOfUses,
-		example.LoginRequired,
-		example.CreatedOn,
-		example.UpdatedOn,
+		example.RequiresCode,
+		example.DiscountType,
 		example.ArchivedOn,
+		example.Code,
+		example.ExpiresOn,
+		example.UpdatedOn,
+		example.StartsOn,
+		example.CreatedOn,
+		example.NumberOfUses,
+		example.Name,
+		example.LoginRequired,
 	).AddRow(
 		example.ID,
-		example.Name,
-		example.DiscountType,
 		example.Amount,
-		example.StartsOn,
-		example.ExpiresOn,
-		example.RequiresCode,
-		example.Code,
 		example.LimitedUse,
-		example.NumberOfUses,
-		example.LoginRequired,
-		example.CreatedOn,
-		example.UpdatedOn,
+		example.RequiresCode,
+		example.DiscountType,
 		example.ArchivedOn,
+		example.Code,
+		example.ExpiresOn,
+		example.UpdatedOn,
+		example.StartsOn,
+		example.CreatedOn,
+		example.NumberOfUses,
+		example.Name,
+		example.LoginRequired,
 	).AddRow(
 		example.ID,
-		example.Name,
-		example.DiscountType,
 		example.Amount,
-		example.StartsOn,
-		example.ExpiresOn,
-		example.RequiresCode,
-		example.Code,
 		example.LimitedUse,
-		example.NumberOfUses,
-		example.LoginRequired,
-		example.CreatedOn,
-		example.UpdatedOn,
+		example.RequiresCode,
+		example.DiscountType,
 		example.ArchivedOn,
+		example.Code,
+		example.ExpiresOn,
+		example.UpdatedOn,
+		example.StartsOn,
+		example.CreatedOn,
+		example.NumberOfUses,
+		example.Name,
+		example.LoginRequired,
 	).RowError(1, rowErr)
 
 	query, _ := buildDiscountListRetrievalQuery(qf)
@@ -352,18 +352,19 @@ func TestGetDiscountCount(t *testing.T) {
 func setDiscountCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.Discount, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(discountCreationQuery)
-	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), generateExampleTimeForTests(t))
+	tt := buildTestTime(t)
+	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), tt)
 	mock.ExpectQuery(query).
 		WithArgs(
-			toCreate.Name,
-			toCreate.DiscountType,
 			toCreate.Amount,
-			toCreate.StartsOn,
-			toCreate.ExpiresOn,
-			toCreate.RequiresCode,
-			toCreate.Code,
 			toCreate.LimitedUse,
+			toCreate.RequiresCode,
+			toCreate.DiscountType,
+			toCreate.Code,
+			toCreate.ExpiresOn,
+			toCreate.StartsOn,
 			toCreate.NumberOfUses,
+			toCreate.Name,
 			toCreate.LoginRequired,
 		).
 		WillReturnRows(exampleRows).
@@ -381,7 +382,7 @@ func TestCreateDiscount(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setDiscountCreationQueryExpectation(t, mock, exampleInput, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actualID, actualCreationDate, err := client.CreateDiscount(mockDB, exampleInput)
 
 		assert.NoError(t, err)
@@ -395,18 +396,18 @@ func TestCreateDiscount(t *testing.T) {
 func setDiscountUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate *models.Discount, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(discountUpdateQuery)
-	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests(t))
+	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).
 		WithArgs(
-			toUpdate.Name,
-			toUpdate.DiscountType,
 			toUpdate.Amount,
-			toUpdate.StartsOn,
-			toUpdate.ExpiresOn,
-			toUpdate.RequiresCode,
-			toUpdate.Code,
 			toUpdate.LimitedUse,
+			toUpdate.RequiresCode,
+			toUpdate.DiscountType,
+			toUpdate.Code,
+			toUpdate.ExpiresOn,
+			toUpdate.StartsOn,
 			toUpdate.NumberOfUses,
+			toUpdate.Name,
 			toUpdate.LoginRequired,
 			toUpdate.ID,
 		).
@@ -424,7 +425,7 @@ func TestUpdateDiscountByID(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setDiscountUpdateQueryExpectation(t, mock, exampleInput, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actual, err := client.UpdateDiscount(mockDB, exampleInput)
 
 		assert.NoError(t, err)
@@ -436,7 +437,7 @@ func TestUpdateDiscountByID(t *testing.T) {
 func setDiscountDeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(discountDeletionQuery)
-	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
+	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
@@ -450,7 +451,7 @@ func TestDeleteDiscountByID(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setDiscountDeletionQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actual, err := client.DeleteDiscount(mockDB, exampleID)
 
 		assert.NoError(t, err)
@@ -461,7 +462,7 @@ func TestDeleteDiscountByID(t *testing.T) {
 	t.Run("with transaction", func(t *testing.T) {
 		mock.ExpectBegin()
 		setDiscountDeletionQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		tx, err := mockDB.Begin()
 		assert.NoError(t, err, "no error should be returned setting up a transaction in the mock DB")
 		actual, err := client.DeleteDiscount(tx, exampleID)

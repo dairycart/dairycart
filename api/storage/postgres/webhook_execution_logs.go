@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/dairycart/dairycart/api/storage"
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/Masterminds/squirrel"
 )
@@ -28,10 +28,10 @@ func (pg *postgres) WebhookExecutionLogExists(db storage.Querier, id uint64) (bo
 const webhookExecutionLogSelectionQuery = `
     SELECT
         id,
-        webhook_id,
-        status_code,
         succeeded,
-        executed_on
+        status_code,
+        executed_on,
+        webhook_id
     FROM
         webhook_execution_logs
     WHERE
@@ -43,7 +43,7 @@ const webhookExecutionLogSelectionQuery = `
 func (pg *postgres) GetWebhookExecutionLog(db storage.Querier, id uint64) (*models.WebhookExecutionLog, error) {
 	w := &models.WebhookExecutionLog{}
 
-	err := db.QueryRow(webhookExecutionLogSelectionQuery, id).Scan(&w.ID, &w.WebhookID, &w.StatusCode, &w.Succeeded, &w.ExecutedOn)
+	err := db.QueryRow(webhookExecutionLogSelectionQuery, id).Scan(&w.ID, &w.Succeeded, &w.StatusCode, &w.ExecutedOn, &w.WebhookID)
 
 	return w, err
 }
@@ -53,10 +53,10 @@ func buildWebhookExecutionLogListRetrievalQuery(qf *models.QueryFilter) (string,
 	queryBuilder := sqlBuilder.
 		Select(
 			"id",
-			"webhook_id",
-			"status_code",
 			"succeeded",
+			"status_code",
 			"executed_on",
+			"webhook_id",
 		).
 		From("webhook_execution_logs")
 
@@ -77,10 +77,10 @@ func (pg *postgres) GetWebhookExecutionLogList(db storage.Querier, qf *models.Qu
 		var w models.WebhookExecutionLog
 		err := rows.Scan(
 			&w.ID,
-			&w.WebhookID,
-			&w.StatusCode,
 			&w.Succeeded,
+			&w.StatusCode,
 			&w.ExecutedOn,
+			&w.WebhookID,
 		)
 		if err != nil {
 			return nil, err
@@ -111,10 +111,10 @@ func (pg *postgres) GetWebhookExecutionLogCount(db storage.Querier, qf *models.Q
 	return count, err
 }
 
-const webhookexecutionlogCreationQuery = `
+const webhookExecutionLogCreationQuery = `
     INSERT INTO webhook_execution_logs
         (
-            webhook_id, status_code, succeeded, executed_on
+            succeeded, status_code, executed_on, webhook_id
         )
     VALUES
         (
@@ -130,24 +130,24 @@ func (pg *postgres) CreateWebhookExecutionLog(db storage.Querier, nu *models.Web
 		createdAt time.Time
 	)
 
-	err := db.QueryRow(webhookexecutionlogCreationQuery, &nu.WebhookID, &nu.StatusCode, &nu.Succeeded, &nu.ExecutedOn).Scan(&createdID, &createdAt)
+	err := db.QueryRow(webhookExecutionLogCreationQuery, &nu.Succeeded, &nu.StatusCode, &nu.ExecutedOn, &nu.WebhookID).Scan(&createdID, &createdAt)
 	return createdID, createdAt, err
 }
 
 const webhookExecutionLogUpdateQuery = `
     UPDATE webhook_execution_logs
     SET
-        webhook_id = $1, 
+        succeeded = $1, 
         status_code = $2, 
-        succeeded = $3, 
-        executed_on = $4
+        executed_on = $3, 
+        webhook_id = $4
     WHERE id = $4
     RETURNING updated_on;
 `
 
 func (pg *postgres) UpdateWebhookExecutionLog(db storage.Querier, updated *models.WebhookExecutionLog) (time.Time, error) {
 	var t time.Time
-	err := db.QueryRow(webhookExecutionLogUpdateQuery, &updated.WebhookID, &updated.StatusCode, &updated.Succeeded, &updated.ExecutedOn, &updated.ID).Scan(&t)
+	err := db.QueryRow(webhookExecutionLogUpdateQuery, &updated.Succeeded, &updated.StatusCode, &updated.ExecutedOn, &updated.WebhookID, &updated.ID).Scan(&t)
 	return t, err
 }
 

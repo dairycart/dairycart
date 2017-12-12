@@ -9,11 +9,10 @@ import (
 	"strings"
 
 	"github.com/dairycart/dairycart/api/storage"
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/go-chi/chi"
 	"github.com/imdario/mergo"
-	"github.com/lib/pq"
 )
 
 type simpleProductOption struct {
@@ -155,7 +154,7 @@ func buildProductOptionUpdateHandler(db *sql.DB, client storage.Storer) http.Han
 			notifyOfInternalIssue(res, err, "update product option in the database")
 			return
 		}
-		existingOption.UpdatedOn = models.NullTime{NullTime: pq.NullTime{Time: updatedOn, Valid: true}}
+		existingOption.UpdatedOn = &models.Dairytime{Time: updatedOn}
 
 		values, err := client.GetProductOptionValuesForOption(db, existingOption.ID)
 		if err != nil {
@@ -171,7 +170,9 @@ func buildProductOptionUpdateHandler(db *sql.DB, client storage.Storer) http.Han
 func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in models.ProductOptionCreationInput, productRootID uint64, client storage.Storer) (models.ProductOption, error) {
 	var err error
 	newProductOption := &models.ProductOption{Name: in.Name, ProductRootID: productRootID}
-	newProductOption.ID, newProductOption.CreatedOn, err = client.CreateProductOption(tx, newProductOption)
+	newID, createdOn, err := client.CreateProductOption(tx, newProductOption)
+	newProductOption.ID = newID
+	newProductOption.CreatedOn = &models.Dairytime{Time: createdOn}
 	if err != nil {
 		return models.ProductOption{}, err
 	}
@@ -186,7 +187,7 @@ func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in models.ProductOpti
 			return models.ProductOption{}, err
 		}
 		newOptionValue.ID = newOptionValueID
-		newOptionValue.CreatedOn = optionCreatedOn
+		newOptionValue.CreatedOn = &models.Dairytime{Time: optionCreatedOn}
 		newProductOption.Values = append(newProductOption.Values, newOptionValue)
 	}
 
@@ -285,7 +286,7 @@ func buildProductOptionDeletionHandler(db *sql.DB, client storage.Storer) http.H
 			notifyOfInternalIssue(res, err, "archiving product options")
 			return
 		}
-		existingOption.ArchivedOn = models.NullTime{NullTime: pq.NullTime{Time: archivedOn, Valid: true}}
+		existingOption.ArchivedOn = &models.Dairytime{Time: archivedOn}
 
 		err = tx.Commit()
 		if err != nil {

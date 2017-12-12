@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
     "salt" bytea NOT NULL,
     "is_admin" bool NOT NULL DEFAULT 'false',
     "password_last_changed_on" timestamp,
-    "created_on" timestamp NOT NULL DEFAULT NOW(),
+    "created_on" timestamp DEFAULT NOW(),
     "updated_on" timestamp,
     "archived_on" timestamp,
     UNIQUE ("username", "archived_on"),
@@ -19,8 +19,8 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
     "id" bigserial,
     "user_id" bigint NOT NULL,
     "token" text NOT NULL,
-    "created_on" timestamp NOT NULL DEFAULT NOW(),
-    "expires_on" timestamp NOT NULL DEFAULT NOW() + (15 * interval '1 minute'),
+    "created_on" timestamp DEFAULT NOW(),
+    "expires_on" timestamp DEFAULT NOW() + (15 * interval '1 minute'),
     "password_reset_on" timestamp,
     UNIQUE ("token"),
     PRIMARY KEY ("id"),
@@ -31,5 +31,5 @@ CREATE TABLE IF NOT EXISTS login_attempts (
     "id" bigserial,
     "username" text NOT NULL,
     "successful" boolean NOT NULL DEFAULT 'false',
-    "created_on" timestamp NOT NULL DEFAULT NOW()
+    "created_on" timestamp DEFAULT NOW()
 )

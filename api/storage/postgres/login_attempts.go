@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/dairycart/dairycart/api/storage"
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/Masterminds/squirrel"
 )
@@ -44,9 +44,9 @@ func (pg *postgres) LoginAttemptExists(db storage.Querier, id uint64) (bool, err
 
 const loginAttemptSelectionQuery = `
     SELECT
-        id,
         username,
         successful,
+        id,
         created_on
     FROM
         login_attempts
@@ -59,7 +59,7 @@ const loginAttemptSelectionQuery = `
 func (pg *postgres) GetLoginAttempt(db storage.Querier, id uint64) (*models.LoginAttempt, error) {
 	l := &models.LoginAttempt{}
 
-	err := db.QueryRow(loginAttemptSelectionQuery, id).Scan(&l.ID, &l.Username, &l.Successful, &l.CreatedOn)
+	err := db.QueryRow(loginAttemptSelectionQuery, id).Scan(&l.Username, &l.Successful, &l.ID, &l.CreatedOn)
 
 	return l, err
 }
@@ -68,9 +68,9 @@ func buildLoginAttemptListRetrievalQuery(qf *models.QueryFilter) (string, []inte
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Select(
-			"id",
 			"username",
 			"successful",
+			"id",
 			"created_on",
 		).
 		From("login_attempts")
@@ -91,9 +91,9 @@ func (pg *postgres) GetLoginAttemptList(db storage.Querier, qf *models.QueryFilt
 	for rows.Next() {
 		var l models.LoginAttempt
 		err := rows.Scan(
-			&l.ID,
 			&l.Username,
 			&l.Successful,
+			&l.ID,
 			&l.CreatedOn,
 		)
 		if err != nil {
@@ -125,7 +125,7 @@ func (pg *postgres) GetLoginAttemptCount(db storage.Querier, qf *models.QueryFil
 	return count, err
 }
 
-const loginattemptCreationQuery = `
+const loginAttemptCreationQuery = `
     INSERT INTO login_attempts
         (
             username, successful
@@ -144,7 +144,7 @@ func (pg *postgres) CreateLoginAttempt(db storage.Querier, nu *models.LoginAttem
 		createdAt time.Time
 	)
 
-	err := db.QueryRow(loginattemptCreationQuery, &nu.Username, &nu.Successful).Scan(&createdID, &createdAt)
+	err := db.QueryRow(loginAttemptCreationQuery, &nu.Username, &nu.Successful).Scan(&createdID, &createdAt)
 	return createdID, createdAt, err
 }
 

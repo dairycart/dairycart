@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -55,7 +55,6 @@ func TestWebhookListByEventTypeHandler(t *testing.T) {
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	})
 }
-
 
 func TestWebhookListHandler(t *testing.T) {
 	exampleWebhook := models.Webhook{
@@ -123,7 +122,7 @@ func TestWebhookCreationHandler(t *testing.T) {
 	t.Run("optimal conditions", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("CreateWebhook", mock.Anything, mock.Anything).
-			Return(uint64(1), generateExampleTimeForTests(), nil)
+			Return(uint64(1), buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -149,7 +148,7 @@ func TestWebhookCreationHandler(t *testing.T) {
 	t.Run("with error creating webhook", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("CreateWebhook", mock.Anything, mock.Anything).
-			Return(uint64(1), generateExampleTimeForTests(), generateArbitraryError())
+			Return(uint64(1), buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -174,7 +173,7 @@ func TestWebhookDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetWebhook", mock.Anything, exampleWebhook.ID).
 			Return(exampleWebhook, nil)
 		testUtil.MockDB.On("DeleteWebhook", mock.Anything, exampleWebhook.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -218,7 +217,7 @@ func TestWebhookDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetWebhook", mock.Anything, exampleWebhook.ID).
 			Return(exampleWebhook, nil)
 		testUtil.MockDB.On("DeleteWebhook", mock.Anything, exampleWebhook.ID).
-			Return(generateExampleTimeForTests(), generateArbitraryError())
+			Return(buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -249,7 +248,7 @@ func TestWebhookUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetWebhook", mock.Anything, exampleWebhook.ID).
 			Return(exampleWebhook, nil)
 		testUtil.MockDB.On("UpdateWebhook", mock.Anything, mock.Anything).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -305,7 +304,7 @@ func TestWebhookUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetWebhook", mock.Anything, exampleWebhook.ID).
 			Return(exampleWebhook, nil)
 		testUtil.MockDB.On("UpdateWebhook", mock.Anything, mock.Anything).
-			Return(generateExampleTimeForTests(), generateArbitraryError())
+			Return(buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 

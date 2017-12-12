@@ -20,7 +20,7 @@ import (
     "database/sql"
 
 	"github.com/dairycart/dairycart/api/storage"
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/Masterminds/squirrel"
 )
@@ -470,7 +470,7 @@ func (pg *postgres) Get{{ $modelName }}Count(db storage.Querier, qf *models.Quer
 }
 
 {{ $creationColumns := .Table.Columns.Names.Except (makeSlice "id" "created_on" "archived_on" "updated_on") -}}
-{{ $creationQueryVarName := printf "%sCreationQuery" ( toLower $modelName ) -}}
+{{ $creationQueryVarName := printf "%sCreationQuery" ( camel $modelName ) -}}
 const {{ $creationQueryVarName }} = `
     INSERT INTO {{ .Table.Name }}
         (

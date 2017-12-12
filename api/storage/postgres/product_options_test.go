@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	// internal dependencies
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	// external dependencies
 	"github.com/stretchr/testify/assert"
@@ -17,33 +17,33 @@ import (
 
 func setProductOptionReadQueryExpectationByProductRootID(t *testing.T, mock sqlmock.Sqlmock, example *models.ProductOption, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
-		"id",
-		"name",
 		"product_root_id",
 		"created_on",
-		"updated_on",
+		"id",
 		"archived_on",
+		"updated_on",
+		"name",
 	}).AddRow(
-		example.ID,
-		example.Name,
 		example.ProductRootID,
 		example.CreatedOn,
-		example.UpdatedOn,
+		example.ID,
 		example.ArchivedOn,
+		example.UpdatedOn,
+		example.Name,
 	).AddRow(
-		example.ID,
-		example.Name,
 		example.ProductRootID,
 		example.CreatedOn,
-		example.UpdatedOn,
+		example.ID,
 		example.ArchivedOn,
+		example.UpdatedOn,
+		example.Name,
 	).AddRow(
-		example.ID,
-		example.Name,
 		example.ProductRootID,
 		example.CreatedOn,
-		example.UpdatedOn,
+		example.ID,
 		example.ArchivedOn,
+		example.UpdatedOn,
+		example.Name,
 	).RowError(1, rowErr)
 
 	mock.ExpectQuery(formatQueryForSQLMock(productOptionQueryByProductRootID)).
@@ -199,19 +199,19 @@ func setProductOptionReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id
 	query := formatQueryForSQLMock(productOptionSelectionQuery)
 
 	exampleRows := sqlmock.NewRows([]string{
-		"id",
-		"name",
 		"product_root_id",
 		"created_on",
-		"updated_on",
+		"id",
 		"archived_on",
+		"updated_on",
+		"name",
 	}).AddRow(
-		toReturn.ID,
-		toReturn.Name,
 		toReturn.ProductRootID,
 		toReturn.CreatedOn,
-		toReturn.UpdatedOn,
+		toReturn.ID,
 		toReturn.ArchivedOn,
+		toReturn.UpdatedOn,
+		toReturn.Name,
 	)
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
@@ -237,33 +237,33 @@ func TestGetProductOption(t *testing.T) {
 
 func setProductOptionListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.ProductOption, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
-		"id",
-		"name",
 		"product_root_id",
 		"created_on",
-		"updated_on",
+		"id",
 		"archived_on",
+		"updated_on",
+		"name",
 	}).AddRow(
-		example.ID,
-		example.Name,
 		example.ProductRootID,
 		example.CreatedOn,
-		example.UpdatedOn,
+		example.ID,
 		example.ArchivedOn,
+		example.UpdatedOn,
+		example.Name,
 	).AddRow(
-		example.ID,
-		example.Name,
 		example.ProductRootID,
 		example.CreatedOn,
-		example.UpdatedOn,
+		example.ID,
 		example.ArchivedOn,
+		example.UpdatedOn,
+		example.Name,
 	).AddRow(
-		example.ID,
-		example.Name,
 		example.ProductRootID,
 		example.CreatedOn,
-		example.UpdatedOn,
+		example.ID,
 		example.ArchivedOn,
+		example.UpdatedOn,
+		example.Name,
 	).RowError(1, rowErr)
 
 	query, _ := buildProductOptionListRetrievalQuery(qf)
@@ -378,12 +378,13 @@ func TestGetProductOptionCount(t *testing.T) {
 
 func setProductOptionCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.ProductOption, err error) {
 	t.Helper()
-	query := formatQueryForSQLMock(productoptionCreationQuery)
-	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), generateExampleTimeForTests(t))
+	query := formatQueryForSQLMock(productOptionCreationQuery)
+	tt := buildTestTime(t)
+	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), tt)
 	mock.ExpectQuery(query).
 		WithArgs(
-			toCreate.Name,
 			toCreate.ProductRootID,
+			toCreate.Name,
 		).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
@@ -400,7 +401,7 @@ func TestCreateProductOption(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductOptionCreationQueryExpectation(t, mock, exampleInput, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actualID, actualCreationDate, err := client.CreateProductOption(mockDB, exampleInput)
 
 		assert.NoError(t, err)
@@ -414,11 +415,11 @@ func TestCreateProductOption(t *testing.T) {
 func setProductOptionUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate *models.ProductOption, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productOptionUpdateQuery)
-	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests(t))
+	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).
 		WithArgs(
-			toUpdate.Name,
 			toUpdate.ProductRootID,
+			toUpdate.Name,
 			toUpdate.ID,
 		).
 		WillReturnRows(exampleRows).
@@ -435,7 +436,7 @@ func TestUpdateProductOptionByID(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductOptionUpdateQueryExpectation(t, mock, exampleInput, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actual, err := client.UpdateProductOption(mockDB, exampleInput)
 
 		assert.NoError(t, err)
@@ -447,7 +448,7 @@ func TestUpdateProductOptionByID(t *testing.T) {
 func setProductOptionDeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productOptionDeletionQuery)
-	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
+	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
@@ -461,7 +462,7 @@ func TestDeleteProductOptionByID(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductOptionDeletionQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actual, err := client.DeleteProductOption(mockDB, exampleID)
 
 		assert.NoError(t, err)
@@ -472,7 +473,7 @@ func TestDeleteProductOptionByID(t *testing.T) {
 	t.Run("with transaction", func(t *testing.T) {
 		mock.ExpectBegin()
 		setProductOptionDeletionQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		tx, err := mockDB.Begin()
 		assert.NoError(t, err, "no error should be returned setting up a transaction in the mock DB")
 		actual, err := client.DeleteProductOption(tx, exampleID)
@@ -486,7 +487,7 @@ func TestDeleteProductOptionByID(t *testing.T) {
 func setProductOptionWithProductRootIDDeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productOptionWithProductRootIDDeletionQuery)
-	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
+	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
@@ -500,7 +501,7 @@ func TestArchiveProductOptionsWithProductRootID(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductOptionWithProductRootIDDeletionQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actual, err := client.ArchiveProductOptionsWithProductRootID(mockDB, exampleID)
 
 		assert.NoError(t, err)
@@ -511,7 +512,7 @@ func TestArchiveProductOptionsWithProductRootID(t *testing.T) {
 	t.Run("with transaction", func(t *testing.T) {
 		mock.ExpectBegin()
 		setProductOptionWithProductRootIDDeletionQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		tx, err := mockDB.Begin()
 		assert.NoError(t, err, "no error should be returned setting up a transaction in the mock DB")
 		actual, err := client.ArchiveProductOptionsWithProductRootID(tx, exampleID)

@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS discounts (
         (number_of_uses = 0 AND limited_use IS FALSE)
     ),
     "login_required" boolean NOT NULL DEFAULT FALSE,
-    "created_on" timestamp NOT NULL DEFAULT NOW(),
+    "created_on" timestamp DEFAULT NOW(),
     "updated_on" timestamp,
     "archived_on" timestamp,
     PRIMARY KEY ("id")

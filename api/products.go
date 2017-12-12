@@ -7,11 +7,10 @@ import (
 	"net/http"
 
 	"github.com/dairycart/dairycart/api/storage"
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/go-chi/chi"
 	"github.com/imdario/mergo"
-	"github.com/lib/pq"
 )
 
 const (
@@ -160,7 +159,7 @@ func buildProductDeletionHandler(db *sql.DB, client storage.Storer, webhookExecu
 			notifyOfInternalIssue(res, err, "close out transaction")
 			return
 		}
-		product.ArchivedOn = models.NullTime{NullTime: pq.NullTime{Time: archiveTime, Valid: true}}
+		product.ArchivedOn = &models.Dairytime{Time: archiveTime}
 
 		webhooks, err := client.GetWebhooksByEventType(db, ProductArchivedWebhookEvent)
 		if err != nil && err != sql.ErrNoRows {
@@ -209,7 +208,7 @@ func buildProductUpdateHandler(db *sql.DB, client storage.Storer, webhookExecuto
 			notifyOfInternalIssue(res, err, "update product in database")
 			return
 		}
-		updatedProduct.UpdatedOn = models.NullTime{NullTime: pq.NullTime{Time: updatedTime, Valid: true}}
+		updatedProduct.UpdatedOn = &models.Dairytime{Time: updatedTime}
 
 		webhooks, err := client.GetWebhooksByEventType(db, ProductUpdatedWebhookEvent)
 		if err != nil && err != sql.ErrNoRows {
@@ -238,7 +237,10 @@ func createProductsInDBFromOptionRows(client storage.Storer, tx *sql.Tx, r *mode
 		p.SKU = fmt.Sprintf("%s_%s", r.SKUPrefix, option.SKUPostfix)
 
 		var err error
-		p.ID, p.AvailableOn, p.CreatedOn, err = client.CreateProduct(tx, p)
+		newID, availableOn, createdOn, err := client.CreateProduct(tx, p)
+		p.ID = newID
+		p.AvailableOn = &models.Dairytime{Time: availableOn}
+		p.CreatedOn = &models.Dairytime{Time: createdOn}
 		if err != nil {
 			return nil, err
 		}
@@ -282,7 +284,9 @@ func buildProductCreationHandler(db *sql.DB, client storage.Storer, webhookExecu
 
 		newProduct := newProductFromCreationInput(productInput)
 		productRoot := createProductRootFromProduct(newProduct)
-		productRoot.ID, productRoot.CreatedOn, err = client.CreateProductRoot(tx, productRoot)
+		newID, createdOn, err := client.CreateProductRoot(tx, productRoot)
+		productRoot.ID = newID
+		productRoot.CreatedOn = &models.Dairytime{Time: createdOn}
 		if err != nil {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "insert product options and values in database")
@@ -301,12 +305,16 @@ func buildProductCreationHandler(db *sql.DB, client storage.Storer, webhookExecu
 
 		if len(productInput.Options) == 0 {
 			newProduct.ProductRootID = productRoot.ID
-			newProduct.ID, newProduct.AvailableOn, newProduct.CreatedOn, err = client.CreateProduct(tx, newProduct)
+			newID, availableOn, createdOn, err := client.CreateProduct(tx, newProduct)
 			if err != nil {
 				tx.Rollback()
 				notifyOfInternalIssue(res, err, "insert product in database")
 				return
 			}
+			newProduct.ID = newID
+			newProduct.AvailableOn = &models.Dairytime{Time: availableOn}
+			newProduct.CreatedOn = &models.Dairytime{Time: createdOn}
+
 			productRoot.Options = []models.ProductOption{} // so this won't be Marshaled as null
 			productRoot.Products = []models.Product{*newProduct}
 		} else {

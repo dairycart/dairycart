@@ -13,9 +13,8 @@ import (
 	"time"
 
 	"github.com/dairycart/dairycart/api/storage"
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
-	"github.com/asaskevich/govalidator"
 	"github.com/fatih/structs"
 	"github.com/go-chi/chi"
 	"github.com/gorilla/sessions"
@@ -145,12 +144,7 @@ func validateRequestInput(req *http.Request, output interface{}) error {
 		return errors.New("Invalid input provided in request body")
 	}
 
-	_, err = govalidator.ValidateStruct(output)
-	if err != nil {
-		return errors.New("invalid request input")
-	}
-
-	return err
+	return nil
 }
 
 func respondThatRowDoesNotExist(req *http.Request, res http.ResponseWriter, itemType, id string) {

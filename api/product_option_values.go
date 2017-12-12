@@ -8,10 +8,9 @@ import (
 	"strconv"
 
 	"github.com/dairycart/dairycart/api/storage"
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/go-chi/chi"
-	"github.com/lib/pq"
 )
 
 func buildProductOptionValueUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
@@ -44,7 +43,7 @@ func buildProductOptionValueUpdateHandler(db *sql.DB, client storage.Storer) htt
 			notifyOfInternalIssue(res, err, "update product option value in the database")
 			return
 		}
-		existingOptionValue.UpdatedOn = models.NullTime{NullTime: pq.NullTime{Time: updatedOn, Valid: true}}
+		existingOptionValue.UpdatedOn = &models.Dairytime{Time: updatedOn}
 
 		json.NewEncoder(res).Encode(existingOptionValue)
 	}
@@ -91,7 +90,9 @@ func buildProductOptionValueCreationHandler(db *sql.DB, client storage.Storer) h
 			return
 		}
 
-		newValue.ID, newValue.CreatedOn, err = client.CreateProductOptionValue(tx, newValue)
+		newID, createdOn, err := client.CreateProductOptionValue(tx, newValue)
+		newValue.ID = newID
+		newValue.CreatedOn = &models.Dairytime{Time: createdOn}
 		if err != nil {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "insert product in database")
@@ -131,7 +132,7 @@ func buildProductOptionValueDeletionHandler(db *sql.DB, client storage.Storer) h
 			notifyOfInternalIssue(res, err, "close out transaction")
 			return
 		}
-		optionValue.ArchivedOn = models.NullTime{NullTime: pq.NullTime{Time: archivedOn, Valid: true}}
+		optionValue.ArchivedOn = &models.Dairytime{Time: archivedOn}
 
 		json.NewEncoder(res).Encode(optionValue)
 	}

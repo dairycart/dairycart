@@ -7,10 +7,9 @@ import (
 	"strconv"
 
 	"github.com/dairycart/dairycart/api/storage"
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/go-chi/chi"
-	"github.com/lib/pq"
 )
 
 func createProductRootFromProduct(p *models.Product) *models.ProductRoot {
@@ -169,7 +168,7 @@ func buildProductRootDeletionHandler(db *sql.DB, client storage.Storer) http.Han
 			notifyOfInternalIssue(res, err, "archive product root in database")
 			return
 		}
-		productRoot.ArchivedOn = models.NullTime{NullTime: pq.NullTime{Time: archivedOn, Valid: true}}
+		productRoot.ArchivedOn = &models.Dairytime{Time: archivedOn}
 
 		err = tx.Commit()
 		if err != nil {

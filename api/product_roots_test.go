@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -31,7 +31,7 @@ func TestCreateProductRootFromProduct(t *testing.T) {
 		PackageHeight:      1,
 		PackageWidth:       1,
 		PackageLength:      1,
-		AvailableOn:        generateExampleTimeForTests(),
+		AvailableOn:        buildTestDairytime(),
 	}
 	expected := &models.ProductRoot{
 		Name:               "name",
@@ -51,7 +51,7 @@ func TestCreateProductRootFromProduct(t *testing.T) {
 		PackageHeight:      1,
 		PackageWidth:       1,
 		PackageLength:      1,
-		AvailableOn:        generateExampleTimeForTests(),
+		AvailableOn:        buildTestDairytime(),
 	}
 	actual := createProductRootFromProduct(exampleInput)
 
@@ -67,13 +67,13 @@ func TestCreateProductRootFromProduct(t *testing.T) {
 func TestSingleProductRootRetrievalHandler(t *testing.T) {
 	exampleProductOption := models.ProductOption{
 		ID:            123,
-		CreatedOn:     generateExampleTimeForTests(),
+		CreatedOn:     buildTestDairytime(),
 		Name:          "something",
 		ProductRootID: 2,
 	}
 	exampleProductRoot := &models.ProductRoot{
 		ID:           2,
-		CreatedOn:    generateExampleTimeForTests(),
+		CreatedOn:    buildTestDairytime(),
 		Name:         "root_name",
 		Subtitle:     "subtitle",
 		Description:  "description",
@@ -83,7 +83,7 @@ func TestSingleProductRootRetrievalHandler(t *testing.T) {
 	}
 	exampleProduct := models.Product{
 		ID:          2,
-		CreatedOn:   generateExampleTimeForTests(),
+		CreatedOn:   buildTestDairytime(),
 		Name:        "Skateboard",
 		Description: "This is a skateboard. Please wear a helmet.",
 	}
@@ -190,7 +190,7 @@ func TestSingleProductRootRetrievalHandler(t *testing.T) {
 func TestProductRootListRetrievalHandler(t *testing.T) {
 	exampleProductRoot := models.ProductRoot{
 		ID:           2,
-		CreatedOn:    generateExampleTimeForTests(),
+		CreatedOn:    buildTestDairytime(),
 		Name:         "root_name",
 		Subtitle:     "subtitle",
 		Description:  "description",
@@ -200,7 +200,7 @@ func TestProductRootListRetrievalHandler(t *testing.T) {
 	}
 	exampleProduct := models.Product{
 		ID:          2,
-		CreatedOn:   generateExampleTimeForTests(),
+		CreatedOn:   buildTestDairytime(),
 		SKU:         "skateboard",
 		Name:        "Skateboard",
 		UPC:         "1234567890",
@@ -281,7 +281,7 @@ func TestProductRootListRetrievalHandler(t *testing.T) {
 func TestProductRootDeletionHandler(t *testing.T) {
 	exampleProductRoot := &models.ProductRoot{
 		ID:           2,
-		CreatedOn:    generateExampleTimeForTests(),
+		CreatedOn:    buildTestDairytime(),
 		Name:         "root_name",
 		Subtitle:     "subtitle",
 		Description:  "description",
@@ -296,15 +296,15 @@ func TestProductRootDeletionHandler(t *testing.T) {
 			Return(exampleProductRoot, nil)
 		testUtil.Mock.ExpectBegin()
 		testUtil.MockDB.On("ArchiveProductVariantBridgesWithProductRootID", mock.Anything, exampleProductRoot.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.MockDB.On("ArchiveProductOptionValuesWithProductRootID", mock.Anything, exampleProductRoot.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.MockDB.On("ArchiveProductOptionsWithProductRootID", mock.Anything, exampleProductRoot.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.MockDB.On("ArchiveProductsWithProductRootID", mock.Anything, exampleProductRoot.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.MockDB.On("DeleteProductRoot", mock.Anything, exampleProductRoot.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.Mock.ExpectCommit()
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
@@ -365,7 +365,7 @@ func TestProductRootDeletionHandler(t *testing.T) {
 			Return(exampleProductRoot, nil)
 		testUtil.Mock.ExpectBegin()
 		testUtil.MockDB.On("ArchiveProductVariantBridgesWithProductRootID", mock.Anything, exampleProductRoot.ID).
-			Return(generateExampleTimeForTests(), generateArbitraryError())
+			Return(buildTestTime(), generateArbitraryError())
 		testUtil.Mock.ExpectRollback()
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
@@ -383,9 +383,9 @@ func TestProductRootDeletionHandler(t *testing.T) {
 			Return(exampleProductRoot, nil)
 		testUtil.Mock.ExpectBegin()
 		testUtil.MockDB.On("ArchiveProductVariantBridgesWithProductRootID", mock.Anything, exampleProductRoot.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.MockDB.On("ArchiveProductOptionValuesWithProductRootID", mock.Anything, exampleProductRoot.ID).
-			Return(generateExampleTimeForTests(), generateArbitraryError())
+			Return(buildTestTime(), generateArbitraryError())
 		testUtil.Mock.ExpectRollback()
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
@@ -403,11 +403,11 @@ func TestProductRootDeletionHandler(t *testing.T) {
 			Return(exampleProductRoot, nil)
 		testUtil.Mock.ExpectBegin()
 		testUtil.MockDB.On("ArchiveProductVariantBridgesWithProductRootID", mock.Anything, exampleProductRoot.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.MockDB.On("ArchiveProductOptionValuesWithProductRootID", mock.Anything, exampleProductRoot.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.MockDB.On("ArchiveProductOptionsWithProductRootID", mock.Anything, exampleProductRoot.ID).
-			Return(generateExampleTimeForTests(), generateArbitraryError())
+			Return(buildTestTime(), generateArbitraryError())
 		testUtil.Mock.ExpectRollback()
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
@@ -425,13 +425,13 @@ func TestProductRootDeletionHandler(t *testing.T) {
 			Return(exampleProductRoot, nil)
 		testUtil.Mock.ExpectBegin()
 		testUtil.MockDB.On("ArchiveProductVariantBridgesWithProductRootID", mock.Anything, exampleProductRoot.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.MockDB.On("ArchiveProductOptionValuesWithProductRootID", mock.Anything, exampleProductRoot.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.MockDB.On("ArchiveProductOptionsWithProductRootID", mock.Anything, exampleProductRoot.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.MockDB.On("ArchiveProductsWithProductRootID", mock.Anything, exampleProductRoot.ID).
-			Return(generateExampleTimeForTests(), generateArbitraryError())
+			Return(buildTestTime(), generateArbitraryError())
 		testUtil.Mock.ExpectRollback()
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
@@ -449,15 +449,15 @@ func TestProductRootDeletionHandler(t *testing.T) {
 			Return(exampleProductRoot, nil)
 		testUtil.Mock.ExpectBegin()
 		testUtil.MockDB.On("ArchiveProductVariantBridgesWithProductRootID", mock.Anything, exampleProductRoot.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.MockDB.On("ArchiveProductOptionValuesWithProductRootID", mock.Anything, exampleProductRoot.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.MockDB.On("ArchiveProductOptionsWithProductRootID", mock.Anything, exampleProductRoot.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.MockDB.On("ArchiveProductsWithProductRootID", mock.Anything, exampleProductRoot.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.MockDB.On("DeleteProductRoot", mock.Anything, exampleProductRoot.ID).
-			Return(generateExampleTimeForTests(), generateArbitraryError())
+			Return(buildTestTime(), generateArbitraryError())
 		testUtil.Mock.ExpectRollback()
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
@@ -475,15 +475,15 @@ func TestProductRootDeletionHandler(t *testing.T) {
 			Return(exampleProductRoot, nil)
 		testUtil.Mock.ExpectBegin()
 		testUtil.MockDB.On("ArchiveProductVariantBridgesWithProductRootID", mock.Anything, exampleProductRoot.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.MockDB.On("ArchiveProductOptionValuesWithProductRootID", mock.Anything, exampleProductRoot.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.MockDB.On("ArchiveProductOptionsWithProductRootID", mock.Anything, exampleProductRoot.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.MockDB.On("ArchiveProductsWithProductRootID", mock.Anything, exampleProductRoot.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.MockDB.On("DeleteProductRoot", mock.Anything, exampleProductRoot.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.Mock.ExpectCommit().WillReturnError(generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
