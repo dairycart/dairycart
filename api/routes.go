@@ -58,6 +58,7 @@ func SetupAPIRoutes(config *ServerConfig) {
 
 		// Product Option Values
 		specificOptionValueRoute := fmt.Sprintf("/product_option_values/{option_value_id:%s}", NumericPattern)
+		// r.Get(fmt.Sprintf("/product_options/{option_id:%s}/values", NumericPattern), buildProductOptionValueListRetrievalHandler(config.DB, config.Dairyclient))
 		r.Post(fmt.Sprintf("/product_options/{option_id:%s}/value", NumericPattern), buildProductOptionValueCreationHandler(config.DB, config.Dairyclient))
 		r.Patch(specificOptionValueRoute, buildProductOptionValueUpdateHandler(config.DB, config.Dairyclient))
 		r.Delete(specificOptionValueRoute, buildProductOptionValueDeletionHandler(config.DB, config.Dairyclient))
@@ -69,5 +70,13 @@ func SetupAPIRoutes(config *ServerConfig) {
 		r.Delete(specificDiscountRoute, buildDiscountDeletionHandler(config.DB, config.Dairyclient))
 		r.Get("/discounts", buildDiscountListRetrievalHandler(config.DB, config.Dairyclient))
 		r.Post("/discount", buildDiscountCreationHandler(config.DB, config.Dairyclient))
+
+		// Webhooks
+		specificWebhookRoute := fmt.Sprintf("/webhook/{webhook_id:%s}", NumericPattern)
+		r.Get(fmt.Sprintf("/webhooks/{event_type:%s}", ValidURLCharactersPattern), buildWebhookListRetrievalByEventTypeHandler(config.DB, config.Dairyclient))
+		r.Get("/webhooks", buildWebhookListRetrievalHandler(config.DB, config.Dairyclient))
+		r.Post("/webhook", buildWebhookCreationHandler(config.DB, config.Dairyclient))
+		r.Patch(specificWebhookRoute, buildWebhookUpdateHandler(config.DB, config.Dairyclient))
+		r.Delete(specificWebhookRoute, buildWebhookDeletionHandler(config.DB, config.Dairyclient))
 	})
 }
