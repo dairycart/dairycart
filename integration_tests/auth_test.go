@@ -76,7 +76,7 @@ func TestUserCreationRoute(t *testing.T) {
 
 		expected := models.ErrorResponse{
 			Status:  http.StatusBadRequest,
-			Message: "invalid request input",
+			Message: "password must be at least 64 characters",
 		}
 		var actual models.ErrorResponse
 		unmarshalBody(t, resp, &actual)
@@ -250,7 +250,7 @@ func TestUserLoginRoute(t *testing.T) {
 		testUsername := "test_user_login"
 		userShouldBeAdmin := false
 
-		expected := models.User{
+		expected := models.UserCreationInput{
 			FirstName: "Frank",
 			LastName:  "Zappa",
 			Email:     "frank@zappa.com",

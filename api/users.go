@@ -154,7 +154,7 @@ func validateUserCreationInput(in *models.UserCreationInput) error {
 	if in.Username == "" {
 		return errors.New("username must not be empty")
 	}
-	if len(in.Password) >= minimumPasswordSize {
+	if len(in.Password) < minimumPasswordSize {
 		return errors.New(fmt.Sprintf("password must be at least %d characters", minimumPasswordSize))
 	}
 	return nil
