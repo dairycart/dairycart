@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/mail"
 	"strconv"
@@ -139,23 +140,37 @@ func passwordMatches(password string, u *models.User) bool {
 	return err == nil
 }
 
-func userCreationIsValid(in *models.UserCreationInput) bool {
+func validateUserCreationInput(in *models.UserCreationInput) error {
 	_, err := mail.ParseAddress(in.Email)
-	if in.FirstName != "" &&
-		in.LastName != "" &&
-		in.Username != "" &&
-		err == nil &&
-		len(in.Password) >= minimumPasswordSize {
-		return true
+	if err != nil {
+		return errors.Wrap(err, "email address must be valid")
 	}
-	return false
+	if in.FirstName == "" {
+		return errors.New("first name must not be empty")
+	}
+	if in.LastName == "" {
+		return errors.New("last name must not be empty")
+	}
+	if in.Username == "" {
+		return errors.New("username must not be empty")
+	}
+	if len(in.Password) >= minimumPasswordSize {
+		return errors.New(fmt.Sprintf("password must be at least %d characters", minimumPasswordSize))
+	}
+	return nil
 }
 
 func buildUserCreationHandler(db *sql.DB, client storage.Storer, store *sessions.CookieStore) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		userInput := &models.UserCreationInput{}
 		err := validateRequestInput(req, userInput)
-		if err != nil || !userCreationIsValid(userInput) {
+		if err != nil {
+			notifyOfInvalidRequestBody(res, err)
+			return
+		}
+
+		err = validateUserCreationInput(userInput)
+		if err != nil {
 			notifyOfInvalidRequestBody(res, err)
 			return
 		}
