@@ -90,14 +90,12 @@ func buildProductOptionValueCreationHandler(db *sql.DB, client storage.Storer) h
 			return
 		}
 
-		newID, newCreatedOn, err := client.CreateProductOptionValue(tx, newValue)
+		newValue.ID, newValue.CreatedOn, err = client.CreateProductOptionValue(tx, newValue)
 		if err != nil {
 			tx.Rollback()
 			notifyOfInternalIssue(res, err, "insert product in database")
 			return
 		}
-		newValue.ID = newID
-		newValue.CreatedOn = &models.Dairytime{Time: newCreatedOn}
 
 		err = tx.Commit()
 		if err != nil {

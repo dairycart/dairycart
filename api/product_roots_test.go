@@ -31,7 +31,7 @@ func TestCreateProductRootFromProduct(t *testing.T) {
 		PackageHeight:      1,
 		PackageWidth:       1,
 		PackageLength:      1,
-		AvailableOn:        buildTestDairytime(),
+		AvailableOn:        buildTestTime(),
 	}
 	expected := &models.ProductRoot{
 		Name:               "name",
@@ -51,7 +51,7 @@ func TestCreateProductRootFromProduct(t *testing.T) {
 		PackageHeight:      1,
 		PackageWidth:       1,
 		PackageLength:      1,
-		AvailableOn:        buildTestDairytime(),
+		AvailableOn:        buildTestTime(),
 	}
 	actual := createProductRootFromProduct(exampleInput)
 
@@ -67,13 +67,13 @@ func TestCreateProductRootFromProduct(t *testing.T) {
 func TestSingleProductRootRetrievalHandler(t *testing.T) {
 	exampleProductOption := models.ProductOption{
 		ID:            123,
-		CreatedOn:     buildTestDairytime(),
+		CreatedOn:     buildTestTime(),
 		Name:          "something",
 		ProductRootID: 2,
 	}
 	exampleProductRoot := &models.ProductRoot{
 		ID:           2,
-		CreatedOn:    buildTestDairytime(),
+		CreatedOn:    buildTestTime(),
 		Name:         "root_name",
 		Subtitle:     "subtitle",
 		Description:  "description",
@@ -83,7 +83,7 @@ func TestSingleProductRootRetrievalHandler(t *testing.T) {
 	}
 	exampleProduct := models.Product{
 		ID:          2,
-		CreatedOn:   buildTestDairytime(),
+		CreatedOn:   buildTestTime(),
 		Name:        "Skateboard",
 		Description: "This is a skateboard. Please wear a helmet.",
 	}
@@ -190,7 +190,7 @@ func TestSingleProductRootRetrievalHandler(t *testing.T) {
 func TestProductRootListRetrievalHandler(t *testing.T) {
 	exampleProductRoot := models.ProductRoot{
 		ID:           2,
-		CreatedOn:    buildTestDairytime(),
+		CreatedOn:    buildTestTime(),
 		Name:         "root_name",
 		Subtitle:     "subtitle",
 		Description:  "description",
@@ -200,7 +200,7 @@ func TestProductRootListRetrievalHandler(t *testing.T) {
 	}
 	exampleProduct := models.Product{
 		ID:          2,
-		CreatedOn:   buildTestDairytime(),
+		CreatedOn:   buildTestTime(),
 		SKU:         "skateboard",
 		Name:        "Skateboard",
 		UPC:         "1234567890",
@@ -281,7 +281,7 @@ func TestProductRootListRetrievalHandler(t *testing.T) {
 func TestProductRootDeletionHandler(t *testing.T) {
 	exampleProductRoot := &models.ProductRoot{
 		ID:           2,
-		CreatedOn:    buildTestDairytime(),
+		CreatedOn:    buildTestTime(),
 		Name:         "root_name",
 		Subtitle:     "subtitle",
 		Description:  "description",

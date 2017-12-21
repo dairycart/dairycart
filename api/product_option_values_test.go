@@ -23,13 +23,13 @@ func TestProductOptionValueCreationHandler(t *testing.T) {
 	exampleProductOptionValueCreationBody := `{"value": "something"}`
 	exampleProductOptionValue := &models.ProductOptionValue{
 		ID:              256,
-		CreatedOn:       buildTestDairytime(),
+		CreatedOn:       buildTestTime(),
 		ProductOptionID: 123,
 		Value:           "something",
 	}
 	exampleProductOption := &models.ProductOption{
 		ID:            123,
-		CreatedOn:     buildTestDairytime(),
+		CreatedOn:     buildTestTime(),
 		Name:          "something",
 		ProductRootID: 2,
 	}
@@ -188,7 +188,7 @@ func TestProductOptionValueUpdateHandler(t *testing.T) {
 	exampleProductOptionValueUpdateBody := `{"value": "something else"}`
 	exampleProductOptionValue := &models.ProductOptionValue{
 		ID:              256,
-		CreatedOn:       buildTestDairytime(),
+		CreatedOn:       buildTestTime(),
 		ProductOptionID: 123,
 		Value:           "something",
 	}
@@ -269,7 +269,7 @@ func TestProductOptionValueUpdateHandler(t *testing.T) {
 func TestProductOptionValueDeletionHandler(t *testing.T) {
 	exampleProductOptionValue := &models.ProductOptionValue{
 		ID:              256,
-		CreatedOn:       buildTestDairytime(),
+		CreatedOn:       buildTestTime(),
 		ProductOptionID: 123,
 		Value:           "something",
 	}

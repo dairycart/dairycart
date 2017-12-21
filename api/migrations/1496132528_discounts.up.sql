@@ -4,7 +4,6 @@ CREATE TABLE IF NOT EXISTS discounts (
     "name" text NOT NULL,
     "discount_type" discount_type NOT NULL DEFAULT 'percentage',
     "amount" numeric(15, 2) NOT NULL DEFAULT 0,
-    "starts_on" timestamp DEFAULT NOW(),
     "expires_on" timestamp,
     "requires_code" boolean NOT NULL DEFAULT FALSE,
     "code" text NOT NULL DEFAULT '' CONSTRAINT code_must_be_provided CHECK(
@@ -19,7 +18,8 @@ CREATE TABLE IF NOT EXISTS discounts (
         (number_of_uses = 0 AND limited_use IS FALSE)
     ),
     "login_required" boolean NOT NULL DEFAULT FALSE,
-    "created_on" timestamp DEFAULT NOW(),
+    "starts_on" timestamp NOT NULL DEFAULT NOW(),
+    "created_on" timestamp NOT NULL DEFAULT NOW(),
     "updated_on" timestamp,
     "archived_on" timestamp,
     PRIMARY KEY ("id")

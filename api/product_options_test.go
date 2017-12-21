@@ -326,7 +326,7 @@ func TestProductOptionCreationHandler(t *testing.T) {
 	`
 	exampleProductOption := &models.ProductOption{
 		ID:            123,
-		CreatedOn:     buildTestDairytime(),
+		CreatedOn:     buildTestTime(),
 		Name:          "something",
 		ProductRootID: 2,
 	}
@@ -493,7 +493,7 @@ func TestProductOptionUpdateHandler(t *testing.T) {
 	`
 	exampleProductOption := &models.ProductOption{
 		ID:            123,
-		CreatedOn:     buildTestDairytime(),
+		CreatedOn:     buildTestTime(),
 		Name:          "something",
 		ProductRootID: 2,
 	}
@@ -594,7 +594,7 @@ func TestProductOptionUpdateHandler(t *testing.T) {
 func TestProductOptionDeletionHandler(t *testing.T) {
 	exampleProductOption := &models.ProductOption{
 		ID:            123,
-		CreatedOn:     buildTestDairytime(),
+		CreatedOn:     buildTestTime(),
 		Name:          "something",
 		ProductRootID: 2,
 	}

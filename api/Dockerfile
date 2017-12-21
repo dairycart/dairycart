@@ -17,7 +17,7 @@ COPY --from=build-stage /migrations /migrations
 
 ENV DB_TO_USE "postgres"
 ENV DAIRYSECRET "do-not-use-secrets-like-this-plz"
-ENV MIGRATE_EXAMPLE_DATA "YES"
+ENV MIGRATE_EXAMPLE_DATA "no thank you. :)"
 ENV DAIRYCART_MIGRATIONS_DIR 'file://migrations'
 
 ENTRYPOINT ["/dairycart"]

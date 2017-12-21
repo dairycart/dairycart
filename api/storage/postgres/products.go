@@ -349,15 +349,15 @@ const productCreationQuery = `
         id, created_on, available_on;
 `
 
-func (pg *postgres) CreateProduct(db storage.Querier, nu *models.Product) (uint64, time.Time, *models.Dairytime, error) {
+func (pg *postgres) CreateProduct(db storage.Querier, nu *models.Product) (uint64, time.Time, time.Time, error) {
 	var (
 		createdID   uint64
 		createdAt   time.Time
-		availableOn models.Dairytime
+		availableOn time.Time
 	)
 
 	err := db.QueryRow(productCreationQuery, &nu.ProductRootID, &nu.Name, &nu.Subtitle, &nu.Description, &nu.OptionSummary, &nu.SKU, &nu.UPC, &nu.Manufacturer, &nu.Brand, &nu.Quantity, &nu.Taxable, &nu.Price, &nu.OnSale, &nu.SalePrice, &nu.Cost, &nu.ProductWeight, &nu.ProductHeight, &nu.ProductWidth, &nu.ProductLength, &nu.PackageWeight, &nu.PackageHeight, &nu.PackageWidth, &nu.PackageLength, &nu.QuantityPerPackage, &nu.AvailableOn).Scan(&createdID, &createdAt, &availableOn)
-	return createdID, createdAt, &availableOn, err
+	return createdID, createdAt, availableOn, err
 }
 
 const productUpdateQuery = `

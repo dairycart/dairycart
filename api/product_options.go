@@ -170,24 +170,20 @@ func buildProductOptionUpdateHandler(db *sql.DB, client storage.Storer) http.Han
 func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in models.ProductOptionCreationInput, productRootID uint64, client storage.Storer) (models.ProductOption, error) {
 	var err error
 	newProductOption := &models.ProductOption{Name: in.Name, ProductRootID: productRootID}
-	newID, createdOn, err := client.CreateProductOption(tx, newProductOption)
+	newProductOption.ID, newProductOption.CreatedOn, err = client.CreateProductOption(tx, newProductOption)
 	if err != nil {
 		return models.ProductOption{}, err
 	}
-	newProductOption.ID = newID
-	newProductOption.CreatedOn = &models.Dairytime{Time: createdOn}
 
 	for _, value := range in.Values {
 		newOptionValue := models.ProductOptionValue{
 			ProductOptionID: newProductOption.ID,
 			Value:           value,
 		}
-		newID, createdOn, err := client.CreateProductOptionValue(tx, &newOptionValue)
+		newOptionValue.ID, newOptionValue.CreatedOn, err = client.CreateProductOptionValue(tx, &newOptionValue)
 		if err != nil {
 			return models.ProductOption{}, err
 		}
-		newOptionValue.ID = newID
-		newOptionValue.CreatedOn = &models.Dairytime{Time: createdOn}
 		newProductOption.Values = append(newProductOption.Values, newOptionValue)
 	}
 

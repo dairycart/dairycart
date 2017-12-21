@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/mail"
 	"strconv"
@@ -141,9 +142,13 @@ func passwordMatches(password string, u *models.User) bool {
 }
 
 func validateUserCreationInput(in *models.UserCreationInput) error {
+	if in == nil {
+		return errors.New("invalid user creation input")
+	}
 	_, err := mail.ParseAddress(in.Email)
 	if err != nil {
-		return errors.Wrap(err, "email address must be valid")
+		log.Printf("error parsing email address '%s': %v\n", in.Email, err)
+		return errors.New("email address must be valid")
 	}
 	if in.FirstName == "" {
 		return errors.New("first name must not be empty")
@@ -381,13 +386,12 @@ func buildUserForgottenPasswordHandler(db *sql.DB, client storage.Storer) http.H
 			Token:  uniuri.NewLen(resetTokenSize),
 		}
 
-		newID, createdOn, err := client.CreatePasswordResetToken(db, resetToken)
+		resetToken.ID, resetToken.CreatedOn, err = client.CreatePasswordResetToken(db, resetToken)
 		if err != nil {
 			notifyOfInternalIssue(res, err, "read session data")
 			return
 		}
-		resetToken.ID = newID
-		resetToken.CreatedOn = &models.Dairytime{Time: createdOn}
+
 		json.NewEncoder(res).Encode(resetToken)
 	}
 }

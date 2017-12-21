@@ -11,7 +11,7 @@
   branch = "master"
   name = "github.com/dairycart/dairymodels"
   packages = ["v1"]
-  revision = "4000ccfa603d36dde296f5273871f390465f3997"
+  revision = "6d187cf0d89318d0a3a9ba1a5b95a673f27f4470"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -119,13 +119,13 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["bcrypt","blowfish","ssh/terminal"]
-  revision = "94eea52f7b742c7cbe0b03b22f0c4c8631ece122"
+  revision = "d585fd2cc9195196078f516b69daff6744ef5e84"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
-  revision = "53aa286056ef226755cd898109dbcdaba8ac0b81"
+  revision = "d818ba11af4465e00c1998bd3f8a55603b422290"
 
 [[projects]]
   name = "gopkg.in/DATA-DOG/go-sqlmock.v1"

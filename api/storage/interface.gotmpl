@@ -32,7 +32,7 @@ type Storer interface {
             Get{{ $modelName }}List(Querier, *models.QueryFilter) ([]models.{{ $modelName }}, error)
             Get{{ $modelName }}Count(Querier, *models.QueryFilter) (uint64, error)
             {{ $modelName }}Exists(Querier, uint64) (bool, error)
-            Create{{ $modelName }}(Querier, *models.{{ $modelName }}) (uint64, time.Time, {{ if $isProduct }}*models.Dairytime, {{ end }}error)
+            Create{{ $modelName }}(Querier, *models.{{ $modelName }}) (uint64, time.Time, {{ if $isProduct }}time.Time, {{ end }}error)
             Update{{ $modelName }}(Querier, *models.{{ $modelName }}) (time.Time, error)
             Delete{{ $modelName }}(Querier, uint64) (time.Time, error)
         {{- if or (or $isProductVariantBridge $isProductOptionValue) (or $isProductOption $isProduct) }}

@@ -18,6 +18,78 @@ const (
 	badSKUUpdateJSON = `{"sku": "pooƃ ou sᴉ nʞs sᴉɥʇ"}`
 )
 
+func TestNewProductFromCreationInput(t *testing.T) {
+	t.Run("normal usage", func(_t *testing.T) {
+		_t.Parallel()
+		exampleInput := &models.ProductCreationInput{
+			Name:               "name",
+			Subtitle:           "sub",
+			Description:        "desc",
+			SKU:                "sku",
+			UPC:                "upc",
+			Manufacturer:       "mfgr",
+			Brand:              "brand",
+			Quantity:           123,
+			QuantityPerPackage: 123,
+			Taxable:            true,
+			Price:              12.34,
+			OnSale:             true,
+			SalePrice:          12.34,
+			Cost:               12.34,
+			ProductWeight:      123,
+			ProductHeight:      123,
+			ProductWidth:       123,
+			ProductLength:      123,
+			PackageWeight:      123,
+			PackageHeight:      123,
+			PackageWidth:       123,
+			PackageLength:      123,
+		}
+
+		expected := &models.Product{
+			Name:               "name",
+			Subtitle:           "sub",
+			Description:        "desc",
+			SKU:                "sku",
+			UPC:                "upc",
+			Manufacturer:       "mfgr",
+			Brand:              "brand",
+			Quantity:           123,
+			QuantityPerPackage: 123,
+			Taxable:            true,
+			Price:              12.34,
+			OnSale:             true,
+			SalePrice:          12.34,
+			Cost:               12.34,
+			ProductWeight:      123,
+			ProductHeight:      123,
+			ProductWidth:       123,
+			ProductLength:      123,
+			PackageWeight:      123,
+			PackageHeight:      123,
+			PackageWidth:       123,
+			PackageLength:      123,
+		}
+
+		actual := newProductFromCreationInput(exampleInput)
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("with available on value", func(_t *testing.T) {
+		_t.Parallel()
+		exampleInput := &models.ProductCreationInput{
+			AvailableOn: buildTestDairytime(),
+		}
+
+		expected := &models.Product{
+			AvailableOn: buildTestTime(),
+		}
+
+		actual := newProductFromCreationInput(exampleInput)
+		assert.Equal(t, expected, actual)
+	})
+}
+
 func TestCreateProductsInDBFromOptionRows(t *testing.T) {
 	exampleID := uint64(1)
 	exampleProductRoot := &models.ProductRoot{
@@ -26,7 +98,7 @@ func TestCreateProductsInDBFromOptionRows(t *testing.T) {
 				ID:            exampleID,
 				Name:          "name",
 				ProductRootID: exampleID,
-				CreatedOn:     buildTestDairytime(),
+				CreatedOn:     buildTestTime(),
 				Values:        []models.ProductOptionValue{{Value: "one"}, {Value: "two"}, {Value: "three"}},
 			},
 		},
@@ -109,7 +181,7 @@ func TestProductExistenceHandler(t *testing.T) {
 func TestProductRetrievalHandler(t *testing.T) {
 	exampleProduct := &models.Product{
 		ID:            2,
-		CreatedOn:     buildTestDairytime(),
+		CreatedOn:     buildTestTime(),
 		SKU:           "skateboard",
 		Name:          "Skateboard",
 		UPC:           "1234567890",
@@ -125,7 +197,7 @@ func TestProductRetrievalHandler(t *testing.T) {
 		PackageHeight: 3,
 		PackageWidth:  2,
 		PackageLength: 1,
-		AvailableOn:   buildTestDairytime(),
+		AvailableOn:   buildTestTime(),
 	}
 	t.Run("optimal conditions", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
@@ -173,7 +245,7 @@ func TestProductRetrievalHandler(t *testing.T) {
 func TestProductListHandler(t *testing.T) {
 	exampleProduct := models.Product{
 		ID:            2,
-		CreatedOn:     buildTestDairytime(),
+		CreatedOn:     buildTestTime(),
 		SKU:           "skateboard",
 		Name:          "Skateboard",
 		UPC:           "1234567890",
@@ -189,7 +261,7 @@ func TestProductListHandler(t *testing.T) {
 		PackageHeight: 3,
 		PackageWidth:  2,
 		PackageLength: 1,
-		AvailableOn:   buildTestDairytime(),
+		AvailableOn:   buildTestTime(),
 	}
 	exampleLength := uint64(3)
 
@@ -241,7 +313,7 @@ func TestProductListHandler(t *testing.T) {
 func TestProductUpdateHandler(t *testing.T) {
 	exampleProduct := &models.Product{
 		ID:            2,
-		CreatedOn:     buildTestDairytime(),
+		CreatedOn:     buildTestTime(),
 		SKU:           "skateboard",
 		Name:          "Skateboard",
 		UPC:           "1234567890",
@@ -257,7 +329,7 @@ func TestProductUpdateHandler(t *testing.T) {
 		PackageHeight: 3,
 		PackageWidth:  2,
 		PackageLength: 1,
-		AvailableOn:   buildTestDairytime(),
+		AvailableOn:   buildTestTime(),
 	}
 	exampleProductUpdateInput := `
 		{
@@ -411,7 +483,7 @@ func TestProductUpdateHandler(t *testing.T) {
 func TestProductDeletionHandler(t *testing.T) {
 	exampleProduct := &models.Product{
 		ID:        2,
-		CreatedOn: buildTestDairytime(),
+		CreatedOn: buildTestTime(),
 		SKU:       exampleSKU,
 		Name:      "Skateboard",
 	}
@@ -571,7 +643,7 @@ func TestProductDeletionHandler(t *testing.T) {
 func TestProductCreationHandler(t *testing.T) {
 	exampleProduct := &models.Product{
 		ID:            2,
-		CreatedOn:     buildTestDairytime(),
+		CreatedOn:     buildTestTime(),
 		SKU:           "skateboard",
 		Name:          "Skateboard",
 		UPC:           "1234567890",
@@ -608,29 +680,29 @@ func TestProductCreationHandler(t *testing.T) {
 
 	exampleProductOption := &models.ProductOption{
 		ID:            123,
-		CreatedOn:     buildTestDairytime(),
+		CreatedOn:     buildTestTime(),
 		Name:          "something",
 		ProductRootID: 2,
 	}
 	expectedCreatedProductOption := &models.ProductOption{
 		ID:            exampleProductOption.ID,
-		CreatedOn:     buildTestDairytime(),
+		CreatedOn:     buildTestTime(),
 		Name:          "something",
 		ProductRootID: exampleProductOption.ProductRootID,
 		Values: []models.ProductOptionValue{
 			{
 				ID:              128, // == exampleProductOptionValue.ID,
-				CreatedOn:       buildTestDairytime(),
+				CreatedOn:       buildTestTime(),
 				ProductOptionID: exampleProductOption.ID,
 				Value:           "one",
 			}, {
 				ID:              256, // == exampleProductOptionValue.ID,
-				CreatedOn:       buildTestDairytime(),
+				CreatedOn:       buildTestTime(),
 				ProductOptionID: exampleProductOption.ID,
 				Value:           "two",
 			}, {
 				ID:              512, // == exampleProductOptionValue.ID,
-				CreatedOn:       buildTestDairytime(),
+				CreatedOn:       buildTestTime(),
 				ProductOptionID: exampleProductOption.ID,
 				Value:           "three",
 			},

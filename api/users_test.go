@@ -193,13 +193,102 @@ func TestPasswordMatches(t *testing.T) {
 	})
 }
 
-func TestUserCreationIsValid(t *testing.T) {
-	t.Parallel()
+func TestValidateUserCreationInput(t *testing.T) {
+	// t.Parallel()
 
-	t.Run("wiht failure", func(*testing.T) {
-		example := &models.UserCreationInput{}
-		assert.False(t, userCreationIsValid(example))
-	})
+	testCases := []struct {
+		input     *models.UserCreationInput
+		shouldErr bool
+		expected  string
+	}{
+		{
+			// with good input
+			input: &models.UserCreationInput{
+				Email:     "email@address.com",
+				FirstName: "first name",
+				LastName:  "last name",
+				Username:  "username",
+				Password:  examplePassword,
+			},
+			expected: "",
+		},
+		{
+			// with nil input
+			expected:  "invalid user creation input",
+			shouldErr: true,
+		},
+		{
+			// without valid email address
+			input: &models.UserCreationInput{
+				Email: "::",
+			},
+			expected:  "email address must be valid",
+			shouldErr: true,
+		},
+		{
+			// without valid first name
+			input: &models.UserCreationInput{
+				Email: "email@address.com",
+			},
+			expected:  "first name must not be empty",
+			shouldErr: true,
+		},
+		{
+			// without valid last name
+			input: &models.UserCreationInput{
+				Email:     "email@address.com",
+				FirstName: "first name",
+			},
+			expected:  "last name must not be empty",
+			shouldErr: true,
+		},
+		{
+			// without valid username
+			input: &models.UserCreationInput{
+				Email:     "email@address.com",
+				FirstName: "first name",
+				LastName:  "last name",
+			},
+			expected:  "username must not be empty",
+			shouldErr: true,
+		},
+		{
+			// without valid password
+			input: &models.UserCreationInput{
+				Email:     "email@address.com",
+				FirstName: "first name",
+				LastName:  "last name",
+				Username:  "username",
+			},
+			expected:  fmt.Sprintf("password must be at least %d characters", minimumPasswordSize),
+			shouldErr: true,
+		},
+	}
+
+	for _, c := range testCases {
+		actual := validateUserCreationInput(c.input)
+		if c.shouldErr {
+			assert.EqualError(t, actual, c.expected, "expected and actual errors should match")
+		} else {
+			assert.Nil(t, actual)
+		}
+
+	}
+
+	// t.Run("with valid input", func(*testing.T) {
+	// 	example := &models.UserCreationInput{
+	// 		FirstName: "first name",
+	// 		LastName:  "last name",
+	// 		Username:  "username",
+	// 		Password:  examplePassword,
+	// 		Email:     "email@address.com",
+	// 	}
+	// 	assert.NoError(t, validateUserCreationInput(example))
+	// })
+
+	// t.Run("with empty input", func(*testing.T) {
+	// 	assert.Error(t, validateUserCreationInput(&models.UserCreationInput{}))
+	// })
 }
 
 ////////////////////////////////////////////////////////
@@ -232,7 +321,7 @@ func TestUserCreationHandler(t *testing.T) {
 
 	exampleUser := &models.User{
 		ID:        1,
-		CreatedOn: buildTestDairytime(),
+		CreatedOn: buildTestTime(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
@@ -253,6 +342,27 @@ func TestUserCreationHandler(t *testing.T) {
 		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusCreated)
+	})
+
+	t.Run("invalid user creation input", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("UserWithUsernameExists", mock.Anything, exampleUser.Username).
+			Return(false, nil)
+		testUtil.MockDB.On("CreateUser", mock.Anything, mock.Anything).
+			Return(exampleUser.ID, buildTestTime(), nil)
+		config := buildServerConfigFromTestUtil(testUtil)
+		SetupAPIRoutes(config)
+
+		badUserCreationInput := `
+			{
+				"email": "::"
+			}
+		`
+
+		req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(badUserCreationInput))
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusBadRequest)
 	})
 
 	t.Run("already existent user", func(*testing.T) {
@@ -331,7 +441,7 @@ func TestUserLoginHandler(t *testing.T) {
 
 	exampleUser := &models.User{
 		ID:        1,
-		CreatedOn: buildTestDairytime(),
+		CreatedOn: buildTestTime(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
@@ -657,7 +767,7 @@ func TestUserForgottenPasswordHandler(t *testing.T) {
 
 	exampleUser := &models.User{
 		ID:        1,
-		CreatedOn: buildTestDairytime(),
+		CreatedOn: buildTestTime(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
@@ -793,7 +903,7 @@ func TestUserUpdateHandler(t *testing.T) {
 
 	exampleUser := &models.User{
 		ID:        1,
-		CreatedOn: buildTestDairytime(),
+		CreatedOn: buildTestTime(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Username:  "frankzappa",

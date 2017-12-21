@@ -1009,7 +1009,7 @@ func TestCreate{{ $modelName }}(t *testing.T) {
     t.Run("optimal behavior", func(t *testing.T) {
         set{{ $modelName }}CreationQueryExpectation(t, mock, exampleInput, nil)
         expectedCreatedOn := buildTestTime(t)
-        {{ if $isProduct -}}expectedAvailableOn := &models.Dairytime{Time: buildTestTime(t)}{{ end }}
+        {{ if $isProduct -}}expectedAvailableOn := buildTestTime(t){{ end }}
         actualID, actualCreatedOn, {{- if $isProduct }} actualAvailableOn, {{ end }} err := client.Create{{ $modelName }}(mockDB, exampleInput)
 
         assert.NoError(t, err)
