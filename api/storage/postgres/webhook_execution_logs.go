@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/dairycart/dairycart/api/storage"
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/Masterminds/squirrel"
 )
@@ -111,7 +111,7 @@ func (pg *postgres) GetWebhookExecutionLogCount(db storage.Querier, qf *models.Q
 	return count, err
 }
 
-const webhookexecutionlogCreationQuery = `
+const webhookExecutionLogCreationQuery = `
     INSERT INTO webhook_execution_logs
         (
             webhook_id, status_code, succeeded, executed_on
@@ -130,7 +130,7 @@ func (pg *postgres) CreateWebhookExecutionLog(db storage.Querier, nu *models.Web
 		createdAt time.Time
 	)
 
-	err := db.QueryRow(webhookexecutionlogCreationQuery, &nu.WebhookID, &nu.StatusCode, &nu.Succeeded, &nu.ExecutedOn).Scan(&createdID, &createdAt)
+	err := db.QueryRow(webhookExecutionLogCreationQuery, &nu.WebhookID, &nu.StatusCode, &nu.Succeeded, &nu.ExecutedOn).Scan(&createdID, &createdAt)
 	return createdID, createdAt, err
 }
 

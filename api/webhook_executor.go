@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/dairycart/dairycart/api/storage"
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 )
 
 type WebhookExecutor interface {

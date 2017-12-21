@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/dairycart/dairycart/api/storage"
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/Masterminds/squirrel"
 )
@@ -188,7 +188,7 @@ func (pg *postgres) GetProductOptionValueCount(db storage.Querier, qf *models.Qu
 	return count, err
 }
 
-const productoptionvalueCreationQuery = `
+const productOptionValueCreationQuery = `
     INSERT INTO product_option_values
         (
             product_option_id, value
@@ -207,7 +207,7 @@ func (pg *postgres) CreateProductOptionValue(db storage.Querier, nu *models.Prod
 		createdAt time.Time
 	)
 
-	err := db.QueryRow(productoptionvalueCreationQuery, &nu.ProductOptionID, &nu.Value).Scan(&createdID, &createdAt)
+	err := db.QueryRow(productOptionValueCreationQuery, &nu.ProductOptionID, &nu.Value).Scan(&createdID, &createdAt)
 	return createdID, createdAt, err
 }
 

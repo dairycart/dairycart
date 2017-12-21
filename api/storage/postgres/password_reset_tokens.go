@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/dairycart/dairycart/api/storage"
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/Masterminds/squirrel"
 )
@@ -144,7 +144,7 @@ func (pg *postgres) GetPasswordResetTokenCount(db storage.Querier, qf *models.Qu
 	return count, err
 }
 
-const passwordresettokenCreationQuery = `
+const passwordResetTokenCreationQuery = `
     INSERT INTO password_reset_tokens
         (
             user_id, token, expires_on, password_reset_on
@@ -163,7 +163,7 @@ func (pg *postgres) CreatePasswordResetToken(db storage.Querier, nu *models.Pass
 		createdAt time.Time
 	)
 
-	err := db.QueryRow(passwordresettokenCreationQuery, &nu.UserID, &nu.Token, &nu.ExpiresOn, &nu.PasswordResetOn).Scan(&createdID, &createdAt)
+	err := db.QueryRow(passwordResetTokenCreationQuery, &nu.UserID, &nu.Token, &nu.ExpiresOn, &nu.PasswordResetOn).Scan(&createdID, &createdAt)
 	return createdID, createdAt, err
 }
 

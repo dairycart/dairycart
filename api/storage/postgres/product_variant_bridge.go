@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/dairycart/dairycart/api/storage"
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/Masterminds/squirrel"
 )
@@ -112,7 +112,7 @@ func (pg *postgres) GetProductVariantBridgeCount(db storage.Querier, qf *models.
 	return count, err
 }
 
-const productvariantbridgeCreationQuery = `
+const productVariantBridgeCreationQuery = `
     INSERT INTO product_variant_bridge
         (
             product_id, product_option_value_id
@@ -131,7 +131,7 @@ func (pg *postgres) CreateProductVariantBridge(db storage.Querier, nu *models.Pr
 		createdAt time.Time
 	)
 
-	err := db.QueryRow(productvariantbridgeCreationQuery, &nu.ProductID, &nu.ProductOptionValueID).Scan(&createdID, &createdAt)
+	err := db.QueryRow(productVariantBridgeCreationQuery, &nu.ProductID, &nu.ProductOptionValueID).Scan(&createdID, &createdAt)
 	return createdID, createdAt, err
 }
 

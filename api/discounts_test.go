@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -142,7 +142,7 @@ func TestDiscountCreationHandler(t *testing.T) {
 	t.Run("optimal conditions", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("CreateDiscount", mock.Anything, mock.Anything).
-			Return(uint64(1), generateExampleTimeForTests(), nil)
+			Return(uint64(1), buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -168,7 +168,7 @@ func TestDiscountCreationHandler(t *testing.T) {
 	t.Run("with error creating discount", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("CreateDiscount", mock.Anything, mock.Anything).
-			Return(uint64(1), generateExampleTimeForTests(), generateArbitraryError())
+			Return(uint64(1), buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -194,7 +194,7 @@ func TestDiscountDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetDiscount", mock.Anything, exampleDiscount.ID).
 			Return(exampleDiscount, nil)
 		testUtil.MockDB.On("DeleteDiscount", mock.Anything, exampleDiscount.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -238,7 +238,7 @@ func TestDiscountDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetDiscount", mock.Anything, exampleDiscount.ID).
 			Return(exampleDiscount, nil)
 		testUtil.MockDB.On("DeleteDiscount", mock.Anything, exampleDiscount.ID).
-			Return(generateExampleTimeForTests(), generateArbitraryError())
+			Return(buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -272,7 +272,7 @@ func TestDiscountUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetDiscount", mock.Anything, exampleDiscount.ID).
 			Return(exampleDiscount, nil)
 		testUtil.MockDB.On("UpdateDiscount", mock.Anything, mock.Anything).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -328,7 +328,7 @@ func TestDiscountUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetDiscount", mock.Anything, exampleDiscount.ID).
 			Return(exampleDiscount, nil)
 		testUtil.MockDB.On("UpdateDiscount", mock.Anything, mock.Anything).
-			Return(generateExampleTimeForTests(), generateArbitraryError())
+			Return(buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 

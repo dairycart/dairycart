@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	// internal dependencies
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	// external dependencies
 	"github.com/stretchr/testify/assert"
@@ -239,8 +239,9 @@ func TestGetWebhookExecutionLogCount(t *testing.T) {
 
 func setWebhookExecutionLogCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.WebhookExecutionLog, err error) {
 	t.Helper()
-	query := formatQueryForSQLMock(webhookexecutionlogCreationQuery)
-	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), generateExampleTimeForTests(t))
+	query := formatQueryForSQLMock(webhookExecutionLogCreationQuery)
+	tt := buildTestTime(t)
+	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), tt)
 	mock.ExpectQuery(query).
 		WithArgs(
 			toCreate.WebhookID,
@@ -263,12 +264,13 @@ func TestCreateWebhookExecutionLog(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setWebhookExecutionLogCreationQueryExpectation(t, mock, exampleInput, nil)
-		expected := generateExampleTimeForTests(t)
-		actualID, actualCreationDate, err := client.CreateWebhookExecutionLog(mockDB, exampleInput)
+		expectedCreatedOn := buildTestTime(t)
+
+		actualID, actualCreatedOn, err := client.CreateWebhookExecutionLog(mockDB, exampleInput)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
-		assert.Equal(t, expected, actualCreationDate, "expected creation time did not match actual creation time")
+		assert.Equal(t, expectedCreatedOn, actualCreatedOn, "expected creation time did not match actual creation time")
 
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
@@ -277,7 +279,7 @@ func TestCreateWebhookExecutionLog(t *testing.T) {
 func setWebhookExecutionLogUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate *models.WebhookExecutionLog, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(webhookExecutionLogUpdateQuery)
-	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests(t))
+	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).
 		WithArgs(
 			toUpdate.WebhookID,
@@ -300,7 +302,7 @@ func TestUpdateWebhookExecutionLogByID(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setWebhookExecutionLogUpdateQueryExpectation(t, mock, exampleInput, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actual, err := client.UpdateWebhookExecutionLog(mockDB, exampleInput)
 
 		assert.NoError(t, err)
@@ -312,7 +314,7 @@ func TestUpdateWebhookExecutionLogByID(t *testing.T) {
 func setWebhookExecutionLogDeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(webhookExecutionLogDeletionQuery)
-	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
+	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
@@ -326,7 +328,7 @@ func TestDeleteWebhookExecutionLogByID(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setWebhookExecutionLogDeletionQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actual, err := client.DeleteWebhookExecutionLog(mockDB, exampleID)
 
 		assert.NoError(t, err)
@@ -337,7 +339,7 @@ func TestDeleteWebhookExecutionLogByID(t *testing.T) {
 	t.Run("with transaction", func(t *testing.T) {
 		mock.ExpectBegin()
 		setWebhookExecutionLogDeletionQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		tx, err := mockDB.Begin()
 		assert.NoError(t, err, "no error should be returned setting up a transaction in the mock DB")
 		actual, err := client.DeleteWebhookExecutionLog(tx, exampleID)

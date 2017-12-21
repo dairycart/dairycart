@@ -8,7 +8,7 @@ import (
 	"testing"
 	// "time"
 
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -18,6 +18,78 @@ const (
 	badSKUUpdateJSON = `{"sku": "pooƃ ou sᴉ nʞs sᴉɥʇ"}`
 )
 
+func TestNewProductFromCreationInput(t *testing.T) {
+	t.Run("normal usage", func(_t *testing.T) {
+		_t.Parallel()
+		exampleInput := &models.ProductCreationInput{
+			Name:               "name",
+			Subtitle:           "sub",
+			Description:        "desc",
+			SKU:                "sku",
+			UPC:                "upc",
+			Manufacturer:       "mfgr",
+			Brand:              "brand",
+			Quantity:           123,
+			QuantityPerPackage: 123,
+			Taxable:            true,
+			Price:              12.34,
+			OnSale:             true,
+			SalePrice:          12.34,
+			Cost:               12.34,
+			ProductWeight:      123,
+			ProductHeight:      123,
+			ProductWidth:       123,
+			ProductLength:      123,
+			PackageWeight:      123,
+			PackageHeight:      123,
+			PackageWidth:       123,
+			PackageLength:      123,
+		}
+
+		expected := &models.Product{
+			Name:               "name",
+			Subtitle:           "sub",
+			Description:        "desc",
+			SKU:                "sku",
+			UPC:                "upc",
+			Manufacturer:       "mfgr",
+			Brand:              "brand",
+			Quantity:           123,
+			QuantityPerPackage: 123,
+			Taxable:            true,
+			Price:              12.34,
+			OnSale:             true,
+			SalePrice:          12.34,
+			Cost:               12.34,
+			ProductWeight:      123,
+			ProductHeight:      123,
+			ProductWidth:       123,
+			ProductLength:      123,
+			PackageWeight:      123,
+			PackageHeight:      123,
+			PackageWidth:       123,
+			PackageLength:      123,
+		}
+
+		actual := newProductFromCreationInput(exampleInput)
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("with available on value", func(_t *testing.T) {
+		_t.Parallel()
+		exampleInput := &models.ProductCreationInput{
+			AvailableOn: buildTestDairytime(),
+		}
+
+		expected := &models.Product{
+			AvailableOn: buildTestTime(),
+		}
+
+		actual := newProductFromCreationInput(exampleInput)
+		assert.Equal(t, expected, actual)
+	})
+}
+
 func TestCreateProductsInDBFromOptionRows(t *testing.T) {
 	exampleID := uint64(1)
 	exampleProductRoot := &models.ProductRoot{
@@ -26,7 +98,7 @@ func TestCreateProductsInDBFromOptionRows(t *testing.T) {
 				ID:            exampleID,
 				Name:          "name",
 				ProductRootID: exampleID,
-				CreatedOn:     generateExampleTimeForTests(),
+				CreatedOn:     buildTestTime(),
 				Values:        []models.ProductOptionValue{{Value: "one"}, {Value: "two"}, {Value: "three"}},
 			},
 		},
@@ -38,7 +110,7 @@ func TestCreateProductsInDBFromOptionRows(t *testing.T) {
 		testUtil.Mock.ExpectBegin()
 
 		testUtil.MockDB.On("CreateProduct", mock.Anything, mock.Anything).
-			Return(exampleID, generateExampleTimeForTests(), generateExampleTimeForTests(), nil)
+			Return(exampleID, buildTestTime(), buildTestTime(), nil)
 		testUtil.MockDB.On("CreateMultipleProductVariantBridgesForProductID", mock.Anything, mock.Anything, mock.Anything).
 			Return(nil)
 
@@ -55,7 +127,7 @@ func TestCreateProductsInDBFromOptionRows(t *testing.T) {
 		testUtil.Mock.ExpectBegin()
 
 		testUtil.MockDB.On("CreateProduct", mock.Anything, mock.Anything).
-			Return(exampleID, generateExampleTimeForTests(), generateExampleTimeForTests(), generateArbitraryError())
+			Return(exampleID, buildTestTime(), buildTestTime(), generateArbitraryError())
 
 		tx, err := testUtil.PlainDB.Begin()
 		assert.NoError(t, err)
@@ -109,7 +181,7 @@ func TestProductExistenceHandler(t *testing.T) {
 func TestProductRetrievalHandler(t *testing.T) {
 	exampleProduct := &models.Product{
 		ID:            2,
-		CreatedOn:     generateExampleTimeForTests(),
+		CreatedOn:     buildTestTime(),
 		SKU:           "skateboard",
 		Name:          "Skateboard",
 		UPC:           "1234567890",
@@ -125,7 +197,7 @@ func TestProductRetrievalHandler(t *testing.T) {
 		PackageHeight: 3,
 		PackageWidth:  2,
 		PackageLength: 1,
-		AvailableOn:   generateExampleTimeForTests(),
+		AvailableOn:   buildTestTime(),
 	}
 	t.Run("optimal conditions", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
@@ -173,7 +245,7 @@ func TestProductRetrievalHandler(t *testing.T) {
 func TestProductListHandler(t *testing.T) {
 	exampleProduct := models.Product{
 		ID:            2,
-		CreatedOn:     generateExampleTimeForTests(),
+		CreatedOn:     buildTestTime(),
 		SKU:           "skateboard",
 		Name:          "Skateboard",
 		UPC:           "1234567890",
@@ -189,7 +261,7 @@ func TestProductListHandler(t *testing.T) {
 		PackageHeight: 3,
 		PackageWidth:  2,
 		PackageLength: 1,
-		AvailableOn:   generateExampleTimeForTests(),
+		AvailableOn:   buildTestTime(),
 	}
 	exampleLength := uint64(3)
 
@@ -241,7 +313,7 @@ func TestProductListHandler(t *testing.T) {
 func TestProductUpdateHandler(t *testing.T) {
 	exampleProduct := &models.Product{
 		ID:            2,
-		CreatedOn:     generateExampleTimeForTests(),
+		CreatedOn:     buildTestTime(),
 		SKU:           "skateboard",
 		Name:          "Skateboard",
 		UPC:           "1234567890",
@@ -257,7 +329,7 @@ func TestProductUpdateHandler(t *testing.T) {
 		PackageHeight: 3,
 		PackageWidth:  2,
 		PackageLength: 1,
-		AvailableOn:   generateExampleTimeForTests(),
+		AvailableOn:   buildTestTime(),
 	}
 	exampleProductUpdateInput := `
 		{
@@ -278,7 +350,7 @@ func TestProductUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).
 			Return(exampleProduct, nil).Once()
 		testUtil.MockDB.On("UpdateProduct", mock.Anything, mock.Anything).
-			Return(generateExampleTimeForTests(), nil).Once()
+			Return(buildTestTime(), nil).Once()
 		testUtil.MockDB.On("GetWebhooksByEventType", mock.Anything, ProductUpdatedWebhookEvent).
 			Return([]models.Webhook{exampleWebhook}, nil).Once()
 		config := buildServerConfigFromTestUtil(testUtil)
@@ -370,7 +442,7 @@ func TestProductUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).
 			Return(exampleProduct, nil).Once()
 		testUtil.MockDB.On("UpdateProduct", mock.Anything, mock.Anything).
-			Return(generateExampleTimeForTests(), generateArbitraryError()).Once()
+			Return(buildTestTime(), generateArbitraryError()).Once()
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -390,7 +462,7 @@ func TestProductUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).
 			Return(exampleProduct, nil).Once()
 		testUtil.MockDB.On("UpdateProduct", mock.Anything, mock.Anything).
-			Return(generateExampleTimeForTests(), nil).Once()
+			Return(buildTestTime(), nil).Once()
 		testUtil.MockDB.On("GetWebhooksByEventType", mock.Anything, ProductUpdatedWebhookEvent).
 			Return([]models.Webhook{}, generateArbitraryError()).Once()
 		config := buildServerConfigFromTestUtil(testUtil)
@@ -411,7 +483,7 @@ func TestProductUpdateHandler(t *testing.T) {
 func TestProductDeletionHandler(t *testing.T) {
 	exampleProduct := &models.Product{
 		ID:        2,
-		CreatedOn: generateExampleTimeForTests(),
+		CreatedOn: buildTestTime(),
 		SKU:       exampleSKU,
 		Name:      "Skateboard",
 	}
@@ -427,9 +499,9 @@ func TestProductDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).
 			Return(exampleProduct, nil).Once()
 		testUtil.MockDB.On("DeleteProductVariantBridgeByProductID", mock.Anything, exampleProduct.ID).
-			Return(generateExampleTimeForTests(), nil).Once()
+			Return(buildTestTime(), nil).Once()
 		testUtil.MockDB.On("DeleteProduct", mock.Anything, exampleProduct.ID).
-			Return(generateExampleTimeForTests(), nil).Once()
+			Return(buildTestTime(), nil).Once()
 		testUtil.MockDB.On("GetWebhooksByEventType", mock.Anything, ProductArchivedWebhookEvent).
 			Return([]models.Webhook{exampleWebhook}, nil).Once()
 		config := buildServerConfigFromTestUtil(testUtil)
@@ -492,7 +564,7 @@ func TestProductDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).
 			Return(exampleProduct, nil).Once()
 		testUtil.MockDB.On("DeleteProductVariantBridgeByProductID", mock.Anything, exampleProduct.ID).
-			Return(generateExampleTimeForTests(), generateArbitraryError()).Once()
+			Return(buildTestTime(), generateArbitraryError()).Once()
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -510,10 +582,10 @@ func TestProductDeletionHandler(t *testing.T) {
 			Return(exampleProduct, nil).
 			Once()
 		testUtil.MockDB.On("DeleteProductVariantBridgeByProductID", mock.Anything, exampleProduct.ID).
-			Return(generateExampleTimeForTests(), nil).
+			Return(buildTestTime(), nil).
 			Once()
 		testUtil.MockDB.On("DeleteProduct", mock.Anything, exampleProduct.ID).
-			Return(generateExampleTimeForTests(), generateArbitraryError()).
+			Return(buildTestTime(), generateArbitraryError()).
 			Once()
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
@@ -532,9 +604,9 @@ func TestProductDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).
 			Return(exampleProduct, nil).Once()
 		testUtil.MockDB.On("DeleteProductVariantBridgeByProductID", mock.Anything, exampleProduct.ID).
-			Return(generateExampleTimeForTests(), nil).Once()
+			Return(buildTestTime(), nil).Once()
 		testUtil.MockDB.On("DeleteProduct", mock.Anything, exampleProduct.ID).
-			Return(generateExampleTimeForTests(), nil).Once()
+			Return(buildTestTime(), nil).Once()
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -552,9 +624,9 @@ func TestProductDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).
 			Return(exampleProduct, nil).Once()
 		testUtil.MockDB.On("DeleteProductVariantBridgeByProductID", mock.Anything, exampleProduct.ID).
-			Return(generateExampleTimeForTests(), nil).Once()
+			Return(buildTestTime(), nil).Once()
 		testUtil.MockDB.On("DeleteProduct", mock.Anything, exampleProduct.ID).
-			Return(generateExampleTimeForTests(), nil).Once()
+			Return(buildTestTime(), nil).Once()
 		testUtil.MockDB.On("GetWebhooksByEventType", mock.Anything, ProductArchivedWebhookEvent).
 			Return([]models.Webhook{}, generateArbitraryError()).Once()
 		config := buildServerConfigFromTestUtil(testUtil)
@@ -571,7 +643,7 @@ func TestProductDeletionHandler(t *testing.T) {
 func TestProductCreationHandler(t *testing.T) {
 	exampleProduct := &models.Product{
 		ID:            2,
-		CreatedOn:     generateExampleTimeForTests(),
+		CreatedOn:     buildTestTime(),
 		SKU:           "skateboard",
 		Name:          "Skateboard",
 		UPC:           "1234567890",
@@ -608,29 +680,29 @@ func TestProductCreationHandler(t *testing.T) {
 
 	exampleProductOption := &models.ProductOption{
 		ID:            123,
-		CreatedOn:     generateExampleTimeForTests(),
+		CreatedOn:     buildTestTime(),
 		Name:          "something",
 		ProductRootID: 2,
 	}
 	expectedCreatedProductOption := &models.ProductOption{
 		ID:            exampleProductOption.ID,
-		CreatedOn:     generateExampleTimeForTests(),
+		CreatedOn:     buildTestTime(),
 		Name:          "something",
 		ProductRootID: exampleProductOption.ProductRootID,
 		Values: []models.ProductOptionValue{
 			{
 				ID:              128, // == exampleProductOptionValue.ID,
-				CreatedOn:       generateExampleTimeForTests(),
+				CreatedOn:       buildTestTime(),
 				ProductOptionID: exampleProductOption.ID,
 				Value:           "one",
 			}, {
 				ID:              256, // == exampleProductOptionValue.ID,
-				CreatedOn:       generateExampleTimeForTests(),
+				CreatedOn:       buildTestTime(),
 				ProductOptionID: exampleProductOption.ID,
 				Value:           "two",
 			}, {
 				ID:              512, // == exampleProductOptionValue.ID,
-				CreatedOn:       generateExampleTimeForTests(),
+				CreatedOn:       buildTestTime(),
 				ProductOptionID: exampleProductOption.ID,
 				Value:           "three",
 			},
@@ -697,15 +769,15 @@ func TestProductCreationHandler(t *testing.T) {
 			Return(false, nil)
 		testUtil.Mock.ExpectBegin()
 		testUtil.MockDB.On("CreateProductRoot", mock.Anything, mock.Anything).
-			Return(exampleRoot.ID, generateExampleTimeForTests(), nil)
+			Return(exampleRoot.ID, buildTestTime(), nil)
 		testUtil.MockDB.On("CreateProduct", mock.Anything, mock.Anything).
-			Return(exampleProduct.ID, generateExampleTimeForTests(), generateExampleTimeForTests(), nil)
+			Return(exampleProduct.ID, buildTestTime(), buildTestTime(), nil)
 		testUtil.MockDB.On("CreateMultipleProductVariantBridgesForProductID", mock.Anything, mock.Anything, mock.Anything).
 			Return(nil)
 		testUtil.MockDB.On("CreateProductOption", mock.Anything, mock.Anything).
-			Return(expectedCreatedProductOption.ID, generateExampleTimeForTests(), nil)
+			Return(expectedCreatedProductOption.ID, buildTestTime(), nil)
 		testUtil.MockDB.On("CreateProductOptionValue", mock.Anything, mock.Anything).
-			Return(expectedCreatedProductOption.Values[0].ID, generateExampleTimeForTests(), nil)
+			Return(expectedCreatedProductOption.Values[0].ID, buildTestTime(), nil)
 		testUtil.Mock.ExpectCommit()
 		testUtil.MockDB.On("GetWebhooksByEventType", mock.Anything, ProductCreatedWebhookEvent).
 			Return([]models.Webhook{exampleWebhook}, nil).Once()
@@ -725,9 +797,9 @@ func TestProductCreationHandler(t *testing.T) {
 			Return(false, nil)
 		testUtil.Mock.ExpectBegin()
 		testUtil.MockDB.On("CreateProductRoot", mock.Anything, mock.Anything).
-			Return(exampleRoot.ID, generateExampleTimeForTests(), nil)
+			Return(exampleRoot.ID, buildTestTime(), nil)
 		testUtil.MockDB.On("CreateProduct", mock.Anything, mock.Anything).
-			Return(exampleProduct.ID, generateExampleTimeForTests(), generateExampleTimeForTests(), nil)
+			Return(exampleProduct.ID, buildTestTime(), buildTestTime(), nil)
 		testUtil.MockDB.On("CreateMultipleProductVariantBridgesForProductID", mock.Anything, mock.Anything, mock.Anything).
 			Return(nil)
 		testUtil.Mock.ExpectCommit()
@@ -803,7 +875,7 @@ func TestProductCreationHandler(t *testing.T) {
 			Return(false, nil)
 		testUtil.Mock.ExpectBegin()
 		testUtil.MockDB.On("CreateProductRoot", mock.Anything, mock.Anything).
-			Return(exampleRoot.ID, generateExampleTimeForTests(), generateArbitraryError())
+			Return(exampleRoot.ID, buildTestTime(), generateArbitraryError())
 		testUtil.Mock.ExpectRollback()
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
@@ -821,9 +893,9 @@ func TestProductCreationHandler(t *testing.T) {
 			Return(false, nil)
 		testUtil.Mock.ExpectBegin()
 		testUtil.MockDB.On("CreateProductRoot", mock.Anything, mock.Anything).
-			Return(exampleRoot.ID, generateExampleTimeForTests(), nil)
+			Return(exampleRoot.ID, buildTestTime(), nil)
 		testUtil.MockDB.On("CreateProduct", mock.Anything, mock.Anything).
-			Return(exampleProduct.ID, generateExampleTimeForTests(), generateExampleTimeForTests(), generateArbitraryError())
+			Return(exampleProduct.ID, buildTestTime(), buildTestTime(), generateArbitraryError())
 		testUtil.Mock.ExpectRollback()
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
@@ -841,11 +913,11 @@ func TestProductCreationHandler(t *testing.T) {
 			Return(false, nil)
 		testUtil.Mock.ExpectBegin()
 		testUtil.MockDB.On("CreateProductRoot", mock.Anything, mock.Anything).
-			Return(exampleRoot.ID, generateExampleTimeForTests(), nil)
+			Return(exampleRoot.ID, buildTestTime(), nil)
 		testUtil.MockDB.On("CreateProduct", mock.Anything, mock.Anything).
-			Return(exampleProduct.ID, generateExampleTimeForTests(), generateExampleTimeForTests(), generateArbitraryError())
+			Return(exampleProduct.ID, buildTestTime(), buildTestTime(), generateArbitraryError())
 		testUtil.MockDB.On("CreateProductOption", mock.Anything, mock.Anything).
-			Return(expectedCreatedProductOption.ID, generateExampleTimeForTests(), generateArbitraryError())
+			Return(expectedCreatedProductOption.ID, buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -862,11 +934,11 @@ func TestProductCreationHandler(t *testing.T) {
 			Return(false, nil)
 		testUtil.Mock.ExpectBegin()
 		testUtil.MockDB.On("CreateProductRoot", mock.Anything, mock.Anything).
-			Return(exampleRoot.ID, generateExampleTimeForTests(), nil)
+			Return(exampleRoot.ID, buildTestTime(), nil)
 		testUtil.MockDB.On("CreateProduct", mock.Anything, mock.Anything).
-			Return(exampleProduct.ID, generateExampleTimeForTests(), generateExampleTimeForTests(), generateArbitraryError())
+			Return(exampleProduct.ID, buildTestTime(), buildTestTime(), generateArbitraryError())
 		testUtil.MockDB.On("CreateProductOption", mock.Anything, mock.Anything).
-			Return(expectedCreatedProductOption.ID, generateExampleTimeForTests(), generateArbitraryError())
+			Return(expectedCreatedProductOption.ID, buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -883,13 +955,13 @@ func TestProductCreationHandler(t *testing.T) {
 			Return(false, nil)
 		testUtil.Mock.ExpectBegin()
 		testUtil.MockDB.On("CreateProductRoot", mock.Anything, mock.Anything).
-			Return(exampleRoot.ID, generateExampleTimeForTests(), nil)
+			Return(exampleRoot.ID, buildTestTime(), nil)
 		testUtil.MockDB.On("CreateProduct", mock.Anything, mock.Anything).
-			Return(exampleProduct.ID, generateExampleTimeForTests(), generateExampleTimeForTests(), nil)
+			Return(exampleProduct.ID, buildTestTime(), buildTestTime(), nil)
 		testUtil.MockDB.On("CreateProductOption", mock.Anything, mock.Anything).
-			Return(expectedCreatedProductOption.ID, generateExampleTimeForTests(), nil)
+			Return(expectedCreatedProductOption.ID, buildTestTime(), nil)
 		testUtil.MockDB.On("CreateProductOptionValue", mock.Anything, mock.Anything).
-			Return(expectedCreatedProductOption.Values[0].ID, generateExampleTimeForTests(), nil)
+			Return(expectedCreatedProductOption.Values[0].ID, buildTestTime(), nil)
 		testUtil.MockDB.On("CreateMultipleProductVariantBridgesForProductID", mock.Anything, mock.Anything, mock.Anything).
 			Return(generateArbitraryError())
 		testUtil.Mock.ExpectRollback()
@@ -909,15 +981,15 @@ func TestProductCreationHandler(t *testing.T) {
 			Return(false, nil)
 		testUtil.Mock.ExpectBegin()
 		testUtil.MockDB.On("CreateProductRoot", mock.Anything, mock.Anything).
-			Return(exampleRoot.ID, generateExampleTimeForTests(), nil)
+			Return(exampleRoot.ID, buildTestTime(), nil)
 		testUtil.MockDB.On("CreateProduct", mock.Anything, mock.Anything).
-			Return(exampleProduct.ID, generateExampleTimeForTests(), generateExampleTimeForTests(), nil)
+			Return(exampleProduct.ID, buildTestTime(), buildTestTime(), nil)
 		testUtil.MockDB.On("CreateMultipleProductVariantBridgesForProductID", mock.Anything, mock.Anything, mock.Anything).
 			Return(nil)
 		testUtil.MockDB.On("CreateProductOption", mock.Anything, mock.Anything).
-			Return(expectedCreatedProductOption.ID, generateExampleTimeForTests(), nil)
+			Return(expectedCreatedProductOption.ID, buildTestTime(), nil)
 		testUtil.MockDB.On("CreateProductOptionValue", mock.Anything, mock.Anything).
-			Return(expectedCreatedProductOption.Values[0].ID, generateExampleTimeForTests(), nil)
+			Return(expectedCreatedProductOption.Values[0].ID, buildTestTime(), nil)
 		testUtil.Mock.ExpectCommit().WillReturnError(generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
@@ -935,15 +1007,15 @@ func TestProductCreationHandler(t *testing.T) {
 			Return(false, nil)
 		testUtil.Mock.ExpectBegin()
 		testUtil.MockDB.On("CreateProductRoot", mock.Anything, mock.Anything).
-			Return(exampleRoot.ID, generateExampleTimeForTests(), nil)
+			Return(exampleRoot.ID, buildTestTime(), nil)
 		testUtil.MockDB.On("CreateProduct", mock.Anything, mock.Anything).
-			Return(exampleProduct.ID, generateExampleTimeForTests(), generateExampleTimeForTests(), nil)
+			Return(exampleProduct.ID, buildTestTime(), buildTestTime(), nil)
 		testUtil.MockDB.On("CreateMultipleProductVariantBridgesForProductID", mock.Anything, mock.Anything, mock.Anything).
 			Return(nil)
 		testUtil.MockDB.On("CreateProductOption", mock.Anything, mock.Anything).
-			Return(expectedCreatedProductOption.ID, generateExampleTimeForTests(), nil)
+			Return(expectedCreatedProductOption.ID, buildTestTime(), nil)
 		testUtil.MockDB.On("CreateProductOptionValue", mock.Anything, mock.Anything).
-			Return(expectedCreatedProductOption.Values[0].ID, generateExampleTimeForTests(), nil)
+			Return(expectedCreatedProductOption.Values[0].ID, buildTestTime(), nil)
 		testUtil.Mock.ExpectCommit()
 		testUtil.MockDB.On("GetWebhooksByEventType", mock.Anything, ProductCreatedWebhookEvent).
 			Return([]models.Webhook{}, generateArbitraryError()).Once()

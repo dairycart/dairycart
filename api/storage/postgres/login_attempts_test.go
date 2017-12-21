@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	// internal dependencies
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	// external dependencies
 	"github.com/stretchr/testify/assert"
@@ -278,8 +278,9 @@ func TestGetLoginAttemptCount(t *testing.T) {
 
 func setLoginAttemptCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.LoginAttempt, err error) {
 	t.Helper()
-	query := formatQueryForSQLMock(loginattemptCreationQuery)
-	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), generateExampleTimeForTests(t))
+	query := formatQueryForSQLMock(loginAttemptCreationQuery)
+	tt := buildTestTime(t)
+	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), tt)
 	mock.ExpectQuery(query).
 		WithArgs(
 			toCreate.Username,
@@ -300,12 +301,13 @@ func TestCreateLoginAttempt(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setLoginAttemptCreationQueryExpectation(t, mock, exampleInput, nil)
-		expected := generateExampleTimeForTests(t)
-		actualID, actualCreationDate, err := client.CreateLoginAttempt(mockDB, exampleInput)
+		expectedCreatedOn := buildTestTime(t)
+
+		actualID, actualCreatedOn, err := client.CreateLoginAttempt(mockDB, exampleInput)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
-		assert.Equal(t, expected, actualCreationDate, "expected creation time did not match actual creation time")
+		assert.Equal(t, expectedCreatedOn, actualCreatedOn, "expected creation time did not match actual creation time")
 
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
@@ -314,7 +316,7 @@ func TestCreateLoginAttempt(t *testing.T) {
 func setLoginAttemptUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate *models.LoginAttempt, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(loginAttemptUpdateQuery)
-	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests(t))
+	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).
 		WithArgs(
 			toUpdate.Username,
@@ -335,7 +337,7 @@ func TestUpdateLoginAttemptByID(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setLoginAttemptUpdateQueryExpectation(t, mock, exampleInput, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actual, err := client.UpdateLoginAttempt(mockDB, exampleInput)
 
 		assert.NoError(t, err)
@@ -347,7 +349,7 @@ func TestUpdateLoginAttemptByID(t *testing.T) {
 func setLoginAttemptDeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(loginAttemptDeletionQuery)
-	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
+	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
@@ -361,7 +363,7 @@ func TestDeleteLoginAttemptByID(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setLoginAttemptDeletionQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actual, err := client.DeleteLoginAttempt(mockDB, exampleID)
 
 		assert.NoError(t, err)
@@ -372,7 +374,7 @@ func TestDeleteLoginAttemptByID(t *testing.T) {
 	t.Run("with transaction", func(t *testing.T) {
 		mock.ExpectBegin()
 		setLoginAttemptDeletionQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		tx, err := mockDB.Begin()
 		assert.NoError(t, err, "no error should be returned setting up a transaction in the mock DB")
 		actual, err := client.DeleteLoginAttempt(tx, exampleID)

@@ -7,11 +7,10 @@ import (
 	"strconv"
 
 	"github.com/dairycart/dairycart/api/storage"
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/go-chi/chi"
 	"github.com/imdario/mergo"
-	"github.com/lib/pq"
 )
 
 func buildWebhookListRetrievalHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
@@ -57,7 +56,6 @@ func buildWebhookListRetrievalByEventTypeHandler(db *sql.DB, client storage.Stor
 	}
 }
 
-
 func buildWebhookCreationHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
 	// WebhookCreationHandler is a request handler that creates a Webhook from user input
 	return func(res http.ResponseWriter, req *http.Request) {
@@ -100,7 +98,7 @@ func buildWebhookDeletionHandler(db *sql.DB, client storage.Storer) http.Handler
 			notifyOfInternalIssue(res, err, "archive webhook in database")
 			return
 		}
-		webhook.ArchivedOn = models.NullTime{NullTime: pq.NullTime{Time: archivedOn, Valid: true}}
+		webhook.ArchivedOn = &models.Dairytime{Time: archivedOn}
 
 		json.NewEncoder(res).Encode(webhook)
 	}
@@ -136,7 +134,7 @@ func buildWebhookUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerFu
 			notifyOfInternalIssue(res, err, "update webhook in database")
 			return
 		}
-		updatedWebhook.UpdatedOn = models.NullTime{NullTime: pq.NullTime{Time: updatedOn, Valid: true}}
+		updatedWebhook.UpdatedOn = &models.Dairytime{Time: updatedOn}
 
 		json.NewEncoder(res).Encode(updatedWebhook)
 	}

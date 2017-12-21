@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -90,7 +90,7 @@ func TestPasswordIsValid(t *testing.T) {
 func TestCreateUserFromInput(t *testing.T) {
 	t.Parallel()
 
-	exampleUserInput := &UserCreationInput{
+	exampleUserInput := &models.UserCreationInput{
 		FirstName: "FirstName",
 		LastName:  "LastName",
 		Email:     "Email",
@@ -118,7 +118,7 @@ func TestCreateUserFromInput(t *testing.T) {
 func TestCreateUserFromUpdateInput(t *testing.T) {
 	t.Parallel()
 
-	exampleUserUpdateInput := &UserUpdateInput{
+	exampleUserUpdateInput := &models.UserUpdateInput{
 		FirstName: "FirstName",
 		LastName:  "LastName",
 		Username:  "Username",
@@ -156,43 +156,139 @@ func TestSaltAndHashPassword(t *testing.T) {
 func TestPasswordMatches(t *testing.T) {
 	t.Parallel()
 
-	saltedPasswordHash, err := saltAndHashPassword(examplePassword, dummySalt)
-	assert.NoError(t, err)
-	exampleUser := &models.User{
-		Password: saltedPasswordHash,
-		Salt:     dummySalt,
-	}
+	t.Run("normal usage", func(*testing.T) {
+		saltedPasswordHash, err := saltAndHashPassword(examplePassword, dummySalt)
+		assert.NoError(t, err)
+		exampleUser := &models.User{
+			Password: saltedPasswordHash,
+			Salt:     dummySalt,
+		}
 
-	actual := passwordMatches(examplePassword, exampleUser)
-	assert.True(t, actual)
+		actual := passwordMatches(examplePassword, exampleUser)
+		assert.True(t, actual)
+	})
+
+	t.Run("when passwords don't match", func(*testing.T) {
+		saltedPasswordHash, err := saltAndHashPassword(examplePassword, dummySalt)
+		assert.NoError(t, err)
+		exampleUser := &models.User{
+			Password: saltedPasswordHash,
+			Salt:     dummySalt,
+		}
+
+		actual := passwordMatches("password", exampleUser)
+		assert.False(t, actual)
+	})
+
+	t.Run("with very long password", func(*testing.T) {
+		saltedPasswordHash, err := saltAndHashPassword(examplePassword, dummySalt)
+		assert.NoError(t, err)
+		exampleUser := &models.User{
+			Password: saltedPasswordHash,
+			Salt:     dummySalt,
+		}
+
+		actual := passwordMatches(examplePassword, exampleUser)
+		assert.True(t, actual)
+	})
 }
 
-func TestPasswordMatchesFailsWhenPasswordsDoNotMatch(t *testing.T) {
-	t.Parallel()
+func TestValidateUserCreationInput(t *testing.T) {
+	// t.Parallel()
 
-	saltedPasswordHash, err := saltAndHashPassword(examplePassword, dummySalt)
-	assert.NoError(t, err)
-	exampleUser := &models.User{
-		Password: saltedPasswordHash,
-		Salt:     dummySalt,
+	testCases := []struct {
+		input     *models.UserCreationInput
+		shouldErr bool
+		expected  string
+	}{
+		{
+			// with good input
+			input: &models.UserCreationInput{
+				Email:     "email@address.com",
+				FirstName: "first name",
+				LastName:  "last name",
+				Username:  "username",
+				Password:  examplePassword,
+			},
+			expected: "",
+		},
+		{
+			// with nil input
+			expected:  "invalid user creation input",
+			shouldErr: true,
+		},
+		{
+			// without valid email address
+			input: &models.UserCreationInput{
+				Email: "::",
+			},
+			expected:  "email address must be valid",
+			shouldErr: true,
+		},
+		{
+			// without valid first name
+			input: &models.UserCreationInput{
+				Email: "email@address.com",
+			},
+			expected:  "first name must not be empty",
+			shouldErr: true,
+		},
+		{
+			// without valid last name
+			input: &models.UserCreationInput{
+				Email:     "email@address.com",
+				FirstName: "first name",
+			},
+			expected:  "last name must not be empty",
+			shouldErr: true,
+		},
+		{
+			// without valid username
+			input: &models.UserCreationInput{
+				Email:     "email@address.com",
+				FirstName: "first name",
+				LastName:  "last name",
+			},
+			expected:  "username must not be empty",
+			shouldErr: true,
+		},
+		{
+			// without valid password
+			input: &models.UserCreationInput{
+				Email:     "email@address.com",
+				FirstName: "first name",
+				LastName:  "last name",
+				Username:  "username",
+			},
+			expected:  fmt.Sprintf("password must be at least %d characters", minimumPasswordSize),
+			shouldErr: true,
+		},
 	}
 
-	actual := passwordMatches("password", exampleUser)
-	assert.False(t, actual)
-}
+	for _, c := range testCases {
+		actual := validateUserCreationInput(c.input)
+		if c.shouldErr {
+			assert.EqualError(t, actual, c.expected, "expected and actual errors should match")
+		} else {
+			assert.Nil(t, actual)
+		}
 
-func TestPasswordMatchesWithVeryLongPassword(t *testing.T) {
-	t.Parallel()
-
-	saltedPasswordHash, err := saltAndHashPassword(examplePassword, dummySalt)
-	assert.NoError(t, err)
-	exampleUser := &models.User{
-		Password: saltedPasswordHash,
-		Salt:     dummySalt,
 	}
 
-	actual := passwordMatches(examplePassword, exampleUser)
-	assert.True(t, actual)
+	// t.Run("with valid input", func(*testing.T) {
+	// 	example := &models.UserCreationInput{
+	// 		FirstName: "first name",
+	// 		LastName:  "last name",
+	// 		Username:  "username",
+	// 		Password:  examplePassword,
+	// 		Email:     "email@address.com",
+	// 	}
+	// 	assert.NoError(t, validateUserCreationInput(example))
+	// })
+
+	// t.Run("with empty input", func(*testing.T) {
+	// 	assert.Error(t, validateUserCreationInput(&models.UserCreationInput{}))
+	// })
 }
 
 ////////////////////////////////////////////////////////
@@ -225,7 +321,7 @@ func TestUserCreationHandler(t *testing.T) {
 
 	exampleUser := &models.User{
 		ID:        1,
-		CreatedOn: generateExampleTimeForTests(),
+		CreatedOn: buildTestTime(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
@@ -238,7 +334,7 @@ func TestUserCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("UserWithUsernameExists", mock.Anything, exampleUser.Username).
 			Return(false, nil)
 		testUtil.MockDB.On("CreateUser", mock.Anything, mock.Anything).
-			Return(exampleUser.ID, generateExampleTimeForTests(), nil)
+			Return(exampleUser.ID, buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -246,6 +342,27 @@ func TestUserCreationHandler(t *testing.T) {
 		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 		assertStatusCode(t, testUtil, http.StatusCreated)
+	})
+
+	t.Run("invalid user creation input", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("UserWithUsernameExists", mock.Anything, exampleUser.Username).
+			Return(false, nil)
+		testUtil.MockDB.On("CreateUser", mock.Anything, mock.Anything).
+			Return(exampleUser.ID, buildTestTime(), nil)
+		config := buildServerConfigFromTestUtil(testUtil)
+		SetupAPIRoutes(config)
+
+		badUserCreationInput := `
+			{
+				"email": "::"
+			}
+		`
+
+		req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(badUserCreationInput))
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusBadRequest)
 	})
 
 	t.Run("already existent user", func(*testing.T) {
@@ -302,7 +419,7 @@ func TestUserCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("UserWithUsernameExists", mock.Anything, exampleUser.Username).
 			Return(false, nil)
 		testUtil.MockDB.On("CreateUser", mock.Anything, mock.Anything).
-			Return(exampleUser.ID, generateExampleTimeForTests(), generateArbitraryError())
+			Return(exampleUser.ID, buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -324,7 +441,7 @@ func TestUserLoginHandler(t *testing.T) {
 
 	exampleUser := &models.User{
 		ID:        1,
-		CreatedOn: generateExampleTimeForTests(),
+		CreatedOn: buildTestTime(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
@@ -340,7 +457,7 @@ func TestUserLoginHandler(t *testing.T) {
 		testUtil.MockDB.On("GetUserByUsername", mock.Anything, exampleUser.Username).
 			Return(exampleUser, nil)
 		testUtil.MockDB.On("CreateLoginAttempt", mock.Anything, mock.Anything).
-			Return(uint64(0), generateExampleTimeForTests(), nil)
+			Return(uint64(0), buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -358,7 +475,7 @@ func TestUserLoginHandler(t *testing.T) {
 		testUtil.MockDB.On("GetUserByUsername", mock.Anything, exampleUser.Username).
 			Return(exampleUser, nil)
 		testUtil.MockDB.On("CreateLoginAttempt", mock.Anything, mock.Anything).
-			Return(uint64(0), generateExampleTimeForTests(), nil)
+			Return(uint64(0), buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -436,7 +553,7 @@ func TestUserLoginHandler(t *testing.T) {
 		testUtil.MockDB.On("GetUserByUsername", mock.Anything, exampleUser.Username).
 			Return(exampleUser, nil)
 		testUtil.MockDB.On("CreateLoginAttempt", mock.Anything, mock.Anything).
-			Return(uint64(0), generateExampleTimeForTests(), generateArbitraryError())
+			Return(uint64(0), buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -462,7 +579,7 @@ func TestUserLoginHandler(t *testing.T) {
 		testUtil.MockDB.On("GetUserByUsername", mock.Anything, exampleUser.Username).
 			Return(exampleUser, nil)
 		testUtil.MockDB.On("CreateLoginAttempt", mock.Anything, mock.Anything).
-			Return(uint64(0), generateExampleTimeForTests(), nil)
+			Return(uint64(0), buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -481,7 +598,7 @@ func TestUserLoginHandler(t *testing.T) {
 		testUtil.MockDB.On("GetUserByUsername", mock.Anything, exampleUser.Username).
 			Return(exampleUser, nil)
 		testUtil.MockDB.On("CreateLoginAttempt", mock.Anything, mock.Anything).
-			Return(uint64(0), generateExampleTimeForTests(), nil)
+			Return(uint64(0), buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -540,7 +657,7 @@ func TestUserDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetUser", mock.Anything, exampleID).
 			Return(exampleUser, nil)
 		testUtil.MockDB.On("DeleteUser", mock.Anything, exampleID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -588,7 +705,7 @@ func TestUserDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetUser", mock.Anything, exampleID).
 			Return(exampleUser, nil)
 		testUtil.MockDB.On("DeleteUser", mock.Anything, exampleID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -605,7 +722,7 @@ func TestUserDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetUser", mock.Anything, exampleID).
 			Return(exampleUser, nil)
 		testUtil.MockDB.On("DeleteUser", mock.Anything, exampleID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -624,7 +741,7 @@ func TestUserDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetUser", mock.Anything, exampleID).
 			Return(exampleUser, nil)
 		testUtil.MockDB.On("DeleteUser", mock.Anything, exampleID).
-			Return(generateExampleTimeForTests(), generateArbitraryError())
+			Return(buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -650,7 +767,7 @@ func TestUserForgottenPasswordHandler(t *testing.T) {
 
 	exampleUser := &models.User{
 		ID:        1,
-		CreatedOn: generateExampleTimeForTests(),
+		CreatedOn: buildTestTime(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Email:     "frank@zappa.com",
@@ -665,7 +782,7 @@ func TestUserForgottenPasswordHandler(t *testing.T) {
 		testUtil.MockDB.On("PasswordResetTokenForUserIDExists", mock.Anything, mock.Anything).
 			Return(false, nil)
 		testUtil.MockDB.On("CreatePasswordResetToken", mock.Anything, mock.Anything).
-			Return(exampleUser.ID, generateExampleTimeForTests(), nil)
+			Return(exampleUser.ID, buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -734,7 +851,7 @@ func TestUserForgottenPasswordHandler(t *testing.T) {
 		testUtil.MockDB.On("PasswordResetTokenForUserIDExists", mock.Anything, mock.Anything).
 			Return(false, nil)
 		testUtil.MockDB.On("CreatePasswordResetToken", mock.Anything, mock.Anything).
-			Return(exampleUser.ID, generateExampleTimeForTests(), generateArbitraryError())
+			Return(exampleUser.ID, buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -786,7 +903,7 @@ func TestUserUpdateHandler(t *testing.T) {
 
 	exampleUser := &models.User{
 		ID:        1,
-		CreatedOn: generateExampleTimeForTests(),
+		CreatedOn: buildTestTime(),
 		FirstName: "Frank",
 		LastName:  "Zappa",
 		Username:  "frankzappa",
@@ -801,7 +918,7 @@ func TestUserUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetUser", mock.Anything, exampleUser.ID).
 			Return(exampleUser, nil)
 		testUtil.MockDB.On("UpdateUser", mock.Anything, mock.Anything).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -885,7 +1002,7 @@ func TestUserUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetUser", mock.Anything, exampleUser.ID).
 			Return(exampleUser, nil)
 		testUtil.MockDB.On("UpdateUser", mock.Anything, mock.Anything).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -910,7 +1027,7 @@ func TestUserUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetUser", mock.Anything, exampleUser.ID).
 			Return(exampleUser, nil)
 		testUtil.MockDB.On("UpdateUser", mock.Anything, mock.Anything).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -926,7 +1043,7 @@ func TestUserUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetUser", mock.Anything, exampleUser.ID).
 			Return(exampleUser, nil)
 		testUtil.MockDB.On("UpdateUser", mock.Anything, mock.Anything).
-			Return(generateExampleTimeForTests(), generateArbitraryError())
+			Return(buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 

@@ -15,7 +15,7 @@ import (
 
 	// local dependencies
 	"github.com/dairycart/dairycart/api/storage/mock"
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	// external dependencies
 	"github.com/go-chi/chi"
@@ -54,12 +54,16 @@ type TestUtil struct {
 	Store    *sessions.CookieStore
 }
 
-func generateExampleTimeForTests() time.Time {
+func buildTestTime() time.Time {
 	out, err := time.Parse("2006-01-02 03:04:00.000000", "2016-12-31 12:00:00.000000")
 	if err != nil {
 		log.Fatalf("error parsing time")
 	}
 	return out
+}
+
+func buildTestDairytime() *models.Dairytime {
+	return &models.Dairytime{Time: buildTestTime()}
 }
 
 func genereateDefaultQueryFilter() *models.QueryFilter {
@@ -367,31 +371,11 @@ func TestValidateRequestInput(t *testing.T) {
 	`, examplePassword))
 
 	req := httptest.NewRequest("GET", "http://example.com", exampleInput)
-	actual := &UserCreationInput{}
+	actual := &models.UserCreationInput{}
 	err := validateRequestInput(req, actual)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, actual)
-}
-
-func TestValidateRequestInputWithAwfulpassword(t *testing.T) {
-	t.Parallel()
-
-	exampleInput := strings.NewReader(`
-		{
-			"first_name": "Frank",
-			"last_name": "Zappa",
-			"email": "frank@zappa.com",
-			"username": "frankzappa",
-			"password": "password"
-		}
-	`)
-
-	req := httptest.NewRequest("GET", "http://example.com", exampleInput)
-	actual := &UserCreationInput{}
-	err := validateRequestInput(req, actual)
-
-	assert.NotNil(t, err)
 }
 
 func TestValidateRequestInputWithGarbageInput(t *testing.T) {
@@ -399,7 +383,7 @@ func TestValidateRequestInputWithGarbageInput(t *testing.T) {
 
 	exampleInput := strings.NewReader(exampleGarbageInput)
 	req := httptest.NewRequest("GET", "http://example.com", exampleInput)
-	actual := &UserCreationInput{}
+	actual := &models.UserCreationInput{}
 	err := validateRequestInput(req, actual)
 
 	assert.NotNil(t, err)
@@ -409,7 +393,7 @@ func TestValidateRequestInputWithCompletelyGarbageInput(t *testing.T) {
 	t.Parallel()
 
 	req := httptest.NewRequest("GET", "http://example.com", nil)
-	actual := &UserCreationInput{}
+	actual := &models.UserCreationInput{}
 	err := validateRequestInput(req, actual)
 
 	assert.NotNil(t, err)

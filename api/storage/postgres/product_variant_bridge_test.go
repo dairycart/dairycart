@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	// internal dependencies
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	// external dependencies
 	"github.com/stretchr/testify/assert"
@@ -239,8 +239,9 @@ func TestGetProductVariantBridgeCount(t *testing.T) {
 
 func setProductVariantBridgeCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.ProductVariantBridge, err error) {
 	t.Helper()
-	query := formatQueryForSQLMock(productvariantbridgeCreationQuery)
-	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), generateExampleTimeForTests(t))
+	query := formatQueryForSQLMock(productVariantBridgeCreationQuery)
+	tt := buildTestTime(t)
+	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), tt)
 	mock.ExpectQuery(query).
 		WithArgs(
 			toCreate.ProductID,
@@ -261,12 +262,13 @@ func TestCreateProductVariantBridge(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductVariantBridgeCreationQueryExpectation(t, mock, exampleInput, nil)
-		expected := generateExampleTimeForTests(t)
-		actualID, actualCreationDate, err := client.CreateProductVariantBridge(mockDB, exampleInput)
+		expectedCreatedOn := buildTestTime(t)
+
+		actualID, actualCreatedOn, err := client.CreateProductVariantBridge(mockDB, exampleInput)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
-		assert.Equal(t, expected, actualCreationDate, "expected creation time did not match actual creation time")
+		assert.Equal(t, expectedCreatedOn, actualCreatedOn, "expected creation time did not match actual creation time")
 
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
@@ -369,7 +371,7 @@ func TestCreateMultipleProductVariantBridgesForProductID(t *testing.T) {
 func setProductVariantBridgeUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate *models.ProductVariantBridge, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productVariantBridgeUpdateQuery)
-	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests(t))
+	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).
 		WithArgs(
 			toUpdate.ProductID,
@@ -390,7 +392,7 @@ func TestUpdateProductVariantBridgeByID(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductVariantBridgeUpdateQueryExpectation(t, mock, exampleInput, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actual, err := client.UpdateProductVariantBridge(mockDB, exampleInput)
 
 		assert.NoError(t, err)
@@ -402,7 +404,7 @@ func TestUpdateProductVariantBridgeByID(t *testing.T) {
 func setProductVariantBridgeDeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productVariantBridgeDeletionQuery)
-	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
+	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
@@ -416,7 +418,7 @@ func TestDeleteProductVariantBridgeByID(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductVariantBridgeDeletionQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actual, err := client.DeleteProductVariantBridge(mockDB, exampleID)
 
 		assert.NoError(t, err)
@@ -427,7 +429,7 @@ func TestDeleteProductVariantBridgeByID(t *testing.T) {
 	t.Run("with transaction", func(t *testing.T) {
 		mock.ExpectBegin()
 		setProductVariantBridgeDeletionQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		tx, err := mockDB.Begin()
 		assert.NoError(t, err, "no error should be returned setting up a transaction in the mock DB")
 		actual, err := client.DeleteProductVariantBridge(tx, exampleID)
@@ -441,7 +443,7 @@ func TestDeleteProductVariantBridgeByID(t *testing.T) {
 func setProductVariantBridgeWithProductRootIDDeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productVariantBridgeWithProductRootIDDeletionQuery)
-	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
+	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
@@ -455,7 +457,7 @@ func TestArchiveProductVariantBridgesWithProductRootID(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductVariantBridgeWithProductRootIDDeletionQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actual, err := client.ArchiveProductVariantBridgesWithProductRootID(mockDB, exampleID)
 
 		assert.NoError(t, err)
@@ -466,7 +468,7 @@ func TestArchiveProductVariantBridgesWithProductRootID(t *testing.T) {
 	t.Run("with transaction", func(t *testing.T) {
 		mock.ExpectBegin()
 		setProductVariantBridgeWithProductRootIDDeletionQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		tx, err := mockDB.Begin()
 		assert.NoError(t, err, "no error should be returned setting up a transaction in the mock DB")
 		actual, err := client.ArchiveProductVariantBridgesWithProductRootID(tx, exampleID)
@@ -480,7 +482,7 @@ func TestArchiveProductVariantBridgesWithProductRootID(t *testing.T) {
 func setProductVariantBridgeDeletionByProductIDQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productVariantBridgeDeletionQueryByProductID)
-	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
+	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
@@ -494,7 +496,7 @@ func TestDeleteProductVariantBridgeByProductID(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductVariantBridgeDeletionByProductIDQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actual, err := client.DeleteProductVariantBridgeByProductID(mockDB, exampleID)
 
 		assert.NoError(t, err)
@@ -505,7 +507,7 @@ func TestDeleteProductVariantBridgeByProductID(t *testing.T) {
 	t.Run("with transaction", func(t *testing.T) {
 		mock.ExpectBegin()
 		setProductVariantBridgeDeletionByProductIDQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		tx, err := mockDB.Begin()
 		assert.NoError(t, err, "no error should be returned setting up a transaction in the mock DB")
 		actual, err := client.DeleteProductVariantBridgeByProductID(tx, exampleID)

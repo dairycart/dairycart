@@ -25,7 +25,7 @@ func SetupAPIRoutes(config *ServerConfig) {
 	config.Router.Post("/login", buildUserLoginHandler(config.DB, config.Dairyclient, config.CookieStore))
 	config.Router.Post("/logout", buildUserLogoutHandler(config.CookieStore))
 	config.Router.Post("/user", buildUserCreationHandler(config.DB, config.Dairyclient, config.CookieStore))
-	config.Router.Patch(fmt.Sprintf("/user/{user_id:%s}", NumericPattern), buildUserInfoUpdateHandler(config.DB, config.Dairyclient))
+	config.Router.Patch(fmt.Sprintf("/user/{user_id:%s}", NumericPattern), buildUserUpdateHandler(config.DB, config.Dairyclient))
 	config.Router.Post("/password_reset", buildUserForgottenPasswordHandler(config.DB, config.Dairyclient))
 	config.Router.Head("/password_reset/{reset_token}", buildUserPasswordResetTokenValidationHandler(config.DB, config.Dairyclient))
 

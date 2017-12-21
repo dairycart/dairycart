@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	// internal dependencies
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	// external dependencies
 	"github.com/stretchr/testify/assert"
@@ -378,8 +378,9 @@ func TestGetProductOptionCount(t *testing.T) {
 
 func setProductOptionCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.ProductOption, err error) {
 	t.Helper()
-	query := formatQueryForSQLMock(productoptionCreationQuery)
-	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), generateExampleTimeForTests(t))
+	query := formatQueryForSQLMock(productOptionCreationQuery)
+	tt := buildTestTime(t)
+	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), tt)
 	mock.ExpectQuery(query).
 		WithArgs(
 			toCreate.Name,
@@ -400,12 +401,13 @@ func TestCreateProductOption(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductOptionCreationQueryExpectation(t, mock, exampleInput, nil)
-		expected := generateExampleTimeForTests(t)
-		actualID, actualCreationDate, err := client.CreateProductOption(mockDB, exampleInput)
+		expectedCreatedOn := buildTestTime(t)
+
+		actualID, actualCreatedOn, err := client.CreateProductOption(mockDB, exampleInput)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
-		assert.Equal(t, expected, actualCreationDate, "expected creation time did not match actual creation time")
+		assert.Equal(t, expectedCreatedOn, actualCreatedOn, "expected creation time did not match actual creation time")
 
 		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
 	})
@@ -414,7 +416,7 @@ func TestCreateProductOption(t *testing.T) {
 func setProductOptionUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate *models.ProductOption, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productOptionUpdateQuery)
-	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests(t))
+	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).
 		WithArgs(
 			toUpdate.Name,
@@ -435,7 +437,7 @@ func TestUpdateProductOptionByID(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductOptionUpdateQueryExpectation(t, mock, exampleInput, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actual, err := client.UpdateProductOption(mockDB, exampleInput)
 
 		assert.NoError(t, err)
@@ -447,7 +449,7 @@ func TestUpdateProductOptionByID(t *testing.T) {
 func setProductOptionDeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productOptionDeletionQuery)
-	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
+	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
@@ -461,7 +463,7 @@ func TestDeleteProductOptionByID(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductOptionDeletionQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actual, err := client.DeleteProductOption(mockDB, exampleID)
 
 		assert.NoError(t, err)
@@ -472,7 +474,7 @@ func TestDeleteProductOptionByID(t *testing.T) {
 	t.Run("with transaction", func(t *testing.T) {
 		mock.ExpectBegin()
 		setProductOptionDeletionQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		tx, err := mockDB.Begin()
 		assert.NoError(t, err, "no error should be returned setting up a transaction in the mock DB")
 		actual, err := client.DeleteProductOption(tx, exampleID)
@@ -486,7 +488,7 @@ func TestDeleteProductOptionByID(t *testing.T) {
 func setProductOptionWithProductRootIDDeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(productOptionWithProductRootIDDeletionQuery)
-	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
+	exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
@@ -500,7 +502,7 @@ func TestArchiveProductOptionsWithProductRootID(t *testing.T) {
 
 	t.Run("optimal behavior", func(t *testing.T) {
 		setProductOptionWithProductRootIDDeletionQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		actual, err := client.ArchiveProductOptionsWithProductRootID(mockDB, exampleID)
 
 		assert.NoError(t, err)
@@ -511,7 +513,7 @@ func TestArchiveProductOptionsWithProductRootID(t *testing.T) {
 	t.Run("with transaction", func(t *testing.T) {
 		mock.ExpectBegin()
 		setProductOptionWithProductRootIDDeletionQueryExpectation(t, mock, exampleID, nil)
-		expected := generateExampleTimeForTests(t)
+		expected := buildTestTime(t)
 		tx, err := mockDB.Begin()
 		assert.NoError(t, err, "no error should be returned setting up a transaction in the mock DB")
 		actual, err := client.ArchiveProductOptionsWithProductRootID(tx, exampleID)

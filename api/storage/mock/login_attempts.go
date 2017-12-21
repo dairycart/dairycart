@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/dairycart/dairycart/api/storage"
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 )
 
 func (m *MockDB) LoginAttemptsHaveBeenExhausted(db storage.Querier, username string) (bool, error) {

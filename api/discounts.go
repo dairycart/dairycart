@@ -7,11 +7,10 @@ import (
 	"strconv"
 
 	"github.com/dairycart/dairycart/api/storage"
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/go-chi/chi"
 	"github.com/imdario/mergo"
-	"github.com/lib/pq"
 )
 
 func buildDiscountRetrievalHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
@@ -104,7 +103,7 @@ func buildDiscountDeletionHandler(db *sql.DB, client storage.Storer) http.Handle
 			notifyOfInternalIssue(res, err, "archive discount in database")
 			return
 		}
-		discount.ArchivedOn = models.NullTime{NullTime: pq.NullTime{Time: archivedOn, Valid: true}}
+		discount.ArchivedOn = &models.Dairytime{Time: archivedOn}
 
 		json.NewEncoder(res).Encode(discount)
 	}
@@ -140,7 +139,7 @@ func buildDiscountUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerF
 			notifyOfInternalIssue(res, err, "update discount in database")
 			return
 		}
-		updatedDiscount.UpdatedOn = models.NullTime{NullTime: pq.NullTime{Time: updatedOn, Valid: true}}
+		updatedDiscount.UpdatedOn = &models.Dairytime{Time: updatedOn}
 
 		json.NewEncoder(res).Encode(updatedDiscount)
 	}

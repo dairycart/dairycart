@@ -10,7 +10,7 @@ import (
 
 	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairycart/api/storage/mock"
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -70,7 +70,7 @@ func TestCallWebhook(t *testing.T) {
 
 		client := &dairymock.MockDB{}
 		client.On("CreateWebhookExecutionLog", mock.Anything, mock.Anything).
-			Return(uint64(0), generateExampleTimeForTests(), nil)
+			Return(uint64(0), buildTestTime(), nil)
 
 		whe.CallWebhook(exampleWebhook, &models.Product{}, db, client)
 	})
@@ -92,7 +92,7 @@ func TestCallWebhook(t *testing.T) {
 
 		client := &dairymock.MockDB{}
 		client.On("CreateWebhookExecutionLog", mock.Anything, mock.Anything).
-			Return(uint64(0), generateExampleTimeForTests(), nil)
+			Return(uint64(0), buildTestTime(), nil)
 
 		whe.CallWebhook(exampleWebhook, &models.Product{}, db, client)
 	})
@@ -111,7 +111,7 @@ func TestCallWebhook(t *testing.T) {
 
 		client := &dairymock.MockDB{}
 		client.On("CreateWebhookExecutionLog", mock.Anything, mock.Anything).
-			Return(uint64(0), generateExampleTimeForTests(), nil)
+			Return(uint64(0), buildTestTime(), nil)
 
 		whe.CallWebhook(exampleWebhook, &testBreakableStruct{Thing: "broken"}, db, client)
 	})
@@ -130,7 +130,7 @@ func TestCallWebhook(t *testing.T) {
 
 		client := &dairymock.MockDB{}
 		client.On("CreateWebhookExecutionLog", mock.Anything, mock.Anything).
-			Return(uint64(0), generateExampleTimeForTests(), nil)
+			Return(uint64(0), buildTestTime(), nil)
 
 		whe.CallWebhook(exampleWebhook, &models.Product{}, db, client)
 	})
@@ -149,7 +149,7 @@ func TestCallWebhook(t *testing.T) {
 
 		client := &dairymock.MockDB{}
 		client.On("CreateWebhookExecutionLog", mock.Anything, mock.Anything).
-			Return(uint64(0), generateExampleTimeForTests(), generateArbitraryError())
+			Return(uint64(0), buildTestTime(), generateArbitraryError())
 
 		whe.CallWebhook(exampleWebhook, &models.Product{}, db, client)
 	})

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -76,7 +76,7 @@ func TestUserCreationRoute(t *testing.T) {
 
 		expected := models.ErrorResponse{
 			Status:  http.StatusBadRequest,
-			Message: "invalid request input",
+			Message: "password must be at least 64 characters",
 		}
 		var actual models.ErrorResponse
 		unmarshalBody(t, resp, &actual)
@@ -192,7 +192,7 @@ func TestUserDeletionRoute(t *testing.T) {
 
 		var actual models.User
 		unmarshalBody(t, resp, &actual)
-		assert.True(t, actual.ArchivedOn.Valid)
+		assert.NotNil(t, actual.ArchivedOn)
 	})
 
 	t.Run("for nonexistent user", func(*testing.T) {
@@ -250,7 +250,7 @@ func TestUserLoginRoute(t *testing.T) {
 		testUsername := "test_user_login"
 		userShouldBeAdmin := false
 
-		expected := models.User{
+		expected := models.UserCreationInput{
 			FirstName: "Frank",
 			LastName:  "Zappa",
 			Email:     "frank@zappa.com",

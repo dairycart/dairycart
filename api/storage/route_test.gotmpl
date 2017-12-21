@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -128,7 +128,7 @@ func Test{{ $modelName }}CreationHandler(t *testing.T) {
 	t.Run("optimal conditions", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("Create{{ $modelName }}", mock.Anything, mock.Anything).
-			Return(uint64(1), generateExampleTimeForTests(), nil)
+			Return(uint64(1), buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -154,7 +154,7 @@ func Test{{ $modelName }}CreationHandler(t *testing.T) {
 	t.Run("with error creating {{ $lowerName }}", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("Create{{ $modelName }}", mock.Anything, mock.Anything).
-			Return(uint64(1), generateExampleTimeForTests(), generateArbitraryError())
+			Return(uint64(1), buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -174,7 +174,7 @@ func Test{{ $modelName }}DeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("Get{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
 			Return(example{{ $modelName }}, nil)
 		testUtil.MockDB.On("Delete{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -218,7 +218,7 @@ func Test{{ $modelName }}DeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("Get{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
 			Return(example{{ $modelName }}, nil)
 		testUtil.MockDB.On("Delete{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
-			Return(generateExampleTimeForTests(), generateArbitraryError())
+			Return(buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -244,7 +244,7 @@ func Test{{ $modelName }}UpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("Get{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
 			Return(example{{ $modelName }}, nil)
 		testUtil.MockDB.On("Update{{ $modelName }}", mock.Anything, mock.Anything).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -300,7 +300,7 @@ func Test{{ $modelName }}UpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("Get{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
 			Return(example{{ $modelName }}, nil)
 		testUtil.MockDB.On("Update{{ $modelName }}", mock.Anything, mock.Anything).
-			Return(generateExampleTimeForTests(), generateArbitraryError())
+			Return(buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 

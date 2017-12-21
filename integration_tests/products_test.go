@@ -4,20 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"regexp"
-	"strings"
 	"testing"
 
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func replaceTimeStringsForProductTests(body string) string {
-	re := regexp.MustCompile(`(?U)(,?)"(available_on)":"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z)?"(,?)`)
-	return strings.TrimSpace(re.ReplaceAllString(body, ""))
-}
 
 func createTestProduct(t *testing.T, p models.ProductCreationInput) models.ProductRoot {
 	t.Helper()
@@ -934,7 +927,7 @@ func TestProductRootDeletionRoute(t *testing.T) {
 
 		var createdRoot models.ProductRoot
 		unmarshalBody(t, resp, &createdRoot)
-		assert.True(t, createdRoot.ArchivedOn.Time.IsZero())
+		assert.Nil(t, createdRoot.ArchivedOn)
 
 		resp, err = deleteProductRoot(createdRoot.ID)
 		assert.NoError(t, err)
@@ -942,7 +935,7 @@ func TestProductRootDeletionRoute(t *testing.T) {
 
 		var actual models.ProductRoot
 		unmarshalBody(t, resp, &actual)
-		assert.True(t, createdRoot.ArchivedOn.Valid)
+		assert.NotNil(t, actual.ArchivedOn)
 	})
 
 	t.Run("nonexistent product root", func(*testing.T) {
@@ -1143,9 +1136,9 @@ func TestProductOptionDeletion(t *testing.T) {
 		resp, err = deleteProductOption(created.ID)
 
 		var actual models.ProductOption
-		assert.False(t, actual.ArchivedOn.Valid)
+		assert.Nil(t, actual.ArchivedOn)
 		unmarshalBody(t, resp, &actual)
-		assert.True(t, actual.ArchivedOn.Valid)
+		assert.NotNil(t, actual.ArchivedOn)
 	})
 
 	t.Run("for nonexistent product option", func(*testing.T) {
@@ -1200,9 +1193,9 @@ func TestProductOptionUpdate(t *testing.T) {
 		}
 
 		var actual models.ProductOption
-		assert.False(t, actual.UpdatedOn.Valid)
+		assert.Nil(t, actual.UpdatedOn)
 		unmarshalBody(t, resp, &actual)
-		assert.True(t, actual.UpdatedOn.Valid)
+		assert.NotNil(t, actual.UpdatedOn)
 		compareProductOptions(t, expected, actual)
 
 		// clean up after yourself

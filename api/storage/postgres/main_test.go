@@ -4,11 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/stretchr/testify/assert"
-	// "github.com/stretchr/testify/require"
 )
 
 func TestApplyQueryFilterToQueryBuilder(t *testing.T) {

@@ -9,11 +9,10 @@ import (
 	"strings"
 
 	"github.com/dairycart/dairycart/api/storage"
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/go-chi/chi"
 	"github.com/imdario/mergo"
-	"github.com/lib/pq"
 )
 
 type simpleProductOption struct {
@@ -155,7 +154,7 @@ func buildProductOptionUpdateHandler(db *sql.DB, client storage.Storer) http.Han
 			notifyOfInternalIssue(res, err, "update product option in the database")
 			return
 		}
-		existingOption.UpdatedOn = models.NullTime{NullTime: pq.NullTime{Time: updatedOn, Valid: true}}
+		existingOption.UpdatedOn = &models.Dairytime{Time: updatedOn}
 
 		values, err := client.GetProductOptionValuesForOption(db, existingOption.ID)
 		if err != nil {
@@ -181,12 +180,10 @@ func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in models.ProductOpti
 			ProductOptionID: newProductOption.ID,
 			Value:           value,
 		}
-		newOptionValueID, optionCreatedOn, err := client.CreateProductOptionValue(tx, &newOptionValue)
+		newOptionValue.ID, newOptionValue.CreatedOn, err = client.CreateProductOptionValue(tx, &newOptionValue)
 		if err != nil {
 			return models.ProductOption{}, err
 		}
-		newOptionValue.ID = newOptionValueID
-		newOptionValue.CreatedOn = optionCreatedOn
 		newProductOption.Values = append(newProductOption.Values, newOptionValue)
 	}
 
@@ -285,7 +282,7 @@ func buildProductOptionDeletionHandler(db *sql.DB, client storage.Storer) http.H
 			notifyOfInternalIssue(res, err, "archiving product options")
 			return
 		}
-		existingOption.ArchivedOn = models.NullTime{NullTime: pq.NullTime{Time: archivedOn, Valid: true}}
+		existingOption.ArchivedOn = &models.Dairytime{Time: archivedOn}
 
 		err = tx.Commit()
 		if err != nil {

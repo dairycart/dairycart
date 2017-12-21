@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -225,9 +225,9 @@ func TestCreateProductOptionAndValuesInDBFromInput(t *testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.Mock.ExpectBegin()
 		testUtil.MockDB.On("CreateProductOption", mock.Anything, mock.Anything).
-			Return(exampleID, generateExampleTimeForTests(), nil)
+			Return(exampleID, buildTestTime(), nil)
 		testUtil.MockDB.On("CreateProductOptionValue", mock.Anything, mock.Anything).
-			Return(exampleID, generateExampleTimeForTests(), nil)
+			Return(exampleID, buildTestTime(), nil)
 		tx, err := testUtil.PlainDB.Begin()
 		assert.NoError(t, err)
 
@@ -245,9 +245,9 @@ func TestCreateProductOptionAndValuesInDBFromInput(t *testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.Mock.ExpectBegin()
 		testUtil.MockDB.On("CreateProductOption", mock.Anything, mock.Anything).
-			Return(exampleID, generateExampleTimeForTests(), nil)
+			Return(exampleID, buildTestTime(), nil)
 		testUtil.MockDB.On("CreateProductOptionValue", mock.Anything, mock.Anything).
-			Return(exampleID, generateExampleTimeForTests(), generateArbitraryError())
+			Return(exampleID, buildTestTime(), generateArbitraryError())
 		tx, err := testUtil.PlainDB.Begin()
 		assert.NoError(t, err)
 
@@ -326,7 +326,7 @@ func TestProductOptionCreationHandler(t *testing.T) {
 	`
 	exampleProductOption := &models.ProductOption{
 		ID:            123,
-		CreatedOn:     generateExampleTimeForTests(),
+		CreatedOn:     buildTestTime(),
 		Name:          "something",
 		ProductRootID: 2,
 	}
@@ -339,9 +339,9 @@ func TestProductOptionCreationHandler(t *testing.T) {
 			Return(false, nil)
 		testUtil.Mock.ExpectBegin()
 		testUtil.MockDB.On("CreateProductOption", mock.Anything, mock.Anything).
-			Return(exampleProductOption.ID, generateExampleTimeForTests(), nil)
+			Return(exampleProductOption.ID, buildTestTime(), nil)
 		testUtil.MockDB.On("CreateProductOptionValue", mock.Anything, mock.Anything).
-			Return(exampleProductOption.ID, generateExampleTimeForTests(), nil)
+			Return(exampleProductOption.ID, buildTestTime(), nil)
 		testUtil.Mock.ExpectCommit()
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
@@ -450,7 +450,7 @@ func TestProductOptionCreationHandler(t *testing.T) {
 			Return(false, nil)
 		testUtil.Mock.ExpectBegin()
 		testUtil.MockDB.On("CreateProductOption", mock.Anything, mock.Anything).
-			Return(exampleProductOption.ID, generateExampleTimeForTests(), generateArbitraryError())
+			Return(exampleProductOption.ID, buildTestTime(), generateArbitraryError())
 		testUtil.Mock.ExpectRollback()
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
@@ -470,9 +470,9 @@ func TestProductOptionCreationHandler(t *testing.T) {
 			Return(false, nil)
 		testUtil.Mock.ExpectBegin()
 		testUtil.MockDB.On("CreateProductOption", mock.Anything, mock.Anything).
-			Return(exampleProductOption.ID, generateExampleTimeForTests(), nil)
+			Return(exampleProductOption.ID, buildTestTime(), nil)
 		testUtil.MockDB.On("CreateProductOptionValue", mock.Anything, mock.Anything).
-			Return(exampleProductOption.ID, generateExampleTimeForTests(), nil)
+			Return(exampleProductOption.ID, buildTestTime(), nil)
 		testUtil.Mock.ExpectCommit().WillReturnError(generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
@@ -493,7 +493,7 @@ func TestProductOptionUpdateHandler(t *testing.T) {
 	`
 	exampleProductOption := &models.ProductOption{
 		ID:            123,
-		CreatedOn:     generateExampleTimeForTests(),
+		CreatedOn:     buildTestTime(),
 		Name:          "something",
 		ProductRootID: 2,
 	}
@@ -503,7 +503,7 @@ func TestProductOptionUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductOption", mock.Anything, exampleProductOption.ID).
 			Return(exampleProductOption, nil)
 		testUtil.MockDB.On("UpdateProductOption", mock.Anything, mock.Anything).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.MockDB.On("GetProductOptionValuesForOption", mock.Anything, exampleProductOption.ID).
 			Return([]models.ProductOptionValue{}, nil)
 		config := buildServerConfigFromTestUtil(testUtil)
@@ -561,7 +561,7 @@ func TestProductOptionUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductOption", mock.Anything, exampleProductOption.ID).
 			Return(exampleProductOption, nil)
 		testUtil.MockDB.On("UpdateProductOption", mock.Anything, mock.Anything).
-			Return(generateExampleTimeForTests(), generateArbitraryError())
+			Return(buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
 
@@ -577,7 +577,7 @@ func TestProductOptionUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductOption", mock.Anything, exampleProductOption.ID).
 			Return(exampleProductOption, nil)
 		testUtil.MockDB.On("UpdateProductOption", mock.Anything, mock.Anything).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.MockDB.On("GetProductOptionValuesForOption", mock.Anything, exampleProductOption.ID).
 			Return([]models.ProductOptionValue{}, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
@@ -594,7 +594,7 @@ func TestProductOptionUpdateHandler(t *testing.T) {
 func TestProductOptionDeletionHandler(t *testing.T) {
 	exampleProductOption := &models.ProductOption{
 		ID:            123,
-		CreatedOn:     generateExampleTimeForTests(),
+		CreatedOn:     buildTestTime(),
 		Name:          "something",
 		ProductRootID: 2,
 	}
@@ -605,9 +605,9 @@ func TestProductOptionDeletionHandler(t *testing.T) {
 			Return(exampleProductOption, nil)
 		testUtil.Mock.ExpectBegin()
 		testUtil.MockDB.On("ArchiveProductOptionValuesForOption", mock.Anything, exampleProductOption.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.MockDB.On("DeleteProductOption", mock.Anything, exampleProductOption.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.Mock.ExpectCommit()
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
@@ -668,7 +668,7 @@ func TestProductOptionDeletionHandler(t *testing.T) {
 			Return(exampleProductOption, nil)
 		testUtil.Mock.ExpectBegin()
 		testUtil.MockDB.On("ArchiveProductOptionValuesForOption", mock.Anything, exampleProductOption.ID).
-			Return(generateExampleTimeForTests(), generateArbitraryError())
+			Return(buildTestTime(), generateArbitraryError())
 		testUtil.Mock.ExpectRollback()
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
@@ -686,9 +686,9 @@ func TestProductOptionDeletionHandler(t *testing.T) {
 			Return(exampleProductOption, nil)
 		testUtil.Mock.ExpectBegin()
 		testUtil.MockDB.On("ArchiveProductOptionValuesForOption", mock.Anything, exampleProductOption.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.MockDB.On("DeleteProductOption", mock.Anything, exampleProductOption.ID).
-			Return(generateExampleTimeForTests(), generateArbitraryError())
+			Return(buildTestTime(), generateArbitraryError())
 		testUtil.Mock.ExpectRollback()
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
@@ -706,9 +706,9 @@ func TestProductOptionDeletionHandler(t *testing.T) {
 			Return(exampleProductOption, nil)
 		testUtil.Mock.ExpectBegin()
 		testUtil.MockDB.On("ArchiveProductOptionValuesForOption", mock.Anything, exampleProductOption.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.MockDB.On("DeleteProductOption", mock.Anything, exampleProductOption.ID).
-			Return(generateExampleTimeForTests(), nil)
+			Return(buildTestTime(), nil)
 		testUtil.Mock.ExpectCommit().WillReturnError(generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)

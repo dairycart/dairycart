@@ -20,7 +20,7 @@ import(
     "testing"
 
     // internal dependencies
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
     // external dependencies
 	"github.com/stretchr/testify/assert"
@@ -29,7 +29,7 @@ import(
 
 {{- $shortVarName := toLower (sliceString $modelName 0 1) }}
 {{ $readQueryVarName := printf "%sSelectionQuery" ( camel $modelName ) -}}
-{{ $creationQueryVarName := printf "%sCreationQuery" ( toLower $modelName ) -}}
+{{ $creationQueryVarName := printf "%sCreationQuery" ( camel $modelName ) -}}
 {{ $updateQueryVarName := printf "%sUpdateQuery" ( camel $modelName ) -}}
 {{ $deletionQueryVarName := printf "%sDeletionQuery" ( camel $modelName ) -}}
 
@@ -416,7 +416,7 @@ func Test{{ $modelName }}ForOptionIDExists(t *testing.T) {
 func set{{ $modelName }}DeletionQueryByOptionIDExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
     t.Helper()
     query := formatQueryForSQLMock({{ $archiveValuesByOptionIDVarName }})
-    exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
+    exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(buildTestTime(t))
     mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
@@ -430,7 +430,7 @@ func TestArchive{{ $modelName }}sForOption(t *testing.T) {
 
     t.Run("optimal behavior", func(t *testing.T) {
         set{{ $modelName }}DeletionQueryByOptionIDExpectation(t, mock, exampleID, nil)
-        expected := generateExampleTimeForTests(t)
+        expected := buildTestTime(t)
         actual, err := client.Archive{{ $modelName }}sForOption(mockDB, exampleID)
 
         assert.NoError(t, err)
@@ -984,7 +984,8 @@ func TestGet{{ $modelName }}Count(t *testing.T) {
 func set{{ $modelName }}CreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCreate *models.{{ $modelName }}, err error) {
     t.Helper()
     query := formatQueryForSQLMock({{ $creationQueryVarName }})
-    exampleRows := sqlmock.NewRows([]string{"id", "created_on"{{- if $isProduct }}, "available_on"{{ end }}}).AddRow(uint64(1), generateExampleTimeForTests(t){{- if $isProduct }}, generateExampleTimeForTests(t){{ end }})
+    tt := buildTestTime(t)
+    exampleRows := sqlmock.NewRows([]string{"id", "created_on"{{- if $isProduct }}, "available_on"{{ end }}}).AddRow(uint64(1), tt{{- if $isProduct }}, tt{{ end }})
     mock.ExpectQuery(query).
         WithArgs(
             {{ $lastCol := dec (len $creationColumns) -}}
@@ -1003,17 +1004,18 @@ func TestCreate{{ $modelName }}(t *testing.T) {
     defer mockDB.Close()
     expectedID := uint64(1)
     exampleInput := &models.{{ $modelName }}{ID: expectedID}
-        client := NewPostgres()
+    client := NewPostgres()
 
     t.Run("optimal behavior", func(t *testing.T) {
         set{{ $modelName }}CreationQueryExpectation(t, mock, exampleInput, nil)
-        expected := generateExampleTimeForTests(t)
-        actualID, actualCreationDate,{{- if $isProduct }} actualAvailableOn, {{ end }}err := client.Create{{ $modelName }}(mockDB, exampleInput)
+        expectedCreatedOn := buildTestTime(t)
+        {{ if $isProduct -}}expectedAvailableOn := buildTestTime(t){{ end }}
+        actualID, actualCreatedOn, {{- if $isProduct }} actualAvailableOn, {{ end }} err := client.Create{{ $modelName }}(mockDB, exampleInput)
 
         assert.NoError(t, err)
         assert.Equal(t, expectedID, actualID, "expected and actual IDs don't match")
-        assert.Equal(t, expected, actualCreationDate, "expected creation time did not match actual creation time")
-        {{ if $isProduct -}}assert.Equal(t, expected, actualAvailableOn, "expected availability time did not match actual availability time"){{ end }}
+        assert.Equal(t, expectedCreatedOn, actualCreatedOn, "expected creation time did not match actual creation time")
+        {{ if $isProduct -}}assert.Equal(t, expectedAvailableOn, actualAvailableOn, "expected availability time did not match actual availability time"){{ end }}
         assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
     })
 }
@@ -1118,7 +1120,7 @@ func TestCreateMultiple{{ $modelName }}sForProductID(t *testing.T) {
 func set{{ $modelName }}UpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpdate *models.{{ $modelName }}, err error) {
     t.Helper()
     query := formatQueryForSQLMock({{ $updateQueryVarName }})
-    exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(generateExampleTimeForTests(t))
+    exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(buildTestTime(t))
     mock.ExpectQuery(query).
         WithArgs(
             {{ $lastCol := dec (len $updateColumns) -}}
@@ -1140,7 +1142,7 @@ func TestUpdate{{ $modelName }}ByID(t *testing.T) {
 
     t.Run("optimal behavior", func(t *testing.T) {
         set{{ $modelName }}UpdateQueryExpectation(t, mock, exampleInput, nil)
-        expected := generateExampleTimeForTests(t)
+        expected := buildTestTime(t)
         actual, err := client.Update{{ $modelName }}(mockDB, exampleInput)
 
         assert.NoError(t, err)
@@ -1152,7 +1154,7 @@ func TestUpdate{{ $modelName }}ByID(t *testing.T) {
 func set{{ $modelName }}DeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
     t.Helper()
     query := formatQueryForSQLMock({{ $deletionQueryVarName }})
-    exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
+    exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(buildTestTime(t))
     mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
@@ -1166,7 +1168,7 @@ func TestDelete{{ $modelName }}ByID(t *testing.T) {
 
     t.Run("optimal behavior", func(t *testing.T) {
         set{{ $modelName }}DeletionQueryExpectation(t, mock, exampleID, nil)
-        expected := generateExampleTimeForTests(t)
+        expected := buildTestTime(t)
         actual, err := client.Delete{{ $modelName }}(mockDB, exampleID)
 
         assert.NoError(t, err)
@@ -1177,7 +1179,7 @@ func TestDelete{{ $modelName }}ByID(t *testing.T) {
     t.Run("with transaction", func(t *testing.T) {
         mock.ExpectBegin()
         set{{ $modelName }}DeletionQueryExpectation(t, mock, exampleID, nil)
-        expected := generateExampleTimeForTests(t)
+        expected := buildTestTime(t)
         tx, err := mockDB.Begin()
         assert.NoError(t, err, "no error should be returned setting up a transaction in the mock DB")
         actual, err := client.Delete{{ $modelName }}(tx, exampleID)
@@ -1195,7 +1197,7 @@ func TestDelete{{ $modelName }}ByID(t *testing.T) {
 func set{{ $modelName }}WithProductRootIDDeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
     t.Helper()
     query := formatQueryForSQLMock({{ $withRootDeletionQueryVarName }})
-    exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
+    exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(buildTestTime(t))
     mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
@@ -1209,7 +1211,7 @@ func TestArchive{{ $modelName }}sWithProductRootID(t *testing.T) {
 
     t.Run("optimal behavior", func(t *testing.T) {
         set{{ $modelName }}WithProductRootIDDeletionQueryExpectation(t, mock, exampleID, nil)
-        expected := generateExampleTimeForTests(t)
+        expected := buildTestTime(t)
         actual, err := client.Archive{{ $modelName }}sWithProductRootID(mockDB, exampleID)
 
         assert.NoError(t, err)
@@ -1220,7 +1222,7 @@ func TestArchive{{ $modelName }}sWithProductRootID(t *testing.T) {
     t.Run("with transaction", func(t *testing.T) {
         mock.ExpectBegin()
         set{{ $modelName }}WithProductRootIDDeletionQueryExpectation(t, mock, exampleID, nil)
-        expected := generateExampleTimeForTests(t)
+        expected := buildTestTime(t)
         tx, err := mockDB.Begin()
         assert.NoError(t, err, "no error should be returned setting up a transaction in the mock DB")
         actual, err := client.Archive{{ $modelName }}sWithProductRootID(tx, exampleID)
@@ -1237,7 +1239,7 @@ func TestArchive{{ $modelName }}sWithProductRootID(t *testing.T) {
 func set{{ $modelName }}WithProductRootIDDeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
     t.Helper()
     query := formatQueryForSQLMock({{ $withRootDeletionQueryVarName }})
-    exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
+    exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(buildTestTime(t))
     mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
@@ -1251,7 +1253,7 @@ func TestArchive{{ $modelName }}sWithProductRootID(t *testing.T) {
 
     t.Run("optimal behavior", func(t *testing.T) {
         set{{ $modelName }}WithProductRootIDDeletionQueryExpectation(t, mock, exampleID, nil)
-        expected := generateExampleTimeForTests(t)
+        expected := buildTestTime(t)
         actual, err := client.Archive{{ $modelName }}sWithProductRootID(mockDB, exampleID)
 
         assert.NoError(t, err)
@@ -1262,7 +1264,7 @@ func TestArchive{{ $modelName }}sWithProductRootID(t *testing.T) {
     t.Run("with transaction", func(t *testing.T) {
         mock.ExpectBegin()
         set{{ $modelName }}WithProductRootIDDeletionQueryExpectation(t, mock, exampleID, nil)
-        expected := generateExampleTimeForTests(t)
+        expected := buildTestTime(t)
         tx, err := mockDB.Begin()
         assert.NoError(t, err, "no error should be returned setting up a transaction in the mock DB")
         actual, err := client.Archive{{ $modelName }}sWithProductRootID(tx, exampleID)
@@ -1279,7 +1281,7 @@ func TestArchive{{ $modelName }}sWithProductRootID(t *testing.T) {
 func set{{ $modelName }}WithProductRootIDDeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
     t.Helper()
     query := formatQueryForSQLMock({{ $withRootDeletionQueryVarName }})
-    exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
+    exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(buildTestTime(t))
     mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
@@ -1293,7 +1295,7 @@ func TestArchive{{ $modelName }}sWithProductRootID(t *testing.T) {
 
     t.Run("optimal behavior", func(t *testing.T) {
         set{{ $modelName }}WithProductRootIDDeletionQueryExpectation(t, mock, exampleID, nil)
-        expected := generateExampleTimeForTests(t)
+        expected := buildTestTime(t)
         actual, err := client.Archive{{ $modelName }}sWithProductRootID(mockDB, exampleID)
 
         assert.NoError(t, err)
@@ -1304,7 +1306,7 @@ func TestArchive{{ $modelName }}sWithProductRootID(t *testing.T) {
     t.Run("with transaction", func(t *testing.T) {
         mock.ExpectBegin()
         set{{ $modelName }}WithProductRootIDDeletionQueryExpectation(t, mock, exampleID, nil)
-        expected := generateExampleTimeForTests(t)
+        expected := buildTestTime(t)
         tx, err := mockDB.Begin()
         assert.NoError(t, err, "no error should be returned setting up a transaction in the mock DB")
         actual, err := client.Archive{{ $modelName }}sWithProductRootID(tx, exampleID)
@@ -1321,7 +1323,7 @@ func TestArchive{{ $modelName }}sWithProductRootID(t *testing.T) {
 func set{{ $modelName }}WithProductRootIDDeletionQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
     t.Helper()
     query := formatQueryForSQLMock({{ $withRootDeletionQueryVarName }})
-    exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
+    exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(buildTestTime(t))
     mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
@@ -1335,7 +1337,7 @@ func TestArchive{{ $modelName }}sWithProductRootID(t *testing.T) {
 
     t.Run("optimal behavior", func(t *testing.T) {
         set{{ $modelName }}WithProductRootIDDeletionQueryExpectation(t, mock, exampleID, nil)
-        expected := generateExampleTimeForTests(t)
+        expected := buildTestTime(t)
         actual, err := client.Archive{{ $modelName }}sWithProductRootID(mockDB, exampleID)
 
         assert.NoError(t, err)
@@ -1346,7 +1348,7 @@ func TestArchive{{ $modelName }}sWithProductRootID(t *testing.T) {
     t.Run("with transaction", func(t *testing.T) {
         mock.ExpectBegin()
         set{{ $modelName }}WithProductRootIDDeletionQueryExpectation(t, mock, exampleID, nil)
-        expected := generateExampleTimeForTests(t)
+        expected := buildTestTime(t)
         tx, err := mockDB.Begin()
         assert.NoError(t, err, "no error should be returned setting up a transaction in the mock DB")
         actual, err := client.Archive{{ $modelName }}sWithProductRootID(tx, exampleID)
@@ -1364,7 +1366,7 @@ func TestArchive{{ $modelName }}sWithProductRootID(t *testing.T) {
 func set{{ $modelName }}DeletionByProductIDQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, err error) {
     t.Helper()
     query := formatQueryForSQLMock({{ $pvbDeletionQueryVarName }})
-    exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(generateExampleTimeForTests(t))
+    exampleRows := sqlmock.NewRows([]string{"archived_on"}).AddRow(buildTestTime(t))
     mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
 
@@ -1378,7 +1380,7 @@ func TestDelete{{ $modelName }}ByProductID(t *testing.T) {
 
     t.Run("optimal behavior", func(t *testing.T) {
         set{{ $modelName }}DeletionByProductIDQueryExpectation(t, mock, exampleID, nil)
-        expected := generateExampleTimeForTests(t)
+        expected := buildTestTime(t)
         actual, err := client.Delete{{ $modelName }}ByProductID(mockDB, exampleID)
 
         assert.NoError(t, err)
@@ -1389,7 +1391,7 @@ func TestDelete{{ $modelName }}ByProductID(t *testing.T) {
     t.Run("with transaction", func(t *testing.T) {
         mock.ExpectBegin()
         set{{ $modelName }}DeletionByProductIDQueryExpectation(t, mock, exampleID, nil)
-        expected := generateExampleTimeForTests(t)
+        expected := buildTestTime(t)
         tx, err := mockDB.Begin()
         assert.NoError(t, err, "no error should be returned setting up a transaction in the mock DB")
         actual, err := client.Delete{{ $modelName }}ByProductID(tx, exampleID)

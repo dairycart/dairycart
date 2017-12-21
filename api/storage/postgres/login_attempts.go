@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/dairycart/dairycart/api/storage"
-	"github.com/dairycart/dairycart/api/storage/models"
+	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/Masterminds/squirrel"
 )
@@ -125,7 +125,7 @@ func (pg *postgres) GetLoginAttemptCount(db storage.Querier, qf *models.QueryFil
 	return count, err
 }
 
-const loginattemptCreationQuery = `
+const loginAttemptCreationQuery = `
     INSERT INTO login_attempts
         (
             username, successful
@@ -144,7 +144,7 @@ func (pg *postgres) CreateLoginAttempt(db storage.Querier, nu *models.LoginAttem
 		createdAt time.Time
 	)
 
-	err := db.QueryRow(loginattemptCreationQuery, &nu.Username, &nu.Successful).Scan(&createdID, &createdAt)
+	err := db.QueryRow(loginAttemptCreationQuery, &nu.Username, &nu.Successful).Scan(&createdID, &createdAt)
 	return createdID, createdAt, err
 }
 
