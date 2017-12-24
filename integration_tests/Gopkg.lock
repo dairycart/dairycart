@@ -3,12 +3,6 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/dairycart/dairyclient"
-  packages = ["v1"]
-  revision = "2833468a130aa8fc1515c049fdc492fa1814bd35"
-
-[[projects]]
-  branch = "master"
   name = "github.com/dairycart/dairymodels"
   packages = ["v1"]
   revision = "4000ccfa603d36dde296f5273871f390465f3997"
@@ -46,6 +40,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0ec205a034f0f84bca7e4f6a72e4ef7ff7820f387e73f88ac07dde11c97eaed7"
+  inputs-digest = "3a2e63166366a1a1c0bb2491915109b3ffb8d823ec77fd6c3cb7dabfb000bbe9"
   solver-name = "gps-cdcl"
   solver-version = 1

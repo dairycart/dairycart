@@ -151,9 +151,10 @@ func (pg *postgres) CreateLoginAttempt(db storage.Querier, nu *models.LoginAttem
 const loginAttemptUpdateQuery = `
     UPDATE login_attempts
     SET
-        username = $1, 
-        successful = $2
-    WHERE id = $2
+        username = $1,
+        successful = $2,
+        updated_on = NOW()
+    WHERE id = $3
     RETURNING updated_on;
 `
 

@@ -200,8 +200,8 @@ func (pg *postgres) CreateProductOption(db storage.Querier, nu *models.ProductOp
 const productOptionUpdateQuery = `
     UPDATE product_options
     SET
-        name = $1, 
-        product_root_id = $2, 
+        name = $1,
+        product_root_id = $2,
         updated_on = NOW()
     WHERE id = $3
     RETURNING updated_on;

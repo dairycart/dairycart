@@ -182,9 +182,10 @@ func (pg *postgres) CreateMultipleProductVariantBridgesForProductID(db storage.Q
 const productVariantBridgeUpdateQuery = `
     UPDATE product_variant_bridge
     SET
-        product_id = $1, 
-        product_option_value_id = $2
-    WHERE id = $2
+        product_id = $1,
+        product_option_value_id = $2,
+        updated_on = NOW()
+    WHERE id = $3
     RETURNING updated_on;
 `
 

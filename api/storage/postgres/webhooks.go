@@ -190,9 +190,9 @@ func (pg *postgres) CreateWebhook(db storage.Querier, nu *models.Webhook) (uint6
 const webhookUpdateQuery = `
     UPDATE webhooks
     SET
-        url = $1, 
-        event_type = $2, 
-        content_type = $3, 
+        url = $1,
+        event_type = $2,
+        content_type = $3,
         updated_on = NOW()
     WHERE id = $4
     RETURNING updated_on;

@@ -589,14 +589,15 @@ func (pg *postgres) CreateMultiple{{ $modelName }}sForProductID(db storage.Queri
 }
 {{ end -}}
 
-{{ $updateColumns := .Table.Columns.Names.Except (makeSlice "id" "created_on" "archived_on") -}}
+{{ $updateColumns := .Table.Columns.Names.Except (makeSlice "id" "created_on" "archived_on" "updated_on") -}}
 {{ $updateQueryVarName := printf "%sUpdateQuery" ( camel $modelName ) -}}
 const {{ $updateQueryVarName }} = `
     UPDATE {{ toLower .Table.Name }}
     SET{{ $lastCol := dec (len $updateColumns) -}}
     {{ range $x, $col := $updateColumns }}
-        {{ $col }} = {{ if eq $col "updated_on"}}NOW(){{ else }}${{ inc $x }}{{ if ne $x $lastCol }}, {{ end }}{{ end }}{{ end }}
-    WHERE id = ${{ len $updateColumns }}
+        {{ $col }} = ${{ inc $x }},{{ end }}
+        updated_on = NOW()
+    WHERE id = ${{ inc (len $updateColumns) }}
     RETURNING updated_on;
 `
 

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 
 	"github.com/dairycart/dairycart/api/storage"
@@ -289,6 +290,8 @@ func buildProductCreationHandler(db *sql.DB, client storage.Storer, webhookExecu
 			notifyOfInternalIssue(res, err, "insert product options and values in database")
 			return
 		}
+
+		newProduct.QuantityPerPackage = uint32(math.Max(float64(newProduct.QuantityPerPackage), 1))
 
 		for _, optionAndValues := range productInput.Options {
 			o, err := createProductOptionAndValuesInDBFromInput(tx, optionAndValues, productRoot.ID, client)

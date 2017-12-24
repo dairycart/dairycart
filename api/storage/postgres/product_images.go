@@ -202,11 +202,11 @@ func (pg *postgres) CreateProductImage(db storage.Querier, nu *models.ProductIma
 const productImageUpdateQuery = `
     UPDATE product_images
     SET
-        product_id = $1, 
-        thumbnail_url = $2, 
-        main_url = $3, 
-        original_url = $4, 
-        source_url = $5, 
+        product_id = $1,
+        thumbnail_url = $2,
+        main_url = $3,
+        original_url = $4,
+        source_url = $5,
         updated_on = NOW()
     WHERE id = $6
     RETURNING updated_on;

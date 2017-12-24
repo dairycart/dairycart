@@ -170,11 +170,12 @@ func (pg *postgres) CreatePasswordResetToken(db storage.Querier, nu *models.Pass
 const passwordResetTokenUpdateQuery = `
     UPDATE password_reset_tokens
     SET
-        user_id = $1, 
-        token = $2, 
-        expires_on = $3, 
-        password_reset_on = $4
-    WHERE id = $4
+        user_id = $1,
+        token = $2,
+        expires_on = $3,
+        password_reset_on = $4,
+        updated_on = NOW()
+    WHERE id = $5
     RETURNING updated_on;
 `
 

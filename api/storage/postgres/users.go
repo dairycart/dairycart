@@ -201,14 +201,14 @@ func (pg *postgres) CreateUser(db storage.Querier, nu *models.User) (uint64, tim
 const userUpdateQuery = `
     UPDATE users
     SET
-        first_name = $1, 
-        last_name = $2, 
-        username = $3, 
-        email = $4, 
-        password = $5, 
-        salt = $6, 
-        is_admin = $7, 
-        password_last_changed_on = $8, 
+        first_name = $1,
+        last_name = $2,
+        username = $3,
+        email = $4,
+        password = $5,
+        salt = $6,
+        is_admin = $7,
+        password_last_changed_on = $8,
         updated_on = NOW()
     WHERE id = $9
     RETURNING updated_on;

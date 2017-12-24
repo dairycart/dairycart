@@ -137,11 +137,12 @@ func (pg *postgres) CreateWebhookExecutionLog(db storage.Querier, nu *models.Web
 const webhookExecutionLogUpdateQuery = `
     UPDATE webhook_execution_logs
     SET
-        webhook_id = $1, 
-        status_code = $2, 
-        succeeded = $3, 
-        executed_on = $4
-    WHERE id = $4
+        webhook_id = $1,
+        status_code = $2,
+        succeeded = $3,
+        executed_on = $4,
+        updated_on = NOW()
+    WHERE id = $5
     RETURNING updated_on;
 `
 

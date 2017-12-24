@@ -194,16 +194,16 @@ func (pg *postgres) CreateDiscount(db storage.Querier, nu *models.Discount) (uin
 const discountUpdateQuery = `
     UPDATE discounts
     SET
-        name = $1, 
-        discount_type = $2, 
-        amount = $3, 
-        expires_on = $4, 
-        requires_code = $5, 
-        code = $6, 
-        limited_use = $7, 
-        number_of_uses = $8, 
-        login_required = $9, 
-        starts_on = $10, 
+        name = $1,
+        discount_type = $2,
+        amount = $3,
+        expires_on = $4,
+        requires_code = $5,
+        code = $6,
+        limited_use = $7,
+        number_of_uses = $8,
+        login_required = $9,
+        starts_on = $10,
         updated_on = NOW()
     WHERE id = $11
     RETURNING updated_on;
