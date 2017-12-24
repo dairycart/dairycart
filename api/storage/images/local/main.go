@@ -23,7 +23,7 @@ func (lis *LocalImageStorer) CreateThumbnails(in image.Image) []image.Image {
 }
 
 func (lis *LocalImageStorer) StoreImage(in image.Image, filename string) error {
-	path := fmt.Sprintf("images/%s/", sku)
+	path := "images/"
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		err := os.MkdirAll(path, os.ModePerm)
 		if err != nil {
@@ -31,7 +31,7 @@ func (lis *LocalImageStorer) StoreImage(in image.Image, filename string) error {
 		}
 	}
 
-	path = fmt.Sprintf("images/%s/%s", sku, filename)
+	path = fmt.Sprintf("images/%s", filename)
 	f, err := os.Create(path)
 	if err != nil {
 		return errors.Wrap(err, "error creating local file")
