@@ -23,6 +23,7 @@ type Storer interface {
         {{- $isDiscount := eq $modelName "Discount" -}}
         {{- $isProductRoot := eq $modelName "ProductRoot" -}}
         {{- $isLoginAttempt := eq $modelName "LoginAttempt" -}}
+        {{- $isProductImage := eq $modelName "isProductImage" -}}
         {{- $isProductOption := eq $modelName "ProductOption" -}}
         {{- $isProductOptionValue := eq $modelName "ProductOptionValue" -}}
         {{- $isPasswordResetToken := eq $modelName "PasswordResetToken" -}}
@@ -55,6 +56,9 @@ type Storer interface {
         {{- if $isProductVariantBridge }}
             Delete{{ $modelName }}ByProductID(Querier, uint64) (time.Time, error)
             CreateMultiple{{ $modelName }}sForProductID(Querier, uint64, []uint64) error
+        {{- end -}}
+        {{- if $isProductImage }}
+            Get{{ $modelName }}sByProductID(Querier, uint64) ([]models.{{ $modelName }}, error)
         {{- end -}}
         {{- if $isPasswordResetToken }}
             {{ $modelName }}ForUserIDExists(Querier, uint64) (bool, error)

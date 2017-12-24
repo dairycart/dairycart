@@ -9,6 +9,7 @@ package postgres
 {{- $isDiscount := eq $modelName "Discount" }}
 {{- $isProductRoot := eq $modelName "ProductRoot" }}
 {{- $isLoginAttempt := eq $modelName "LoginAttempt" }}
+{{- $isProductImage := eq $modelName "ProductImage" }}
 {{- $isProductOption := eq $modelName "ProductOption" }}
 {{- $isProductOptionValue := eq $modelName "ProductOptionValue" }}
 {{- $isPasswordResetToken := eq $modelName "PasswordResetToken" }}
@@ -62,6 +63,49 @@ func (pg *postgres) {{ $modelName }}WithSKUExists(db storage.Querier, sku string
 	}
 
 	return exists == "true", err
+}
+{{- end }}
+
+{{- if $isProductImage }}
+{{ $imagesByProductIDVarName := printf "%sQueryByProductID" ( camel $modelName ) -}}
+const {{ $imagesByProductIDVarName }} = `
+    SELECT
+    {{ $lastCol := dec (len .Table.Columns.DBNames) -}}
+    {{ range $x, $col := .Table.Columns.DBNames }}    {{ $col }}{{ if ne $x $lastCol }},
+    {{ end }}{{ end }}
+    FROM
+        {{ .Table.Name }}
+    WHERE
+        archived_on is null
+    AND
+        product_id = $1
+`
+
+func (pg *postgres) Get{{ $modelName }}sByProductID(db storage.Querier, productID uint64) ([]models.{{ $modelName }}, error) {
+	var list []models.{{ $modelName }}
+
+    rows, err := db.Query({{ $imagesByProductIDVarName }}, productID)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+    for rows.Next() {
+        var {{ $shortVarName }} models.{{ $modelName }}
+        err := rows.Scan(
+            {{ range $x, $col := .Table.Columns.DBNames }}&{{ $shortVarName }}.{{ pascal $col }},
+            {{ end }}
+        )
+        if err != nil {
+            return nil, err
+        }
+        list = append(list, {{ $shortVarName }})
+    }
+    err = rows.Err()
+    if err != nil {
+        return nil, err
+    }
+
+	return list, err
 }
 {{- end }}
 

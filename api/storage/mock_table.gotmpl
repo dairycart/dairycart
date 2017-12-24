@@ -14,6 +14,7 @@ import (
 {{- $isDiscount := eq $modelName "Discount" }}
 {{- $isProductRoot := eq $modelName "ProductRoot" }}
 {{- $isLoginAttempt := eq $modelName "LoginAttempt" }}
+{{- $isProductImage := eq $modelName "ProductImage" }}
 {{- $isProductOption := eq $modelName "ProductOption" }}
 {{- $isProductOptionValue := eq $modelName "ProductOptionValue" }}
 {{- $isPasswordResetToken := eq $modelName "PasswordResetToken" }}
@@ -35,6 +36,13 @@ func (m *MockDB) {{ $modelName }}WithSKUExists(db storage.Querier, sku string) (
 func (m *MockDB) Get{{ $modelName }}sByProductRootID(db storage.Querier, productRootID uint64)([]models.{{ $modelName }}, error) {
     args := m.Called(db, productRootID)
 	return args.Get(0).([]models.{{ $modelName }}), args.Error(1)
+}
+{{- end }}
+
+{{- if $isProductImage }}
+func (m *MockDB) Get{{ $modelName }}sByProductID(db storage.Querier, productID uint64) ([]models.{{ $modelName }}, error) {
+    args := m.Called(db, productID)
+    return args.Get(0).([]models.{{ $modelName }}), args.Error(1)
 }
 {{- end }}
 

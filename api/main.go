@@ -19,11 +19,13 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
-	_ "github.com/lib/pq"
 	"github.com/mattes/migrate"
+	"github.com/mattes/migrate/database"
 	migratePG "github.com/mattes/migrate/database/postgres"
-	_ "github.com/mattes/migrate/source/file"
 	"github.com/sirupsen/logrus"
+
+	_ "github.com/lib/pq"
+	_ "github.com/mattes/migrate/source/file"
 )
 
 const (
@@ -52,11 +54,14 @@ func determineMigrationCount() int {
 
 // this function not only waits for the database to accept its incoming connection, but also performs any necessary migrations
 func migrateDatabase(db *sql.DB) {
+	var err error
+	var driver database.Driver
+
 	migrationCount := determineMigrationCount()
 	numberOfUnsuccessfulAttempts := 0
 	databaseIsNotMigrated := true
 	for databaseIsNotMigrated {
-		driver, err := migratePG.WithInstance(db, &migratePG.Config{})
+		driver, err = migratePG.WithInstance(db, &migratePG.Config{})
 		if err != nil {
 			log.Printf("waiting half a second for the database")
 			time.Sleep(500 * time.Millisecond)
@@ -66,8 +71,9 @@ func migrateDatabase(db *sql.DB) {
 				log.Fatal("Failed to connect to the database")
 			}
 		} else {
+			var m *migrate.Migrate
 			migrationsDir := os.Getenv("DAIRYCART_MIGRATIONS_DIR")
-			m, err := migrate.NewWithDatabaseInstance(migrationsDir, "postgres", driver)
+			m, err = migrate.NewWithDatabaseInstance(migrationsDir, "postgres", driver)
 			if err != nil {
 				log.Fatalf("error encountered setting up new migration client: %v", err)
 			}
@@ -81,6 +87,9 @@ func migrateDatabase(db *sql.DB) {
 			}
 			databaseIsNotMigrated = false
 		}
+	}
+	if err != nil {
+		log.Printf("error encountered migrating database: %v", err)
 	}
 	log.Println("database migrated!")
 }

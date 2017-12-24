@@ -8,10 +8,10 @@
   version = "v1.0"
 
 [[projects]]
-  branch = "master"
+  branch = "product-images"
   name = "github.com/dairycart/dairymodels"
   packages = ["v1"]
-  revision = "6d187cf0d89318d0a3a9ba1a5b95a673f27f4470"
+  revision = "5188b78954a850174d68189bdb03c400b78caab9"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -34,8 +34,8 @@
 [[projects]]
   name = "github.com/go-chi/chi"
   packages = [".","middleware"]
-  revision = "687d2792aedd8e8ac3bbd8592cf55b91d7ea8ce9"
-  version = "v3.3.1"
+  revision = "e83ac2304db3c50cf03d96a2fcd39009d458bc35"
+  version = "v3.3.2"
 
 [[projects]]
   name = "github.com/gorilla/context"
@@ -86,6 +86,12 @@
   version = "v3.0.1"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/nfnt/resize"
+  packages = ["."]
+  revision = "891127d8d1b52734debe1b3c3d7e747502b6c366"
+
+[[projects]]
   name = "github.com/pkg/errors"
   packages = ["."]
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
@@ -125,7 +131,7 @@
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
-  revision = "d818ba11af4465e00c1998bd3f8a55603b422290"
+  revision = "83801418e1b59fb1880e363299581ee543af32ca"
 
 [[projects]]
   name = "gopkg.in/DATA-DOG/go-sqlmock.v1"
@@ -136,6 +142,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ada422a0bbc49e9971e25a9239be49b79916d728378a8766a5593b574a3942ef"
+  inputs-digest = "2ec297079c5d6444ec1391d56c89defcee5916a2a0bdd0d0194431bbc2c13885"
   solver-name = "gps-cdcl"
   solver-version = 1

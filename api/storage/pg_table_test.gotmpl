@@ -7,6 +7,7 @@ package postgres
 {{- $isDiscount := eq $modelName "Discount" }}
 {{- $isProductRoot := eq $modelName "ProductRoot" }}
 {{- $isLoginAttempt := eq $modelName "LoginAttempt" }}
+{{- $isProductImage := eq $modelName "ProductImage" }}
 {{- $isProductOption := eq $modelName "ProductOption" }}
 {{- $isProductOptionValue := eq $modelName "ProductOptionValue" }}
 {{- $isPasswordResetToken := eq $modelName "PasswordResetToken" }}
@@ -767,6 +768,83 @@ func TestGet{{ $modelName }}sByEventType(t *testing.T) {
     t.Run("with with row errors", func(t *testing.T) {
         set{{ $modelName }}ReadQueryExpectationByEventType(t, mock, example, errors.New("pineapple on pizza"), nil)
         actual, err := client.Get{{ $modelName }}sByEventType(mockDB, exampleEventType)
+
+        assert.NotNil(t, err)
+        assert.Nil(t, actual)
+        assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+}
+{{- end }}
+
+{{- if $isProductImage }}
+{{ $imagesByProductIDVarName := printf "%sQueryByProductID" ( camel $modelName ) -}}
+func set{{ $modelName }}ByProductIDQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, example *models.{{ $modelName }}, rowErr error, err error) {
+    t.Helper()
+
+    exampleRows := sqlmock.NewRows([]string{
+        {{ range $_, $x := .Table.Columns.DBNames }}{{ printf "\"%s\"" $x }},
+        {{ end }}
+    }).AddRow(
+        {{ range $_, $x := .Table.Columns.DBNames }}example.{{ pascal $x }},
+        {{ end }}
+    ).AddRow(
+        {{ range $_, $x := .Table.Columns.DBNames }}example.{{ pascal $x }},
+        {{ end }}
+    ).AddRow(
+        {{ range $_, $x := .Table.Columns.DBNames }}example.{{ pascal $x }},
+        {{ end }}
+    ).RowError(1, rowErr)
+
+    query := formatQueryForSQLMock({{ $imagesByProductIDVarName }})
+	mock.ExpectQuery(query).
+		WithArgs(id).
+        WillReturnRows(exampleRows).
+		WillReturnError(err)
+}
+
+func TestGet{{ $modelName }}sByProductID(t *testing.T) {
+    t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+    assert.NoError(t, err)
+    defer mockDB.Close()
+    exampleID := uint64(1)
+    example := &models.{{ $modelName }}{ID: exampleID}
+    client := NewPostgres()
+
+    t.Run("optimal behavior", func(t *testing.T) {
+        set{{ $modelName }}ByProductIDQueryExpectation(t, mock, exampleID, example, nil, nil)
+        actual, err := client.Get{{ $modelName }}sByProductID(mockDB, exampleID)
+
+        assert.NoError(t, err)
+        assert.NotEmpty(t, actual, "list retrieval method should not return an empty slice")
+        assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+
+    t.Run("with error executing query", func(t *testing.T) {
+        set{{ $modelName }}ByProductIDQueryExpectation(t, mock, exampleID, example, nil, errors.New("pineapple on pizza"))
+        actual, err := client.Get{{ $modelName }}sByProductID(mockDB, exampleID)
+
+        assert.NotNil(t, err)
+        assert.Nil(t, actual)
+        assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+
+    t.Run("with error scanning values", func(t *testing.T) {
+        exampleRows := sqlmock.NewRows([]string{"things"}).AddRow("stuff")
+        query := formatQueryForSQLMock({{ $imagesByProductIDVarName }})
+        mock.ExpectQuery(query).
+            WillReturnRows(exampleRows)
+
+        actual, err := client.Get{{ $modelName }}sByProductID(mockDB, exampleID)
+
+        assert.NotNil(t, err)
+        assert.Nil(t, actual)
+        assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+    })
+
+    t.Run("with with row errors", func(t *testing.T) {
+        set{{ $modelName }}ByProductIDQueryExpectation(t, mock, exampleID, example, errors.New("pineapple on pizza"), nil)
+        actual, err := client.Get{{ $modelName }}sByProductID(mockDB, exampleID)
 
         assert.NotNil(t, err)
         assert.Nil(t, actual)
