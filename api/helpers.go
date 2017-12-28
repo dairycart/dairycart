@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/dairycart/dairycart/api/storage"
+	"github.com/dairycart/dairycart/api/storage/images"
 	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/fatih/structs"
@@ -51,6 +52,7 @@ type ServerConfig struct {
 	CookieStore     *sessions.CookieStore
 	Dairyclient     storage.Storer
 	WebhookExecutor WebhookExecutor
+	ImageStorer     dairyphoto.ImageStorer
 }
 
 func parseRawFilterParams(rawFilterParams url.Values) *models.QueryFilter {

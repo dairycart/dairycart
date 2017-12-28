@@ -1,11 +1,23 @@
-package image_storage
+package dairyphoto
 
 import (
 	//  "github.com/dairycart/dairymodels/v1"
 	"image"
 )
 
+type ProductImageSet struct {
+	Thumbnail image.Image
+	Main      image.Image
+	Original  image.Image
+}
+
+type ProductImageLocations struct {
+	Thumbnail string
+	Main      string
+	Original  string
+}
+
 type ImageStorer interface {
-	CreateThumbnails(image.Image) []image.Image
-	StoreImage(image.Image, string) error
+	CreateThumbnails(img image.Image) ProductImageSet
+	StoreImages(imgset ProductImageSet, sku string, id uint) (*ProductImageLocations, error)
 }

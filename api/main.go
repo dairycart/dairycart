@@ -89,7 +89,7 @@ func migrateDatabase(db *sql.DB) {
 		}
 	}
 	if err != nil {
-		log.Printf("error encountered migrating database: %v", err)
+		log.Fatalf("error encountered migrating database: %v", err)
 	}
 	log.Println("database migrated!")
 }
@@ -157,6 +157,7 @@ func main() {
 	config.CookieStore = setupCookieStorage()
 	config.Router = chi.NewRouter()
 
+	config.Router.Use(middleware.AllowContentType("application/json", "multipart/form-data"))
 	config.Router.Use(middleware.RequestID)
 	config.Router.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{Logger: log.New(os.Stdout, "", log.LstdFlags)}))
 	SetupAPIRoutes(config)

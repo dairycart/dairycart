@@ -6,41 +6,65 @@ import (
 	"image/png"
 	"os"
 
+	"github.com/dairycart/dairycart/api/storage/images"
+
 	"github.com/nfnt/resize"
 	"github.com/pkg/errors"
 )
 
+const LocalProductImagesDirectory = "product_images/"
+
 type LocalImageStorer struct{}
 
-func (lis *LocalImageStorer) CreateThumbnails(in image.Image) []image.Image {
-	out := []image.Image{}
-	sizes := []uint{100, 500}
-	for _, size := range sizes {
-		out = append(out, resize.Thumbnail(size, size, in, resize.NearestNeighbor))
-		// newFilename := fmt.Sprintf("%d_%d_x_%d.png", timestamp, size, size)
+var _ dairyphoto.ImageStorer = (*LocalImageStorer)(nil)
+
+func (lis *LocalImageStorer) CreateThumbnails(in image.Image) dairyphoto.ProductImageSet {
+	return dairyphoto.ProductImageSet{
+		Thumbnail: resize.Thumbnail(100, 100, in, resize.NearestNeighbor),
+		Main:      resize.Thumbnail(500, 500, in, resize.NearestNeighbor),
+		Original:  in,
 	}
-	return []image.Image{}
 }
 
-func (lis *LocalImageStorer) StoreImage(in image.Image, filename string) error {
-	path := "images/"
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		err := os.MkdirAll(path, os.ModePerm)
-		if err != nil {
-			return errors.Wrap(err, "error creating necessary folders")
-		}
-	}
-
-	path = fmt.Sprintf("images/%s", filename)
+func saveImage(in image.Image, path string) error {
 	f, err := os.Create(path)
 	if err != nil {
 		return errors.Wrap(err, "error creating local file")
 	}
 
-	err = png.Encode(f, in)
-	if err != nil {
-		return errors.Wrap(err, "error encoding png")
-	}
+	return png.Encode(f, in)
+}
 
-	return nil
+func (lis *LocalImageStorer) StoreImages(in dairyphoto.ProductImageSet, sku string, id uint) (*dairyphoto.ProductImageLocations, error) {
+	var err error
+	if _, err = os.Stat(LocalProductImagesDirectory); os.IsNotExist(err) {
+		err = os.MkdirAll(LocalProductImagesDirectory, os.ModePerm)
+		if err != nil {
+			return nil, errors.Wrap(err, "error creating necessary folders")
+		}
+	}
+	out := &dairyphoto.ProductImageLocations{}
+
+	thumbnailPath := fmt.Sprintf("images/%s/%d/thumbnail.png", sku, id)
+	err = saveImage(in.Thumbnail, thumbnailPath)
+	if err != nil {
+		return nil, err
+	}
+	out.Thumbnail = thumbnailPath
+
+	mainPath := fmt.Sprintf("images/%s/%d/main.png", sku, id)
+	err = saveImage(in.Main, mainPath)
+	if err != nil {
+		return out, err
+	}
+	out.Main = mainPath
+
+	originalPath := fmt.Sprintf("images/%s/%d/original.png", sku, id)
+	err = saveImage(in.Original, originalPath)
+	if err != nil {
+		return out, err
+	}
+	out.Original = originalPath
+
+	return out, nil
 }

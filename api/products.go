@@ -2,16 +2,21 @@ package main
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"image"
 	"math"
 	"net/http"
+	"strings"
 
 	"github.com/dairycart/dairycart/api/storage"
+	"github.com/dairycart/dairycart/api/storage/images"
 	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/go-chi/chi"
 	"github.com/imdario/mergo"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -253,6 +258,64 @@ func createProductsInDBFromOptionRows(client storage.Storer, tx *sql.Tx, r *mode
 		createdProducts = append(createdProducts, *p)
 	}
 	return createdProducts, nil
+}
+
+func buildTestProductCreationHandler(db *sql.DB, client storage.Storer, imager dairyphoto.ImageStorer) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		productInput := &models.ProductCreationInput{}
+		err := validateRequestInput(req, productInput)
+		if err != nil {
+			notifyOfInvalidRequestBody(res, err)
+			return
+		}
+		if !restrictedStringIsValid(productInput.SKU) {
+			notifyOfInvalidRequestBody(res, fmt.Errorf("The sku received (%s) is invalid", productInput.SKU))
+			return
+		}
+
+		for i, imageInput := range productInput.Images {
+			var img image.Image
+			var err error
+
+			switch imageInput.Type {
+			case "base64":
+				reader := base64.NewDecoder(base64.StdEncoding, strings.NewReader(imageInput.Data))
+				img, _, err = image.Decode(reader)
+				if err != nil {
+					notifyOfInvalidRequestBody(res, fmt.Errorf("Image data at index %d is invalid", i))
+					return
+				}
+			case "url":
+				// FIXME: this is almost definitely the wrong way to do this,
+				// we should support conversion from known data types (mainly JPEGs) to PNGs
+				if !strings.HasSuffix(imageInput.Data, "png") {
+					notifyOfInvalidRequestBody(res, errors.New("only PNG images are supported"))
+					return
+				}
+				response, err := http.Get(imageInput.Data)
+				if err != nil {
+					e := errors.Wrap(err, fmt.Sprintf("error retrieving product image from url %s", imageInput.Data))
+					notifyOfInvalidRequestBody(res, e)
+					return
+				} else {
+					defer response.Body.Close()
+					img, _, err = image.Decode(response.Body)
+					if err != nil {
+						notifyOfInvalidRequestBody(res, fmt.Errorf("Image data at index %d is invalid", i))
+						return
+					}
+				}
+			}
+
+			for _, i := range imager.CreateThumbnails(img) {
+				err := imager.StoreImage(i, productInput.SKU)
+				if err != nil {
+					notifyOfInternalIssue(res, err, "save product image")
+					return
+				}
+			}
+		}
+	}
 }
 
 func buildProductCreationHandler(db *sql.DB, client storage.Storer, webhookExecutor WebhookExecutor) http.HandlerFunc {
