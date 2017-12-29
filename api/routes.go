@@ -34,7 +34,7 @@ func SetupAPIRoutes(config *ServerConfig) {
 		r.Delete(fmt.Sprintf("/user/{user_id:%s}", NumericPattern), buildUserDeletionHandler(config.DB, config.Dairyclient, config.CookieStore))
 
 		// test
-		r.Post("/test_upload", buildTestProductCreationHandler(config.DB, config.Dairyclient, config.ImageStorer))
+		r.Post("/test_upload", buildTestProductCreationHandler(config.DB, config.Dairyclient, config.ImageStorer, config.WebhookExecutor))
 
 		// Product Roots
 		specificProductRootRoute := fmt.Sprintf("/product_root/{product_root_id:%s}", NumericPattern)

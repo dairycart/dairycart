@@ -11,7 +11,7 @@
   branch = "product-images"
   name = "github.com/dairycart/dairymodels"
   packages = ["v1"]
-  revision = "cadb6053b63006f06a5332fc6c2321b629d1ac97"
+  revision = "762b684f06e679242fe1dbad3514bfda481ce9bf"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -29,7 +29,7 @@
   name = "github.com/fatih/structs"
   packages = ["."]
   revision = "a720dfa8df582c51dee1b36feabb906bde1588bd"
-  version = "v1.0.0"
+  version = "v1.0"
 
 [[projects]]
   name = "github.com/go-chi/chi"
