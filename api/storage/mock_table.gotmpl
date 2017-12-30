@@ -44,6 +44,11 @@ func (m *MockDB) Get{{ $modelName }}sByProductID(db storage.Querier, productID u
     args := m.Called(db, productID)
     return args.Get(0).([]models.{{ $modelName }}), args.Error(1)
 }
+
+func (m *MockDB) SetPrimary{{ $modelName }}ForProduct(db storage.Querier, productID, imageID uint64) (time.Time, error) {
+    args := m.Called(db, productID, imageID)
+    return args.Get(0).(time.Time), args.Error(1)
+}
 {{- end }}
 
 {{- if $isUser }}

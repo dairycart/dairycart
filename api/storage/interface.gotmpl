@@ -23,7 +23,7 @@ type Storer interface {
         {{- $isDiscount := eq $modelName "Discount" -}}
         {{- $isProductRoot := eq $modelName "ProductRoot" -}}
         {{- $isLoginAttempt := eq $modelName "LoginAttempt" -}}
-        {{- $isProductImage := eq $modelName "isProductImage" -}}
+        {{- $isProductImage := eq $modelName "ProductImage" -}}
         {{- $isProductOption := eq $modelName "ProductOption" -}}
         {{- $isProductOptionValue := eq $modelName "ProductOptionValue" -}}
         {{- $isPasswordResetToken := eq $modelName "PasswordResetToken" -}}
@@ -59,6 +59,7 @@ type Storer interface {
         {{- end -}}
         {{- if $isProductImage }}
             Get{{ $modelName }}sByProductID(Querier, uint64) ([]models.{{ $modelName }}, error)
+            SetPrimary{{ $modelName }}ForProduct(Querier, uint64, uint64) (time.Time, error)
         {{- end -}}
         {{- if $isPasswordResetToken }}
             {{ $modelName }}ForUserIDExists(Querier, uint64) (bool, error)

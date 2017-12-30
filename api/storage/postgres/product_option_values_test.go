@@ -90,33 +90,33 @@ func TestArchiveProductOptionValuesForOption(t *testing.T) {
 
 func setProductOptionValueForOptionIDReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, optionID uint64, example *models.ProductOptionValue, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
-		"id",
-		"product_option_id",
-		"value",
-		"created_on",
-		"updated_on",
 		"archived_on",
+		"id",
+		"created_on",
+		"value",
+		"product_option_id",
+		"updated_on",
 	}).AddRow(
-		example.ID,
-		example.ProductOptionID,
-		example.Value,
-		example.CreatedOn,
-		example.UpdatedOn,
 		example.ArchivedOn,
+		example.ID,
+		example.CreatedOn,
+		example.Value,
+		example.ProductOptionID,
+		example.UpdatedOn,
 	).AddRow(
-		example.ID,
-		example.ProductOptionID,
-		example.Value,
-		example.CreatedOn,
-		example.UpdatedOn,
 		example.ArchivedOn,
+		example.ID,
+		example.CreatedOn,
+		example.Value,
+		example.ProductOptionID,
+		example.UpdatedOn,
 	).AddRow(
-		example.ID,
-		example.ProductOptionID,
-		example.Value,
-		example.CreatedOn,
-		example.UpdatedOn,
 		example.ArchivedOn,
+		example.ID,
+		example.CreatedOn,
+		example.Value,
+		example.ProductOptionID,
+		example.UpdatedOn,
 	).RowError(1, rowErr)
 
 	mock.ExpectQuery(formatQueryForSQLMock(productOptionValueRetrievalQueryByOptionID)).
@@ -224,19 +224,19 @@ func setProductOptionValueReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmoc
 	query := formatQueryForSQLMock(productOptionValueSelectionQuery)
 
 	exampleRows := sqlmock.NewRows([]string{
-		"id",
-		"product_option_id",
-		"value",
-		"created_on",
-		"updated_on",
 		"archived_on",
+		"id",
+		"created_on",
+		"value",
+		"product_option_id",
+		"updated_on",
 	}).AddRow(
-		toReturn.ID,
-		toReturn.ProductOptionID,
-		toReturn.Value,
-		toReturn.CreatedOn,
-		toReturn.UpdatedOn,
 		toReturn.ArchivedOn,
+		toReturn.ID,
+		toReturn.CreatedOn,
+		toReturn.Value,
+		toReturn.ProductOptionID,
+		toReturn.UpdatedOn,
 	)
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
@@ -262,33 +262,33 @@ func TestGetProductOptionValue(t *testing.T) {
 
 func setProductOptionValueListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.ProductOptionValue, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
-		"id",
-		"product_option_id",
-		"value",
-		"created_on",
-		"updated_on",
 		"archived_on",
+		"id",
+		"created_on",
+		"value",
+		"product_option_id",
+		"updated_on",
 	}).AddRow(
-		example.ID,
-		example.ProductOptionID,
-		example.Value,
-		example.CreatedOn,
-		example.UpdatedOn,
 		example.ArchivedOn,
+		example.ID,
+		example.CreatedOn,
+		example.Value,
+		example.ProductOptionID,
+		example.UpdatedOn,
 	).AddRow(
-		example.ID,
-		example.ProductOptionID,
-		example.Value,
-		example.CreatedOn,
-		example.UpdatedOn,
 		example.ArchivedOn,
+		example.ID,
+		example.CreatedOn,
+		example.Value,
+		example.ProductOptionID,
+		example.UpdatedOn,
 	).AddRow(
-		example.ID,
-		example.ProductOptionID,
-		example.Value,
-		example.CreatedOn,
-		example.UpdatedOn,
 		example.ArchivedOn,
+		example.ID,
+		example.CreatedOn,
+		example.Value,
+		example.ProductOptionID,
+		example.UpdatedOn,
 	).RowError(1, rowErr)
 
 	query, _ := buildProductOptionValueListRetrievalQuery(qf)
@@ -408,8 +408,8 @@ func setProductOptionValueCreationQueryExpectation(t *testing.T, mock sqlmock.Sq
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), tt)
 	mock.ExpectQuery(query).
 		WithArgs(
-			toCreate.ProductOptionID,
 			toCreate.Value,
+			toCreate.ProductOptionID,
 		).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
@@ -444,8 +444,8 @@ func setProductOptionValueUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlm
 	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).
 		WithArgs(
-			toUpdate.ProductOptionID,
 			toUpdate.Value,
+			toUpdate.ProductOptionID,
 			toUpdate.ID,
 		).
 		WillReturnRows(exampleRows).

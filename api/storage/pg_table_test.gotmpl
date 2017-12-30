@@ -777,6 +777,33 @@ func TestGet{{ $modelName }}sByEventType(t *testing.T) {
 {{- end }}
 
 {{- if $isProductImage }}
+func setAssign{{ $modelName }}IDToProductQueryExpectation(t *testing.T,mock sqlmock.Sqlmock, imageID uint64, productID uint64, err error) {
+    t.Helper()
+    query := formatQueryForSQLMock(assign{{ $modelName }}IDToProductQuery)
+    exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(buildTestTime(t))
+    mock.ExpectQuery(query).WithArgs(imageID, productID).WillReturnRows(exampleRows).WillReturnError(err)
+}
+
+func TestSetPrimary{{ $modelName }}ForProduct(t *testing.T) {
+    t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+    assert.NoError(t, err)
+    defer mockDB.Close()
+
+    example{{ $modelName }} := &models.{{ $modelName }}{ID: uint64(1)}
+    exampleProduct := &models.Product{ID: uint64(2)}
+    client := NewPostgres()
+
+    t.Run("normal operation", func(*testing.T) {
+        setAssign{{ $modelName }}IDToProductQueryExpectation(t, mock, example{{ $modelName }}.ID, exampleProduct.ID, nil)
+
+        expected := buildTestTime(t)
+        actual, err := client.SetPrimary{{ $modelName }}ForProduct(mockDB, exampleProduct.ID, example{{ $modelName }}.ID)
+        assert.NoError(t, err)
+        assert.Equal(t, expected, actual)
+    })
+}
+
 {{ $imagesByProductIDVarName := printf "%sQueryByProductID" ( camel $modelName ) -}}
 func set{{ $modelName }}ByProductIDQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, example *models.{{ $modelName }}, rowErr error, err error) {
     t.Helper()

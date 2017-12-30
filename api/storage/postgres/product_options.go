@@ -27,11 +27,11 @@ func (pg *postgres) ProductOptionWithNameExistsForProductRoot(db storage.Querier
 
 const productOptionQueryByProductRootID = `
     SELECT
-        id,
-        name,
-        product_root_id,
-        created_on,
         updated_on,
+        name,
+        id,
+        created_on,
+        product_root_id,
         archived_on
     FROM
         product_options
@@ -50,11 +50,11 @@ func (pg *postgres) GetProductOptionsByProductRootID(db storage.Querier, product
 	for rows.Next() {
 		var p models.ProductOption
 		err := rows.Scan(
-			&p.ID,
-			&p.Name,
-			&p.ProductRootID,
-			&p.CreatedOn,
 			&p.UpdatedOn,
+			&p.Name,
+			&p.ID,
+			&p.CreatedOn,
+			&p.ProductRootID,
 			&p.ArchivedOn,
 		)
 		if err != nil {
@@ -87,11 +87,11 @@ func (pg *postgres) ProductOptionExists(db storage.Querier, id uint64) (bool, er
 
 const productOptionSelectionQuery = `
     SELECT
-        id,
-        name,
-        product_root_id,
-        created_on,
         updated_on,
+        name,
+        id,
+        created_on,
+        product_root_id,
         archived_on
     FROM
         product_options
@@ -104,7 +104,7 @@ const productOptionSelectionQuery = `
 func (pg *postgres) GetProductOption(db storage.Querier, id uint64) (*models.ProductOption, error) {
 	p := &models.ProductOption{}
 
-	err := db.QueryRow(productOptionSelectionQuery, id).Scan(&p.ID, &p.Name, &p.ProductRootID, &p.CreatedOn, &p.UpdatedOn, &p.ArchivedOn)
+	err := db.QueryRow(productOptionSelectionQuery, id).Scan(&p.UpdatedOn, &p.Name, &p.ID, &p.CreatedOn, &p.ProductRootID, &p.ArchivedOn)
 
 	return p, err
 }
@@ -113,11 +113,11 @@ func buildProductOptionListRetrievalQuery(qf *models.QueryFilter) (string, []int
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Select(
-			"id",
-			"name",
-			"product_root_id",
-			"created_on",
 			"updated_on",
+			"name",
+			"id",
+			"created_on",
+			"product_root_id",
 			"archived_on",
 		).
 		From("product_options")
@@ -138,11 +138,11 @@ func (pg *postgres) GetProductOptionList(db storage.Querier, qf *models.QueryFil
 	for rows.Next() {
 		var p models.ProductOption
 		err := rows.Scan(
-			&p.ID,
-			&p.Name,
-			&p.ProductRootID,
-			&p.CreatedOn,
 			&p.UpdatedOn,
+			&p.Name,
+			&p.ID,
+			&p.CreatedOn,
+			&p.ProductRootID,
 			&p.ArchivedOn,
 		)
 		if err != nil {
@@ -187,14 +187,9 @@ const productOptionCreationQuery = `
         id, created_on;
 `
 
-func (pg *postgres) CreateProductOption(db storage.Querier, nu *models.ProductOption) (uint64, time.Time, error) {
-	var (
-		createdID uint64
-		createdAt time.Time
-	)
-
-	err := db.QueryRow(productOptionCreationQuery, &nu.Name, &nu.ProductRootID).Scan(&createdID, &createdAt)
-	return createdID, createdAt, err
+func (pg *postgres) CreateProductOption(db storage.Querier, nu *models.ProductOption) (createdID uint64, createdOn time.Time, err error) {
+	err = db.QueryRow(productOptionCreationQuery, &nu.Name, &nu.ProductRootID).Scan(&createdID, &createdOn)
+	return createdID, createdOn, err
 }
 
 const productOptionUpdateQuery = `

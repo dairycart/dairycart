@@ -28,11 +28,11 @@ func (pg *postgres) ProductVariantBridgeExists(db storage.Querier, id uint64) (b
 
 const productVariantBridgeSelectionQuery = `
     SELECT
-        id,
+        archived_on,
         product_id,
         product_option_value_id,
         created_on,
-        archived_on
+        id
     FROM
         product_variant_bridge
     WHERE
@@ -44,7 +44,7 @@ const productVariantBridgeSelectionQuery = `
 func (pg *postgres) GetProductVariantBridge(db storage.Querier, id uint64) (*models.ProductVariantBridge, error) {
 	p := &models.ProductVariantBridge{}
 
-	err := db.QueryRow(productVariantBridgeSelectionQuery, id).Scan(&p.ID, &p.ProductID, &p.ProductOptionValueID, &p.CreatedOn, &p.ArchivedOn)
+	err := db.QueryRow(productVariantBridgeSelectionQuery, id).Scan(&p.ArchivedOn, &p.ProductID, &p.ProductOptionValueID, &p.CreatedOn, &p.ID)
 
 	return p, err
 }
@@ -53,11 +53,11 @@ func buildProductVariantBridgeListRetrievalQuery(qf *models.QueryFilter) (string
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Select(
-			"id",
+			"archived_on",
 			"product_id",
 			"product_option_value_id",
 			"created_on",
-			"archived_on",
+			"id",
 		).
 		From("product_variant_bridge")
 
@@ -77,11 +77,11 @@ func (pg *postgres) GetProductVariantBridgeList(db storage.Querier, qf *models.Q
 	for rows.Next() {
 		var p models.ProductVariantBridge
 		err := rows.Scan(
-			&p.ID,
+			&p.ArchivedOn,
 			&p.ProductID,
 			&p.ProductOptionValueID,
 			&p.CreatedOn,
-			&p.ArchivedOn,
+			&p.ID,
 		)
 		if err != nil {
 			return nil, err
@@ -125,14 +125,9 @@ const productVariantBridgeCreationQuery = `
         id, created_on;
 `
 
-func (pg *postgres) CreateProductVariantBridge(db storage.Querier, nu *models.ProductVariantBridge) (uint64, time.Time, error) {
-	var (
-		createdID uint64
-		createdAt time.Time
-	)
-
-	err := db.QueryRow(productVariantBridgeCreationQuery, &nu.ProductID, &nu.ProductOptionValueID).Scan(&createdID, &createdAt)
-	return createdID, createdAt, err
+func (pg *postgres) CreateProductVariantBridge(db storage.Querier, nu *models.ProductVariantBridge) (createdID uint64, createdOn time.Time, err error) {
+	err = db.QueryRow(productVariantBridgeCreationQuery, &nu.ProductID, &nu.ProductOptionValueID).Scan(&createdID, &createdOn)
+	return createdID, createdOn, err
 }
 
 func buildMultiProductVariantBridgeCreationQuery(productID uint64, optionValueIDs []uint64) (query string, values []interface{}) {

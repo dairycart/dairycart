@@ -15,49 +15,76 @@ import (
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
+func setAssignProductImageIDToProductQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, imageID uint64, productID uint64, err error) {
+	t.Helper()
+	query := formatQueryForSQLMock(assignProductImageIDToProductQuery)
+	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(buildTestTime(t))
+	mock.ExpectQuery(query).WithArgs(imageID, productID).WillReturnRows(exampleRows).WillReturnError(err)
+}
+
+func TestSetPrimaryProductImageForProduct(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer mockDB.Close()
+
+	exampleProductImage := &models.ProductImage{ID: uint64(1)}
+	exampleProduct := &models.Product{ID: uint64(2)}
+	client := NewPostgres()
+
+	t.Run("normal operation", func(*testing.T) {
+		setAssignProductImageIDToProductQueryExpectation(t, mock, exampleProductImage.ID, exampleProduct.ID, nil)
+
+		expected := buildTestTime(t)
+		actual, err := client.SetPrimaryProductImageForProduct(mockDB, exampleProduct.ID, exampleProductImage.ID)
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual)
+	})
+}
+
 func setProductImageByProductIDQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint64, example *models.ProductImage, rowErr error, err error) {
 	t.Helper()
 
 	exampleRows := sqlmock.NewRows([]string{
-		"id",
-		"product_id",
 		"thumbnail_url",
-		"main_url",
-		"original_url",
-		"source_url",
 		"created_on",
-		"updated_on",
 		"archived_on",
+		"main_url",
+		"id",
+		"source_url",
+		"updated_on",
+		"original_url",
+		"product_id",
 	}).AddRow(
-		example.ID,
-		example.ProductID,
 		example.ThumbnailURL,
-		example.MainURL,
-		example.OriginalURL,
-		example.SourceURL,
 		example.CreatedOn,
-		example.UpdatedOn,
 		example.ArchivedOn,
+		example.MainURL,
+		example.ID,
+		example.SourceURL,
+		example.UpdatedOn,
+		example.OriginalURL,
+		example.ProductID,
 	).AddRow(
-		example.ID,
-		example.ProductID,
 		example.ThumbnailURL,
-		example.MainURL,
-		example.OriginalURL,
-		example.SourceURL,
 		example.CreatedOn,
-		example.UpdatedOn,
 		example.ArchivedOn,
+		example.MainURL,
+		example.ID,
+		example.SourceURL,
+		example.UpdatedOn,
+		example.OriginalURL,
+		example.ProductID,
 	).AddRow(
-		example.ID,
-		example.ProductID,
 		example.ThumbnailURL,
-		example.MainURL,
-		example.OriginalURL,
-		example.SourceURL,
 		example.CreatedOn,
-		example.UpdatedOn,
 		example.ArchivedOn,
+		example.MainURL,
+		example.ID,
+		example.SourceURL,
+		example.UpdatedOn,
+		example.OriginalURL,
+		example.ProductID,
 	).RowError(1, rowErr)
 
 	query := formatQueryForSQLMock(productImageQueryByProductID)
@@ -168,25 +195,25 @@ func setProductImageReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id 
 	query := formatQueryForSQLMock(productImageSelectionQuery)
 
 	exampleRows := sqlmock.NewRows([]string{
-		"id",
-		"product_id",
 		"thumbnail_url",
-		"main_url",
-		"original_url",
-		"source_url",
 		"created_on",
-		"updated_on",
 		"archived_on",
+		"main_url",
+		"id",
+		"source_url",
+		"updated_on",
+		"original_url",
+		"product_id",
 	}).AddRow(
-		toReturn.ID,
-		toReturn.ProductID,
 		toReturn.ThumbnailURL,
-		toReturn.MainURL,
-		toReturn.OriginalURL,
-		toReturn.SourceURL,
 		toReturn.CreatedOn,
-		toReturn.UpdatedOn,
 		toReturn.ArchivedOn,
+		toReturn.MainURL,
+		toReturn.ID,
+		toReturn.SourceURL,
+		toReturn.UpdatedOn,
+		toReturn.OriginalURL,
+		toReturn.ProductID,
 	)
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
@@ -212,45 +239,45 @@ func TestGetProductImage(t *testing.T) {
 
 func setProductImageListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.ProductImage, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
-		"id",
-		"product_id",
 		"thumbnail_url",
-		"main_url",
-		"original_url",
-		"source_url",
 		"created_on",
-		"updated_on",
 		"archived_on",
+		"main_url",
+		"id",
+		"source_url",
+		"updated_on",
+		"original_url",
+		"product_id",
 	}).AddRow(
-		example.ID,
-		example.ProductID,
 		example.ThumbnailURL,
-		example.MainURL,
-		example.OriginalURL,
-		example.SourceURL,
 		example.CreatedOn,
-		example.UpdatedOn,
 		example.ArchivedOn,
+		example.MainURL,
+		example.ID,
+		example.SourceURL,
+		example.UpdatedOn,
+		example.OriginalURL,
+		example.ProductID,
 	).AddRow(
-		example.ID,
-		example.ProductID,
 		example.ThumbnailURL,
-		example.MainURL,
-		example.OriginalURL,
-		example.SourceURL,
 		example.CreatedOn,
-		example.UpdatedOn,
 		example.ArchivedOn,
+		example.MainURL,
+		example.ID,
+		example.SourceURL,
+		example.UpdatedOn,
+		example.OriginalURL,
+		example.ProductID,
 	).AddRow(
-		example.ID,
-		example.ProductID,
 		example.ThumbnailURL,
-		example.MainURL,
-		example.OriginalURL,
-		example.SourceURL,
 		example.CreatedOn,
-		example.UpdatedOn,
 		example.ArchivedOn,
+		example.MainURL,
+		example.ID,
+		example.SourceURL,
+		example.UpdatedOn,
+		example.OriginalURL,
+		example.ProductID,
 	).RowError(1, rowErr)
 
 	query, _ := buildProductImageListRetrievalQuery(qf)
@@ -370,11 +397,11 @@ func setProductImageCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock,
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), tt)
 	mock.ExpectQuery(query).
 		WithArgs(
-			toCreate.ProductID,
 			toCreate.ThumbnailURL,
 			toCreate.MainURL,
-			toCreate.OriginalURL,
 			toCreate.SourceURL,
+			toCreate.OriginalURL,
+			toCreate.ProductID,
 		).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
@@ -409,11 +436,11 @@ func setProductImageUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, t
 	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).
 		WithArgs(
-			toUpdate.ProductID,
 			toUpdate.ThumbnailURL,
 			toUpdate.MainURL,
-			toUpdate.OriginalURL,
 			toUpdate.SourceURL,
+			toUpdate.OriginalURL,
+			toUpdate.ProductID,
 			toUpdate.ID,
 		).
 		WillReturnRows(exampleRows).

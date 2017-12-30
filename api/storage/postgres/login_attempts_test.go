@@ -112,14 +112,14 @@ func setLoginAttemptReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id 
 
 	exampleRows := sqlmock.NewRows([]string{
 		"id",
-		"username",
-		"successful",
 		"created_on",
+		"successful",
+		"username",
 	}).AddRow(
 		toReturn.ID,
-		toReturn.Username,
-		toReturn.Successful,
 		toReturn.CreatedOn,
+		toReturn.Successful,
+		toReturn.Username,
 	)
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
@@ -146,24 +146,24 @@ func TestGetLoginAttempt(t *testing.T) {
 func setLoginAttemptListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.LoginAttempt, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
 		"id",
-		"username",
-		"successful",
 		"created_on",
+		"successful",
+		"username",
 	}).AddRow(
 		example.ID,
-		example.Username,
-		example.Successful,
 		example.CreatedOn,
+		example.Successful,
+		example.Username,
 	).AddRow(
 		example.ID,
-		example.Username,
-		example.Successful,
 		example.CreatedOn,
+		example.Successful,
+		example.Username,
 	).AddRow(
 		example.ID,
-		example.Username,
-		example.Successful,
 		example.CreatedOn,
+		example.Successful,
+		example.Username,
 	).RowError(1, rowErr)
 
 	query, _ := buildLoginAttemptListRetrievalQuery(qf)
@@ -283,8 +283,8 @@ func setLoginAttemptCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock,
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), tt)
 	mock.ExpectQuery(query).
 		WithArgs(
-			toCreate.Username,
 			toCreate.Successful,
+			toCreate.Username,
 		).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
@@ -319,8 +319,8 @@ func setLoginAttemptUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, t
 	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).
 		WithArgs(
-			toUpdate.Username,
 			toUpdate.Successful,
+			toUpdate.Username,
 			toUpdate.ID,
 		).
 		WillReturnRows(exampleRows).

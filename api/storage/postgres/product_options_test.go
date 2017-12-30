@@ -17,32 +17,32 @@ import (
 
 func setProductOptionReadQueryExpectationByProductRootID(t *testing.T, mock sqlmock.Sqlmock, example *models.ProductOption, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
-		"id",
-		"name",
-		"product_root_id",
-		"created_on",
 		"updated_on",
+		"name",
+		"id",
+		"created_on",
+		"product_root_id",
 		"archived_on",
 	}).AddRow(
-		example.ID,
-		example.Name,
-		example.ProductRootID,
-		example.CreatedOn,
 		example.UpdatedOn,
+		example.Name,
+		example.ID,
+		example.CreatedOn,
+		example.ProductRootID,
 		example.ArchivedOn,
 	).AddRow(
-		example.ID,
-		example.Name,
-		example.ProductRootID,
-		example.CreatedOn,
 		example.UpdatedOn,
+		example.Name,
+		example.ID,
+		example.CreatedOn,
+		example.ProductRootID,
 		example.ArchivedOn,
 	).AddRow(
-		example.ID,
-		example.Name,
-		example.ProductRootID,
-		example.CreatedOn,
 		example.UpdatedOn,
+		example.Name,
+		example.ID,
+		example.CreatedOn,
+		example.ProductRootID,
 		example.ArchivedOn,
 	).RowError(1, rowErr)
 
@@ -199,18 +199,18 @@ func setProductOptionReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id
 	query := formatQueryForSQLMock(productOptionSelectionQuery)
 
 	exampleRows := sqlmock.NewRows([]string{
-		"id",
-		"name",
-		"product_root_id",
-		"created_on",
 		"updated_on",
+		"name",
+		"id",
+		"created_on",
+		"product_root_id",
 		"archived_on",
 	}).AddRow(
-		toReturn.ID,
-		toReturn.Name,
-		toReturn.ProductRootID,
-		toReturn.CreatedOn,
 		toReturn.UpdatedOn,
+		toReturn.Name,
+		toReturn.ID,
+		toReturn.CreatedOn,
+		toReturn.ProductRootID,
 		toReturn.ArchivedOn,
 	)
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
@@ -237,32 +237,32 @@ func TestGetProductOption(t *testing.T) {
 
 func setProductOptionListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.ProductOption, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
-		"id",
-		"name",
-		"product_root_id",
-		"created_on",
 		"updated_on",
+		"name",
+		"id",
+		"created_on",
+		"product_root_id",
 		"archived_on",
 	}).AddRow(
-		example.ID,
-		example.Name,
-		example.ProductRootID,
-		example.CreatedOn,
 		example.UpdatedOn,
+		example.Name,
+		example.ID,
+		example.CreatedOn,
+		example.ProductRootID,
 		example.ArchivedOn,
 	).AddRow(
-		example.ID,
-		example.Name,
-		example.ProductRootID,
-		example.CreatedOn,
 		example.UpdatedOn,
+		example.Name,
+		example.ID,
+		example.CreatedOn,
+		example.ProductRootID,
 		example.ArchivedOn,
 	).AddRow(
-		example.ID,
-		example.Name,
-		example.ProductRootID,
-		example.CreatedOn,
 		example.UpdatedOn,
+		example.Name,
+		example.ID,
+		example.CreatedOn,
+		example.ProductRootID,
 		example.ArchivedOn,
 	).RowError(1, rowErr)
 

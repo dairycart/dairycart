@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dairycart/dairycart/api/storage/images/local"
 	"github.com/dairycart/dairycart/api/storage/postgres"
 
 	"github.com/go-chi/chi"
@@ -109,6 +110,7 @@ func buildServerConfig() *ServerConfig {
 			DB:              db,
 			Dairyclient:     postgres.NewPostgres(),
 			WebhookExecutor: &webhookExecutor{Client: http.DefaultClient},
+			ImageStorer:     &localimagestorage.LocalImageStorer{BaseURL: "http://localhost:4321"},
 		}
 	default:
 		logrus.Fatalf("invalid database choice: '%s'", dbChoice)
@@ -157,7 +159,6 @@ func main() {
 	config.CookieStore = setupCookieStorage()
 	config.Router = chi.NewRouter()
 
-	config.Router.Use(middleware.AllowContentType("application/json", "multipart/form-data"))
 	config.Router.Use(middleware.RequestID)
 	config.Router.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{Logger: log.New(os.Stdout, "", log.LstdFlags)}))
 	SetupAPIRoutes(config)

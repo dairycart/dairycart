@@ -67,6 +67,20 @@ func (pg *postgres) {{ $modelName }}WithSKUExists(db storage.Querier, sku string
 {{- end }}
 
 {{- if $isProductImage }}
+const assign{{ $modelName }}IDToProductQuery = `
+    UPDATE products
+    SET
+        primary_image_id = $1,
+        updated_on = NOW()
+    WHERE id = $2
+    RETURNING updated_on;
+`
+
+func (pg *postgres) SetPrimary{{ $modelName }}ForProduct(db storage.Querier, productID, imageID uint64) (t time.Time, err error) {
+    err = db.QueryRow(assign{{ $modelName }}IDToProductQuery, imageID, productID).Scan(&t)
+    return t, err
+}
+
 {{ $imagesByProductIDVarName := printf "%sQueryByProductID" ( camel $modelName ) -}}
 const {{ $imagesByProductIDVarName }} = `
     SELECT
@@ -532,15 +546,9 @@ const {{ $creationQueryVarName }} = `
         id, created_on{{ if $isProduct }}, available_on{{ end }};
 `
 
-func (pg *postgres) Create{{ $modelName }}(db storage.Querier, nu *models.{{ $modelName }}) (uint64, time.Time, {{- if $isProduct }}time.Time, {{ end }}error) {
-    var (
-        createdID uint64
-        createdAt time.Time
-        {{ if $isProduct -}}availableOn time.Time{{ end -}}
-    )
-
-    err := db.QueryRow({{ $creationQueryVarName }}, {{ range $x, $col := $creationColumns -}}&nu.{{- if or (eq $col "upc") (eq $col "sku") -}}{{ toUpper $col }}{{ else if eq $col "sku_prefix" }}SKUPrefix{{ else }}{{ pascal $col -}}{{ end }}{{ if ne $lastCol $x }},{{ end }}{{ end }}).Scan(&createdID, &createdAt{{- if $isProduct }}, &availableOn{{ end }})
-    return createdID, createdAt, {{- if $isProduct }}availableOn, {{ end }}err
+func (pg *postgres) Create{{ $modelName }}(db storage.Querier, nu *models.{{ $modelName }}) (createdID uint64, createdOn time.Time, {{- if $isProduct }}availableOn time.Time, {{ end }}err error) {
+    err = db.QueryRow({{ $creationQueryVarName }}, {{ range $x, $col := $creationColumns -}}&nu.{{- if or (eq $col "upc") (eq $col "sku") -}}{{ toUpper $col }}{{ else if eq $col "sku_prefix" }}SKUPrefix{{ else }}{{ pascal $col -}}{{ end }}{{ if ne $lastCol $x }},{{ end }}{{ end }}).Scan(&createdID, &createdOn{{- if $isProduct }}, &availableOn{{ end }})
+    return createdID, createdOn, {{- if $isProduct }}availableOn, {{ end }}err
 }
 
 {{ if $isProductVariantBridge -}}

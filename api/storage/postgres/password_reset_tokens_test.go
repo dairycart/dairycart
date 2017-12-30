@@ -158,18 +158,18 @@ func setPasswordResetTokenReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmoc
 	query := formatQueryForSQLMock(passwordResetTokenSelectionQuery)
 
 	exampleRows := sqlmock.NewRows([]string{
-		"id",
-		"user_id",
-		"token",
-		"created_on",
 		"expires_on",
+		"user_id",
+		"id",
+		"created_on",
+		"token",
 		"password_reset_on",
 	}).AddRow(
-		toReturn.ID,
-		toReturn.UserID,
-		toReturn.Token,
-		toReturn.CreatedOn,
 		toReturn.ExpiresOn,
+		toReturn.UserID,
+		toReturn.ID,
+		toReturn.CreatedOn,
+		toReturn.Token,
 		toReturn.PasswordResetOn,
 	)
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
@@ -196,32 +196,32 @@ func TestGetPasswordResetToken(t *testing.T) {
 
 func setPasswordResetTokenListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.PasswordResetToken, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
-		"id",
-		"user_id",
-		"token",
-		"created_on",
 		"expires_on",
+		"user_id",
+		"id",
+		"created_on",
+		"token",
 		"password_reset_on",
 	}).AddRow(
-		example.ID,
-		example.UserID,
-		example.Token,
-		example.CreatedOn,
 		example.ExpiresOn,
+		example.UserID,
+		example.ID,
+		example.CreatedOn,
+		example.Token,
 		example.PasswordResetOn,
 	).AddRow(
-		example.ID,
-		example.UserID,
-		example.Token,
-		example.CreatedOn,
 		example.ExpiresOn,
+		example.UserID,
+		example.ID,
+		example.CreatedOn,
+		example.Token,
 		example.PasswordResetOn,
 	).AddRow(
-		example.ID,
-		example.UserID,
-		example.Token,
-		example.CreatedOn,
 		example.ExpiresOn,
+		example.UserID,
+		example.ID,
+		example.CreatedOn,
+		example.Token,
 		example.PasswordResetOn,
 	).RowError(1, rowErr)
 
@@ -342,9 +342,9 @@ func setPasswordResetTokenCreationQueryExpectation(t *testing.T, mock sqlmock.Sq
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), tt)
 	mock.ExpectQuery(query).
 		WithArgs(
+			toCreate.ExpiresOn,
 			toCreate.UserID,
 			toCreate.Token,
-			toCreate.ExpiresOn,
 			toCreate.PasswordResetOn,
 		).
 		WillReturnRows(exampleRows).
@@ -380,9 +380,9 @@ func setPasswordResetTokenUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlm
 	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).
 		WithArgs(
+			toUpdate.ExpiresOn,
 			toUpdate.UserID,
 			toUpdate.Token,
-			toUpdate.ExpiresOn,
 			toUpdate.PasswordResetOn,
 			toUpdate.ID,
 		).

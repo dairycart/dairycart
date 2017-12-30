@@ -15,15 +15,6 @@ type Querier interface {
 }
 
 type Storer interface {
-	// ProductImages
-	GetProductImage(Querier, uint64) (*models.ProductImage, error)
-	GetProductImageList(Querier, *models.QueryFilter) ([]models.ProductImage, error)
-	GetProductImageCount(Querier, *models.QueryFilter) (uint64, error)
-	ProductImageExists(Querier, uint64) (bool, error)
-	CreateProductImage(Querier, *models.ProductImage) (uint64, time.Time, error)
-	UpdateProductImage(Querier, *models.ProductImage) (time.Time, error)
-	DeleteProductImage(Querier, uint64) (time.Time, error)
-
 	// Products
 	GetProduct(Querier, uint64) (*models.Product, error)
 	GetProductList(Querier, *models.QueryFilter) ([]models.Product, error)
@@ -37,16 +28,6 @@ type Storer interface {
 	ProductWithSKUExists(Querier, string) (bool, error)
 	GetProductsByProductRootID(Querier, uint64) ([]models.Product, error)
 
-	// Discounts
-	GetDiscount(Querier, uint64) (*models.Discount, error)
-	GetDiscountList(Querier, *models.QueryFilter) ([]models.Discount, error)
-	GetDiscountCount(Querier, *models.QueryFilter) (uint64, error)
-	DiscountExists(Querier, uint64) (bool, error)
-	CreateDiscount(Querier, *models.Discount) (uint64, time.Time, error)
-	UpdateDiscount(Querier, *models.Discount) (time.Time, error)
-	DeleteDiscount(Querier, uint64) (time.Time, error)
-	GetDiscountByCode(Querier, string) (*models.Discount, error)
-
 	// LoginAttempts
 	GetLoginAttempt(Querier, uint64) (*models.LoginAttempt, error)
 	GetLoginAttemptList(Querier, *models.QueryFilter) ([]models.LoginAttempt, error)
@@ -57,16 +38,14 @@ type Storer interface {
 	DeleteLoginAttempt(Querier, uint64) (time.Time, error)
 	LoginAttemptsHaveBeenExhausted(Querier, string) (bool, error)
 
-	// PasswordResetTokens
-	GetPasswordResetToken(Querier, uint64) (*models.PasswordResetToken, error)
-	GetPasswordResetTokenList(Querier, *models.QueryFilter) ([]models.PasswordResetToken, error)
-	GetPasswordResetTokenCount(Querier, *models.QueryFilter) (uint64, error)
-	PasswordResetTokenExists(Querier, uint64) (bool, error)
-	CreatePasswordResetToken(Querier, *models.PasswordResetToken) (uint64, time.Time, error)
-	UpdatePasswordResetToken(Querier, *models.PasswordResetToken) (time.Time, error)
-	DeletePasswordResetToken(Querier, uint64) (time.Time, error)
-	PasswordResetTokenForUserIDExists(Querier, uint64) (bool, error)
-	PasswordResetTokenWithTokenExists(Querier, string) (bool, error)
+	// WebhookExecutionLogs
+	GetWebhookExecutionLog(Querier, uint64) (*models.WebhookExecutionLog, error)
+	GetWebhookExecutionLogList(Querier, *models.QueryFilter) ([]models.WebhookExecutionLog, error)
+	GetWebhookExecutionLogCount(Querier, *models.QueryFilter) (uint64, error)
+	WebhookExecutionLogExists(Querier, uint64) (bool, error)
+	CreateWebhookExecutionLog(Querier, *models.WebhookExecutionLog) (uint64, time.Time, error)
+	UpdateWebhookExecutionLog(Querier, *models.WebhookExecutionLog) (time.Time, error)
+	DeleteWebhookExecutionLog(Querier, uint64) (time.Time, error)
 
 	// ProductRoots
 	GetProductRoot(Querier, uint64) (*models.ProductRoot, error)
@@ -78,29 +57,17 @@ type Storer interface {
 	DeleteProductRoot(Querier, uint64) (time.Time, error)
 	ProductRootWithSKUPrefixExists(Querier, string) (bool, error)
 
-	// ProductOptionValues
-	GetProductOptionValue(Querier, uint64) (*models.ProductOptionValue, error)
-	GetProductOptionValueList(Querier, *models.QueryFilter) ([]models.ProductOptionValue, error)
-	GetProductOptionValueCount(Querier, *models.QueryFilter) (uint64, error)
-	ProductOptionValueExists(Querier, uint64) (bool, error)
-	CreateProductOptionValue(Querier, *models.ProductOptionValue) (uint64, time.Time, error)
-	UpdateProductOptionValue(Querier, *models.ProductOptionValue) (time.Time, error)
-	DeleteProductOptionValue(Querier, uint64) (time.Time, error)
-	ArchiveProductOptionValuesWithProductRootID(Querier, uint64) (time.Time, error)
-	ProductOptionValueForOptionIDExists(Querier, uint64, string) (bool, error)
-	ArchiveProductOptionValuesForOption(Querier, uint64) (time.Time, error)
-	GetProductOptionValuesForOption(Querier, uint64) ([]models.ProductOptionValue, error)
-
-	// Users
-	GetUser(Querier, uint64) (*models.User, error)
-	GetUserList(Querier, *models.QueryFilter) ([]models.User, error)
-	GetUserCount(Querier, *models.QueryFilter) (uint64, error)
-	UserExists(Querier, uint64) (bool, error)
-	CreateUser(Querier, *models.User) (uint64, time.Time, error)
-	UpdateUser(Querier, *models.User) (time.Time, error)
-	DeleteUser(Querier, uint64) (time.Time, error)
-	GetUserByUsername(Querier, string) (*models.User, error)
-	UserWithUsernameExists(Querier, string) (bool, error)
+	// ProductVariantBridge
+	GetProductVariantBridge(Querier, uint64) (*models.ProductVariantBridge, error)
+	GetProductVariantBridgeList(Querier, *models.QueryFilter) ([]models.ProductVariantBridge, error)
+	GetProductVariantBridgeCount(Querier, *models.QueryFilter) (uint64, error)
+	ProductVariantBridgeExists(Querier, uint64) (bool, error)
+	CreateProductVariantBridge(Querier, *models.ProductVariantBridge) (uint64, time.Time, error)
+	UpdateProductVariantBridge(Querier, *models.ProductVariantBridge) (time.Time, error)
+	DeleteProductVariantBridge(Querier, uint64) (time.Time, error)
+	ArchiveProductVariantBridgesWithProductRootID(Querier, uint64) (time.Time, error)
+	DeleteProductVariantBridgeByProductID(Querier, uint64) (time.Time, error)
+	CreateMultipleProductVariantBridgesForProductID(Querier, uint64, []uint64) error
 
 	// ProductOptions
 	GetProductOption(Querier, uint64) (*models.ProductOption, error)
@@ -114,6 +81,17 @@ type Storer interface {
 	ProductOptionWithNameExistsForProductRoot(Querier, string, uint64) (bool, error)
 	GetProductOptionsByProductRootID(Querier, uint64) ([]models.ProductOption, error)
 
+	// PasswordResetTokens
+	GetPasswordResetToken(Querier, uint64) (*models.PasswordResetToken, error)
+	GetPasswordResetTokenList(Querier, *models.QueryFilter) ([]models.PasswordResetToken, error)
+	GetPasswordResetTokenCount(Querier, *models.QueryFilter) (uint64, error)
+	PasswordResetTokenExists(Querier, uint64) (bool, error)
+	CreatePasswordResetToken(Querier, *models.PasswordResetToken) (uint64, time.Time, error)
+	UpdatePasswordResetToken(Querier, *models.PasswordResetToken) (time.Time, error)
+	DeletePasswordResetToken(Querier, uint64) (time.Time, error)
+	PasswordResetTokenForUserIDExists(Querier, uint64) (bool, error)
+	PasswordResetTokenWithTokenExists(Querier, string) (bool, error)
+
 	// Webhooks
 	GetWebhook(Querier, uint64) (*models.Webhook, error)
 	GetWebhookList(Querier, *models.QueryFilter) ([]models.Webhook, error)
@@ -124,24 +102,48 @@ type Storer interface {
 	DeleteWebhook(Querier, uint64) (time.Time, error)
 	GetWebhooksByEventType(db Querier, eventType string) ([]models.Webhook, error)
 
-	// WebhookExecutionLogs
-	GetWebhookExecutionLog(Querier, uint64) (*models.WebhookExecutionLog, error)
-	GetWebhookExecutionLogList(Querier, *models.QueryFilter) ([]models.WebhookExecutionLog, error)
-	GetWebhookExecutionLogCount(Querier, *models.QueryFilter) (uint64, error)
-	WebhookExecutionLogExists(Querier, uint64) (bool, error)
-	CreateWebhookExecutionLog(Querier, *models.WebhookExecutionLog) (uint64, time.Time, error)
-	UpdateWebhookExecutionLog(Querier, *models.WebhookExecutionLog) (time.Time, error)
-	DeleteWebhookExecutionLog(Querier, uint64) (time.Time, error)
+	// ProductImages
+	GetProductImage(Querier, uint64) (*models.ProductImage, error)
+	GetProductImageList(Querier, *models.QueryFilter) ([]models.ProductImage, error)
+	GetProductImageCount(Querier, *models.QueryFilter) (uint64, error)
+	ProductImageExists(Querier, uint64) (bool, error)
+	CreateProductImage(Querier, *models.ProductImage) (uint64, time.Time, error)
+	UpdateProductImage(Querier, *models.ProductImage) (time.Time, error)
+	DeleteProductImage(Querier, uint64) (time.Time, error)
+	GetProductImagesByProductID(Querier, uint64) ([]models.ProductImage, error)
+	SetPrimaryProductImageForProduct(Querier, uint64, uint64) (time.Time, error)
 
-	// ProductVariantBridge
-	GetProductVariantBridge(Querier, uint64) (*models.ProductVariantBridge, error)
-	GetProductVariantBridgeList(Querier, *models.QueryFilter) ([]models.ProductVariantBridge, error)
-	GetProductVariantBridgeCount(Querier, *models.QueryFilter) (uint64, error)
-	ProductVariantBridgeExists(Querier, uint64) (bool, error)
-	CreateProductVariantBridge(Querier, *models.ProductVariantBridge) (uint64, time.Time, error)
-	UpdateProductVariantBridge(Querier, *models.ProductVariantBridge) (time.Time, error)
-	DeleteProductVariantBridge(Querier, uint64) (time.Time, error)
-	ArchiveProductVariantBridgesWithProductRootID(Querier, uint64) (time.Time, error)
-	DeleteProductVariantBridgeByProductID(Querier, uint64) (time.Time, error)
-	CreateMultipleProductVariantBridgesForProductID(Querier, uint64, []uint64) error
+	// Discounts
+	GetDiscount(Querier, uint64) (*models.Discount, error)
+	GetDiscountList(Querier, *models.QueryFilter) ([]models.Discount, error)
+	GetDiscountCount(Querier, *models.QueryFilter) (uint64, error)
+	DiscountExists(Querier, uint64) (bool, error)
+	CreateDiscount(Querier, *models.Discount) (uint64, time.Time, error)
+	UpdateDiscount(Querier, *models.Discount) (time.Time, error)
+	DeleteDiscount(Querier, uint64) (time.Time, error)
+	GetDiscountByCode(Querier, string) (*models.Discount, error)
+
+	// Users
+	GetUser(Querier, uint64) (*models.User, error)
+	GetUserList(Querier, *models.QueryFilter) ([]models.User, error)
+	GetUserCount(Querier, *models.QueryFilter) (uint64, error)
+	UserExists(Querier, uint64) (bool, error)
+	CreateUser(Querier, *models.User) (uint64, time.Time, error)
+	UpdateUser(Querier, *models.User) (time.Time, error)
+	DeleteUser(Querier, uint64) (time.Time, error)
+	GetUserByUsername(Querier, string) (*models.User, error)
+	UserWithUsernameExists(Querier, string) (bool, error)
+
+	// ProductOptionValues
+	GetProductOptionValue(Querier, uint64) (*models.ProductOptionValue, error)
+	GetProductOptionValueList(Querier, *models.QueryFilter) ([]models.ProductOptionValue, error)
+	GetProductOptionValueCount(Querier, *models.QueryFilter) (uint64, error)
+	ProductOptionValueExists(Querier, uint64) (bool, error)
+	CreateProductOptionValue(Querier, *models.ProductOptionValue) (uint64, time.Time, error)
+	UpdateProductOptionValue(Querier, *models.ProductOptionValue) (time.Time, error)
+	DeleteProductOptionValue(Querier, uint64) (time.Time, error)
+	ArchiveProductOptionValuesWithProductRootID(Querier, uint64) (time.Time, error)
+	ProductOptionValueForOptionIDExists(Querier, uint64, string) (bool, error)
+	ArchiveProductOptionValuesForOption(Querier, uint64) (time.Time, error)
+	GetProductOptionValuesForOption(Querier, uint64) ([]models.ProductOptionValue, error)
 }

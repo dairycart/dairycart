@@ -260,7 +260,7 @@ func createProductsInDBFromOptionRows(client storage.Storer, tx *sql.Tx, r *mode
 	return createdProducts, nil
 }
 
-func handleProductCreationImages(tx *sql.Tx, client storage.Storer, productInput *models.ProductCreationInput, imager dairyphoto.ImageStorer) ([]models.ProductImage, error) {
+func handleProductCreationImages(tx *sql.Tx, client storage.Storer, imager dairyphoto.ImageStorer, productInput *models.ProductCreationInput, newProductID uint64) ([]models.ProductImage, error) {
 	returnImages := []models.ProductImage{}
 	for i, imageInput := range productInput.Images {
 		var img image.Image
@@ -299,6 +299,7 @@ func handleProductCreationImages(tx *sql.Tx, client storage.Storer, productInput
 		}
 
 		newImage := &models.ProductImage{
+			ProductID:    newProductID,
 			ThumbnailURL: locations.Thumbnail,
 			MainURL:      locations.Main,
 			OriginalURL:  locations.Original,
@@ -366,81 +367,6 @@ func buildTestProductCreationHandler(db *sql.DB, client storage.Storer, imager d
 			productRoot.Options = append(productRoot.Options, o)
 		}
 
-		for i, imageInput := range productInput.Images {
-			var img image.Image
-			var err error
-			imageType := strings.ToLower(imageInput.Type)
-
-			switch imageType {
-			case "base64":
-				reader := base64.NewDecoder(base64.StdEncoding, strings.NewReader(imageInput.Data))
-				img, _, err = image.Decode(reader)
-				if err != nil {
-					tx.Rollback()
-					notifyOfInvalidRequestBody(res, fmt.Errorf("Image data at index %d is invalid", i))
-					return
-				}
-			case "url":
-				// FIXME: this is almost definitely the wrong way to do this,
-				// we should support conversion from known data types (mainly JPEGs) to PNGs
-				if !strings.HasSuffix(imageInput.Data, "png") {
-					tx.Rollback()
-					notifyOfInvalidRequestBody(res, errors.New("only PNG images are supported"))
-					return
-				}
-				response, err := http.Get(imageInput.Data)
-				if err != nil {
-					tx.Rollback()
-					e := errors.Wrap(err, fmt.Sprintf("error retrieving product image from url %s", imageInput.Data))
-					notifyOfInvalidRequestBody(res, e)
-					return
-				} else {
-					defer response.Body.Close()
-					img, _, err = image.Decode(response.Body)
-					if err != nil {
-						tx.Rollback()
-						notifyOfInvalidRequestBody(res, fmt.Errorf("Image data at index %d is invalid", i))
-						return
-					}
-				}
-			}
-
-			thumbnails := imager.CreateThumbnails(img)
-			locations, err := imager.StoreImages(thumbnails, productInput.SKU, uint(i))
-			if err != nil || locations == nil {
-				notifyOfInternalIssue(res, err, "save product image")
-				return
-			}
-
-			newImage := &models.ProductImage{
-				ProductID:    newProduct.ID, // FIXME: this is invalid
-				ThumbnailURL: locations.Thumbnail,
-				MainURL:      locations.Main,
-				OriginalURL:  locations.Original,
-			}
-
-			if imageType == "url" {
-				newImage.SourceURL = imageInput.Data
-			}
-
-			newImage.ID, newImage.CreatedOn, err = client.CreateProductImage(tx, newImage)
-			if err != nil {
-				tx.Rollback()
-				notifyOfInternalIssue(res, err, "create product images in database")
-				return
-			}
-
-			if imageInput.IsPrimary && newProduct.PrimaryImageID == nil {
-				newProduct.PrimaryImageID = &newImage.ID
-			}
-
-			newProduct.Images = append(newProduct.Images, *newImage)
-		}
-
-		if newProduct.PrimaryImageID == nil && len(newProduct.Images) > 0 {
-			newProduct.PrimaryImageID = &newProduct.Images[0].ID
-		}
-
 		if len(productInput.Options) == 0 {
 			newProduct.ProductRootID = productRoot.ID
 			newProduct.ID, newProduct.CreatedOn, newProduct.AvailableOn, err = client.CreateProduct(tx, newProduct)
@@ -459,6 +385,24 @@ func buildTestProductCreationHandler(db *sql.DB, client storage.Storer, imager d
 				notifyOfInternalIssue(res, err, "insert products in database")
 				return
 			}
+		}
+
+		newProduct.Images, err = handleProductCreationImages(tx, client, imager, productInput, newProduct.ID)
+		if err != nil {
+			tx.Rollback()
+			notifyOfInternalIssue(res, err, "insert product images in database")
+			return
+		}
+
+		if newProduct.PrimaryImageID == nil && len(newProduct.Images) > 0 {
+			newProduct.PrimaryImageID = &newProduct.Images[0].ID
+		}
+
+		_, err = client.SetPrimaryProductImageForProduct(tx, newProduct.ID, *newProduct.PrimaryImageID)
+		if err != nil {
+			tx.Rollback()
+			notifyOfInternalIssue(res, err, "set primary image ID")
+			return
 		}
 
 		err = tx.Commit()

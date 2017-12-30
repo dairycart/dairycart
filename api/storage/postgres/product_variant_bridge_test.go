@@ -66,17 +66,17 @@ func setProductVariantBridgeReadQueryExpectation(t *testing.T, mock sqlmock.Sqlm
 	query := formatQueryForSQLMock(productVariantBridgeSelectionQuery)
 
 	exampleRows := sqlmock.NewRows([]string{
-		"id",
+		"archived_on",
 		"product_id",
 		"product_option_value_id",
 		"created_on",
-		"archived_on",
+		"id",
 	}).AddRow(
-		toReturn.ID,
+		toReturn.ArchivedOn,
 		toReturn.ProductID,
 		toReturn.ProductOptionValueID,
 		toReturn.CreatedOn,
-		toReturn.ArchivedOn,
+		toReturn.ID,
 	)
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
@@ -102,29 +102,29 @@ func TestGetProductVariantBridge(t *testing.T) {
 
 func setProductVariantBridgeListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.ProductVariantBridge, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
-		"id",
+		"archived_on",
 		"product_id",
 		"product_option_value_id",
 		"created_on",
-		"archived_on",
+		"id",
 	}).AddRow(
-		example.ID,
+		example.ArchivedOn,
 		example.ProductID,
 		example.ProductOptionValueID,
 		example.CreatedOn,
-		example.ArchivedOn,
+		example.ID,
 	).AddRow(
-		example.ID,
+		example.ArchivedOn,
 		example.ProductID,
 		example.ProductOptionValueID,
 		example.CreatedOn,
-		example.ArchivedOn,
+		example.ID,
 	).AddRow(
-		example.ID,
+		example.ArchivedOn,
 		example.ProductID,
 		example.ProductOptionValueID,
 		example.CreatedOn,
-		example.ArchivedOn,
+		example.ID,
 	).RowError(1, rowErr)
 
 	query, _ := buildProductVariantBridgeListRetrievalQuery(qf)

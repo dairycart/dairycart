@@ -66,17 +66,17 @@ func setWebhookExecutionLogReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmo
 	query := formatQueryForSQLMock(webhookExecutionLogSelectionQuery)
 
 	exampleRows := sqlmock.NewRows([]string{
-		"id",
-		"webhook_id",
 		"status_code",
 		"succeeded",
+		"id",
 		"executed_on",
+		"webhook_id",
 	}).AddRow(
-		toReturn.ID,
-		toReturn.WebhookID,
 		toReturn.StatusCode,
 		toReturn.Succeeded,
+		toReturn.ID,
 		toReturn.ExecutedOn,
+		toReturn.WebhookID,
 	)
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
@@ -102,29 +102,29 @@ func TestGetWebhookExecutionLog(t *testing.T) {
 
 func setWebhookExecutionLogListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.WebhookExecutionLog, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
-		"id",
-		"webhook_id",
 		"status_code",
 		"succeeded",
+		"id",
 		"executed_on",
+		"webhook_id",
 	}).AddRow(
-		example.ID,
-		example.WebhookID,
 		example.StatusCode,
 		example.Succeeded,
+		example.ID,
 		example.ExecutedOn,
+		example.WebhookID,
 	).AddRow(
-		example.ID,
-		example.WebhookID,
 		example.StatusCode,
 		example.Succeeded,
+		example.ID,
 		example.ExecutedOn,
+		example.WebhookID,
 	).AddRow(
-		example.ID,
-		example.WebhookID,
 		example.StatusCode,
 		example.Succeeded,
+		example.ID,
 		example.ExecutedOn,
+		example.WebhookID,
 	).RowError(1, rowErr)
 
 	query, _ := buildWebhookExecutionLogListRetrievalQuery(qf)
@@ -244,10 +244,10 @@ func setWebhookExecutionLogCreationQueryExpectation(t *testing.T, mock sqlmock.S
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), tt)
 	mock.ExpectQuery(query).
 		WithArgs(
-			toCreate.WebhookID,
 			toCreate.StatusCode,
 			toCreate.Succeeded,
 			toCreate.ExecutedOn,
+			toCreate.WebhookID,
 		).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
@@ -282,10 +282,10 @@ func setWebhookExecutionLogUpdateQueryExpectation(t *testing.T, mock sqlmock.Sql
 	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).
 		WithArgs(
-			toUpdate.WebhookID,
 			toUpdate.StatusCode,
 			toUpdate.Succeeded,
 			toUpdate.ExecutedOn,
+			toUpdate.WebhookID,
 			toUpdate.ID,
 		).
 		WillReturnRows(exampleRows).

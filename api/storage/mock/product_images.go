@@ -12,6 +12,11 @@ func (m *MockDB) GetProductImagesByProductID(db storage.Querier, productID uint6
 	return args.Get(0).([]models.ProductImage), args.Error(1)
 }
 
+func (m *MockDB) SetPrimaryProductImageForProduct(db storage.Querier, productID, imageID uint64) (time.Time, error) {
+	args := m.Called(db, productID, imageID)
+	return args.Get(0).(time.Time), args.Error(1)
+}
+
 func (m *MockDB) ProductImageExists(db storage.Querier, id uint64) (bool, error) {
 	args := m.Called(db, id)
 	return args.Bool(0), args.Error(1)
