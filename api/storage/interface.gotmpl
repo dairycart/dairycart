@@ -2,6 +2,7 @@ package storage
 
 import (
 	"database/sql"
+    "image"
 	"time"
 
 	"github.com/dairycart/dairymodels/v1"
@@ -33,7 +34,7 @@ type Storer interface {
             Get{{ $modelName }}List(Querier, *models.QueryFilter) ([]models.{{ $modelName }}, error)
             Get{{ $modelName }}Count(Querier, *models.QueryFilter) (uint64, error)
             {{ $modelName }}Exists(Querier, uint64) (bool, error)
-            Create{{ $modelName }}(Querier, *models.{{ $modelName }}) (uint64, time.Time, {{ if $isProduct }}time.Time, {{ end }}error)
+            Create{{ $modelName }}(Querier, *models.{{ $modelName }}) (newID uint64, createdOn time.Time, {{ if $isProduct }}availableOn time.Time, {{ end }}e error)
             Update{{ $modelName }}(Querier, *models.{{ $modelName }}) (time.Time, error)
             Delete{{ $modelName }}(Querier, uint64) (time.Time, error)
         {{- if or (or $isProductVariantBridge $isProductOptionValue) (or $isProductOption $isProduct) }}
@@ -84,4 +85,21 @@ type Storer interface {
         {{- end -}}
         {{ "\n " }}
     {{ end -}}
+}
+
+type ProductImageSet struct {
+	Thumbnail image.Image
+	Main      image.Image
+	Original  image.Image
+}
+
+type ProductImageLocations struct {
+	Thumbnail string
+	Main      string
+	Original  string
+}
+
+type ImageStorer interface {
+	CreateThumbnails(img image.Image) ProductImageSet
+	StoreImages(imgset ProductImageSet, sku string, id uint) (*ProductImageLocations, error)
 }

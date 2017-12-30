@@ -57,11 +57,11 @@ func (pg *postgres) PasswordResetTokenExists(db storage.Querier, id uint64) (boo
 
 const passwordResetTokenSelectionQuery = `
     SELECT
-        expires_on,
-        user_id,
         id,
-        created_on,
+        user_id,
         token,
+        created_on,
+        expires_on,
         password_reset_on
     FROM
         password_reset_tokens
@@ -74,7 +74,7 @@ const passwordResetTokenSelectionQuery = `
 func (pg *postgres) GetPasswordResetToken(db storage.Querier, id uint64) (*models.PasswordResetToken, error) {
 	p := &models.PasswordResetToken{}
 
-	err := db.QueryRow(passwordResetTokenSelectionQuery, id).Scan(&p.ExpiresOn, &p.UserID, &p.ID, &p.CreatedOn, &p.Token, &p.PasswordResetOn)
+	err := db.QueryRow(passwordResetTokenSelectionQuery, id).Scan(&p.ID, &p.UserID, &p.Token, &p.CreatedOn, &p.ExpiresOn, &p.PasswordResetOn)
 
 	return p, err
 }
@@ -83,11 +83,11 @@ func buildPasswordResetTokenListRetrievalQuery(qf *models.QueryFilter) (string, 
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Select(
-			"expires_on",
-			"user_id",
 			"id",
-			"created_on",
+			"user_id",
 			"token",
+			"created_on",
+			"expires_on",
 			"password_reset_on",
 		).
 		From("password_reset_tokens")
@@ -108,11 +108,11 @@ func (pg *postgres) GetPasswordResetTokenList(db storage.Querier, qf *models.Que
 	for rows.Next() {
 		var p models.PasswordResetToken
 		err := rows.Scan(
-			&p.ExpiresOn,
-			&p.UserID,
 			&p.ID,
-			&p.CreatedOn,
+			&p.UserID,
 			&p.Token,
+			&p.CreatedOn,
+			&p.ExpiresOn,
 			&p.PasswordResetOn,
 		)
 		if err != nil {
@@ -147,7 +147,7 @@ func (pg *postgres) GetPasswordResetTokenCount(db storage.Querier, qf *models.Qu
 const passwordResetTokenCreationQuery = `
     INSERT INTO password_reset_tokens
         (
-            expires_on, user_id, token, password_reset_on
+            user_id, token, expires_on, password_reset_on
         )
     VALUES
         (
@@ -158,16 +158,16 @@ const passwordResetTokenCreationQuery = `
 `
 
 func (pg *postgres) CreatePasswordResetToken(db storage.Querier, nu *models.PasswordResetToken) (createdID uint64, createdOn time.Time, err error) {
-	err = db.QueryRow(passwordResetTokenCreationQuery, &nu.ExpiresOn, &nu.UserID, &nu.Token, &nu.PasswordResetOn).Scan(&createdID, &createdOn)
+	err = db.QueryRow(passwordResetTokenCreationQuery, &nu.UserID, &nu.Token, &nu.ExpiresOn, &nu.PasswordResetOn).Scan(&createdID, &createdOn)
 	return createdID, createdOn, err
 }
 
 const passwordResetTokenUpdateQuery = `
     UPDATE password_reset_tokens
     SET
-        expires_on = $1,
-        user_id = $2,
-        token = $3,
+        user_id = $1,
+        token = $2,
+        expires_on = $3,
         password_reset_on = $4,
         updated_on = NOW()
     WHERE id = $5
@@ -176,7 +176,7 @@ const passwordResetTokenUpdateQuery = `
 
 func (pg *postgres) UpdatePasswordResetToken(db storage.Querier, updated *models.PasswordResetToken) (time.Time, error) {
 	var t time.Time
-	err := db.QueryRow(passwordResetTokenUpdateQuery, &updated.ExpiresOn, &updated.UserID, &updated.Token, &updated.PasswordResetOn, &updated.ID).Scan(&t)
+	err := db.QueryRow(passwordResetTokenUpdateQuery, &updated.UserID, &updated.Token, &updated.ExpiresOn, &updated.PasswordResetOn, &updated.ID).Scan(&t)
 	return t, err
 }
 

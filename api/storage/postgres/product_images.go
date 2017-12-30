@@ -26,15 +26,15 @@ func (pg *postgres) SetPrimaryProductImageForProduct(db storage.Querier, product
 
 const productImageQueryByProductID = `
     SELECT
-        thumbnail_url,
-        created_on,
-        archived_on,
-        main_url,
         id,
-        source_url,
-        updated_on,
+        product_id,
+        thumbnail_url,
+        main_url,
         original_url,
-        product_id
+        source_url,
+        created_on,
+        updated_on,
+        archived_on
     FROM
         product_images
     WHERE
@@ -54,15 +54,15 @@ func (pg *postgres) GetProductImagesByProductID(db storage.Querier, productID ui
 	for rows.Next() {
 		var p models.ProductImage
 		err := rows.Scan(
-			&p.ThumbnailURL,
-			&p.CreatedOn,
-			&p.ArchivedOn,
-			&p.MainURL,
 			&p.ID,
-			&p.SourceURL,
-			&p.UpdatedOn,
-			&p.OriginalURL,
 			&p.ProductID,
+			&p.ThumbnailURL,
+			&p.MainURL,
+			&p.OriginalURL,
+			&p.SourceURL,
+			&p.CreatedOn,
+			&p.UpdatedOn,
+			&p.ArchivedOn,
 		)
 		if err != nil {
 			return nil, err
@@ -94,15 +94,15 @@ func (pg *postgres) ProductImageExists(db storage.Querier, id uint64) (bool, err
 
 const productImageSelectionQuery = `
     SELECT
-        thumbnail_url,
-        created_on,
-        archived_on,
-        main_url,
         id,
-        source_url,
-        updated_on,
+        product_id,
+        thumbnail_url,
+        main_url,
         original_url,
-        product_id
+        source_url,
+        created_on,
+        updated_on,
+        archived_on
     FROM
         product_images
     WHERE
@@ -114,7 +114,7 @@ const productImageSelectionQuery = `
 func (pg *postgres) GetProductImage(db storage.Querier, id uint64) (*models.ProductImage, error) {
 	p := &models.ProductImage{}
 
-	err := db.QueryRow(productImageSelectionQuery, id).Scan(&p.ThumbnailURL, &p.CreatedOn, &p.ArchivedOn, &p.MainURL, &p.ID, &p.SourceURL, &p.UpdatedOn, &p.OriginalURL, &p.ProductID)
+	err := db.QueryRow(productImageSelectionQuery, id).Scan(&p.ID, &p.ProductID, &p.ThumbnailURL, &p.MainURL, &p.OriginalURL, &p.SourceURL, &p.CreatedOn, &p.UpdatedOn, &p.ArchivedOn)
 
 	return p, err
 }
@@ -123,15 +123,15 @@ func buildProductImageListRetrievalQuery(qf *models.QueryFilter) (string, []inte
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Select(
-			"thumbnail_url",
-			"created_on",
-			"archived_on",
-			"main_url",
 			"id",
-			"source_url",
-			"updated_on",
-			"original_url",
 			"product_id",
+			"thumbnail_url",
+			"main_url",
+			"original_url",
+			"source_url",
+			"created_on",
+			"updated_on",
+			"archived_on",
 		).
 		From("product_images")
 
@@ -151,15 +151,15 @@ func (pg *postgres) GetProductImageList(db storage.Querier, qf *models.QueryFilt
 	for rows.Next() {
 		var p models.ProductImage
 		err := rows.Scan(
-			&p.ThumbnailURL,
-			&p.CreatedOn,
-			&p.ArchivedOn,
-			&p.MainURL,
 			&p.ID,
-			&p.SourceURL,
-			&p.UpdatedOn,
-			&p.OriginalURL,
 			&p.ProductID,
+			&p.ThumbnailURL,
+			&p.MainURL,
+			&p.OriginalURL,
+			&p.SourceURL,
+			&p.CreatedOn,
+			&p.UpdatedOn,
+			&p.ArchivedOn,
 		)
 		if err != nil {
 			return nil, err
@@ -193,7 +193,7 @@ func (pg *postgres) GetProductImageCount(db storage.Querier, qf *models.QueryFil
 const productImageCreationQuery = `
     INSERT INTO product_images
         (
-            thumbnail_url, main_url, source_url, original_url, product_id
+            product_id, thumbnail_url, main_url, original_url, source_url
         )
     VALUES
         (
@@ -204,18 +204,18 @@ const productImageCreationQuery = `
 `
 
 func (pg *postgres) CreateProductImage(db storage.Querier, nu *models.ProductImage) (createdID uint64, createdOn time.Time, err error) {
-	err = db.QueryRow(productImageCreationQuery, &nu.ThumbnailURL, &nu.MainURL, &nu.SourceURL, &nu.OriginalURL, &nu.ProductID).Scan(&createdID, &createdOn)
+	err = db.QueryRow(productImageCreationQuery, &nu.ProductID, &nu.ThumbnailURL, &nu.MainURL, &nu.OriginalURL, &nu.SourceURL).Scan(&createdID, &createdOn)
 	return createdID, createdOn, err
 }
 
 const productImageUpdateQuery = `
     UPDATE product_images
     SET
-        thumbnail_url = $1,
-        main_url = $2,
-        source_url = $3,
+        product_id = $1,
+        thumbnail_url = $2,
+        main_url = $3,
         original_url = $4,
-        product_id = $5,
+        source_url = $5,
         updated_on = NOW()
     WHERE id = $6
     RETURNING updated_on;
@@ -223,7 +223,7 @@ const productImageUpdateQuery = `
 
 func (pg *postgres) UpdateProductImage(db storage.Querier, updated *models.ProductImage) (time.Time, error) {
 	var t time.Time
-	err := db.QueryRow(productImageUpdateQuery, &updated.ThumbnailURL, &updated.MainURL, &updated.SourceURL, &updated.OriginalURL, &updated.ProductID, &updated.ID).Scan(&t)
+	err := db.QueryRow(productImageUpdateQuery, &updated.ProductID, &updated.ThumbnailURL, &updated.MainURL, &updated.OriginalURL, &updated.SourceURL, &updated.ID).Scan(&t)
 	return t, err
 }
 

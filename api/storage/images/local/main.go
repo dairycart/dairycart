@@ -6,7 +6,7 @@ import (
 	"image/png"
 	"os"
 
-	"github.com/dairycart/dairycart/api/storage/images"
+	"github.com/dairycart/dairycart/api/storage"
 
 	"github.com/nfnt/resize"
 	"github.com/pkg/errors"
@@ -18,10 +18,10 @@ type LocalImageStorer struct {
 	BaseURL string
 }
 
-var _ dairyphoto.ImageStorer = (*LocalImageStorer)(nil)
+var _ storage.ImageStorer = (*LocalImageStorer)(nil)
 
-func (lis *LocalImageStorer) CreateThumbnails(in image.Image) dairyphoto.ProductImageSet {
-	return dairyphoto.ProductImageSet{
+func (lis *LocalImageStorer) CreateThumbnails(in image.Image) storage.ProductImageSet {
+	return storage.ProductImageSet{
 		Thumbnail: resize.Thumbnail(100, 100, in, resize.NearestNeighbor),
 		Main:      resize.Thumbnail(500, 500, in, resize.NearestNeighbor),
 		Original:  in,
@@ -36,7 +36,7 @@ func saveImage(in image.Image, path string) error {
 	return png.Encode(f, in)
 }
 
-func (lis *LocalImageStorer) StoreImages(in dairyphoto.ProductImageSet, sku string, id uint) (*dairyphoto.ProductImageLocations, error) {
+func (lis *LocalImageStorer) StoreImages(in storage.ProductImageSet, sku string, id uint) (*storage.ProductImageLocations, error) {
 	baseURL := lis.BaseURL
 	if baseURL == "" {
 		baseURL = "http://localhost:4321"
@@ -51,7 +51,7 @@ func (lis *LocalImageStorer) StoreImages(in dairyphoto.ProductImageSet, sku stri
 			return nil, errors.Wrap(err, "error creating necessary folders")
 		}
 	}
-	out := &dairyphoto.ProductImageLocations{}
+	out := &storage.ProductImageLocations{}
 
 	thumbnailPath := fmt.Sprintf("%s/thumbnail.png", photoDir)
 	err = saveImage(in.Thumbnail, thumbnailPath)

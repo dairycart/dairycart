@@ -39,12 +39,12 @@ func (pg *postgres) ArchiveProductOptionValuesForOption(db storage.Querier, opti
 
 const productOptionValueRetrievalQueryByOptionID = `
     SELECT
-        archived_on,
         id,
-        created_on,
-        value,
         product_option_id,
-        updated_on
+        value,
+        created_on,
+        updated_on,
+        archived_on
     FROM
         product_option_values
     WHERE
@@ -64,12 +64,12 @@ func (pg *postgres) GetProductOptionValuesForOption(db storage.Querier, optionID
 	for rows.Next() {
 		var p models.ProductOptionValue
 		err := rows.Scan(
-			&p.ArchivedOn,
 			&p.ID,
-			&p.CreatedOn,
-			&p.Value,
 			&p.ProductOptionID,
+			&p.Value,
+			&p.CreatedOn,
 			&p.UpdatedOn,
+			&p.ArchivedOn,
 		)
 		if err != nil {
 			return nil, err
@@ -101,12 +101,12 @@ func (pg *postgres) ProductOptionValueExists(db storage.Querier, id uint64) (boo
 
 const productOptionValueSelectionQuery = `
     SELECT
-        archived_on,
         id,
-        created_on,
-        value,
         product_option_id,
-        updated_on
+        value,
+        created_on,
+        updated_on,
+        archived_on
     FROM
         product_option_values
     WHERE
@@ -118,7 +118,7 @@ const productOptionValueSelectionQuery = `
 func (pg *postgres) GetProductOptionValue(db storage.Querier, id uint64) (*models.ProductOptionValue, error) {
 	p := &models.ProductOptionValue{}
 
-	err := db.QueryRow(productOptionValueSelectionQuery, id).Scan(&p.ArchivedOn, &p.ID, &p.CreatedOn, &p.Value, &p.ProductOptionID, &p.UpdatedOn)
+	err := db.QueryRow(productOptionValueSelectionQuery, id).Scan(&p.ID, &p.ProductOptionID, &p.Value, &p.CreatedOn, &p.UpdatedOn, &p.ArchivedOn)
 
 	return p, err
 }
@@ -127,12 +127,12 @@ func buildProductOptionValueListRetrievalQuery(qf *models.QueryFilter) (string, 
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Select(
-			"archived_on",
 			"id",
-			"created_on",
-			"value",
 			"product_option_id",
+			"value",
+			"created_on",
 			"updated_on",
+			"archived_on",
 		).
 		From("product_option_values")
 
@@ -152,12 +152,12 @@ func (pg *postgres) GetProductOptionValueList(db storage.Querier, qf *models.Que
 	for rows.Next() {
 		var p models.ProductOptionValue
 		err := rows.Scan(
-			&p.ArchivedOn,
 			&p.ID,
-			&p.CreatedOn,
-			&p.Value,
 			&p.ProductOptionID,
+			&p.Value,
+			&p.CreatedOn,
 			&p.UpdatedOn,
+			&p.ArchivedOn,
 		)
 		if err != nil {
 			return nil, err
@@ -191,7 +191,7 @@ func (pg *postgres) GetProductOptionValueCount(db storage.Querier, qf *models.Qu
 const productOptionValueCreationQuery = `
     INSERT INTO product_option_values
         (
-            value, product_option_id
+            product_option_id, value
         )
     VALUES
         (
@@ -202,15 +202,15 @@ const productOptionValueCreationQuery = `
 `
 
 func (pg *postgres) CreateProductOptionValue(db storage.Querier, nu *models.ProductOptionValue) (createdID uint64, createdOn time.Time, err error) {
-	err = db.QueryRow(productOptionValueCreationQuery, &nu.Value, &nu.ProductOptionID).Scan(&createdID, &createdOn)
+	err = db.QueryRow(productOptionValueCreationQuery, &nu.ProductOptionID, &nu.Value).Scan(&createdID, &createdOn)
 	return createdID, createdOn, err
 }
 
 const productOptionValueUpdateQuery = `
     UPDATE product_option_values
     SET
-        value = $1,
-        product_option_id = $2,
+        product_option_id = $1,
+        value = $2,
         updated_on = NOW()
     WHERE id = $3
     RETURNING updated_on;
@@ -218,7 +218,7 @@ const productOptionValueUpdateQuery = `
 
 func (pg *postgres) UpdateProductOptionValue(db storage.Querier, updated *models.ProductOptionValue) (time.Time, error) {
 	var t time.Time
-	err := db.QueryRow(productOptionValueUpdateQuery, &updated.Value, &updated.ProductOptionID, &updated.ID).Scan(&t)
+	err := db.QueryRow(productOptionValueUpdateQuery, &updated.ProductOptionID, &updated.Value, &updated.ID).Scan(&t)
 	return t, err
 }
 

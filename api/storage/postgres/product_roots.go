@@ -42,28 +42,28 @@ func (pg *postgres) ProductRootExists(db storage.Querier, id uint64) (bool, erro
 
 const productRootSelectionQuery = `
     SELECT
-        available_on,
-        product_length,
-        updated_on,
-        sku_prefix,
-        package_height,
-        product_weight,
-        product_width,
-        quantity_per_package,
-        name,
-        product_height,
-        package_length,
-        created_on,
-        cost,
-        brand,
-        subtitle,
-        package_weight,
-        archived_on,
         id,
-        package_width,
+        name,
+        subtitle,
         description,
+        sku_prefix,
         manufacturer,
-        taxable
+        brand,
+        taxable,
+        cost,
+        product_weight,
+        product_height,
+        product_width,
+        product_length,
+        package_weight,
+        package_height,
+        package_width,
+        package_length,
+        quantity_per_package,
+        available_on,
+        created_on,
+        updated_on,
+        archived_on
     FROM
         product_roots
     WHERE
@@ -75,7 +75,7 @@ const productRootSelectionQuery = `
 func (pg *postgres) GetProductRoot(db storage.Querier, id uint64) (*models.ProductRoot, error) {
 	p := &models.ProductRoot{}
 
-	err := db.QueryRow(productRootSelectionQuery, id).Scan(&p.AvailableOn, &p.ProductLength, &p.UpdatedOn, &p.SKUPrefix, &p.PackageHeight, &p.ProductWeight, &p.ProductWidth, &p.QuantityPerPackage, &p.Name, &p.ProductHeight, &p.PackageLength, &p.CreatedOn, &p.Cost, &p.Brand, &p.Subtitle, &p.PackageWeight, &p.ArchivedOn, &p.ID, &p.PackageWidth, &p.Description, &p.Manufacturer, &p.Taxable)
+	err := db.QueryRow(productRootSelectionQuery, id).Scan(&p.ID, &p.Name, &p.Subtitle, &p.Description, &p.SKUPrefix, &p.Manufacturer, &p.Brand, &p.Taxable, &p.Cost, &p.ProductWeight, &p.ProductHeight, &p.ProductWidth, &p.ProductLength, &p.PackageWeight, &p.PackageHeight, &p.PackageWidth, &p.PackageLength, &p.QuantityPerPackage, &p.AvailableOn, &p.CreatedOn, &p.UpdatedOn, &p.ArchivedOn)
 
 	return p, err
 }
@@ -84,28 +84,28 @@ func buildProductRootListRetrievalQuery(qf *models.QueryFilter) (string, []inter
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Select(
-			"available_on",
-			"product_length",
-			"updated_on",
-			"sku_prefix",
-			"package_height",
-			"product_weight",
-			"product_width",
-			"quantity_per_package",
-			"name",
-			"product_height",
-			"package_length",
-			"created_on",
-			"cost",
-			"brand",
-			"subtitle",
-			"package_weight",
-			"archived_on",
 			"id",
-			"package_width",
+			"name",
+			"subtitle",
 			"description",
+			"sku_prefix",
 			"manufacturer",
+			"brand",
 			"taxable",
+			"cost",
+			"product_weight",
+			"product_height",
+			"product_width",
+			"product_length",
+			"package_weight",
+			"package_height",
+			"package_width",
+			"package_length",
+			"quantity_per_package",
+			"available_on",
+			"created_on",
+			"updated_on",
+			"archived_on",
 		).
 		From("product_roots")
 
@@ -125,28 +125,28 @@ func (pg *postgres) GetProductRootList(db storage.Querier, qf *models.QueryFilte
 	for rows.Next() {
 		var p models.ProductRoot
 		err := rows.Scan(
-			&p.AvailableOn,
-			&p.ProductLength,
-			&p.UpdatedOn,
-			&p.SKUPrefix,
-			&p.PackageHeight,
-			&p.ProductWeight,
-			&p.ProductWidth,
-			&p.QuantityPerPackage,
-			&p.Name,
-			&p.ProductHeight,
-			&p.PackageLength,
-			&p.CreatedOn,
-			&p.Cost,
-			&p.Brand,
-			&p.Subtitle,
-			&p.PackageWeight,
-			&p.ArchivedOn,
 			&p.ID,
-			&p.PackageWidth,
+			&p.Name,
+			&p.Subtitle,
 			&p.Description,
+			&p.SKUPrefix,
 			&p.Manufacturer,
+			&p.Brand,
 			&p.Taxable,
+			&p.Cost,
+			&p.ProductWeight,
+			&p.ProductHeight,
+			&p.ProductWidth,
+			&p.ProductLength,
+			&p.PackageWeight,
+			&p.PackageHeight,
+			&p.PackageWidth,
+			&p.PackageLength,
+			&p.QuantityPerPackage,
+			&p.AvailableOn,
+			&p.CreatedOn,
+			&p.UpdatedOn,
+			&p.ArchivedOn,
 		)
 		if err != nil {
 			return nil, err
@@ -180,7 +180,7 @@ func (pg *postgres) GetProductRootCount(db storage.Querier, qf *models.QueryFilt
 const productRootCreationQuery = `
     INSERT INTO product_roots
         (
-            available_on, product_length, sku_prefix, package_height, product_weight, product_width, quantity_per_package, name, product_height, package_length, cost, brand, subtitle, package_weight, package_width, description, manufacturer, taxable
+            name, subtitle, description, sku_prefix, manufacturer, brand, taxable, cost, product_weight, product_height, product_width, product_length, package_weight, package_height, package_width, package_length, quantity_per_package, available_on
         )
     VALUES
         (
@@ -191,31 +191,31 @@ const productRootCreationQuery = `
 `
 
 func (pg *postgres) CreateProductRoot(db storage.Querier, nu *models.ProductRoot) (createdID uint64, createdOn time.Time, err error) {
-	err = db.QueryRow(productRootCreationQuery, &nu.AvailableOn, &nu.ProductLength, &nu.SKUPrefix, &nu.PackageHeight, &nu.ProductWeight, &nu.ProductWidth, &nu.QuantityPerPackage, &nu.Name, &nu.ProductHeight, &nu.PackageLength, &nu.Cost, &nu.Brand, &nu.Subtitle, &nu.PackageWeight, &nu.PackageWidth, &nu.Description, &nu.Manufacturer, &nu.Taxable).Scan(&createdID, &createdOn)
+	err = db.QueryRow(productRootCreationQuery, &nu.Name, &nu.Subtitle, &nu.Description, &nu.SKUPrefix, &nu.Manufacturer, &nu.Brand, &nu.Taxable, &nu.Cost, &nu.ProductWeight, &nu.ProductHeight, &nu.ProductWidth, &nu.ProductLength, &nu.PackageWeight, &nu.PackageHeight, &nu.PackageWidth, &nu.PackageLength, &nu.QuantityPerPackage, &nu.AvailableOn).Scan(&createdID, &createdOn)
 	return createdID, createdOn, err
 }
 
 const productRootUpdateQuery = `
     UPDATE product_roots
     SET
-        available_on = $1,
-        product_length = $2,
-        sku_prefix = $3,
-        package_height = $4,
-        product_weight = $5,
-        product_width = $6,
-        quantity_per_package = $7,
-        name = $8,
-        product_height = $9,
-        package_length = $10,
-        cost = $11,
-        brand = $12,
-        subtitle = $13,
-        package_weight = $14,
+        name = $1,
+        subtitle = $2,
+        description = $3,
+        sku_prefix = $4,
+        manufacturer = $5,
+        brand = $6,
+        taxable = $7,
+        cost = $8,
+        product_weight = $9,
+        product_height = $10,
+        product_width = $11,
+        product_length = $12,
+        package_weight = $13,
+        package_height = $14,
         package_width = $15,
-        description = $16,
-        manufacturer = $17,
-        taxable = $18,
+        package_length = $16,
+        quantity_per_package = $17,
+        available_on = $18,
         updated_on = NOW()
     WHERE id = $19
     RETURNING updated_on;
@@ -223,7 +223,7 @@ const productRootUpdateQuery = `
 
 func (pg *postgres) UpdateProductRoot(db storage.Querier, updated *models.ProductRoot) (time.Time, error) {
 	var t time.Time
-	err := db.QueryRow(productRootUpdateQuery, &updated.AvailableOn, &updated.ProductLength, &updated.SKUPrefix, &updated.PackageHeight, &updated.ProductWeight, &updated.ProductWidth, &updated.QuantityPerPackage, &updated.Name, &updated.ProductHeight, &updated.PackageLength, &updated.Cost, &updated.Brand, &updated.Subtitle, &updated.PackageWeight, &updated.PackageWidth, &updated.Description, &updated.Manufacturer, &updated.Taxable, &updated.ID).Scan(&t)
+	err := db.QueryRow(productRootUpdateQuery, &updated.Name, &updated.Subtitle, &updated.Description, &updated.SKUPrefix, &updated.Manufacturer, &updated.Brand, &updated.Taxable, &updated.Cost, &updated.ProductWeight, &updated.ProductHeight, &updated.ProductWidth, &updated.ProductLength, &updated.PackageWeight, &updated.PackageHeight, &updated.PackageWidth, &updated.PackageLength, &updated.QuantityPerPackage, &updated.AvailableOn, &updated.ID).Scan(&t)
 	return t, err
 }
 

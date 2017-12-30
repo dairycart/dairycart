@@ -17,37 +17,37 @@ import (
 
 func setWebhookReadQueryExpectationByEventType(t *testing.T, mock sqlmock.Sqlmock, example *models.Webhook, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
+		"id",
 		"url",
+		"event_type",
+		"content_type",
 		"created_on",
 		"updated_on",
-		"id",
-		"content_type",
 		"archived_on",
-		"event_type",
 	}).AddRow(
+		example.ID,
 		example.URL,
+		example.EventType,
+		example.ContentType,
 		example.CreatedOn,
 		example.UpdatedOn,
-		example.ID,
-		example.ContentType,
 		example.ArchivedOn,
-		example.EventType,
 	).AddRow(
+		example.ID,
 		example.URL,
+		example.EventType,
+		example.ContentType,
 		example.CreatedOn,
 		example.UpdatedOn,
-		example.ID,
-		example.ContentType,
 		example.ArchivedOn,
-		example.EventType,
 	).AddRow(
+		example.ID,
 		example.URL,
+		example.EventType,
+		example.ContentType,
 		example.CreatedOn,
 		example.UpdatedOn,
-		example.ID,
-		example.ContentType,
 		example.ArchivedOn,
-		example.EventType,
 	).RowError(1, rowErr)
 
 	mock.ExpectQuery(formatQueryForSQLMock(webhookQueryByEventType)).
@@ -156,21 +156,21 @@ func setWebhookReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id uint6
 	query := formatQueryForSQLMock(webhookSelectionQuery)
 
 	exampleRows := sqlmock.NewRows([]string{
+		"id",
 		"url",
+		"event_type",
+		"content_type",
 		"created_on",
 		"updated_on",
-		"id",
-		"content_type",
 		"archived_on",
-		"event_type",
 	}).AddRow(
+		toReturn.ID,
 		toReturn.URL,
+		toReturn.EventType,
+		toReturn.ContentType,
 		toReturn.CreatedOn,
 		toReturn.UpdatedOn,
-		toReturn.ID,
-		toReturn.ContentType,
 		toReturn.ArchivedOn,
-		toReturn.EventType,
 	)
 	mock.ExpectQuery(query).WithArgs(id).WillReturnRows(exampleRows).WillReturnError(err)
 }
@@ -196,37 +196,37 @@ func TestGetWebhook(t *testing.T) {
 
 func setWebhookListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.Webhook, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
+		"id",
 		"url",
+		"event_type",
+		"content_type",
 		"created_on",
 		"updated_on",
-		"id",
-		"content_type",
 		"archived_on",
-		"event_type",
 	}).AddRow(
+		example.ID,
 		example.URL,
+		example.EventType,
+		example.ContentType,
 		example.CreatedOn,
 		example.UpdatedOn,
-		example.ID,
-		example.ContentType,
 		example.ArchivedOn,
-		example.EventType,
 	).AddRow(
+		example.ID,
 		example.URL,
+		example.EventType,
+		example.ContentType,
 		example.CreatedOn,
 		example.UpdatedOn,
-		example.ID,
-		example.ContentType,
 		example.ArchivedOn,
-		example.EventType,
 	).AddRow(
+		example.ID,
 		example.URL,
+		example.EventType,
+		example.ContentType,
 		example.CreatedOn,
 		example.UpdatedOn,
-		example.ID,
-		example.ContentType,
 		example.ArchivedOn,
-		example.EventType,
 	).RowError(1, rowErr)
 
 	query, _ := buildWebhookListRetrievalQuery(qf)
@@ -347,8 +347,8 @@ func setWebhookCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toCr
 	mock.ExpectQuery(query).
 		WithArgs(
 			toCreate.URL,
-			toCreate.ContentType,
 			toCreate.EventType,
+			toCreate.ContentType,
 		).
 		WillReturnRows(exampleRows).
 		WillReturnError(err)
@@ -384,8 +384,8 @@ func setWebhookUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, toUpda
 	mock.ExpectQuery(query).
 		WithArgs(
 			toUpdate.URL,
-			toUpdate.ContentType,
 			toUpdate.EventType,
+			toUpdate.ContentType,
 			toUpdate.ID,
 		).
 		WillReturnRows(exampleRows).

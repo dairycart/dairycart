@@ -28,11 +28,11 @@ func (pg *postgres) ProductVariantBridgeExists(db storage.Querier, id uint64) (b
 
 const productVariantBridgeSelectionQuery = `
     SELECT
-        archived_on,
+        id,
         product_id,
         product_option_value_id,
         created_on,
-        id
+        archived_on
     FROM
         product_variant_bridge
     WHERE
@@ -44,7 +44,7 @@ const productVariantBridgeSelectionQuery = `
 func (pg *postgres) GetProductVariantBridge(db storage.Querier, id uint64) (*models.ProductVariantBridge, error) {
 	p := &models.ProductVariantBridge{}
 
-	err := db.QueryRow(productVariantBridgeSelectionQuery, id).Scan(&p.ArchivedOn, &p.ProductID, &p.ProductOptionValueID, &p.CreatedOn, &p.ID)
+	err := db.QueryRow(productVariantBridgeSelectionQuery, id).Scan(&p.ID, &p.ProductID, &p.ProductOptionValueID, &p.CreatedOn, &p.ArchivedOn)
 
 	return p, err
 }
@@ -53,11 +53,11 @@ func buildProductVariantBridgeListRetrievalQuery(qf *models.QueryFilter) (string
 	sqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 	queryBuilder := sqlBuilder.
 		Select(
-			"archived_on",
+			"id",
 			"product_id",
 			"product_option_value_id",
 			"created_on",
-			"id",
+			"archived_on",
 		).
 		From("product_variant_bridge")
 
@@ -77,11 +77,11 @@ func (pg *postgres) GetProductVariantBridgeList(db storage.Querier, qf *models.Q
 	for rows.Next() {
 		var p models.ProductVariantBridge
 		err := rows.Scan(
-			&p.ArchivedOn,
+			&p.ID,
 			&p.ProductID,
 			&p.ProductOptionValueID,
 			&p.CreatedOn,
-			&p.ID,
+			&p.ArchivedOn,
 		)
 		if err != nil {
 			return nil, err
