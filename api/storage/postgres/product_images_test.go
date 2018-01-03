@@ -47,7 +47,7 @@ func setProductImageByProductIDQueryExpectation(t *testing.T, mock sqlmock.Sqlmo
 
 	exampleRows := sqlmock.NewRows([]string{
 		"id",
-		"product_id",
+		"product_root_id",
 		"thumbnail_url",
 		"main_url",
 		"original_url",
@@ -57,7 +57,7 @@ func setProductImageByProductIDQueryExpectation(t *testing.T, mock sqlmock.Sqlmo
 		"archived_on",
 	}).AddRow(
 		example.ID,
-		example.ProductID,
+		example.ProductRootID,
 		example.ThumbnailURL,
 		example.MainURL,
 		example.OriginalURL,
@@ -67,7 +67,7 @@ func setProductImageByProductIDQueryExpectation(t *testing.T, mock sqlmock.Sqlmo
 		example.ArchivedOn,
 	).AddRow(
 		example.ID,
-		example.ProductID,
+		example.ProductRootID,
 		example.ThumbnailURL,
 		example.MainURL,
 		example.OriginalURL,
@@ -77,7 +77,7 @@ func setProductImageByProductIDQueryExpectation(t *testing.T, mock sqlmock.Sqlmo
 		example.ArchivedOn,
 	).AddRow(
 		example.ID,
-		example.ProductID,
+		example.ProductRootID,
 		example.ThumbnailURL,
 		example.MainURL,
 		example.OriginalURL,
@@ -196,7 +196,7 @@ func setProductImageReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id 
 
 	exampleRows := sqlmock.NewRows([]string{
 		"id",
-		"product_id",
+		"product_root_id",
 		"thumbnail_url",
 		"main_url",
 		"original_url",
@@ -206,7 +206,7 @@ func setProductImageReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id 
 		"archived_on",
 	}).AddRow(
 		toReturn.ID,
-		toReturn.ProductID,
+		toReturn.ProductRootID,
 		toReturn.ThumbnailURL,
 		toReturn.MainURL,
 		toReturn.OriginalURL,
@@ -240,7 +240,7 @@ func TestGetProductImage(t *testing.T) {
 func setProductImageListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, qf *models.QueryFilter, example *models.ProductImage, rowErr error, err error) {
 	exampleRows := sqlmock.NewRows([]string{
 		"id",
-		"product_id",
+		"product_root_id",
 		"thumbnail_url",
 		"main_url",
 		"original_url",
@@ -250,7 +250,7 @@ func setProductImageListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock,
 		"archived_on",
 	}).AddRow(
 		example.ID,
-		example.ProductID,
+		example.ProductRootID,
 		example.ThumbnailURL,
 		example.MainURL,
 		example.OriginalURL,
@@ -260,7 +260,7 @@ func setProductImageListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock,
 		example.ArchivedOn,
 	).AddRow(
 		example.ID,
-		example.ProductID,
+		example.ProductRootID,
 		example.ThumbnailURL,
 		example.MainURL,
 		example.OriginalURL,
@@ -270,7 +270,7 @@ func setProductImageListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock,
 		example.ArchivedOn,
 	).AddRow(
 		example.ID,
-		example.ProductID,
+		example.ProductRootID,
 		example.ThumbnailURL,
 		example.MainURL,
 		example.OriginalURL,
@@ -397,7 +397,7 @@ func setProductImageCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock,
 	exampleRows := sqlmock.NewRows([]string{"id", "created_on"}).AddRow(uint64(1), tt)
 	mock.ExpectQuery(query).
 		WithArgs(
-			toCreate.ProductID,
+			toCreate.ProductRootID,
 			toCreate.ThumbnailURL,
 			toCreate.MainURL,
 			toCreate.OriginalURL,
@@ -436,7 +436,7 @@ func setProductImageUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, t
 	exampleRows := sqlmock.NewRows([]string{"updated_on"}).AddRow(buildTestTime(t))
 	mock.ExpectQuery(query).
 		WithArgs(
-			toUpdate.ProductID,
+			toUpdate.ProductRootID,
 			toUpdate.ThumbnailURL,
 			toUpdate.MainURL,
 			toUpdate.OriginalURL,

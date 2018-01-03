@@ -68,7 +68,7 @@ CREATE UNIQUE INDEX products_upc_empty_but_not_null_idx ON products (upc) WHERE 
 
 CREATE TABLE IF NOT EXISTS product_images (
     "id" bigserial,
-    "product_id" bigint NOT NULL,
+    "product_root_id" bigint NOT NULL,
     "thumbnail_url" text NOT NULL,
     "main_url" text NOT NULL,
     "original_url" text NOT NULL,
@@ -77,11 +77,21 @@ CREATE TABLE IF NOT EXISTS product_images (
     "updated_on" timestamp,
     "archived_on" timestamp,
     PRIMARY KEY ("id"),
-    FOREIGN KEY ("product_id") REFERENCES "products"("id")
+    FOREIGN KEY ("product_root_id") REFERENCES "product_roots"("id")
 );
 
 ALTER TABLE IF EXISTS "products"
     ADD FOREIGN KEY ("primary_image_id") REFERENCES "product_images"("id");
+
+CREATE TABLE IF NOT EXISTS product_image_bridge (
+    "id" bigserial,
+    "product_id" bigint NOT NULL,
+    "product_image_id" bigint NOT NULL,
+    UNIQUE ("product_id", "product_image_id"),
+    PRIMARY KEY ("id"),
+    FOREIGN KEY ("product_id") REFERENCES "products"("id"),
+    FOREIGN KEY ("product_image_id") REFERENCES "product_images"("id")
+);
 
 CREATE TABLE IF NOT EXISTS product_options (
     "id" bigserial,

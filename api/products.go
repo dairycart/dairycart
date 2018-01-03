@@ -9,9 +9,9 @@ import (
 	"math"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/dairycart/dairycart/api/storage"
-	"github.com/dairycart/dairycart/api/storage/images"
 	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/go-chi/chi"
@@ -53,6 +53,8 @@ func newProductFromCreationInput(in *models.ProductCreationInput) *models.Produc
 	}
 	if in.AvailableOn != nil {
 		np.AvailableOn = in.AvailableOn.Time
+	} else {
+		np.AvailableOn = time.Now()
 	}
 	return np
 }
@@ -232,26 +234,74 @@ func buildProductUpdateHandler(db *sql.DB, client storage.Storer, webhookExecuto
 	}
 }
 
-func createProductsInDBFromOptionRows(client storage.Storer, tx *sql.Tx, r *models.ProductRoot, np *models.Product) ([]models.Product, error) {
+func buildProductsFromOptions(input *models.ProductCreationInput, createdOptions []models.ProductOption) (toCreate []*models.Product) {
+	// lovingly borrowed from:
+	//     https://stackoverflow.com/questions/29002724/implement-ruby-style-cartesian-product-in-go
+	// NextIndex sets ix to the lexicographically next value,
+	// such that for each i > 0, 0 <= ix[i] < lens(i).
+	next := func(ix []int, sl [][]optionPlaceholder) {
+		for j := len(ix) - 1; j >= 0; j-- {
+			ix[j]++
+			if j == 0 || ix[j] < len(sl[j]) {
+				return
+			}
+			ix[j] = 0
+		}
+	}
+
+	// meat & potatoes starts here
+	var optionData [][]optionPlaceholder
+	for _, o := range createdOptions {
+		var newOptions []optionPlaceholder
+		for _, v := range o.Values {
+			summary := fmt.Sprintf("%s: %s", o.Name, v.Value)
+			ph := optionPlaceholder{
+				ID:            v.ID,
+				Summary:       summary,
+				Value:         v.Value,
+				OriginalValue: v,
+			}
+			newOptions = append(newOptions, ph)
+		}
+		optionData = append(optionData, newOptions)
+	}
+
+	for ix := make([]int, len(optionData)); ix[0] < len(optionData[0]); next(ix, optionData) {
+		var skuPrefixParts, optionSummaryParts []string
+		var originalValues []models.ProductOptionValue
+		for j, k := range ix {
+			optionSummaryParts = append(optionSummaryParts, optionData[j][k].Summary)
+			skuPrefixParts = append(skuPrefixParts, strings.ToLower(optionData[j][k].Value))
+			originalValues = append(originalValues, optionData[j][k].OriginalValue)
+		}
+
+		productTemplate := newProductFromCreationInput(input)
+		productTemplate.OptionSummary = strings.Join(optionSummaryParts, ", ")
+		productTemplate.SKU = fmt.Sprintf("%s_%s", input.SKU, strings.Join(skuPrefixParts, "_"))
+		productTemplate.ApplicableOptionValues = originalValues
+		toCreate = append(toCreate, productTemplate)
+
+	}
+	return toCreate
+}
+
+func createProductsInDBFromOptionRows(client storage.Storer, tx *sql.Tx, r *models.ProductRoot, input *models.ProductCreationInput, createdOptions []models.ProductOption) ([]models.Product, error) {
+	var err error
 	createdProducts := []models.Product{}
-	productOptionData := generateCartesianProductForOptions(r.Options)
-	for _, option := range productOptionData {
-		p := &models.Product{}
-		*p = *np // solved: http://www.claymath.org/millennium-problems/p-vs-np-problem
-
-		p.ProductRootID = r.ID
-		p.ApplicableOptionValues = option.OriginalValues
-		p.OptionSummary = option.OptionSummary
-		p.SKU = fmt.Sprintf("%s_%s", r.SKUPrefix, option.SKUPostfix)
-
-		var err error
+	productsToCreate := buildProductsFromOptions(input, createdOptions)
+	for _, p := range productsToCreate {
 		p.ID, p.CreatedOn, p.AvailableOn, err = client.CreateProduct(tx, p)
 		if err != nil {
 			return nil, err
 		}
+		p.ProductRootID = r.ID
 
-		err = client.CreateMultipleProductVariantBridgesForProductID(tx, p.ID, option.IDs)
-		// err = createBridgeEntryForProductValues(tx, p.ID, option.IDs)
+		optionIDs := []uint64{}
+		for _, o := range p.ApplicableOptionValues {
+			optionIDs = append(optionIDs, o.ID)
+		}
+
+		err = client.CreateMultipleProductVariantBridgesForProductID(tx, p.ID, optionIDs)
 		if err != nil {
 			return nil, err
 		}
@@ -260,9 +310,9 @@ func createProductsInDBFromOptionRows(client storage.Storer, tx *sql.Tx, r *mode
 	return createdProducts, nil
 }
 
-func handleProductCreationImages(tx *sql.Tx, client storage.Storer, imager dairyphoto.ImageStorer, productInput *models.ProductCreationInput, newProductID uint64) ([]models.ProductImage, error) {
+func handleProductCreationImages(tx *sql.Tx, client storage.Storer, imager storage.ImageStorer, images []models.ProductImageCreationInput, sku string, rootID uint64) ([]models.ProductImage, error) {
 	returnImages := []models.ProductImage{}
-	for i, imageInput := range productInput.Images {
+	for i, imageInput := range images {
 		var img image.Image
 		var err error
 		imageType := strings.ToLower(imageInput.Type)
@@ -293,16 +343,16 @@ func handleProductCreationImages(tx *sql.Tx, client storage.Storer, imager dairy
 		}
 
 		thumbnails := imager.CreateThumbnails(img)
-		locations, err := imager.StoreImages(thumbnails, productInput.SKU, uint(i))
+		locations, err := imager.StoreImages(thumbnails, sku, uint(i))
 		if err != nil || locations == nil {
 			return nil, err
 		}
 
 		newImage := &models.ProductImage{
-			ProductID:    newProductID,
-			ThumbnailURL: locations.Thumbnail,
-			MainURL:      locations.Main,
-			OriginalURL:  locations.Original,
+			ProductRootID: rootID,
+			ThumbnailURL:  locations.Thumbnail,
+			MainURL:       locations.Main,
+			OriginalURL:   locations.Original,
 		}
 
 		if imageType == "url" {
@@ -319,8 +369,23 @@ func handleProductCreationImages(tx *sql.Tx, client storage.Storer, imager dairy
 	return returnImages, nil
 }
 
-func buildTestProductCreationHandler(db *sql.DB, client storage.Storer, imager dairyphoto.ImageStorer, webhookExecutor WebhookExecutor) http.HandlerFunc {
+func buildTestProductCreationHandler(db *sql.DB, client storage.Storer, imager storage.ImageStorer, webhookExecutor WebhookExecutor) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
+		/*
+			1. Validate input
+			2. Create product root
+			3. Create images
+
+			If product has options:
+				4a. Create options and values
+				5a. create products from the created options and values
+				6a. create any necessary images and associate them with created products
+			Else:
+				4b. create product to associate with product root
+				5b. save images and associate them with singular created product
+		*/
+
+		// 1. Validate Input
 		productInput := &models.ProductCreationInput{}
 		err := validateRequestInput(req, productInput)
 		if err != nil {
@@ -330,6 +395,11 @@ func buildTestProductCreationHandler(db *sql.DB, client storage.Storer, imager d
 		if !restrictedStringIsValid(productInput.SKU) {
 			notifyOfInvalidRequestBody(res, fmt.Errorf("The sku received (%s) is invalid", productInput.SKU))
 			return
+		}
+		newProduct := newProductFromCreationInput(productInput)
+		newProduct.QuantityPerPackage = uint32(math.Max(float64(newProduct.QuantityPerPackage), 1))
+		if productInput.AvailableOn == nil {
+			newProduct.AvailableOn = time.Now()
 		}
 
 		// can't create a product with a sku that already exists!
@@ -346,7 +416,7 @@ func buildTestProductCreationHandler(db *sql.DB, client storage.Storer, imager d
 			return
 		}
 
-		newProduct := newProductFromCreationInput(productInput)
+		// 2. Create product root
 		productRoot := createProductRootFromProduct(newProduct)
 		productRoot.ID, productRoot.CreatedOn, err = client.CreateProductRoot(tx, productRoot)
 		if err != nil {
@@ -355,19 +425,8 @@ func buildTestProductCreationHandler(db *sql.DB, client storage.Storer, imager d
 			return
 		}
 
-		newProduct.QuantityPerPackage = uint32(math.Max(float64(newProduct.QuantityPerPackage), 1))
-
-		for _, optionAndValues := range productInput.Options {
-			o, err := createProductOptionAndValuesInDBFromInput(tx, optionAndValues, productRoot.ID, client)
-			if err != nil {
-				tx.Rollback()
-				notifyOfInternalIssue(res, err, "insert product options and values in database")
-				return
-			}
-			productRoot.Options = append(productRoot.Options, o)
-		}
-
 		if len(productInput.Options) == 0 {
+			// 4b. create product to associate with product root
 			newProduct.ProductRootID = productRoot.ID
 			newProduct.ID, newProduct.CreatedOn, newProduct.AvailableOn, err = client.CreateProduct(tx, newProduct)
 			if err != nil {
@@ -378,31 +437,46 @@ func buildTestProductCreationHandler(db *sql.DB, client storage.Storer, imager d
 
 			productRoot.Options = []models.ProductOption{} // so this won't be Marshaled as null
 			productRoot.Products = []models.Product{*newProduct}
+
+			// 5b. save images and associate them with singular created product
+			newProduct.Images, err = handleProductCreationImages(tx, client, imager, productInput.Images, productInput.SKU, productRoot.ID)
+			if err != nil {
+				tx.Rollback()
+				notifyOfInternalIssue(res, err, "insert product images in database")
+				return
+			}
+
+			if newProduct.PrimaryImageID == nil && len(newProduct.Images) > 0 {
+				newProduct.PrimaryImageID = &newProduct.Images[0].ID
+			}
+
+			_, err = client.SetPrimaryProductImageForProduct(tx, newProduct.ID, *newProduct.PrimaryImageID)
+			if err != nil {
+				tx.Rollback()
+				notifyOfInternalIssue(res, err, "set primary image ID")
+				return
+			}
 		} else {
-			productRoot.Products, err = createProductsInDBFromOptionRows(client, tx, productRoot, newProduct)
+			// 4a. Create options and values
+			for _, optionAndValues := range productInput.Options {
+				o, err := createProductOptionAndValuesInDBFromInput(tx, optionAndValues, productRoot.ID, client)
+				if err != nil {
+					tx.Rollback()
+					notifyOfInternalIssue(res, err, "insert product options and values in database")
+					return
+				}
+				productRoot.Options = append(productRoot.Options, o)
+			}
+
+			// 5a. create products from the created options and values
+			productRoot.Products, err = createProductsInDBFromOptionRows(client, tx, productRoot, productInput, productRoot.Options)
 			if err != nil {
 				tx.Rollback()
 				notifyOfInternalIssue(res, err, "insert products in database")
 				return
 			}
-		}
 
-		newProduct.Images, err = handleProductCreationImages(tx, client, imager, productInput, newProduct.ID)
-		if err != nil {
-			tx.Rollback()
-			notifyOfInternalIssue(res, err, "insert product images in database")
-			return
-		}
-
-		if newProduct.PrimaryImageID == nil && len(newProduct.Images) > 0 {
-			newProduct.PrimaryImageID = &newProduct.Images[0].ID
-		}
-
-		_, err = client.SetPrimaryProductImageForProduct(tx, newProduct.ID, *newProduct.PrimaryImageID)
-		if err != nil {
-			tx.Rollback()
-			notifyOfInternalIssue(res, err, "set primary image ID")
-			return
+			// 6a. create any necessary images and associate them with created products
 		}
 
 		err = tx.Commit()
@@ -486,7 +560,7 @@ func buildProductCreationHandler(db *sql.DB, client storage.Storer, webhookExecu
 			productRoot.Options = []models.ProductOption{} // so this won't be Marshaled as null
 			productRoot.Products = []models.Product{*newProduct}
 		} else {
-			productRoot.Products, err = createProductsInDBFromOptionRows(client, tx, productRoot, newProduct)
+			productRoot.Products, err = createProductsInDBFromOptionRows(client, tx, productRoot, productInput, productRoot.Options)
 			if err != nil {
 				tx.Rollback()
 				notifyOfInternalIssue(res, err, "insert products in database")
