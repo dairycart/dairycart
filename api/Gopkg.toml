@@ -34,12 +34,16 @@
   name = "github.com/dchest/uniuri"
 
 [[constraint]]
+  name = "github.com/fatih/set"
+  version = "0.1.0"
+
+[[constraint]]
   name = "github.com/fatih/structs"
   version = "1.0.0"
 
 [[constraint]]
   name = "github.com/go-chi/chi"
-  version = "3.3.1"
+  version = "3.3.2"
 
 [[constraint]]
   name = "github.com/gorilla/context"
@@ -66,6 +70,10 @@
   version = "3.0.1"
 
 [[constraint]]
+  branch = "master"
+  name = "github.com/nfnt/resize"
+
+[[constraint]]
   name = "github.com/pkg/errors"
   version = "0.8.0"
 
@@ -75,7 +83,7 @@
 
 [[constraint]]
   name = "github.com/stretchr/testify"
-  version = "1.1.4"
+  version = "1.2.0"
 
 [[constraint]]
   branch = "master"

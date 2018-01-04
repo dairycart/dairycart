@@ -2,22 +2,17 @@ package main
 
 import (
 	"database/sql"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"image"
 	"math"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairymodels/v1"
 
-	"github.com/fatih/set"
 	"github.com/go-chi/chi"
 	"github.com/imdario/mergo"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -54,8 +49,6 @@ func newProductFromCreationInput(in *models.ProductCreationInput) *models.Produc
 	}
 	if in.AvailableOn != nil {
 		np.AvailableOn = in.AvailableOn.Time
-	} else {
-		np.AvailableOn = time.Now()
 	}
 	return np
 }
@@ -235,58 +228,7 @@ func buildProductUpdateHandler(db *sql.DB, client storage.Storer, webhookExecuto
 	}
 }
 
-func buildProductsFromOptions(input *models.ProductCreationInput, createdOptions []models.ProductOption) (toCreate []*models.Product) {
-	// lovingly borrowed from:
-	//     https://stackoverflow.com/questions/29002724/implement-ruby-style-cartesian-product-in-go
-	// NextIndex sets ix to the lexicographically next value,
-	// such that for each i > 0, 0 <= ix[i] < lens(i).
-	next := func(ix []int, sl [][]optionPlaceholder) {
-		for j := len(ix) - 1; j >= 0; j-- {
-			ix[j]++
-			if j == 0 || ix[j] < len(sl[j]) {
-				return
-			}
-			ix[j] = 0
-		}
-	}
-
-	// meat & potatoes starts here
-	var optionData [][]optionPlaceholder
-	for _, o := range createdOptions {
-		var newOptions []optionPlaceholder
-		for _, v := range o.Values {
-			summary := fmt.Sprintf("%s: %s", o.Name, v.Value)
-			ph := optionPlaceholder{
-				ID:            v.ID,
-				Summary:       summary,
-				Value:         v.Value,
-				OriginalValue: v,
-			}
-			newOptions = append(newOptions, ph)
-		}
-		optionData = append(optionData, newOptions)
-	}
-
-	for ix := make([]int, len(optionData)); ix[0] < len(optionData[0]); next(ix, optionData) {
-		var skuPrefixParts, optionSummaryParts []string
-		var originalValues []models.ProductOptionValue
-		for j, k := range ix {
-			optionSummaryParts = append(optionSummaryParts, optionData[j][k].Summary)
-			skuPrefixParts = append(skuPrefixParts, strings.ToLower(optionData[j][k].Value))
-			originalValues = append(originalValues, optionData[j][k].OriginalValue)
-		}
-
-		productTemplate := newProductFromCreationInput(input)
-		productTemplate.OptionSummary = strings.Join(optionSummaryParts, ", ")
-		productTemplate.SKU = fmt.Sprintf("%s_%s", input.SKU, strings.Join(skuPrefixParts, "_"))
-		productTemplate.ApplicableOptionValues = originalValues
-		toCreate = append(toCreate, productTemplate)
-
-	}
-	return toCreate
-}
-
-func createProductsInDBFromOptionRows(client storage.Storer, tx *sql.Tx, r *models.ProductRoot, input *models.ProductCreationInput, createdOptions []models.ProductOption) ([]models.Product, error) {
+func createProductsInDBFromOptions(client storage.Storer, tx *sql.Tx, r *models.ProductRoot, input *models.ProductCreationInput, createdOptions []models.ProductOption) ([]models.Product, error) {
 	var err error
 	createdProducts := []models.Product{}
 	productsToCreate := buildProductsFromOptions(input, createdOptions)
@@ -311,77 +253,7 @@ func createProductsInDBFromOptionRows(client storage.Storer, tx *sql.Tx, r *mode
 	return createdProducts, nil
 }
 
-func handleProductCreationImages(tx *sql.Tx, client storage.Storer, imager storage.ImageStorer, images []models.ProductImageCreationInput, sku string, rootID uint64) ([]models.ProductImage, *uint64, error) {
-	createdImages := set.New()
-	var primaryImageID *uint64
-	returnImages := []models.ProductImage{}
-	for i, imageInput := range images {
-		var img image.Image
-		var err error
-		imageType := strings.ToLower(imageInput.Type)
-
-		if createdImages.Has(imageInput.Data) {
-			continue
-		}
-
-		switch imageType {
-		case "base64":
-			reader := base64.NewDecoder(base64.StdEncoding, strings.NewReader(imageInput.Data))
-			img, _, err = image.Decode(reader)
-			if err != nil {
-				return nil, nil, fmt.Errorf("Image data at index %d is invalid", i)
-			}
-		case "url":
-			// FIXME: this is almost definitely the wrong way to do this,
-			// we should support conversion from known data types (mainly JPEGs) to PNGs
-			if !strings.HasSuffix(imageInput.Data, "png") {
-				return nil, nil, errors.New("only PNG images are supported")
-			}
-			response, err := http.Get(imageInput.Data)
-			if err != nil {
-				return nil, nil, errors.Wrap(err, fmt.Sprintf("error retrieving product image from url %s", imageInput.Data))
-			} else {
-				defer response.Body.Close()
-				img, _, err = image.Decode(response.Body)
-				if err != nil {
-					return nil, nil, fmt.Errorf("Image data at index %d is invalid", i)
-				}
-			}
-		}
-
-		thumbnails := imager.CreateThumbnails(img)
-		locations, err := imager.StoreImages(thumbnails, sku, uint(i))
-		if err != nil || locations == nil {
-			return nil, nil, err
-		}
-
-		newImage := &models.ProductImage{
-			ProductRootID: rootID,
-			ThumbnailURL:  locations.Thumbnail,
-			MainURL:       locations.Main,
-			OriginalURL:   locations.Original,
-		}
-
-		if imageType == "url" {
-			newImage.SourceURL = imageInput.Data
-		}
-
-		newImage.ID, newImage.CreatedOn, err = client.CreateProductImage(tx, newImage)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		if imageInput.IsPrimary && primaryImageID == nil {
-			primaryImageID = &newImage.ID
-		}
-
-		createdImages.Add(imageInput.Data)
-		returnImages = append(returnImages, *newImage)
-	}
-	return returnImages, primaryImageID, nil
-}
-
-func buildTestProductCreationHandler(db *sql.DB, client storage.Storer, imager storage.ImageStorer, webhookExecutor WebhookExecutor) http.HandlerFunc {
+func buildProductCreationHandler(db *sql.DB, client storage.Storer, imager storage.ImageStorer, webhookExecutor WebhookExecutor) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		productInput := &models.ProductCreationInput{}
 		err := validateRequestInput(req, productInput)
@@ -390,7 +262,7 @@ func buildTestProductCreationHandler(db *sql.DB, client storage.Storer, imager s
 			return
 		}
 		if !restrictedStringIsValid(productInput.SKU) {
-			notifyOfInvalidRequestBody(res, fmt.Errorf("The sku received (%s) is invalid", productInput.SKU))
+			notifyOfInvalidRequestBody(res, fmt.Errorf("the sku received (%s) is invalid", productInput.SKU))
 			return
 		}
 
@@ -445,11 +317,13 @@ func buildTestProductCreationHandler(db *sql.DB, client storage.Storer, imager s
 			}
 			productRoot.Products = []models.Product{*newProduct}
 
-			_, err = client.SetPrimaryProductImageForProduct(tx, newProduct.ID, *newProduct.PrimaryImageID)
-			if err != nil {
-				tx.Rollback()
-				notifyOfInternalIssue(res, err, "set primary image ID")
-				return
+			if len(productRoot.Images) > 0 {
+				_, err = client.SetPrimaryProductImageForProduct(tx, newProduct.ID, *newProduct.PrimaryImageID)
+				if err != nil {
+					tx.Rollback()
+					notifyOfInternalIssue(res, err, "set primary image ID")
+					return
+				}
 			}
 		} else {
 			for _, optionAndValues := range productInput.Options {
@@ -462,96 +336,7 @@ func buildTestProductCreationHandler(db *sql.DB, client storage.Storer, imager s
 				productRoot.Options = append(productRoot.Options, o)
 			}
 
-			productRoot.Products, err = createProductsInDBFromOptionRows(client, tx, productRoot, productInput, productRoot.Options)
-			if err != nil {
-				tx.Rollback()
-				notifyOfInternalIssue(res, err, "insert products in database")
-				return
-			}
-		}
-
-		err = tx.Commit()
-		if err != nil {
-			notifyOfInternalIssue(res, err, "close out transaction")
-			return
-		}
-
-		webhooks, err := client.GetWebhooksByEventType(db, ProductCreatedWebhookEvent)
-		if err != nil && err != sql.ErrNoRows {
-			notifyOfInternalIssue(res, err, "retrieve webhooks from database")
-			return
-		}
-
-		for _, wh := range webhooks {
-			go webhookExecutor.CallWebhook(wh, productRoot, db, client)
-		}
-
-		res.WriteHeader(http.StatusCreated)
-		json.NewEncoder(res).Encode(productRoot)
-	}
-}
-
-func buildProductCreationHandler(db *sql.DB, client storage.Storer, webhookExecutor WebhookExecutor) http.HandlerFunc {
-	return func(res http.ResponseWriter, req *http.Request) {
-		productInput := &models.ProductCreationInput{}
-		err := validateRequestInput(req, productInput)
-		if err != nil {
-			notifyOfInvalidRequestBody(res, err)
-			return
-		}
-		if !restrictedStringIsValid(productInput.SKU) {
-			notifyOfInvalidRequestBody(res, fmt.Errorf("The sku received (%s) is invalid", productInput.SKU))
-			return
-		}
-
-		// can't create a product with a sku that already exists!
-		exists, err := client.ProductRootWithSKUPrefixExists(db, productInput.SKU)
-		// exists, err := rowExistsInDB(db, productRootSkuExistenceQuery, productInput.SKU)
-		if err != nil || exists {
-			notifyOfInvalidRequestBody(res, fmt.Errorf("product with sku '%s' already exists", productInput.SKU))
-			return
-		}
-
-		tx, err := db.Begin()
-		if err != nil {
-			notifyOfInternalIssue(res, err, "create new database transaction")
-			return
-		}
-
-		newProduct := newProductFromCreationInput(productInput)
-		productRoot := createProductRootFromProduct(newProduct)
-		productRoot.ID, productRoot.CreatedOn, err = client.CreateProductRoot(tx, productRoot)
-		if err != nil {
-			tx.Rollback()
-			notifyOfInternalIssue(res, err, "insert product options and values in database")
-			return
-		}
-
-		newProduct.QuantityPerPackage = uint32(math.Max(float64(newProduct.QuantityPerPackage), 1))
-
-		for _, optionAndValues := range productInput.Options {
-			o, err := createProductOptionAndValuesInDBFromInput(tx, optionAndValues, productRoot.ID, client)
-			if err != nil {
-				tx.Rollback()
-				notifyOfInternalIssue(res, err, "insert product options and values in database")
-				return
-			}
-			productRoot.Options = append(productRoot.Options, o)
-		}
-
-		if len(productInput.Options) == 0 {
-			newProduct.ProductRootID = productRoot.ID
-			newProduct.ID, newProduct.CreatedOn, newProduct.AvailableOn, err = client.CreateProduct(tx, newProduct)
-			if err != nil {
-				tx.Rollback()
-				notifyOfInternalIssue(res, err, "insert product in database")
-				return
-			}
-
-			productRoot.Options = []models.ProductOption{} // so this won't be Marshaled as null
-			productRoot.Products = []models.Product{*newProduct}
-		} else {
-			productRoot.Products, err = createProductsInDBFromOptionRows(client, tx, productRoot, productInput, productRoot.Options)
+			productRoot.Products, err = createProductsInDBFromOptions(client, tx, productRoot, productInput, productRoot.Options)
 			if err != nil {
 				tx.Rollback()
 				notifyOfInternalIssue(res, err, "insert products in database")

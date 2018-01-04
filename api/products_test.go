@@ -90,7 +90,7 @@ func TestNewProductFromCreationInput(t *testing.T) {
 	})
 }
 
-func TestCreateProductsInDBFromOptionRows(t *testing.T) {
+func TestCreateProductsInDBFromOptions(t *testing.T) {
 	exampleID := uint64(1)
 	exampleProductRoot := &models.ProductRoot{
 		Options: []models.ProductOption{
@@ -103,7 +103,30 @@ func TestCreateProductsInDBFromOptionRows(t *testing.T) {
 			},
 		},
 	}
-	exampleProduct := &models.Product{}
+	exampleProductCreationInput := &models.ProductCreationInput{
+		Options: []models.ProductOptionCreationInput{
+			{
+				Name:   "name",
+				Values: []string{"one", "two", "three"},
+			},
+		},
+	}
+	exampleCreatedProductOptions := []models.ProductOption{
+		{
+			Name: "name",
+			Values: []models.ProductOptionValue{
+				{
+					Value: "one",
+				},
+				{
+					Value: "two",
+				},
+				{
+					Value: "three",
+				},
+			},
+		},
+	}
 
 	t.Run("optimal conditions", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
@@ -117,7 +140,7 @@ func TestCreateProductsInDBFromOptionRows(t *testing.T) {
 		tx, err := testUtil.PlainDB.Begin()
 		assert.NoError(t, err)
 
-		actual, err := createProductsInDBFromOptionRows(testUtil.MockDB, tx, exampleProductRoot, exampleProduct)
+		actual, err := createProductsInDBFromOptions(testUtil.MockDB, tx, exampleProductRoot, exampleProductCreationInput, exampleCreatedProductOptions)
 		assert.NoError(t, err)
 		assert.NotNil(t, actual)
 	})
@@ -132,7 +155,7 @@ func TestCreateProductsInDBFromOptionRows(t *testing.T) {
 		tx, err := testUtil.PlainDB.Begin()
 		assert.NoError(t, err)
 
-		_, err = createProductsInDBFromOptionRows(testUtil.MockDB, tx, exampleProductRoot, exampleProduct)
+		_, err = createProductsInDBFromOptions(testUtil.MockDB, tx, exampleProductRoot, exampleProductCreationInput, exampleCreatedProductOptions)
 		assert.NotNil(t, err)
 	})
 

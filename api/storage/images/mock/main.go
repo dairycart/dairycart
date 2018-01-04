@@ -20,6 +20,6 @@ func (m *MockImageStorer) CreateThumbnails(in image.Image) storage.ProductImageS
 }
 
 func (m *MockImageStorer) StoreImages(in storage.ProductImageSet, sku string, id uint) (*storage.ProductImageLocations, error) {
-	args := m.Called(in, sku)
-	return args.Get(0).(*storage.ProductImageLocations), args.Error(0)
+	args := m.Called(in, sku, id)
+	return args.Get(0).(*storage.ProductImageLocations), args.Error(1)
 }
