@@ -19,8 +19,9 @@ func handleProductCreationImages(tx *sql.Tx, client storage.Storer, imager stora
 	var (
 		primaryImageID *uint64
 		imagesToCreate []models.ProductImageCreationInput
-		returnImages []models.ProductImage
+		returnImages   []models.ProductImage
 	)
+
 	createdImages := set.New()
 	for _, img := range images {
 		if createdImages.Has(img.Data) {
@@ -31,7 +32,6 @@ func handleProductCreationImages(tx *sql.Tx, client storage.Storer, imager stora
 	}
 
 	// FIXME: Make this whole process concurrent
-
 	for i, imageInput := range imagesToCreate {
 		var (
 			format string
@@ -45,14 +45,13 @@ func handleProductCreationImages(tx *sql.Tx, client storage.Storer, imager stora
 			// note: base64 expects raw base64 data, not a data URI (`data:image/png;base64,blahblahblah`)
 			reader := base64.NewDecoder(base64.StdEncoding, strings.NewReader(imageInput.Data))
 			img, format, err = image.Decode(reader)
-			if format != "png" {
-				return nil, nil, errors.New("only pngs are accepted")
-			} else if err != nil {
+			if err != nil {
 				return nil, nil, fmt.Errorf("Image data at index %d is invalid", i)
+			} else if format != "png" {
+				return nil, nil, errors.New("only pngs are accepted")
 			}
 		case "url":
-			// FIXME: this is almost definitely the wrong way to do this,
-			// we should support conversion from known data types (mainly JPEGs) to PNGs
+			// FIXME: this is suuuuuuuuper lame, support JPEGs at least
 			if !strings.HasSuffix(imageInput.Data, "png") {
 				return nil, nil, errors.New("only PNG images are supported")
 			}
