@@ -178,7 +178,7 @@ func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in models.ProductOpti
 	for _, value := range in.Values {
 		newOptionValue := models.ProductOptionValue{
 			ProductOptionID: newProductOption.ID,
-			Value:           value.Value,
+			Value:           value,
 		}
 		newOptionValue.ID, newOptionValue.CreatedOn, err = client.CreateProductOptionValue(tx, &newOptionValue)
 		if err != nil {

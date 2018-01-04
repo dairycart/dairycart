@@ -12,8 +12,6 @@ COPY migrations/ /migrations
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 
-ADD product_images /product_images
-
 COPY --from=build-stage /dairycart /dairycart
 COPY --from=build-stage /migrations /migrations
 

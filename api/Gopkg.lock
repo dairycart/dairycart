@@ -11,7 +11,7 @@
   branch = "product-images"
   name = "github.com/dairycart/dairymodels"
   packages = ["v1"]
-  revision = "54306456abef06ee9f6eb35eceae1a8bffac6c62"
+  revision = "66479cfd506985b905a73a5fcd2f50860887969c"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -24,6 +24,12 @@
   name = "github.com/dchest/uniuri"
   packages = ["."]
   revision = "8902c56451e9b58ff940bbe5fec35d5f9c04584a"
+
+[[projects]]
+  name = "github.com/fatih/set"
+  packages = ["."]
+  revision = "57907de300222151a123d29255ed17f5ed43fad3"
+  version = "v0.1.0"
 
 [[projects]]
   name = "github.com/fatih/structs"
@@ -113,7 +119,7 @@
   branch = "master"
   name = "github.com/stretchr/objx"
   packages = ["."]
-  revision = "1a9d0bb9f541897e62256577b352fdbc1fb4fd94"
+  revision = "74fbc600c03d927552c1888536e49238da904364"
 
 [[projects]]
   name = "github.com/stretchr/testify"
@@ -131,7 +137,7 @@
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
-  revision = "83801418e1b59fb1880e363299581ee543af32ca"
+  revision = "28a7276518d399b9634904daad79e18b44d481bc"
 
 [[projects]]
   name = "gopkg.in/DATA-DOG/go-sqlmock.v1"
@@ -142,6 +148,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2ec297079c5d6444ec1391d56c89defcee5916a2a0bdd0d0194431bbc2c13885"
+  inputs-digest = "99512cbfa184296e9b07dc5b1dc221e503f9b6eb3218e4feba1279a4743d8696"
   solver-name = "gps-cdcl"
   solver-version = 1

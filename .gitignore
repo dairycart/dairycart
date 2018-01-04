@@ -23,8 +23,16 @@ _testmain.go
 *.test
 *.prof
 
-dairycart
+# miscellaneous noise we don't want in git
 .idea
-coverage.out
 .DS_STORE
+coverage.out
+
+# this originally started as a way to avoid committing compiled binaries, but now serves the purpose of keeping dairycart repos from being duplicated in vendor folders
+dairycart
+
+# this folder contains generated starter templates of routes for new models, and is unnecessary to commit into source control
 api/storage/routes
+
+# this folder is created automatically by the local image storage interface and shouldn't be committed into source control
+api/product_images

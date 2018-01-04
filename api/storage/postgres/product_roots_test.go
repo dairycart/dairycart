@@ -114,6 +114,7 @@ func setProductRootReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id u
 	exampleRows := sqlmock.NewRows([]string{
 		"id",
 		"name",
+		"primary_image_id",
 		"subtitle",
 		"description",
 		"sku_prefix",
@@ -137,6 +138,7 @@ func setProductRootReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, id u
 	}).AddRow(
 		toReturn.ID,
 		toReturn.Name,
+		toReturn.PrimaryImageID,
 		toReturn.Subtitle,
 		toReturn.Description,
 		toReturn.SKUPrefix,
@@ -184,6 +186,7 @@ func setProductRootListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, 
 	exampleRows := sqlmock.NewRows([]string{
 		"id",
 		"name",
+		"primary_image_id",
 		"subtitle",
 		"description",
 		"sku_prefix",
@@ -207,6 +210,7 @@ func setProductRootListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, 
 	}).AddRow(
 		example.ID,
 		example.Name,
+		example.PrimaryImageID,
 		example.Subtitle,
 		example.Description,
 		example.SKUPrefix,
@@ -230,6 +234,7 @@ func setProductRootListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, 
 	).AddRow(
 		example.ID,
 		example.Name,
+		example.PrimaryImageID,
 		example.Subtitle,
 		example.Description,
 		example.SKUPrefix,
@@ -253,6 +258,7 @@ func setProductRootListReadQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, 
 	).AddRow(
 		example.ID,
 		example.Name,
+		example.PrimaryImageID,
 		example.Subtitle,
 		example.Description,
 		example.SKUPrefix,
@@ -393,6 +399,7 @@ func setProductRootCreationQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, 
 	mock.ExpectQuery(query).
 		WithArgs(
 			toCreate.Name,
+			toCreate.PrimaryImageID,
 			toCreate.Subtitle,
 			toCreate.Description,
 			toCreate.SKUPrefix,
@@ -445,6 +452,7 @@ func setProductRootUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, to
 	mock.ExpectQuery(query).
 		WithArgs(
 			toUpdate.Name,
+			toUpdate.PrimaryImageID,
 			toUpdate.Subtitle,
 			toUpdate.Description,
 			toUpdate.SKUPrefix,

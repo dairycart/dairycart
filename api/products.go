@@ -14,6 +14,7 @@ import (
 	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairymodels/v1"
 
+	"github.com/fatih/set"
 	"github.com/go-chi/chi"
 	"github.com/imdario/mergo"
 	"github.com/pkg/errors"
@@ -290,11 +291,11 @@ func createProductsInDBFromOptionRows(client storage.Storer, tx *sql.Tx, r *mode
 	createdProducts := []models.Product{}
 	productsToCreate := buildProductsFromOptions(input, createdOptions)
 	for _, p := range productsToCreate {
+		p.ProductRootID = r.ID
 		p.ID, p.CreatedOn, p.AvailableOn, err = client.CreateProduct(tx, p)
 		if err != nil {
 			return nil, err
 		}
-		p.ProductRootID = r.ID
 
 		optionIDs := []uint64{}
 		for _, o := range p.ApplicableOptionValues {
@@ -310,34 +311,40 @@ func createProductsInDBFromOptionRows(client storage.Storer, tx *sql.Tx, r *mode
 	return createdProducts, nil
 }
 
-func handleProductCreationImages(tx *sql.Tx, client storage.Storer, imager storage.ImageStorer, images []models.ProductImageCreationInput, sku string, rootID uint64) ([]models.ProductImage, error) {
+func handleProductCreationImages(tx *sql.Tx, client storage.Storer, imager storage.ImageStorer, images []models.ProductImageCreationInput, sku string, rootID uint64) ([]models.ProductImage, *uint64, error) {
+	createdImages := set.New()
+	var primaryImageID *uint64
 	returnImages := []models.ProductImage{}
 	for i, imageInput := range images {
 		var img image.Image
 		var err error
 		imageType := strings.ToLower(imageInput.Type)
 
+		if createdImages.Has(imageInput.Data) {
+			continue
+		}
+
 		switch imageType {
 		case "base64":
 			reader := base64.NewDecoder(base64.StdEncoding, strings.NewReader(imageInput.Data))
 			img, _, err = image.Decode(reader)
 			if err != nil {
-				return nil, fmt.Errorf("Image data at index %d is invalid", i)
+				return nil, nil, fmt.Errorf("Image data at index %d is invalid", i)
 			}
 		case "url":
 			// FIXME: this is almost definitely the wrong way to do this,
 			// we should support conversion from known data types (mainly JPEGs) to PNGs
 			if !strings.HasSuffix(imageInput.Data, "png") {
-				return nil, errors.New("only PNG images are supported")
+				return nil, nil, errors.New("only PNG images are supported")
 			}
 			response, err := http.Get(imageInput.Data)
 			if err != nil {
-				return nil, errors.Wrap(err, fmt.Sprintf("error retrieving product image from url %s", imageInput.Data))
+				return nil, nil, errors.Wrap(err, fmt.Sprintf("error retrieving product image from url %s", imageInput.Data))
 			} else {
 				defer response.Body.Close()
 				img, _, err = image.Decode(response.Body)
 				if err != nil {
-					return nil, fmt.Errorf("Image data at index %d is invalid", i)
+					return nil, nil, fmt.Errorf("Image data at index %d is invalid", i)
 				}
 			}
 		}
@@ -345,7 +352,7 @@ func handleProductCreationImages(tx *sql.Tx, client storage.Storer, imager stora
 		thumbnails := imager.CreateThumbnails(img)
 		locations, err := imager.StoreImages(thumbnails, sku, uint(i))
 		if err != nil || locations == nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		newImage := &models.ProductImage{
@@ -361,31 +368,21 @@ func handleProductCreationImages(tx *sql.Tx, client storage.Storer, imager stora
 
 		newImage.ID, newImage.CreatedOn, err = client.CreateProductImage(tx, newImage)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
+		if imageInput.IsPrimary && primaryImageID == nil {
+			primaryImageID = &newImage.ID
+		}
+
+		createdImages.Add(imageInput.Data)
 		returnImages = append(returnImages, *newImage)
 	}
-	return returnImages, nil
+	return returnImages, primaryImageID, nil
 }
 
 func buildTestProductCreationHandler(db *sql.DB, client storage.Storer, imager storage.ImageStorer, webhookExecutor WebhookExecutor) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		/*
-			1. Validate input
-			2. Create product root
-			3. Create images
-
-			If product has options:
-				4a. Create options and values
-				5a. create products from the created options and values
-				6a. create any necessary images and associate them with created products
-			Else:
-				4b. create product to associate with product root
-				5b. save images and associate them with singular created product
-		*/
-
-		// 1. Validate Input
 		productInput := &models.ProductCreationInput{}
 		err := validateRequestInput(req, productInput)
 		if err != nil {
@@ -396,6 +393,7 @@ func buildTestProductCreationHandler(db *sql.DB, client storage.Storer, imager s
 			notifyOfInvalidRequestBody(res, fmt.Errorf("The sku received (%s) is invalid", productInput.SKU))
 			return
 		}
+
 		newProduct := newProductFromCreationInput(productInput)
 		newProduct.QuantityPerPackage = uint32(math.Max(float64(newProduct.QuantityPerPackage), 1))
 		if productInput.AvailableOn == nil {
@@ -404,7 +402,6 @@ func buildTestProductCreationHandler(db *sql.DB, client storage.Storer, imager s
 
 		// can't create a product with a sku that already exists!
 		exists, err := client.ProductRootWithSKUPrefixExists(db, productInput.SKU)
-		// exists, err := rowExistsInDB(db, productRootSkuExistenceQuery, productInput.SKU)
 		if err != nil || exists {
 			notifyOfInvalidRequestBody(res, fmt.Errorf("product with sku '%s' already exists", productInput.SKU))
 			return
@@ -416,7 +413,6 @@ func buildTestProductCreationHandler(db *sql.DB, client storage.Storer, imager s
 			return
 		}
 
-		// 2. Create product root
 		productRoot := createProductRootFromProduct(newProduct)
 		productRoot.ID, productRoot.CreatedOn, err = client.CreateProductRoot(tx, productRoot)
 		if err != nil {
@@ -425,8 +421,14 @@ func buildTestProductCreationHandler(db *sql.DB, client storage.Storer, imager s
 			return
 		}
 
+		productRoot.Images, productRoot.PrimaryImageID, err = handleProductCreationImages(tx, client, imager, productInput.Images, productInput.SKU, productRoot.ID)
+		if err != nil {
+			tx.Rollback()
+			notifyOfInternalIssue(res, err, "insert product images in database")
+			return
+		}
+
 		if len(productInput.Options) == 0 {
-			// 4b. create product to associate with product root
 			newProduct.ProductRootID = productRoot.ID
 			newProduct.ID, newProduct.CreatedOn, newProduct.AvailableOn, err = client.CreateProduct(tx, newProduct)
 			if err != nil {
@@ -435,20 +437,13 @@ func buildTestProductCreationHandler(db *sql.DB, client storage.Storer, imager s
 				return
 			}
 
-			productRoot.Options = []models.ProductOption{} // so this won't be Marshaled as null
+			if productRoot.PrimaryImageID != nil {
+				newProduct.PrimaryImageID = productRoot.PrimaryImageID
+			} else if newProduct.PrimaryImageID == nil && len(productRoot.Images) > 0 {
+				productRoot.PrimaryImageID = &productRoot.Images[0].ID
+				newProduct.PrimaryImageID = &productRoot.Images[0].ID
+			}
 			productRoot.Products = []models.Product{*newProduct}
-
-			// 5b. save images and associate them with singular created product
-			newProduct.Images, err = handleProductCreationImages(tx, client, imager, productInput.Images, productInput.SKU, productRoot.ID)
-			if err != nil {
-				tx.Rollback()
-				notifyOfInternalIssue(res, err, "insert product images in database")
-				return
-			}
-
-			if newProduct.PrimaryImageID == nil && len(newProduct.Images) > 0 {
-				newProduct.PrimaryImageID = &newProduct.Images[0].ID
-			}
 
 			_, err = client.SetPrimaryProductImageForProduct(tx, newProduct.ID, *newProduct.PrimaryImageID)
 			if err != nil {
@@ -457,7 +452,6 @@ func buildTestProductCreationHandler(db *sql.DB, client storage.Storer, imager s
 				return
 			}
 		} else {
-			// 4a. Create options and values
 			for _, optionAndValues := range productInput.Options {
 				o, err := createProductOptionAndValuesInDBFromInput(tx, optionAndValues, productRoot.ID, client)
 				if err != nil {
@@ -468,15 +462,12 @@ func buildTestProductCreationHandler(db *sql.DB, client storage.Storer, imager s
 				productRoot.Options = append(productRoot.Options, o)
 			}
 
-			// 5a. create products from the created options and values
 			productRoot.Products, err = createProductsInDBFromOptionRows(client, tx, productRoot, productInput, productRoot.Options)
 			if err != nil {
 				tx.Rollback()
 				notifyOfInternalIssue(res, err, "insert products in database")
 				return
 			}
-
-			// 6a. create any necessary images and associate them with created products
 		}
 
 		err = tx.Commit()

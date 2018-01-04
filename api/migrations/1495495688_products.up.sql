@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS product_roots (
     "id" bigserial,
     "name" text NOT NULL,
+    "primary_image_id" bigint,
     "subtitle" text NOT NULL DEFAULT '',
     "description" text NOT NULL DEFAULT '',
     "sku_prefix" text NOT NULL,
@@ -79,6 +80,9 @@ CREATE TABLE IF NOT EXISTS product_images (
     PRIMARY KEY ("id"),
     FOREIGN KEY ("product_root_id") REFERENCES "product_roots"("id")
 );
+
+ALTER TABLE IF EXISTS "product_roots"
+    ADD FOREIGN KEY ("primary_image_id") REFERENCES "product_images"("id");
 
 ALTER TABLE IF EXISTS "products"
     ADD FOREIGN KEY ("primary_image_id") REFERENCES "product_images"("id");
