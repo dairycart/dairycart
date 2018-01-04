@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+var emptyJSONObj = []byte("{}")
+
 type mockWebhookExecutor struct {
 	mock.Mock
 }
@@ -32,7 +34,7 @@ func TestCallWebhook(t *testing.T) {
 		db := setupTestVariablesWithMock(t).PlainDB
 
 		handlers := map[string]http.HandlerFunc{
-			"": generateHandler(t, "", "{}", http.StatusOK),
+			"": generateHandler(t, "", emptyJSONObj, http.StatusOK),
 		}
 		ts := httptest.NewServer(handlerGenerator(handlers))
 		defer ts.Close()
@@ -51,7 +53,7 @@ func TestCallWebhook(t *testing.T) {
 		db := setupTestVariablesWithMock(t).PlainDB
 
 		handlers := map[string]http.HandlerFunc{
-			"": generateHandler(t, "", "{}", http.StatusOK),
+			"": generateHandler(t, "", emptyJSONObj, http.StatusOK),
 		}
 		ts := httptest.NewServer(handlerGenerator(handlers))
 		defer ts.Close()
@@ -73,7 +75,7 @@ func TestCallWebhook(t *testing.T) {
 		db := setupTestVariablesWithMock(t).PlainDB
 
 		handlers := map[string]http.HandlerFunc{
-			"": generateHandler(t, "", "{}", http.StatusOK),
+			"": generateHandler(t, "", emptyJSONObj, http.StatusOK),
 		}
 		ts := httptest.NewServer(handlerGenerator(handlers))
 		defer ts.Close()
@@ -92,7 +94,7 @@ func TestCallWebhook(t *testing.T) {
 		db := setupTestVariablesWithMock(t).PlainDB
 
 		handlers := map[string]http.HandlerFunc{
-			"": generateHandler(t, "", "{}", http.StatusOK),
+			"": generateHandler(t, "", emptyJSONObj, http.StatusOK),
 		}
 		ts := httptest.NewServer(handlerGenerator(handlers))
 		defer ts.Close()
@@ -111,7 +113,7 @@ func TestCallWebhook(t *testing.T) {
 		db := setupTestVariablesWithMock(t).PlainDB
 
 		handlers := map[string]http.HandlerFunc{
-			"": generateHandler(t, "", "{}", http.StatusOK),
+			"": generateHandler(t, "", emptyJSONObj, http.StatusOK),
 		}
 		ts := httptest.NewServer(handlerGenerator(handlers))
 		defer ts.Close()

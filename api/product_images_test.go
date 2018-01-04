@@ -23,24 +23,11 @@ const (
 	smallGreenPNG = "iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKAQMAAAC3/F3+AAAABlBMVEUA/wAA/wD8J4MxAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAC0lEQVQImWNgwAcAAB4AAe72cCEAAAAASUVORK5CYII="
 )
 
-func buildExampleImageResponse(t *testing.T) string {
-	t.Helper()
-	reader := base64.NewDecoder(base64.StdEncoding, strings.NewReader(smallGreenPNG))
-	img, _, err := image.Decode(reader)
-	require.Nil(t, err)
-
-	buf := new(bytes.Buffer)
-	err = png.Encode(buf, img)
-	require.Nil(t, err)
-
-	return buf.String()
-}
-
 func TestHandleProductCreationImages(t *testing.T) {
 	t.Parallel()
 
 	exampleSKU := "example"
-	exampleRootID := uint64(1)
+	exampleID := uint64(1)
 	exampleThumbnailLocation := "https://dairycart.com/product_images/sku/0/thumbnail.png"
 	exampleMainLocation := "https://dairycart.com/product_images/sku/0/main.png"
 	exampleOriginalLocation := "https://dairycart.com/product_images/sku/0/original.png"
@@ -51,7 +38,16 @@ func TestHandleProductCreationImages(t *testing.T) {
 		testUtil.Mock.ExpectBegin()
 
 		handlers := map[string]http.HandlerFunc{
-			"cool.png": generateHandler(t, "", buildExampleImageResponse(t), http.StatusOK),
+			"/cool.png": func(res http.ResponseWriter, req *http.Request) {
+				reader := base64.NewDecoder(base64.StdEncoding, strings.NewReader(smallGreenPNG))
+				img, _, err := image.Decode(reader)
+				require.Nil(t, err)
+
+				buffer := new(bytes.Buffer)
+				err = png.Encode(buffer, img)
+				require.Nil(t, err)
+				res.Write(buffer.Bytes())
+			},
 		}
 		ts := httptest.NewServer(handlerGenerator(handlers))
 		defer ts.Close()
@@ -63,18 +59,29 @@ func TestHandleProductCreationImages(t *testing.T) {
 			},
 			{
 				Type: "url",
+				IsPrimary: true,
 				Data: fmt.Sprintf("%s/cool.png", ts.URL),
 			},
 		}
 
-		expectedPrimaryImageID := uint64(123)
+		expectedPrimaryImageID := &exampleID
 		expectedImages := []models.ProductImage{
 			{
-				ID:            exampleRootID,
-				ProductRootID: exampleRootID,
+				ID:            exampleID,
+				ProductRootID: exampleID,
 				ThumbnailURL:  exampleThumbnailLocation,
 				MainURL:       exampleMainLocation,
 				OriginalURL:   exampleOriginalLocation,
+				CreatedOn: buildTestTime(),
+			},
+			{
+				ID:            exampleID,
+				ProductRootID: exampleID,
+				ThumbnailURL:  exampleThumbnailLocation,
+				MainURL:       exampleMainLocation,
+				OriginalURL:   exampleOriginalLocation,
+				SourceURL:   exampleImageInputs[1].Data,
+				CreatedOn: buildTestTime(),
 			},
 		}
 
@@ -83,19 +90,19 @@ func TestHandleProductCreationImages(t *testing.T) {
 			Main:      exampleMainLocation,
 			Original:  exampleOriginalLocation,
 		}
-		arbitaryImageSet := storage.ProductImageSet{}
+		arbitraryImageSet := storage.ProductImageSet{}
 		testUtil.MockImageStorage.On("CreateThumbnails", mock.Anything).
-			Return(arbitaryImageSet)
+			Return(arbitraryImageSet)
 		testUtil.MockImageStorage.On("StoreImages", mock.Anything, exampleSKU, mock.AnythingOfType("uint")).
 			Return(exampleProductImageLocations, nil)
 
 		testUtil.MockDB.On("CreateProductImage", mock.AnythingOfType("*sql.Tx"), mock.Anything).
-			Return(exampleRootID, buildTestTime(), nil)
+			Return(uint64(1), buildTestTime(), nil)
 
 		tx, err := testUtil.PlainDB.Begin()
 		assert.NoError(t, err)
 
-		actualImages, actualPrimaryImageID, err := handleProductCreationImages(tx, testUtil.MockDB, testUtil.MockImageStorage, exampleImageInputs, exampleSKU, exampleRootID)
+		actualImages, actualPrimaryImageID, err := handleProductCreationImages(tx, testUtil.MockDB, testUtil.MockImageStorage, exampleImageInputs, exampleSKU, exampleID)
 
 		assert.NoError(t, err)
 		assert.Equal(t, expectedImages, actualImages, "expected and actual images should match")

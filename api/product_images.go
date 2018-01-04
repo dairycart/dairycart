@@ -13,11 +13,14 @@ import (
 
 	"github.com/fatih/set"
 	"github.com/pkg/errors"
-	"io/ioutil"
 )
 
 func handleProductCreationImages(tx *sql.Tx, client storage.Storer, imager storage.ImageStorer, images []models.ProductImageCreationInput, sku string, rootID uint64) ([]models.ProductImage, *uint64, error) {
-	var imagesToCreate []models.ProductImageCreationInput
+	var (
+		primaryImageID *uint64
+		imagesToCreate []models.ProductImageCreationInput
+		returnImages []models.ProductImage
+	)
 	createdImages := set.New()
 	for _, img := range images {
 		if createdImages.Has(img.Data) {
@@ -28,13 +31,12 @@ func handleProductCreationImages(tx *sql.Tx, client storage.Storer, imager stora
 	}
 
 	// FIXME: Make this whole process concurrent
-	var primaryImageID *uint64
-	returnImages := []models.ProductImage{}
+
 	for i, imageInput := range imagesToCreate {
 		var (
 			format string
-			img image.Image
-			err error
+			img    image.Image
+			err    error
 		)
 		imageType := strings.ToLower(imageInput.Type)
 
@@ -58,15 +60,12 @@ func handleProductCreationImages(tx *sql.Tx, client storage.Storer, imager stora
 			if err != nil {
 				return nil, nil, errors.Wrap(err, fmt.Sprintf("error retrieving product image from url %s", imageInput.Data))
 			} else {
-				defer response.Body.Close()
-
-				
-
 				img, _, err = image.Decode(response.Body)
 				if err != nil {
-					return nil, nil, fmt.Errorf("Image data at index %d is invalid: %v", i, err)
+					return nil, nil, fmt.Errorf("image data at index %d is invalid: %v", i, err)
 				}
 			}
+			response.Body.Close()
 		}
 
 		thumbnails := imager.CreateThumbnails(img)

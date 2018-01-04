@@ -57,7 +57,7 @@ func handlerGenerator(handlers map[string]http.HandlerFunc) http.Handler {
 	})
 }
 
-func generateHandler(t *testing.T, expectedBody string, responseBody string, responseHeader int) http.HandlerFunc {
+func generateHandler(t *testing.T, expectedBody string, responseBody []byte, responseHeader int) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		actualBody, err := ioutil.ReadAll(req.Body)
 		require.Nil(t, err)
@@ -66,7 +66,7 @@ func generateHandler(t *testing.T, expectedBody string, responseBody string, res
 		assert.True(t, req.Method == http.MethodPost)
 
 		res.WriteHeader(responseHeader)
-		_, err = fmt.Fprintf(res, responseBody)
+		_, err = fmt.Fprintf(res, string(responseBody))
 		require.Nil(t, err)
 	}
 }
