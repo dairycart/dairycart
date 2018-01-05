@@ -355,9 +355,8 @@ func TestHandleProductCreationImages(t *testing.T) {
 			Main:      exampleMainLocation,
 			Original:  exampleOriginalLocation,
 		}
-		arbitraryImageSet := storage.ProductImageSet{}
 		testUtil.MockImageStorage.On("CreateThumbnails", mock.Anything).
-			Return(arbitraryImageSet)
+			Return(storage.ProductImageSet{})
 		testUtil.MockImageStorage.On("StoreImages", mock.Anything, exampleSKU, mock.AnythingOfType("uint")).
 			Return(exampleProductImageLocations, nil)
 

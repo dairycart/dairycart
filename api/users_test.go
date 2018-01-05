@@ -194,7 +194,7 @@ func TestPasswordMatches(t *testing.T) {
 }
 
 func TestValidateUserCreationInput(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	testCases := []struct {
 		input     *models.UserCreationInput
