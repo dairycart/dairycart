@@ -8,10 +8,10 @@
   version = "v1.0"
 
 [[projects]]
-  branch = "product-images"
+  branch = "master"
   name = "github.com/dairycart/dairymodels"
   packages = ["v1"]
-  revision = "66479cfd506985b905a73a5fcd2f50860887969c"
+  revision = "eaff8712d25ae445c6cb1a72caaa898f9913c872"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -137,7 +137,7 @@
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
-  revision = "28a7276518d399b9634904daad79e18b44d481bc"
+  revision = "a3f2cbd54cf5dfe3fbaccf76375fdb12f67654c8"
 
 [[projects]]
   name = "gopkg.in/DATA-DOG/go-sqlmock.v1"
@@ -148,6 +148,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5a04fdd8012b3377b9881284e918b30c2e09860a5e54bd255bd3893580a70754"
+  inputs-digest = "52c4a50280eb1dc5eb18d28b53ac44d9b8848faeb5af2dd2ab2bee154f350aae"
   solver-name = "gps-cdcl"
   solver-version = 1
