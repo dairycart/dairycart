@@ -15,14 +15,11 @@ import (
 
 var emptyJSONObj = []byte("{}")
 
-type mockWebhookExecutor struct {
-	mock.Mock
-}
+type mockWebhookExecutor struct{}
 
 var _ WebhookExecutor = (*mockWebhookExecutor)(nil)
 
 func (m *mockWebhookExecutor) CallWebhook(wh models.Webhook, object interface{}, db storage.Querier, client storage.Storer) {
-	m.Called(wh, object, db, client)
 }
 
 type testBreakableStruct struct {

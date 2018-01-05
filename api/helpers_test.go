@@ -24,7 +24,6 @@ import (
 	"github.com/gorilla/sessions"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
@@ -122,7 +121,6 @@ func setupTestVariablesWithMock(t *testing.T) *TestUtil {
 
 func buildServerConfigFromTestUtil(testUtil *TestUtil) *ServerConfig {
 	whe := &mockWebhookExecutor{}
-	whe.On("CallWebhook", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 	return &ServerConfig{
 		Router:          testUtil.Router,
 		DB:              testUtil.PlainDB,

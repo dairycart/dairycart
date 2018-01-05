@@ -19,6 +19,8 @@ const (
 )
 
 func TestNewProductFromCreationInput(t *testing.T) {
+	t.Parallel()
+
 	t.Run("normal usage", func(_t *testing.T) {
 		_t.Parallel()
 		exampleInput := &models.ProductCreationInput{
