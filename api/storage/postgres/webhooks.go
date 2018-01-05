@@ -177,22 +177,17 @@ const webhookCreationQuery = `
         id, created_on;
 `
 
-func (pg *postgres) CreateWebhook(db storage.Querier, nu *models.Webhook) (uint64, time.Time, error) {
-	var (
-		createdID uint64
-		createdAt time.Time
-	)
-
-	err := db.QueryRow(webhookCreationQuery, &nu.URL, &nu.EventType, &nu.ContentType).Scan(&createdID, &createdAt)
-	return createdID, createdAt, err
+func (pg *postgres) CreateWebhook(db storage.Querier, nu *models.Webhook) (createdID uint64, createdOn time.Time, err error) {
+	err = db.QueryRow(webhookCreationQuery, &nu.URL, &nu.EventType, &nu.ContentType).Scan(&createdID, &createdOn)
+	return createdID, createdOn, err
 }
 
 const webhookUpdateQuery = `
     UPDATE webhooks
     SET
-        url = $1, 
-        event_type = $2, 
-        content_type = $3, 
+        url = $1,
+        event_type = $2,
+        content_type = $3,
         updated_on = NOW()
     WHERE id = $4
     RETURNING updated_on;

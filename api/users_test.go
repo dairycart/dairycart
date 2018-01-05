@@ -31,40 +31,44 @@ func init() {
 func TestValidateSessionCookieMiddleware(t *testing.T) {
 	t.Parallel()
 
-	handlerWasCalled := false
-	exampleHandler := func(w http.ResponseWriter, r *http.Request) {
-		handlerWasCalled = true
-	}
+	t.Run("normal operation", func(_t *testing.T) {
+		_t.Parallel()
 
-	testUtil := setupTestVariablesWithMock(t)
+		handlerWasCalled := false
+		exampleHandler := func(w http.ResponseWriter, r *http.Request) {
+			handlerWasCalled = true
+		}
 
-	req, err := http.NewRequest(http.MethodGet, "", nil)
-	assert.NoError(t, err)
+		testUtil := setupTestVariablesWithMock(t)
 
-	session, err := testUtil.Store.Get(req, dairycartCookieName)
-	assert.NoError(t, err)
-	session.Values[sessionAuthorizedKeyName] = true
-	session.Save(req, testUtil.Response)
+		req, err := http.NewRequest(http.MethodGet, "", nil)
+		assert.NoError(t, err)
 
-	validateSessionCookieMiddleware(testUtil.Response, req, testUtil.Store, exampleHandler)
-	assert.True(t, handlerWasCalled)
-}
+		session, err := testUtil.Store.Get(req, dairycartCookieName)
+		assert.NoError(t, err)
+		session.Values[sessionAuthorizedKeyName] = true
+		session.Save(req, testUtil.Response)
 
-func TestValidateSessionCookieMiddlewareWithInvalidCookie(t *testing.T) {
-	t.Parallel()
+		validateSessionCookieMiddleware(testUtil.Response, req, testUtil.Store, exampleHandler)
+		assert.True(t, handlerWasCalled)
+	})
 
-	handlerWasCalled := false
-	exampleHandler := func(w http.ResponseWriter, r *http.Request) {
-		handlerWasCalled = true
-	}
+	t.Run("with invalid cookie", func(_t *testing.T) {
+		_t.Parallel()
 
-	testUtil := setupTestVariablesWithMock(t)
+		handlerWasCalled := false
+		exampleHandler := func(w http.ResponseWriter, r *http.Request) {
+			handlerWasCalled = true
+		}
 
-	req, err := http.NewRequest(http.MethodGet, "", nil)
-	assert.NoError(t, err)
+		testUtil := setupTestVariablesWithMock(t)
 
-	validateSessionCookieMiddleware(testUtil.Response, req, testUtil.Store, exampleHandler)
-	assert.False(t, handlerWasCalled)
+		req, err := http.NewRequest(http.MethodGet, "", nil)
+		assert.NoError(t, err)
+
+		validateSessionCookieMiddleware(testUtil.Response, req, testUtil.Store, exampleHandler)
+		assert.False(t, handlerWasCalled)
+	})
 }
 
 func TestPasswordIsValid(t *testing.T) {
@@ -194,7 +198,7 @@ func TestPasswordMatches(t *testing.T) {
 }
 
 func TestValidateUserCreationInput(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	testCases := []struct {
 		input     *models.UserCreationInput

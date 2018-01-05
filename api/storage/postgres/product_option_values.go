@@ -201,21 +201,16 @@ const productOptionValueCreationQuery = `
         id, created_on;
 `
 
-func (pg *postgres) CreateProductOptionValue(db storage.Querier, nu *models.ProductOptionValue) (uint64, time.Time, error) {
-	var (
-		createdID uint64
-		createdAt time.Time
-	)
-
-	err := db.QueryRow(productOptionValueCreationQuery, &nu.ProductOptionID, &nu.Value).Scan(&createdID, &createdAt)
-	return createdID, createdAt, err
+func (pg *postgres) CreateProductOptionValue(db storage.Querier, nu *models.ProductOptionValue) (createdID uint64, createdOn time.Time, err error) {
+	err = db.QueryRow(productOptionValueCreationQuery, &nu.ProductOptionID, &nu.Value).Scan(&createdID, &createdOn)
+	return createdID, createdOn, err
 }
 
 const productOptionValueUpdateQuery = `
     UPDATE product_option_values
     SET
-        product_option_id = $1, 
-        value = $2, 
+        product_option_id = $1,
+        value = $2,
         updated_on = NOW()
     WHERE id = $3
     RETURNING updated_on;

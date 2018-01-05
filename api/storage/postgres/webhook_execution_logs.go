@@ -124,24 +124,20 @@ const webhookExecutionLogCreationQuery = `
         id, created_on;
 `
 
-func (pg *postgres) CreateWebhookExecutionLog(db storage.Querier, nu *models.WebhookExecutionLog) (uint64, time.Time, error) {
-	var (
-		createdID uint64
-		createdAt time.Time
-	)
-
-	err := db.QueryRow(webhookExecutionLogCreationQuery, &nu.WebhookID, &nu.StatusCode, &nu.Succeeded, &nu.ExecutedOn).Scan(&createdID, &createdAt)
-	return createdID, createdAt, err
+func (pg *postgres) CreateWebhookExecutionLog(db storage.Querier, nu *models.WebhookExecutionLog) (createdID uint64, createdOn time.Time, err error) {
+	err = db.QueryRow(webhookExecutionLogCreationQuery, &nu.WebhookID, &nu.StatusCode, &nu.Succeeded, &nu.ExecutedOn).Scan(&createdID, &createdOn)
+	return createdID, createdOn, err
 }
 
 const webhookExecutionLogUpdateQuery = `
     UPDATE webhook_execution_logs
     SET
-        webhook_id = $1, 
-        status_code = $2, 
-        succeeded = $3, 
-        executed_on = $4
-    WHERE id = $4
+        webhook_id = $1,
+        status_code = $2,
+        succeeded = $3,
+        executed_on = $4,
+        updated_on = NOW()
+    WHERE id = $5
     RETURNING updated_on;
 `
 

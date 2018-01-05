@@ -251,7 +251,6 @@ func TestProductListRoute(t *testing.T) {
 }
 
 func TestProductUpdateRoute(t *testing.T) {
-	// t.Parallel()
 	testSKU := "test-product-updating"
 
 	t.Run("normal use", func(*testing.T) {
@@ -630,8 +629,6 @@ func TestProductDeletion(t *testing.T) {
 }
 
 func TestProductRootList(t *testing.T) {
-	// 	t.Parallel()
-
 	t.Run("no filter", func(*testing.T) {
 		resp, err := retrieveProductRoots(nil)
 		assert.NoError(t, err)
@@ -914,8 +911,6 @@ func TestProductRootRetrievalRoute(t *testing.T) {
 }
 
 func TestProductRootDeletionRoute(t *testing.T) {
-	// 	t.Parallel()
-
 	testSKU := "test-product-root-deletion"
 	t.Run("normal usage", func(*testing.T) {
 		testProduct := models.ProductCreationInput{SKU: testSKU}
@@ -954,8 +949,6 @@ func TestProductRootDeletionRoute(t *testing.T) {
 }
 
 func TestProductOptionListRoute(t *testing.T) {
-	// 	t.Parallel()
-
 	t.Run("no filter", func(*testing.T) {
 		resp, err := retrieveProductOptions(1, nil)
 		assert.NoError(t, err)

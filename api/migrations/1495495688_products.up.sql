@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS product_roots (
     "id" bigserial,
     "name" text NOT NULL,
+    "primary_image_id" bigint,
     "subtitle" text NOT NULL DEFAULT '',
     "description" text NOT NULL DEFAULT '',
     "sku_prefix" text NOT NULL,
@@ -28,6 +29,7 @@ CREATE TABLE IF NOT EXISTS product_roots (
 CREATE TABLE IF NOT EXISTS products (
     "id" bigserial,
     "product_root_id" bigint NOT NULL,
+    "primary_image_id" bigint,
     "name" text NOT NULL,
     "subtitle" text NOT NULL DEFAULT '',
     "description" text NOT NULL DEFAULT '',
@@ -64,6 +66,36 @@ CREATE TABLE IF NOT EXISTS products (
     FOREIGN KEY ("product_root_id") REFERENCES "product_roots"("id")
 );
 CREATE UNIQUE INDEX products_upc_empty_but_not_null_idx ON products (upc) WHERE upc != '';
+
+CREATE TABLE IF NOT EXISTS product_images (
+    "id" bigserial,
+    "product_root_id" bigint NOT NULL,
+    "thumbnail_url" text NOT NULL,
+    "main_url" text NOT NULL,
+    "original_url" text NOT NULL,
+    "source_url" text NOT NULL DEFAULT '',
+    "created_on" timestamp NOT NULL DEFAULT NOW(),
+    "updated_on" timestamp,
+    "archived_on" timestamp,
+    PRIMARY KEY ("id"),
+    FOREIGN KEY ("product_root_id") REFERENCES "product_roots"("id")
+);
+
+ALTER TABLE IF EXISTS "product_roots"
+    ADD FOREIGN KEY ("primary_image_id") REFERENCES "product_images"("id");
+
+ALTER TABLE IF EXISTS "products"
+    ADD FOREIGN KEY ("primary_image_id") REFERENCES "product_images"("id");
+
+CREATE TABLE IF NOT EXISTS product_image_bridge (
+    "id" bigserial,
+    "product_id" bigint NOT NULL,
+    "product_image_id" bigint NOT NULL,
+    UNIQUE ("product_id", "product_image_id"),
+    PRIMARY KEY ("id"),
+    FOREIGN KEY ("product_id") REFERENCES "products"("id"),
+    FOREIGN KEY ("product_image_id") REFERENCES "product_images"("id")
+);
 
 CREATE TABLE IF NOT EXISTS product_options (
     "id" bigserial,

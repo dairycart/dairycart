@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
+	"time"
 
 	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairymodels/v1"
@@ -226,26 +228,23 @@ func buildProductUpdateHandler(db *sql.DB, client storage.Storer, webhookExecuto
 	}
 }
 
-func createProductsInDBFromOptionRows(client storage.Storer, tx *sql.Tx, r *models.ProductRoot, np *models.Product) ([]models.Product, error) {
+func createProductsInDBFromOptions(client storage.Storer, tx *sql.Tx, r *models.ProductRoot, input *models.ProductCreationInput, createdOptions []models.ProductOption) ([]models.Product, error) {
+	var err error
 	createdProducts := []models.Product{}
-	productOptionData := generateCartesianProductForOptions(r.Options)
-	for _, option := range productOptionData {
-		p := &models.Product{}
-		*p = *np // solved: http://www.claymath.org/millennium-problems/p-vs-np-problem
-
+	productsToCreate := buildProductsFromOptions(input, createdOptions)
+	for _, p := range productsToCreate {
 		p.ProductRootID = r.ID
-		p.ApplicableOptionValues = option.OriginalValues
-		p.OptionSummary = option.OptionSummary
-		p.SKU = fmt.Sprintf("%s_%s", r.SKUPrefix, option.SKUPostfix)
-
-		var err error
 		p.ID, p.CreatedOn, p.AvailableOn, err = client.CreateProduct(tx, p)
 		if err != nil {
 			return nil, err
 		}
 
-		err = client.CreateMultipleProductVariantBridgesForProductID(tx, p.ID, option.IDs)
-		// err = createBridgeEntryForProductValues(tx, p.ID, option.IDs)
+		optionIDs := []uint64{}
+		for _, o := range p.ApplicableOptionValues {
+			optionIDs = append(optionIDs, o.ID)
+		}
+
+		err = client.CreateMultipleProductVariantBridgesForProductID(tx, p.ID, optionIDs)
 		if err != nil {
 			return nil, err
 		}
@@ -254,7 +253,7 @@ func createProductsInDBFromOptionRows(client storage.Storer, tx *sql.Tx, r *mode
 	return createdProducts, nil
 }
 
-func buildProductCreationHandler(db *sql.DB, client storage.Storer, webhookExecutor WebhookExecutor) http.HandlerFunc {
+func buildProductCreationHandler(db *sql.DB, client storage.Storer, imager storage.ImageStorer, webhookExecutor WebhookExecutor) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		productInput := &models.ProductCreationInput{}
 		err := validateRequestInput(req, productInput)
@@ -263,13 +262,18 @@ func buildProductCreationHandler(db *sql.DB, client storage.Storer, webhookExecu
 			return
 		}
 		if !restrictedStringIsValid(productInput.SKU) {
-			notifyOfInvalidRequestBody(res, fmt.Errorf("The sku received (%s) is invalid", productInput.SKU))
+			notifyOfInvalidRequestBody(res, fmt.Errorf("the sku received (%s) is invalid", productInput.SKU))
 			return
+		}
+
+		newProduct := newProductFromCreationInput(productInput)
+		newProduct.QuantityPerPackage = uint32(math.Max(float64(newProduct.QuantityPerPackage), 1))
+		if productInput.AvailableOn == nil {
+			newProduct.AvailableOn = time.Now()
 		}
 
 		// can't create a product with a sku that already exists!
 		exists, err := client.ProductRootWithSKUPrefixExists(db, productInput.SKU)
-		// exists, err := rowExistsInDB(db, productRootSkuExistenceQuery, productInput.SKU)
 		if err != nil || exists {
 			notifyOfInvalidRequestBody(res, fmt.Errorf("product with sku '%s' already exists", productInput.SKU))
 			return
@@ -281,7 +285,6 @@ func buildProductCreationHandler(db *sql.DB, client storage.Storer, webhookExecu
 			return
 		}
 
-		newProduct := newProductFromCreationInput(productInput)
 		productRoot := createProductRootFromProduct(newProduct)
 		productRoot.ID, productRoot.CreatedOn, err = client.CreateProductRoot(tx, productRoot)
 		if err != nil {
@@ -290,14 +293,11 @@ func buildProductCreationHandler(db *sql.DB, client storage.Storer, webhookExecu
 			return
 		}
 
-		for _, optionAndValues := range productInput.Options {
-			o, err := createProductOptionAndValuesInDBFromInput(tx, optionAndValues, productRoot.ID, client)
-			if err != nil {
-				tx.Rollback()
-				notifyOfInternalIssue(res, err, "insert product options and values in database")
-				return
-			}
-			productRoot.Options = append(productRoot.Options, o)
+		productRoot.Images, productRoot.PrimaryImageID, err = handleProductCreationImages(tx, client, imager, productInput.Images, productInput.SKU, productRoot.ID)
+		if err != nil {
+			tx.Rollback()
+			notifyOfInternalIssue(res, err, "insert product images in database")
+			return
 		}
 
 		if len(productInput.Options) == 0 {
@@ -309,10 +309,34 @@ func buildProductCreationHandler(db *sql.DB, client storage.Storer, webhookExecu
 				return
 			}
 
-			productRoot.Options = []models.ProductOption{} // so this won't be Marshaled as null
+			if productRoot.PrimaryImageID != nil {
+				newProduct.PrimaryImageID = productRoot.PrimaryImageID
+			} else if newProduct.PrimaryImageID == nil && len(productRoot.Images) > 0 {
+				productRoot.PrimaryImageID = &productRoot.Images[0].ID
+				newProduct.PrimaryImageID = &productRoot.Images[0].ID
+			}
 			productRoot.Products = []models.Product{*newProduct}
+
+			if len(productRoot.Images) > 0 {
+				_, err = client.SetPrimaryProductImageForProduct(tx, newProduct.ID, *newProduct.PrimaryImageID)
+				if err != nil {
+					tx.Rollback()
+					notifyOfInternalIssue(res, err, "set primary image ID")
+					return
+				}
+			}
 		} else {
-			productRoot.Products, err = createProductsInDBFromOptionRows(client, tx, productRoot, newProduct)
+			for _, optionAndValues := range productInput.Options {
+				o, err := createProductOptionAndValuesInDBFromInput(tx, optionAndValues, productRoot.ID, client)
+				if err != nil {
+					tx.Rollback()
+					notifyOfInternalIssue(res, err, "insert product options and values in database")
+					return
+				}
+				productRoot.Options = append(productRoot.Options, o)
+			}
+
+			productRoot.Products, err = createProductsInDBFromOptions(client, tx, productRoot, productInput, productRoot.Options)
 			if err != nil {
 				tx.Rollback()
 				notifyOfInternalIssue(res, err, "insert products in database")

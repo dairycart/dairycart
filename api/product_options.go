@@ -29,21 +29,11 @@ type optionPlaceholder struct {
 	OriginalValue models.ProductOptionValue
 }
 
-func generateCartesianProductForOptions(inputOptions []models.ProductOption) []simpleProductOption {
-	/*
-		Some notes about this function:
-
-		It's probably hilariously expensive to run, like O(n^(log(n)³)) or some other equally absurd thing
-		I based this off a stackoverflow post and didn't go to college. I've tried to use anonymous structs where
-		I could so I don't have data structures floating around that exist solely for this function, and
-		also tried to name things as clearly as possible. But it still kind of just _feels_ messy, so forgive me,
-		Rob Pike. I have taken your beautiful language and violated it with my garbage brain
-	*/
-
+func buildProductsFromOptions(input *models.ProductCreationInput, createdOptions []models.ProductOption) (toCreate []*models.Product) {
 	// lovingly borrowed from:
 	//     https://stackoverflow.com/questions/29002724/implement-ruby-style-cartesian-product-in-go
 	// NextIndex sets ix to the lexicographically next value,
-	// such that for each i>0, 0 <= ix[i] < lens(i).
+	// such that for each i > 0, 0 <= ix[i] < lens(i).
 	next := func(ix []int, sl [][]optionPlaceholder) {
 		for j := len(ix) - 1; j >= 0; j-- {
 			ix[j]++
@@ -55,13 +45,14 @@ func generateCartesianProductForOptions(inputOptions []models.ProductOption) []s
 	}
 
 	// meat & potatoes starts here
-	optionData := [][]optionPlaceholder{}
-	for _, o := range inputOptions {
-		newOptions := []optionPlaceholder{}
+	var optionData [][]optionPlaceholder
+	for _, o := range createdOptions {
+		var newOptions []optionPlaceholder
 		for _, v := range o.Values {
+			summary := fmt.Sprintf("%s: %s", o.Name, v.Value)
 			ph := optionPlaceholder{
 				ID:            v.ID,
-				Summary:       fmt.Sprintf("%s: %s", o.Name, v.Value),
+				Summary:       summary,
 				Value:         v.Value,
 				OriginalValue: v,
 			}
@@ -70,27 +61,23 @@ func generateCartesianProductForOptions(inputOptions []models.ProductOption) []s
 		optionData = append(optionData, newOptions)
 	}
 
-	output := []simpleProductOption{}
 	for ix := make([]int, len(optionData)); ix[0] < len(optionData[0]); next(ix, optionData) {
-		var ids []uint64
-		var skuPrefixParts []string
-		var optionSummaryParts []string
+		var skuPrefixParts, optionSummaryParts []string
 		var originalValues []models.ProductOptionValue
 		for j, k := range ix {
-			ids = append(ids, optionData[j][k].ID)
 			optionSummaryParts = append(optionSummaryParts, optionData[j][k].Summary)
 			skuPrefixParts = append(skuPrefixParts, strings.ToLower(optionData[j][k].Value))
 			originalValues = append(originalValues, optionData[j][k].OriginalValue)
 		}
-		output = append(output, simpleProductOption{
-			IDs:            ids,
-			OptionSummary:  strings.Join(optionSummaryParts, ", "),
-			SKUPostfix:     strings.Join(skuPrefixParts, "_"),
-			OriginalValues: originalValues,
-		})
-	}
 
-	return output
+		productTemplate := newProductFromCreationInput(input)
+		productTemplate.OptionSummary = strings.Join(optionSummaryParts, ", ")
+		productTemplate.SKU = fmt.Sprintf("%s_%s", input.SKU, strings.Join(skuPrefixParts, "_"))
+		productTemplate.ApplicableOptionValues = originalValues
+		toCreate = append(toCreate, productTemplate)
+
+	}
+	return toCreate
 }
 
 func buildProductOptionListHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {

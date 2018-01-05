@@ -181,29 +181,24 @@ const discountCreationQuery = `
         id, created_on;
 `
 
-func (pg *postgres) CreateDiscount(db storage.Querier, nu *models.Discount) (uint64, time.Time, error) {
-	var (
-		createdID uint64
-		createdAt time.Time
-	)
-
-	err := db.QueryRow(discountCreationQuery, &nu.Name, &nu.DiscountType, &nu.Amount, &nu.ExpiresOn, &nu.RequiresCode, &nu.Code, &nu.LimitedUse, &nu.NumberOfUses, &nu.LoginRequired, &nu.StartsOn).Scan(&createdID, &createdAt)
-	return createdID, createdAt, err
+func (pg *postgres) CreateDiscount(db storage.Querier, nu *models.Discount) (createdID uint64, createdOn time.Time, err error) {
+	err = db.QueryRow(discountCreationQuery, &nu.Name, &nu.DiscountType, &nu.Amount, &nu.ExpiresOn, &nu.RequiresCode, &nu.Code, &nu.LimitedUse, &nu.NumberOfUses, &nu.LoginRequired, &nu.StartsOn).Scan(&createdID, &createdOn)
+	return createdID, createdOn, err
 }
 
 const discountUpdateQuery = `
     UPDATE discounts
     SET
-        name = $1, 
-        discount_type = $2, 
-        amount = $3, 
-        expires_on = $4, 
-        requires_code = $5, 
-        code = $6, 
-        limited_use = $7, 
-        number_of_uses = $8, 
-        login_required = $9, 
-        starts_on = $10, 
+        name = $1,
+        discount_type = $2,
+        amount = $3,
+        expires_on = $4,
+        requires_code = $5,
+        code = $6,
+        limited_use = $7,
+        number_of_uses = $8,
+        login_required = $9,
+        starts_on = $10,
         updated_on = NOW()
     WHERE id = $11
     RETURNING updated_on;

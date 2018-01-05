@@ -138,22 +138,18 @@ const loginAttemptCreationQuery = `
         id, created_on;
 `
 
-func (pg *postgres) CreateLoginAttempt(db storage.Querier, nu *models.LoginAttempt) (uint64, time.Time, error) {
-	var (
-		createdID uint64
-		createdAt time.Time
-	)
-
-	err := db.QueryRow(loginAttemptCreationQuery, &nu.Username, &nu.Successful).Scan(&createdID, &createdAt)
-	return createdID, createdAt, err
+func (pg *postgres) CreateLoginAttempt(db storage.Querier, nu *models.LoginAttempt) (createdID uint64, createdOn time.Time, err error) {
+	err = db.QueryRow(loginAttemptCreationQuery, &nu.Username, &nu.Successful).Scan(&createdID, &createdOn)
+	return createdID, createdOn, err
 }
 
 const loginAttemptUpdateQuery = `
     UPDATE login_attempts
     SET
-        username = $1, 
-        successful = $2
-    WHERE id = $2
+        username = $1,
+        successful = $2,
+        updated_on = NOW()
+    WHERE id = $3
     RETURNING updated_on;
 `
 

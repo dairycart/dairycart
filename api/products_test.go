@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 	"testing"
-	// "time"
 
+	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/stretchr/testify/assert"
@@ -19,6 +19,8 @@ const (
 )
 
 func TestNewProductFromCreationInput(t *testing.T) {
+	t.Parallel()
+
 	t.Run("normal usage", func(_t *testing.T) {
 		_t.Parallel()
 		exampleInput := &models.ProductCreationInput{
@@ -90,7 +92,7 @@ func TestNewProductFromCreationInput(t *testing.T) {
 	})
 }
 
-func TestCreateProductsInDBFromOptionRows(t *testing.T) {
+func TestCreateProductsInDBFromOptions(t *testing.T) {
 	exampleID := uint64(1)
 	exampleProductRoot := &models.ProductRoot{
 		Options: []models.ProductOption{
@@ -103,7 +105,30 @@ func TestCreateProductsInDBFromOptionRows(t *testing.T) {
 			},
 		},
 	}
-	exampleProduct := &models.Product{}
+	exampleProductCreationInput := &models.ProductCreationInput{
+		Options: []models.ProductOptionCreationInput{
+			{
+				Name:   "name",
+				Values: []string{"one", "two", "three"},
+			},
+		},
+	}
+	exampleCreatedProductOptions := []models.ProductOption{
+		{
+			Name: "name",
+			Values: []models.ProductOptionValue{
+				{
+					Value: "one",
+				},
+				{
+					Value: "two",
+				},
+				{
+					Value: "three",
+				},
+			},
+		},
+	}
 
 	t.Run("optimal conditions", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
@@ -117,7 +142,7 @@ func TestCreateProductsInDBFromOptionRows(t *testing.T) {
 		tx, err := testUtil.PlainDB.Begin()
 		assert.NoError(t, err)
 
-		actual, err := createProductsInDBFromOptionRows(testUtil.MockDB, tx, exampleProductRoot, exampleProduct)
+		actual, err := createProductsInDBFromOptions(testUtil.MockDB, tx, exampleProductRoot, exampleProductCreationInput, exampleCreatedProductOptions)
 		assert.NoError(t, err)
 		assert.NotNil(t, actual)
 	})
@@ -132,7 +157,7 @@ func TestCreateProductsInDBFromOptionRows(t *testing.T) {
 		tx, err := testUtil.PlainDB.Begin()
 		assert.NoError(t, err)
 
-		_, err = createProductsInDBFromOptionRows(testUtil.MockDB, tx, exampleProductRoot, exampleProduct)
+		_, err = createProductsInDBFromOptions(testUtil.MockDB, tx, exampleProductRoot, exampleProductCreationInput, exampleCreatedProductOptions)
 		assert.NotNil(t, err)
 	})
 
@@ -730,6 +755,61 @@ func TestProductCreationHandler(t *testing.T) {
 		}
 	`
 
+	exampleProductCreationInputWithImages := `
+		{
+			"sku": "skateboard",
+			"name": "Skateboard",
+			"upc": "1234567890",
+			"quantity": 123,
+			"price": 12.34,
+			"cost": 5,
+			"description": "This is a skateboard. Please wear a helmet.",
+			"taxable": true,
+			"product_weight": 8,
+			"product_height": 7,
+			"product_width": 6,
+			"product_length": 5,
+			"package_weight": 4,
+			"package_height": 3,
+			"package_width": 2,
+			"package_length": 1,
+			"images": [
+				{
+					"type": "base64",
+					"is_primary": true,
+					"data": "iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKAQMAAAC3/F3+AAAABlBMVEUA/wAA/wD8J4MxAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAC0lEQVQImWNgwAcAAB4AAe72cCEAAAAASUVORK5CYII="
+				}
+			]
+		}
+	`
+
+	exampleProductCreationInputWithNoPrimaryImages := `
+		{
+			"sku": "skateboard",
+			"name": "Skateboard",
+			"upc": "1234567890",
+			"quantity": 123,
+			"price": 12.34,
+			"cost": 5,
+			"description": "This is a skateboard. Please wear a helmet.",
+			"taxable": true,
+			"product_weight": 8,
+			"product_height": 7,
+			"product_width": 6,
+			"product_length": 5,
+			"package_weight": 4,
+			"package_height": 3,
+			"package_width": 2,
+			"package_length": 1,
+			"images": [
+				{
+					"type": "base64",
+					"data": "iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKAQMAAAC3/F3+AAAABlBMVEUA/wAA/wD8J4MxAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAC0lEQVQImWNgwAcAAB4AAe72cCEAAAAASUVORK5CYII="
+				}
+			]
+		}
+	`
+
 	exampleProductCreationInputWithOptions := `
 		{
 			"sku": "skateboard",
@@ -758,6 +838,7 @@ func TestProductCreationHandler(t *testing.T) {
 			}]
 		}
 	`
+
 	exampleWebhook := models.Webhook{
 		URL:         "https://dairycart.com",
 		ContentType: "application/json",
@@ -887,6 +968,30 @@ func TestProductCreationHandler(t *testing.T) {
 		assertStatusCode(t, testUtil, http.StatusInternalServerError)
 	})
 
+	t.Run("with issue handling product images", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductRootWithSKUPrefixExists", mock.Anything, exampleProduct.SKU).
+			Return(false, nil)
+		testUtil.Mock.ExpectBegin()
+		testUtil.MockDB.On("CreateProductRoot", mock.Anything, mock.Anything).
+			Return(exampleRoot.ID, buildTestTime(), nil)
+		testUtil.Mock.ExpectRollback()
+
+		testUtil.MockImageStorage.On("CreateThumbnails", mock.Anything).
+			Return(storage.ProductImageSet{})
+		testUtil.MockImageStorage.On("StoreImages", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("uint")).
+			Return(&storage.ProductImageLocations{}, generateArbitraryError())
+
+		config := buildServerConfigFromTestUtil(testUtil)
+		SetupAPIRoutes(config)
+
+		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithImages))
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
+
 	t.Run("where product creation fails", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("ProductRootWithSKUPrefixExists", mock.Anything, exampleProduct.SKU).
@@ -901,6 +1006,120 @@ func TestProductCreationHandler(t *testing.T) {
 		SetupAPIRoutes(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInput))
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+		assertStatusCode(t, testUtil, http.StatusInternalServerError)
+	})
+
+	t.Run("primary image ID gets set", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductRootWithSKUPrefixExists", mock.Anything, exampleProduct.SKU).
+			Return(false, nil)
+		testUtil.Mock.ExpectBegin()
+		testUtil.MockDB.On("CreateProductRoot", mock.Anything, mock.Anything).
+			Return(exampleRoot.ID, buildTestTime(), nil)
+		testUtil.MockDB.On("CreateProduct", mock.Anything, mock.Anything).
+			Return(exampleProduct.ID, buildTestTime(), buildTestTime(), nil)
+		testUtil.MockDB.On("CreateMultipleProductVariantBridgesForProductID", mock.Anything, mock.Anything, mock.Anything).
+			Return(nil)
+		testUtil.MockDB.On("CreateProductOption", mock.Anything, mock.Anything).
+			Return(expectedCreatedProductOption.ID, buildTestTime(), nil)
+		testUtil.MockDB.On("CreateProductOptionValue", mock.Anything, mock.Anything).
+			Return(expectedCreatedProductOption.Values[0].ID, buildTestTime(), nil)
+		testUtil.Mock.ExpectCommit()
+		testUtil.MockDB.On("GetWebhooksByEventType", mock.Anything, ProductCreatedWebhookEvent).
+			Return([]models.Webhook{exampleWebhook}, nil).Once()
+
+		testUtil.MockImageStorage.On("CreateThumbnails", mock.Anything).
+			Return(storage.ProductImageSet{})
+		testUtil.MockImageStorage.On("StoreImages", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("uint")).
+			Return(&storage.ProductImageLocations{}, nil)
+		testUtil.MockDB.On("CreateProductImage", mock.Anything, mock.Anything).
+			Return(uint64(1), buildTestTime(), nil)
+		testUtil.MockDB.On("SetPrimaryProductImageForProduct", mock.Anything, mock.AnythingOfType("uint64"), mock.Anything).
+			Return(buildTestTime(), nil)
+
+		config := buildServerConfigFromTestUtil(testUtil)
+		SetupAPIRoutes(config)
+
+		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithNoPrimaryImages))
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+		assertStatusCode(t, testUtil, http.StatusCreated)
+	})
+
+	t.Run("primary image ID gets set when specified", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductRootWithSKUPrefixExists", mock.Anything, exampleProduct.SKU).
+			Return(false, nil)
+		testUtil.Mock.ExpectBegin()
+		testUtil.MockDB.On("CreateProductRoot", mock.Anything, mock.Anything).
+			Return(exampleRoot.ID, buildTestTime(), nil)
+		testUtil.MockDB.On("CreateProduct", mock.Anything, mock.Anything).
+			Return(exampleProduct.ID, buildTestTime(), buildTestTime(), nil)
+		testUtil.MockDB.On("CreateMultipleProductVariantBridgesForProductID", mock.Anything, mock.Anything, mock.Anything).
+			Return(nil)
+		testUtil.MockDB.On("CreateProductOption", mock.Anything, mock.Anything).
+			Return(expectedCreatedProductOption.ID, buildTestTime(), nil)
+		testUtil.MockDB.On("CreateProductOptionValue", mock.Anything, mock.Anything).
+			Return(expectedCreatedProductOption.Values[0].ID, buildTestTime(), nil)
+		testUtil.Mock.ExpectCommit()
+		testUtil.MockDB.On("GetWebhooksByEventType", mock.Anything, ProductCreatedWebhookEvent).
+			Return([]models.Webhook{exampleWebhook}, nil).Once()
+
+		testUtil.MockImageStorage.On("CreateThumbnails", mock.Anything).
+			Return(storage.ProductImageSet{})
+		testUtil.MockImageStorage.On("StoreImages", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("uint")).
+			Return(&storage.ProductImageLocations{}, nil)
+		testUtil.MockDB.On("CreateProductImage", mock.Anything, mock.Anything).
+			Return(uint64(1), buildTestTime(), nil)
+		testUtil.MockDB.On("SetPrimaryProductImageForProduct", mock.Anything, mock.AnythingOfType("uint64"), mock.Anything).
+			Return(buildTestTime(), nil)
+
+		config := buildServerConfigFromTestUtil(testUtil)
+		SetupAPIRoutes(config)
+
+		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithImages))
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+
+		assertStatusCode(t, testUtil, http.StatusCreated)
+	})
+
+	t.Run("with failure to set primary image for product", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.MockDB.On("ProductRootWithSKUPrefixExists", mock.Anything, exampleProduct.SKU).
+			Return(false, nil)
+		testUtil.Mock.ExpectBegin()
+		testUtil.MockDB.On("CreateProductRoot", mock.Anything, mock.Anything).
+			Return(exampleRoot.ID, buildTestTime(), nil)
+		testUtil.MockDB.On("CreateProduct", mock.Anything, mock.Anything).
+			Return(exampleProduct.ID, buildTestTime(), buildTestTime(), nil)
+		testUtil.MockDB.On("CreateMultipleProductVariantBridgesForProductID", mock.Anything, mock.Anything, mock.Anything).
+			Return(nil)
+		testUtil.MockDB.On("CreateProductOption", mock.Anything, mock.Anything).
+			Return(expectedCreatedProductOption.ID, buildTestTime(), nil)
+		testUtil.MockDB.On("CreateProductOptionValue", mock.Anything, mock.Anything).
+			Return(expectedCreatedProductOption.Values[0].ID, buildTestTime(), nil)
+		testUtil.Mock.ExpectCommit()
+		testUtil.MockDB.On("GetWebhooksByEventType", mock.Anything, ProductCreatedWebhookEvent).
+			Return([]models.Webhook{exampleWebhook}, nil).Once()
+
+		testUtil.MockImageStorage.On("CreateThumbnails", mock.Anything).
+			Return(storage.ProductImageSet{})
+		testUtil.MockImageStorage.On("StoreImages", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("uint")).
+			Return(&storage.ProductImageLocations{}, nil)
+		testUtil.MockDB.On("CreateProductImage", mock.Anything, mock.Anything).
+			Return(uint64(1), buildTestTime(), nil)
+		testUtil.MockDB.On("SetPrimaryProductImageForProduct", mock.Anything, mock.AnythingOfType("uint64"), mock.Anything).
+			Return(buildTestTime(), generateArbitraryError())
+
+		config := buildServerConfigFromTestUtil(testUtil)
+		SetupAPIRoutes(config)
+
+		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithNoPrimaryImages))
 		assert.NoError(t, err)
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
 

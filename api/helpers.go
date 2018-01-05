@@ -51,6 +51,7 @@ type ServerConfig struct {
 	CookieStore     *sessions.CookieStore
 	Dairyclient     storage.Storer
 	WebhookExecutor WebhookExecutor
+	ImageStorer     storage.ImageStorer
 }
 
 func parseRawFilterParams(rawFilterParams url.Values) *models.QueryFilter {

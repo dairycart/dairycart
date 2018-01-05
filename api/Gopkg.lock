@@ -11,7 +11,7 @@
   branch = "master"
   name = "github.com/dairycart/dairymodels"
   packages = ["v1"]
-  revision = "6d187cf0d89318d0a3a9ba1a5b95a673f27f4470"
+  revision = "eaff8712d25ae445c6cb1a72caaa898f9913c872"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -26,6 +26,12 @@
   revision = "8902c56451e9b58ff940bbe5fec35d5f9c04584a"
 
 [[projects]]
+  name = "github.com/fatih/set"
+  packages = ["."]
+  revision = "57907de300222151a123d29255ed17f5ed43fad3"
+  version = "v0.1.0"
+
+[[projects]]
   name = "github.com/fatih/structs"
   packages = ["."]
   revision = "a720dfa8df582c51dee1b36feabb906bde1588bd"
@@ -34,8 +40,8 @@
 [[projects]]
   name = "github.com/go-chi/chi"
   packages = [".","middleware"]
-  revision = "687d2792aedd8e8ac3bbd8592cf55b91d7ea8ce9"
-  version = "v3.3.1"
+  revision = "e83ac2304db3c50cf03d96a2fcd39009d458bc35"
+  version = "v3.3.2"
 
 [[projects]]
   name = "github.com/gorilla/context"
@@ -86,6 +92,12 @@
   version = "v3.0.1"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/nfnt/resize"
+  packages = ["."]
+  revision = "891127d8d1b52734debe1b3c3d7e747502b6c366"
+
+[[projects]]
   name = "github.com/pkg/errors"
   packages = ["."]
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
@@ -107,25 +119,25 @@
   branch = "master"
   name = "github.com/stretchr/objx"
   packages = ["."]
-  revision = "1a9d0bb9f541897e62256577b352fdbc1fb4fd94"
+  revision = "74fbc600c03d927552c1888536e49238da904364"
 
 [[projects]]
   name = "github.com/stretchr/testify"
   packages = ["assert","mock","require"]
-  revision = "69483b4bd14f5845b5a1e55bca19e954e827f1d0"
-  version = "v1.1.4"
+  revision = "b91bfb9ebec76498946beb6af7c0230c7cc7ba6c"
+  version = "v1.2.0"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["bcrypt","blowfish","ssh/terminal"]
-  revision = "d585fd2cc9195196078f516b69daff6744ef5e84"
+  revision = "0fcca4842a8d74bfddc2c96a073bd2a4d2a7a2e8"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
-  revision = "d818ba11af4465e00c1998bd3f8a55603b422290"
+  revision = "a3f2cbd54cf5dfe3fbaccf76375fdb12f67654c8"
 
 [[projects]]
   name = "gopkg.in/DATA-DOG/go-sqlmock.v1"
@@ -136,6 +148,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ada422a0bbc49e9971e25a9239be49b79916d728378a8766a5593b574a3942ef"
+  inputs-digest = "52c4a50280eb1dc5eb18d28b53ac44d9b8848faeb5af2dd2ab2bee154f350aae"
   solver-name = "gps-cdcl"
   solver-version = 1

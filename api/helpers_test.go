@@ -14,6 +14,7 @@ import (
 	"time"
 
 	// local dependencies
+	"github.com/dairycart/dairycart/api/storage/images/mock"
 	"github.com/dairycart/dairycart/api/storage/mock"
 	"github.com/dairycart/dairymodels/v1"
 
@@ -23,7 +24,7 @@ import (
 	"github.com/gorilla/sessions"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
@@ -44,14 +45,40 @@ func init() {
 //                                                   //
 ///////////////////////////////////////////////////////
 
+func handlerGenerator(handlers map[string]http.HandlerFunc) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		for path, handlerFunc := range handlers {
+			if r.URL.Path == path {
+				handlerFunc(w, r)
+				return
+			}
+		}
+	})
+}
+
+func generateHandler(t *testing.T, expectedBody string, responseBody []byte, responseHeader int) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		actualBody, err := ioutil.ReadAll(req.Body)
+		require.Nil(t, err)
+		assert.Equal(t, expectedBody, string(actualBody), "expected and actual bodies should be equal")
+
+		assert.True(t, req.Method == http.MethodPost)
+
+		res.WriteHeader(responseHeader)
+		_, err = fmt.Fprintf(res, string(responseBody))
+		require.Nil(t, err)
+	}
+}
+
 // TODO: Rename much of these fields as well as this entire struct
 type TestUtil struct {
-	Response *httptest.ResponseRecorder
-	Router   *chi.Mux
-	PlainDB  *sql.DB
-	Mock     sqlmock.Sqlmock
-	MockDB   *dairymock.MockDB
-	Store    *sessions.CookieStore
+	Response         *httptest.ResponseRecorder
+	Router           *chi.Mux
+	PlainDB          *sql.DB
+	Mock             sqlmock.Sqlmock
+	MockDB           *dairymock.MockDB
+	MockImageStorage *imgmock.MockImageStorer
+	Store            *sessions.CookieStore
 }
 
 func buildTestTime() time.Time {
@@ -82,23 +109,24 @@ func setupTestVariablesWithMock(t *testing.T) *TestUtil {
 	t.Helper()
 	mockDB, mock, _ := sqlmock.New()
 	return &TestUtil{
-		Response: httptest.NewRecorder(),
-		Router:   chi.NewRouter(),
-		PlainDB:  mockDB,
-		Mock:     mock,
-		MockDB:   &dairymock.MockDB{},
-		Store:    sessions.NewCookieStore([]byte(os.Getenv("DAIRYSECRET"))),
+		Response:         httptest.NewRecorder(),
+		Router:           chi.NewRouter(),
+		PlainDB:          mockDB,
+		Mock:             mock,
+		MockDB:           &dairymock.MockDB{},
+		MockImageStorage: &imgmock.MockImageStorer{},
+		Store:            sessions.NewCookieStore([]byte(os.Getenv("DAIRYSECRET"))),
 	}
 }
 
 func buildServerConfigFromTestUtil(testUtil *TestUtil) *ServerConfig {
 	whe := &mockWebhookExecutor{}
-	whe.On("CallWebhook", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 	return &ServerConfig{
 		Router:          testUtil.Router,
 		DB:              testUtil.PlainDB,
 		CookieStore:     testUtil.Store,
 		Dairyclient:     testUtil.MockDB,
+		ImageStorer:     testUtil.MockImageStorage,
 		WebhookExecutor: whe,
 	}
 }

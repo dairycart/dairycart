@@ -6,6 +6,7 @@ import (
 
 	// external dependencies
 	"github.com/go-chi/chi"
+	// "github.com/go-chi/chi/middleware"
 )
 
 const (
@@ -30,6 +31,8 @@ func SetupAPIRoutes(config *ServerConfig) {
 	config.Router.Head("/password_reset/{reset_token}", buildUserPasswordResetTokenValidationHandler(config.DB, config.Dairyclient))
 
 	config.Router.Route("/v1", func(r chi.Router) {
+		// r.Use(middleware.AllowContentType("application/json"))
+
 		// Users
 		r.Delete(fmt.Sprintf("/user/{user_id:%s}", NumericPattern), buildUserDeletionHandler(config.DB, config.Dairyclient, config.CookieStore))
 
@@ -42,7 +45,7 @@ func SetupAPIRoutes(config *ServerConfig) {
 		// Products
 		specificProductRoute := fmt.Sprintf("/product/{sku:%s}", ValidURLCharactersPattern)
 		r.Get("/products", buildProductListHandler(config.DB, config.Dairyclient))
-		r.Post("/product", buildProductCreationHandler(config.DB, config.Dairyclient, config.WebhookExecutor))
+		r.Post("/product", buildProductCreationHandler(config.DB, config.Dairyclient, config.ImageStorer, config.WebhookExecutor))
 		r.Get(specificProductRoute, buildSingleProductHandler(config.DB, config.Dairyclient))
 		r.Patch(specificProductRoute, buildProductUpdateHandler(config.DB, config.Dairyclient, config.WebhookExecutor))
 		r.Head(specificProductRoute, buildProductExistenceHandler(config.DB, config.Dairyclient))

@@ -188,27 +188,22 @@ const userCreationQuery = `
         id, created_on;
 `
 
-func (pg *postgres) CreateUser(db storage.Querier, nu *models.User) (uint64, time.Time, error) {
-	var (
-		createdID uint64
-		createdAt time.Time
-	)
-
-	err := db.QueryRow(userCreationQuery, &nu.FirstName, &nu.LastName, &nu.Username, &nu.Email, &nu.Password, &nu.Salt, &nu.IsAdmin, &nu.PasswordLastChangedOn).Scan(&createdID, &createdAt)
-	return createdID, createdAt, err
+func (pg *postgres) CreateUser(db storage.Querier, nu *models.User) (createdID uint64, createdOn time.Time, err error) {
+	err = db.QueryRow(userCreationQuery, &nu.FirstName, &nu.LastName, &nu.Username, &nu.Email, &nu.Password, &nu.Salt, &nu.IsAdmin, &nu.PasswordLastChangedOn).Scan(&createdID, &createdOn)
+	return createdID, createdOn, err
 }
 
 const userUpdateQuery = `
     UPDATE users
     SET
-        first_name = $1, 
-        last_name = $2, 
-        username = $3, 
-        email = $4, 
-        password = $5, 
-        salt = $6, 
-        is_admin = $7, 
-        password_last_changed_on = $8, 
+        first_name = $1,
+        last_name = $2,
+        username = $3,
+        email = $4,
+        password = $5,
+        salt = $6,
+        is_admin = $7,
+        password_last_changed_on = $8,
         updated_on = NOW()
     WHERE id = $9
     RETURNING updated_on;
