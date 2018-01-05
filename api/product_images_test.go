@@ -162,7 +162,6 @@ func TestHandleProductCreationImages(t *testing.T) {
 		assert.Equal(t, expectedImages, actualImages, "expected and actual images should match")
 	})
 
-	// FIXME: this isn't working the way it should be
 	t.Run("with non png value in base64", func(_t *testing.T) {
 		_t.Parallel()
 
@@ -222,4 +221,154 @@ func TestHandleProductCreationImages(t *testing.T) {
 		_, _, err = handleProductCreationImages(tx, testUtil.MockDB, testUtil.MockImageStorage, exampleImageInputs, exampleSKU, exampleID)
 		assert.Error(t, err)
 	})
+
+	t.Run("with error fetching image URL", func(_t *testing.T) {
+		_t.Parallel()
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.Mock.ExpectBegin()
+
+		exampleImageInputs := []models.ProductImageCreationInput{
+			{
+				Type: "url",
+				Data: "http://thissitedoesn'texist.lol/cool.png",
+			},
+		}
+
+		tx, err := testUtil.PlainDB.Begin()
+		assert.NoError(t, err)
+
+		_, _, err = handleProductCreationImages(tx, testUtil.MockDB, testUtil.MockImageStorage, exampleImageInputs, exampleSKU, exampleID)
+		assert.Error(t, err)
+	})
+
+	t.Run("with invalid image data response", func(_t *testing.T) {
+		_t.Parallel()
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.Mock.ExpectBegin()
+
+		handlers := map[string]http.HandlerFunc{
+			"/cool.png": func(res http.ResponseWriter, req *http.Request) {
+				res.Write([]byte("lol this is not an image"))
+			},
+		}
+		ts := httptest.NewServer(handlerGenerator(handlers))
+		defer ts.Close()
+
+		exampleImageInputs := []models.ProductImageCreationInput{
+			{
+				Type: "url",
+				Data: fmt.Sprintf("%s/cool.png", ts.URL),
+			},
+		}
+
+		tx, err := testUtil.PlainDB.Begin()
+		assert.NoError(t, err)
+
+		_, _, err = handleProductCreationImages(tx, testUtil.MockDB, testUtil.MockImageStorage, exampleImageInputs, exampleSKU, exampleID)
+		assert.Error(t, err)
+	})
+
+	t.Run("with error storing images", func(_t *testing.T) {
+		_t.Parallel()
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.Mock.ExpectBegin()
+
+		handlers := map[string]http.HandlerFunc{
+			"/cool.png": func(res http.ResponseWriter, req *http.Request) {
+				reader := base64.NewDecoder(base64.StdEncoding, strings.NewReader(smallGreenPNG))
+				img, _, err := image.Decode(reader)
+				require.Nil(t, err)
+
+				buffer := new(bytes.Buffer)
+				err = png.Encode(buffer, img)
+				require.Nil(t, err)
+				res.Write(buffer.Bytes())
+			},
+		}
+		ts := httptest.NewServer(handlerGenerator(handlers))
+		defer ts.Close()
+
+		exampleImageInputs := []models.ProductImageCreationInput{
+			{
+				Type: "base64",
+				Data: smallGreenPNG,
+			},
+			{
+				Type:      "url",
+				IsPrimary: true,
+				Data:      fmt.Sprintf("%s/cool.png", ts.URL),
+			},
+		}
+
+		exampleProductImageLocations := &storage.ProductImageLocations{
+			Thumbnail: exampleThumbnailLocation,
+			Main:      exampleMainLocation,
+			Original:  exampleOriginalLocation,
+		}
+		arbitraryImageSet := storage.ProductImageSet{}
+		testUtil.MockImageStorage.On("CreateThumbnails", mock.Anything).
+			Return(arbitraryImageSet)
+		testUtil.MockImageStorage.On("StoreImages", mock.Anything, exampleSKU, mock.AnythingOfType("uint")).
+			Return(exampleProductImageLocations, generateArbitraryError())
+
+		tx, err := testUtil.PlainDB.Begin()
+		assert.NoError(t, err)
+
+		_, _, err = handleProductCreationImages(tx, testUtil.MockDB, testUtil.MockImageStorage, exampleImageInputs, exampleSKU, exampleID)
+		assert.Error(t, err)
+	})
+
+	t.Run("with error creating product image records", func(_t *testing.T) {
+		_t.Parallel()
+		testUtil := setupTestVariablesWithMock(t)
+		testUtil.Mock.ExpectBegin()
+
+		handlers := map[string]http.HandlerFunc{
+			"/cool.png": func(res http.ResponseWriter, req *http.Request) {
+				reader := base64.NewDecoder(base64.StdEncoding, strings.NewReader(smallGreenPNG))
+				img, _, err := image.Decode(reader)
+				require.Nil(t, err)
+
+				buffer := new(bytes.Buffer)
+				err = png.Encode(buffer, img)
+				require.Nil(t, err)
+				res.Write(buffer.Bytes())
+			},
+		}
+		ts := httptest.NewServer(handlerGenerator(handlers))
+		defer ts.Close()
+
+		exampleImageInputs := []models.ProductImageCreationInput{
+			{
+				Type: "base64",
+				Data: smallGreenPNG,
+			},
+			{
+				Type:      "url",
+				IsPrimary: true,
+				Data:      fmt.Sprintf("%s/cool.png", ts.URL),
+			},
+		}
+
+		exampleProductImageLocations := &storage.ProductImageLocations{
+			Thumbnail: exampleThumbnailLocation,
+			Main:      exampleMainLocation,
+			Original:  exampleOriginalLocation,
+		}
+		arbitraryImageSet := storage.ProductImageSet{}
+		testUtil.MockImageStorage.On("CreateThumbnails", mock.Anything).
+			Return(arbitraryImageSet)
+		testUtil.MockImageStorage.On("StoreImages", mock.Anything, exampleSKU, mock.AnythingOfType("uint")).
+			Return(exampleProductImageLocations, nil)
+
+		testUtil.MockDB.On("CreateProductImage", mock.AnythingOfType("*sql.Tx"), mock.Anything).
+			Return(uint64(1), buildTestTime(), generateArbitraryError())
+
+		tx, err := testUtil.PlainDB.Begin()
+		assert.NoError(t, err)
+
+		_, _, err = handleProductCreationImages(tx, testUtil.MockDB, testUtil.MockImageStorage, exampleImageInputs, exampleSKU, exampleID)
+		assert.Error(t, err)
+	})
+
 }

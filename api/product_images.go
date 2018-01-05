@@ -8,12 +8,26 @@ import (
 	"net/http"
 	"strings"
 
+	_ "image/jpeg"
+	_ "image/png"
+
 	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/fatih/set"
 	"github.com/pkg/errors"
+	"io"
 )
+
+func loadImage(in io.Reader) (image.Image, error) {
+	img, format, err := image.Decode(in)
+	if err != nil {
+		return nil, errors.Wrap(err, "error decoding image")
+	} else if format != "png" {
+		return nil, errors.New("only pngs are accepted")
+	}
+	return img, err
+}
 
 func handleProductCreationImages(tx *sql.Tx, client storage.Storer, imager storage.ImageStorer, images []models.ProductImageCreationInput, sku string, rootID uint64) ([]models.ProductImage, *uint64, error) {
 	var (
@@ -34,7 +48,6 @@ func handleProductCreationImages(tx *sql.Tx, client storage.Storer, imager stora
 	// FIXME: Make this whole process concurrent
 	for i, imageInput := range imagesToCreate {
 		var (
-			format string
 			img    image.Image
 			err    error
 		)
@@ -44,11 +57,9 @@ func handleProductCreationImages(tx *sql.Tx, client storage.Storer, imager stora
 		case "base64":
 			// note: base64 expects raw base64 data, not a data URI (`data:image/png;base64,blahblahblah`)
 			reader := base64.NewDecoder(base64.StdEncoding, strings.NewReader(imageInput.Data))
-			img, format, err = image.Decode(reader)
+			img, err = loadImage(reader)
 			if err != nil {
-				return nil, nil, fmt.Errorf("Image data at index %d is invalid", i)
-			} else if format != "png" {
-				return nil, nil, errors.New("only pngs are accepted")
+				return nil, nil, errors.Wrap(err, fmt.Sprintf("image data at index %d is invalid", i))
 			}
 		case "url":
 			// FIXME: this is suuuuuuuuper lame, support JPEGs at least
@@ -59,9 +70,9 @@ func handleProductCreationImages(tx *sql.Tx, client storage.Storer, imager stora
 			if err != nil {
 				return nil, nil, errors.Wrap(err, fmt.Sprintf("error retrieving product image from url %s", imageInput.Data))
 			} else {
-				img, _, err = image.Decode(response.Body)
+				img, err = loadImage(response.Body)
 				if err != nil {
-					return nil, nil, fmt.Errorf("image data at index %d is invalid: %v", i, err)
+					return nil, nil, errors.Wrap(err, fmt.Sprintf("image data at index %d is invalid", i))
 				}
 			}
 			response.Body.Close()
