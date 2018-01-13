@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dairycart/dairycart/storage/database"
+	"github.com/dairycart/dairycart/storage/images"
 	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/stretchr/testify/assert"
@@ -978,9 +978,9 @@ func TestProductCreationHandler(t *testing.T) {
 		testUtil.Mock.ExpectRollback()
 
 		testUtil.MockImageStorage.On("CreateThumbnails", mock.Anything).
-			Return(storage.ProductImageSet{})
+			Return(images.ProductImageSet{})
 		testUtil.MockImageStorage.On("StoreImages", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("uint")).
-			Return(&storage.ProductImageLocations{}, generateArbitraryError())
+			Return(&images.ProductImageLocations{}, generateArbitraryError())
 
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRoutes(config)
@@ -1032,9 +1032,9 @@ func TestProductCreationHandler(t *testing.T) {
 			Return([]models.Webhook{exampleWebhook}, nil).Once()
 
 		testUtil.MockImageStorage.On("CreateThumbnails", mock.Anything).
-			Return(storage.ProductImageSet{})
+			Return(images.ProductImageSet{})
 		testUtil.MockImageStorage.On("StoreImages", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("uint")).
-			Return(&storage.ProductImageLocations{}, nil)
+			Return(&images.ProductImageLocations{}, nil)
 		testUtil.MockDB.On("CreateProductImage", mock.Anything, mock.Anything).
 			Return(uint64(1), buildTestTime(), nil)
 		testUtil.MockDB.On("SetPrimaryProductImageForProduct", mock.Anything, mock.AnythingOfType("uint64"), mock.Anything).
@@ -1070,9 +1070,9 @@ func TestProductCreationHandler(t *testing.T) {
 			Return([]models.Webhook{exampleWebhook}, nil).Once()
 
 		testUtil.MockImageStorage.On("CreateThumbnails", mock.Anything).
-			Return(storage.ProductImageSet{})
+			Return(images.ProductImageSet{})
 		testUtil.MockImageStorage.On("StoreImages", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("uint")).
-			Return(&storage.ProductImageLocations{}, nil)
+			Return(&images.ProductImageLocations{}, nil)
 		testUtil.MockDB.On("CreateProductImage", mock.Anything, mock.Anything).
 			Return(uint64(1), buildTestTime(), nil)
 		testUtil.MockDB.On("SetPrimaryProductImageForProduct", mock.Anything, mock.AnythingOfType("uint64"), mock.Anything).
@@ -1108,9 +1108,9 @@ func TestProductCreationHandler(t *testing.T) {
 			Return([]models.Webhook{exampleWebhook}, nil).Once()
 
 		testUtil.MockImageStorage.On("CreateThumbnails", mock.Anything).
-			Return(storage.ProductImageSet{})
+			Return(images.ProductImageSet{})
 		testUtil.MockImageStorage.On("StoreImages", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("uint")).
-			Return(&storage.ProductImageLocations{}, nil)
+			Return(&images.ProductImageLocations{}, nil)
 		testUtil.MockDB.On("CreateProductImage", mock.Anything, mock.Anything).
 			Return(uint64(1), buildTestTime(), nil)
 		testUtil.MockDB.On("SetPrimaryProductImageForProduct", mock.Anything, mock.AnythingOfType("uint64"), mock.Anything).

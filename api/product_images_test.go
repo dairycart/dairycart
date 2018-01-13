@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dairycart/dairycart/storage/database"
+	"github.com/dairycart/dairycart/storage/images"
 	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/stretchr/testify/assert"
@@ -85,12 +85,12 @@ func TestHandleProductCreationImages(t *testing.T) {
 			},
 		}
 
-		exampleProductImageLocations := &storage.ProductImageLocations{
+		exampleProductImageLocations := &images.ProductImageLocations{
 			Thumbnail: exampleThumbnailLocation,
 			Main:      exampleMainLocation,
 			Original:  exampleOriginalLocation,
 		}
-		arbitraryImageSet := storage.ProductImageSet{}
+		arbitraryImageSet := images.ProductImageSet{}
 		testUtil.MockImageStorage.On("CreateThumbnails", mock.Anything).
 			Return(arbitraryImageSet)
 		testUtil.MockImageStorage.On("StoreImages", mock.Anything, exampleSKU, mock.AnythingOfType("uint")).
@@ -136,12 +136,12 @@ func TestHandleProductCreationImages(t *testing.T) {
 			},
 		}
 
-		exampleProductImageLocations := &storage.ProductImageLocations{
+		exampleProductImageLocations := &images.ProductImageLocations{
 			Thumbnail: exampleThumbnailLocation,
 			Main:      exampleMainLocation,
 			Original:  exampleOriginalLocation,
 		}
-		arbitraryImageSet := storage.ProductImageSet{}
+		arbitraryImageSet := images.ProductImageSet{}
 		testUtil.MockImageStorage.On("CreateThumbnails", mock.Anything).
 			Return(arbitraryImageSet).
 			Once()
@@ -300,12 +300,12 @@ func TestHandleProductCreationImages(t *testing.T) {
 			},
 		}
 
-		exampleProductImageLocations := &storage.ProductImageLocations{
+		exampleProductImageLocations := &images.ProductImageLocations{
 			Thumbnail: exampleThumbnailLocation,
 			Main:      exampleMainLocation,
 			Original:  exampleOriginalLocation,
 		}
-		arbitraryImageSet := storage.ProductImageSet{}
+		arbitraryImageSet := images.ProductImageSet{}
 		testUtil.MockImageStorage.On("CreateThumbnails", mock.Anything).
 			Return(arbitraryImageSet)
 		testUtil.MockImageStorage.On("StoreImages", mock.Anything, exampleSKU, mock.AnythingOfType("uint")).
@@ -350,13 +350,13 @@ func TestHandleProductCreationImages(t *testing.T) {
 			},
 		}
 
-		exampleProductImageLocations := &storage.ProductImageLocations{
+		exampleProductImageLocations := &images.ProductImageLocations{
 			Thumbnail: exampleThumbnailLocation,
 			Main:      exampleMainLocation,
 			Original:  exampleOriginalLocation,
 		}
 		testUtil.MockImageStorage.On("CreateThumbnails", mock.Anything).
-			Return(storage.ProductImageSet{})
+			Return(images.ProductImageSet{})
 		testUtil.MockImageStorage.On("StoreImages", mock.Anything, exampleSKU, mock.AnythingOfType("uint")).
 			Return(exampleProductImageLocations, nil)
 

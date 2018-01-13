@@ -3,12 +3,12 @@ package dairymock
 import (
 	"database/sql"
 
-	"github.com/dairycart/dairycart/api/storage"
+	"github.com/dairycart/dairycart/storage/database"
 
 	"github.com/stretchr/testify/mock"
 )
 
-var _ storage.Storer = (*MockDB)(nil)
+var _ database.Storer = (*MockDB)(nil)
 
 type MockDB struct {
 	mock.Mock

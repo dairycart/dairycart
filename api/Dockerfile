@@ -2,12 +2,13 @@
 FROM golang:alpine AS build-stage
 WORKDIR /go/src/github.com/dairycart/dairycart
 
-ADD . .
-ADD ../storage .
-# ADD storage api/storage
+# this Dockerfile should be executed with the upper directory's context
+ADD api api
+ADD vendor vendor
+ADD storage storage
 
-RUN go build -o /dairycart
-COPY migrations/ /migrations
+RUN go build -o /dairycart github.com/dairycart/dairycart/api
+COPY api/migrations/ /migrations
 
 # final stage
 FROM alpine:latest

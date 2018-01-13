@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  name = "github.com/Masterminds/squirrel"
+  packages = ["."]
+  revision = "a6b93000bd219143c56c16e6cb1c4b91da3f224b"
+  version = "v1.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/dairycart/dairymodels"
   packages = ["v1"]
@@ -11,7 +17,7 @@
   branch = "master"
   name = "github.com/dairycart/postgres"
   packages = ["."]
-  revision = "b4f79cb7056c18d075cbe798a981f17cfdbab3d1"
+  revision = "8bfc8bb6d880e54ea18b3125646b766ffa2c7c00"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -66,6 +72,18 @@
   packages = ["."]
   revision = "f1ac5984e69fed03e0574a92f70c59f132616ea2"
   version = "0.3.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/lann/builder"
+  packages = ["."]
+  revision = "f22ce00fd9394014049dad11c244859432bd6820"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/lann/ps"
+  packages = ["."]
+  revision = "62de8c46ede02a7675c4c79c84883eb164cb71e3"
 
 [[projects]]
   branch = "master"

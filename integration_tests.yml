@@ -13,8 +13,8 @@ services:
 
   api:
     build:
-      context: api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: api/Dockerfile
     ports:
       - "4321:4321"
     depends_on:
@@ -38,8 +38,8 @@ services:
 
   test:
     build:
-      context: integration_tests
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: integration_tests/Dockerfile
     links:
       - api
       - httpbin

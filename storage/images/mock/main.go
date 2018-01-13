@@ -3,7 +3,7 @@ package imgmock
 import (
 	"image"
 
-	"github.com/dairycart/dairycart/api/storage"
+	"github.com/dairycart/dairycart/storage/images"
 
 	"github.com/stretchr/testify/mock"
 )
@@ -12,14 +12,14 @@ type MockImageStorer struct {
 	mock.Mock
 }
 
-var _ storage.ImageStorer = (*MockImageStorer)(nil)
+var _ images.ImageStorer = (*MockImageStorer)(nil)
 
-func (m *MockImageStorer) CreateThumbnails(in image.Image) storage.ProductImageSet {
+func (m *MockImageStorer) CreateThumbnails(in image.Image) images.ProductImageSet {
 	args := m.Called(in)
-	return args.Get(0).(storage.ProductImageSet)
+	return args.Get(0).(images.ProductImageSet)
 }
 
-func (m *MockImageStorer) StoreImages(in storage.ProductImageSet, sku string, id uint) (*storage.ProductImageLocations, error) {
+func (m *MockImageStorer) StoreImages(in images.ProductImageSet, sku string, id uint) (*images.ProductImageLocations, error) {
 	args := m.Called(in, sku, id)
-	return args.Get(0).(*storage.ProductImageLocations), args.Error(1)
+	return args.Get(0).(*images.ProductImageLocations), args.Error(1)
 }
