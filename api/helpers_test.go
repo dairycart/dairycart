@@ -14,8 +14,8 @@ import (
 	"time"
 
 	// local dependencies
-	"github.com/dairycart/dairycart/api/storage/images/mock"
-	"github.com/dairycart/dairycart/api/storage/mock"
+	"github.com/dairycart/dairycart/storage/database/images/mock"
+	"github.com/dairycart/dairycart/storage/database/mock"
 	"github.com/dairycart/dairymodels/v1"
 
 	// external dependencies

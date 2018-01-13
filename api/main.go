@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dairycart/dairycart/api/storage/images/local"
-	"github.com/dairycart/dairycart/api/storage/postgres"
+	"github.com/dairycart/dairycart/storage/images/local"
+	"github.com/dairycart/postgres"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -110,7 +110,7 @@ func buildServerConfig() *ServerConfig {
 			DB:              db,
 			Dairyclient:     postgres.NewPostgres(),
 			WebhookExecutor: &webhookExecutor{Client: http.DefaultClient},
-			ImageStorer:     &localimagestorage.LocalImageStorer{BaseURL: "http://localhost:4321"},
+			ImageStorer:     &local.LocalImageStorer{BaseURL: "http://localhost:4321"},
 		}
 	default:
 		logrus.Fatalf("invalid database choice: '%s'", dbChoice)

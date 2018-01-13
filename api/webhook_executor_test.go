@@ -6,8 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/dairycart/dairycart/api/storage"
-	"github.com/dairycart/dairycart/api/storage/mock"
+	"github.com/dairycart/dairycart/storage/database"
+	"github.com/dairycart/dairycart/storage/database/mock"
 	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/stretchr/testify/mock"

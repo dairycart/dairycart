@@ -3,7 +3,8 @@ FROM golang:alpine AS build-stage
 WORKDIR /go/src/github.com/dairycart/dairycart
 
 ADD . .
-ADD storage api/storage
+ADD ../storage .
+# ADD storage api/storage
 
 RUN go build -o /dairycart
 COPY migrations/ /migrations

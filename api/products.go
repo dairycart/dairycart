@@ -8,7 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dairycart/dairycart/api/storage"
+	"github.com/dairycart/dairycart/storage/database"
+	"github.com/dairycart/dairycart/storage/images"
 	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/go-chi/chi"
@@ -59,7 +60,7 @@ type ProductCreationInput struct {
 	Options []models.ProductOption `json:"options"`
 }
 
-func buildProductExistenceHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildProductExistenceHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	// ProductExistenceHandler handles requests to check if a sku exists
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := chi.URLParam(req, "sku")
@@ -78,7 +79,7 @@ func buildProductExistenceHandler(db *sql.DB, client storage.Storer) http.Handle
 	}
 }
 
-func buildSingleProductHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildSingleProductHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	// SingleProductHandler is a request handler that returns a single Product
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := chi.URLParam(req, "sku")
@@ -96,7 +97,7 @@ func buildSingleProductHandler(db *sql.DB, client storage.Storer) http.HandlerFu
 	}
 }
 
-func buildProductListHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildProductListHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	// productListHandler is a request handler that returns a list of products
 	return func(res http.ResponseWriter, req *http.Request) {
 		rawFilterParams := req.URL.Query()
@@ -123,7 +124,7 @@ func buildProductListHandler(db *sql.DB, client storage.Storer) http.HandlerFunc
 	}
 }
 
-func buildProductDeletionHandler(db *sql.DB, client storage.Storer, webhookExecutor WebhookExecutor) http.HandlerFunc {
+func buildProductDeletionHandler(db *sql.DB, client database.Storer, webhookExecutor WebhookExecutor) http.HandlerFunc {
 	// ProductDeletionHandler is a request handler that deletes a single product
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := chi.URLParam(req, "sku")
@@ -179,7 +180,7 @@ func buildProductDeletionHandler(db *sql.DB, client storage.Storer, webhookExecu
 	}
 }
 
-func buildProductUpdateHandler(db *sql.DB, client storage.Storer, webhookExecutor WebhookExecutor) http.HandlerFunc {
+func buildProductUpdateHandler(db *sql.DB, client database.Storer, webhookExecutor WebhookExecutor) http.HandlerFunc {
 	// ProductUpdateHandler is a request handler that can update products
 	return func(res http.ResponseWriter, req *http.Request) {
 		sku := chi.URLParam(req, "sku")
@@ -228,7 +229,7 @@ func buildProductUpdateHandler(db *sql.DB, client storage.Storer, webhookExecuto
 	}
 }
 
-func createProductsInDBFromOptions(client storage.Storer, tx *sql.Tx, r *models.ProductRoot, input *models.ProductCreationInput, createdOptions []models.ProductOption) ([]models.Product, error) {
+func createProductsInDBFromOptions(client database.Storer, tx *sql.Tx, r *models.ProductRoot, input *models.ProductCreationInput, createdOptions []models.ProductOption) ([]models.Product, error) {
 	var err error
 	createdProducts := []models.Product{}
 	productsToCreate := buildProductsFromOptions(input, createdOptions)
@@ -253,7 +254,7 @@ func createProductsInDBFromOptions(client storage.Storer, tx *sql.Tx, r *models.
 	return createdProducts, nil
 }
 
-func buildProductCreationHandler(db *sql.DB, client storage.Storer, imager storage.ImageStorer, webhookExecutor WebhookExecutor) http.HandlerFunc {
+func buildProductCreationHandler(db *sql.DB, client database.Storer, imager images.ImageStorer, webhookExecutor WebhookExecutor) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		productInput := &models.ProductCreationInput{}
 		err := validateRequestInput(req, productInput)

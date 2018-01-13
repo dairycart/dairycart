@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dairycart/dairycart/api/storage"
+	"github.com/dairycart/dairycart/storage/database"
 	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/go-chi/chi"
@@ -80,7 +80,7 @@ func buildProductsFromOptions(input *models.ProductCreationInput, createdOptions
 	return toCreate
 }
 
-func buildProductOptionListHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildProductOptionListHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		productRootIDStr := chi.URLParam(req, "product_root_id")
 		// eating this error because the router should have ensured this is an integer
@@ -111,7 +111,7 @@ func buildProductOptionListHandler(db *sql.DB, client storage.Storer) http.Handl
 	}
 }
 
-func buildProductOptionUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildProductOptionUpdateHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	// ProductOptionUpdateHandler is a request handler that can update product options
 	return func(res http.ResponseWriter, req *http.Request) {
 		optionIDStr := chi.URLParam(req, "option_id")
@@ -154,7 +154,7 @@ func buildProductOptionUpdateHandler(db *sql.DB, client storage.Storer) http.Han
 	}
 }
 
-func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in models.ProductOptionCreationInput, productRootID uint64, client storage.Storer) (models.ProductOption, error) {
+func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in models.ProductOptionCreationInput, productRootID uint64, client database.Storer) (models.ProductOption, error) {
 	var err error
 	newProductOption := &models.ProductOption{Name: in.Name, ProductRootID: productRootID}
 	newProductOption.ID, newProductOption.CreatedOn, err = client.CreateProductOption(tx, newProductOption)
@@ -177,7 +177,7 @@ func createProductOptionAndValuesInDBFromInput(tx *sql.Tx, in models.ProductOpti
 	return *newProductOption, nil
 }
 
-func buildProductOptionCreationHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildProductOptionCreationHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	// ProductOptionCreationHandler is a request handler that can create product options
 	return func(res http.ResponseWriter, req *http.Request) {
 		productRootIDStr := chi.URLParam(req, "product_root_id")
@@ -235,7 +235,7 @@ func buildProductOptionCreationHandler(db *sql.DB, client storage.Storer) http.H
 	}
 }
 
-func buildProductOptionDeletionHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildProductOptionDeletionHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	// ProductOptionDeletionHandler is a request handler that can delete product options
 	return func(res http.ResponseWriter, req *http.Request) {
 		optionIDStr := chi.URLParam(req, "option_id")

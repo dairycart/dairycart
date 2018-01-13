@@ -12,7 +12,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dairycart/dairycart/api/storage"
+	"github.com/dairycart/dairycart/storage/database"
+	"github.com/dairycart/dairycart/storage/images"
 	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/fatih/structs"
@@ -49,9 +50,9 @@ type ServerConfig struct {
 	Router          *chi.Mux
 	DB              *sql.DB
 	CookieStore     *sessions.CookieStore
-	Dairyclient     storage.Storer
+	Dairyclient     database.Storer
 	WebhookExecutor WebhookExecutor
-	ImageStorer     storage.ImageStorer
+	ImageStorer     images.ImageStorer
 }
 
 func parseRawFilterParams(rawFilterParams url.Values) *models.QueryFilter {
