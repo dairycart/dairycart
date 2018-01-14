@@ -17,7 +17,7 @@
   branch = "master"
   name = "github.com/dairycart/postgres"
   packages = [".","migrations"]
-  revision = "77bf08c5f6c6a4e7b094e3c59f29941a56851645"
+  revision = "643638b5a7543c4b087a0020c8b089bacb5d46ce"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -154,6 +154,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1e40ce6ff8be28c8877f7b750e9d95e1b72c20d0adbc4fdfc0991bda8fd7f81e"
+  inputs-digest = "2c4933752ebce41677384d53e576042a0a1d031bc2c6acdd0d83b23bfe1e5e9b"
   solver-name = "gps-cdcl"
   solver-version = 1
