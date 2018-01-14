@@ -31,7 +31,6 @@ services:
     environment:
       DB_TO_USE: "postgres"
       MIGRATE_EXAMPLE_DATA: "YES"
-      DAIRYCART_MIGRATIONS_DIR: "file:///migrations"
       DAIRYCART_DB_URL: postgres://dairytest:hunter2@database:5432/dairytest?sslmode=disable
     logging:
       driver: "none"
@@ -44,5 +43,5 @@ services:
       - api
       - httpbin
     environment:
-      INTEGRATION_API_URL: http://api:4321
+      DAIRYCART_API_URL: http://api:4321
       DAIRYCART_DB_URL: postgres://dairytest:hunter2@database:5432/dairytest?sslmode=disable
