@@ -16,8 +16,8 @@
 [[projects]]
   branch = "master"
   name = "github.com/dairycart/postgres"
-  packages = ["."]
-  revision = "8bfc8bb6d880e54ea18b3125646b766ffa2c7c00"
+  packages = [".","migrations"]
+  revision = "77bf08c5f6c6a4e7b094e3c59f29941a56851645"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -41,7 +41,7 @@
   name = "github.com/fatih/structs"
   packages = ["."]
   revision = "a720dfa8df582c51dee1b36feabb906bde1588bd"
-  version = "v1.0"
+  version = "v1.0.0"
 
 [[projects]]
   name = "github.com/go-chi/chi"
@@ -93,7 +93,7 @@
 
 [[projects]]
   name = "github.com/mattes/migrate"
-  packages = [".","database","database/postgres","source","source/file"]
+  packages = [".","database","database/postgres","source","source/file","source/go-bindata"]
   revision = "035c07716cd373d88456ec4d701402df52584cb4"
   version = "v3.0.1"
 

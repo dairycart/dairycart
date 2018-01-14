@@ -326,20 +326,20 @@ func TestProductUpdateRoute(t *testing.T) {
 		assert.Equal(t, expected, actual)
 	})
 
-	t.Run("with invalid sku", func(*testing.T) {
+	t.Run("with invalid sku", func(_t *testing.T) {
 		badSKUProduct := models.Product{SKU: "thí% $kü ïs not åny gõôd"}
-		JSONBody := createJSONBody(t, badSKUProduct)
+		JSONBody := createJSONBody(_t, badSKUProduct)
 		resp, err := updateProduct(existentSKU, JSONBody)
-		assert.NoError(t, err)
-		assertStatusCode(t, resp, http.StatusBadRequest)
+		assert.NoError(_t, err)
+		assertStatusCode(_t, resp, http.StatusBadRequest)
 
 		expected := models.ErrorResponse{
 			Status:  http.StatusBadRequest,
 			Message: fmt.Sprintf("The sku received (%s) is invalid", badSKUProduct.SKU),
 		}
 		var actual models.ErrorResponse
-		unmarshalBody(t, resp, &actual)
-		assert.Equal(t, expected, actual)
+		unmarshalBody(_t, resp, &actual)
+		assert.Equal(_t, expected, actual)
 	})
 
 	t.Run("for nonexistent product", func(*testing.T) {

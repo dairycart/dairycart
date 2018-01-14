@@ -1,1 +1,0 @@
-(cd api && rm -rf vendor && dep ensure -update -v)

@@ -11,6 +11,13 @@ services:
     logging:
       driver: "none"
 
+  httpbin:
+    image: kennethreitz/httpbin:latest
+    ports:
+    - "80:8080"
+    logging:
+      driver: "none"
+
   api:
     build:
       context: .
@@ -26,13 +33,6 @@ services:
       MIGRATE_EXAMPLE_DATA: "YES"
       DAIRYCART_MIGRATIONS_DIR: "file:///migrations"
       DAIRYCART_DB_URL: postgres://dairytest:hunter2@database:5432/dairytest?sslmode=disable
-    logging:
-      driver: "none"
-
-  httpbin:
-    image: kennethreitz/httpbin:latest
-    ports:
-    - "80:8080"
     logging:
       driver: "none"
 

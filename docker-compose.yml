@@ -8,8 +8,8 @@ services:
     environment:
       - POSTGRES_USER=dairycart
       - POSTGRES_PASSWORD=hunter2
-    # logging:
-    #   driver: none
+    logging:
+      driver: none
 
   api:
     build:
