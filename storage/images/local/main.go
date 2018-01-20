@@ -14,6 +14,12 @@ import (
 
 const LocalProductImagesDirectory = "product_images"
 
+type LocalImageStorageConfig struct {
+	Filepath string
+	Domain   string
+	Port     uint16
+}
+
 type LocalImageStorer struct {
 	BaseURL string
 }
@@ -34,6 +40,37 @@ func saveImage(in image.Image, path string) error {
 		return errors.Wrap(err, "error creating local file")
 	}
 	return png.Encode(f, in)
+}
+
+func buildDefaultConfig() *LocalImageStorageConfig {
+	return &LocalImageStorageConfig{
+		Domain:   "http://localhost",
+		Port:     4321,
+		Filepath: LocalProductImagesDirectory,
+	}
+}
+
+func (lis *LocalImageStorer) Init(cfg interface{}) error {
+	var config *LocalImageStorageConfig
+	if x, _ := cfg.(*LocalImageStorageConfig); x == nil {
+		config = buildDefaultConfig()
+	} else {
+		if _, ok := cfg.(*LocalImageStorageConfig); !ok {
+			return errors.New("invalid configuration type, expected *LocalImageStorageConfig")
+		}
+		config = cfg.(*LocalImageStorageConfig)
+	}
+
+	if config.Port == 0 {
+		lis.BaseURL = config.Domain
+	} else {
+		lis.BaseURL = fmt.Sprintf("%s:%d", config.Domain, config.Port)
+	}
+
+	if _, err := os.Stat(LocalProductImagesDirectory); os.IsNotExist(err) {
+		return os.MkdirAll(LocalProductImagesDirectory, os.ModePerm)
+	}
+	return nil
 }
 
 func (lis *LocalImageStorer) StoreImages(in images.ProductImageSet, sku string, id uint) (*images.ProductImageLocations, error) {

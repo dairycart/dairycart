@@ -17,6 +17,7 @@ type ProductImageLocations struct {
 }
 
 type ImageStorer interface {
+	Init(config interface{}) error
 	CreateThumbnails(img image.Image) ProductImageSet
 	StoreImages(imgset ProductImageSet, sku string, id uint) (*ProductImageLocations, error)
 }

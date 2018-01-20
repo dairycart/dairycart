@@ -14,6 +14,12 @@ type MockImageStorer struct {
 
 var _ images.ImageStorer = (*MockImageStorer)(nil)
 
+func (m *MockImageStorer) Init(config interface{}) error {
+	args := m.Called(config)
+
+	return args.Error(0)
+}
+
 func (m *MockImageStorer) CreateThumbnails(in image.Image) images.ProductImageSet {
 	args := m.Called(in)
 	return args.Get(0).(images.ProductImageSet)

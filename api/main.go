@@ -9,22 +9,137 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"plugin"
 	"strings"
 
+	"github.com/dairycart/dairycart/storage/database"
+	"github.com/dairycart/dairycart/storage/images"
 	"github.com/dairycart/dairycart/storage/images/local"
 	"github.com/dairycart/postgres"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/gorilla/context"
-	"github.com/gorilla/sessions"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 
 	_ "github.com/lib/pq"
 	_ "github.com/mattes/migrate/source/file"
 )
 
-func buildServerConfig() *ServerConfig {
+const (
+	DefaultPort                 = 4321
+	DefaultPhotoDir             = "product_images"
+	DefaultImageStorageProvider = "local"
+	DefaultDatabaseProvider     = "postgres"
+)
+
+type ImageStorageConfig struct {
+	PluginConfig
+	Domain string `json:"domain,omitempty"`
+}
+
+type DairyConfig struct {
+	Secret       string             `json:"-"`
+	Port         uint16             `json:"port,omitempty"`
+	Database     PluginConfig       `json:"database,omitempty"`
+	ImageStorage ImageStorageConfig `json:"image_storage,omitempty"`
+}
+
+func loadPlugin(pluginPath string, symbolName string) (plugin.Symbol, error) {
+	if pluginPath == "" {
+		return nil, errors.New("plugin path may not be empty")
+	}
+	if symbolName == "" {
+		return nil, errors.New("symbol name may not be empty")
+	}
+
+	p, err := plugin.Open(pluginPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to open plugin")
+	}
+
+	symbolToLookup := symbolName
+	if symbolName[:1] == strings.ToLower(symbolName[:1]) {
+		symbolToLookup = strings.Title(symbolToLookup)
+	}
+
+	sym, err := p.Lookup(symbolToLookup)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to locate appropriate plugin symbol")
+	}
+	return sym, nil
+}
+
+func convertDairyConfigToRouterConfig(in DairyConfig) (*RouterConfig, error) {
+	config := &RouterConfig{
+		Router:          chi.NewRouter(),
+		CookieStore:     setupCookieStorage(in.Secret),
+		WebhookExecutor: &webhookExecutor{Client: http.DefaultClient},
+	}
+
+	if strings.ToLower(in.Database.Name) == "postgres" && in.Database.PluginPath == "" {
+		config.DatabaseClient = postgres.NewPostgres()
+	} else if in.Database.PluginPath != "" && in.Database.Name != "" {
+		dbSym, err := loadPlugin(in.Database.PluginPath, in.Database.Name)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to load plugin")
+		}
+		if _, ok := dbSym.(database.Storer); !ok {
+			return nil, errors.New("Symbol provided in database plugin does not satisfy the database.Storer interface")
+		}
+
+		config.DatabaseClient = dbSym.(database.Storer)
+	}
+
+	if strings.ToLower(in.ImageStorage.Name) == "local" && in.ImageStorage.PluginPath == "" {
+		config.ImageStorer = &local.LocalImageStorer{BaseURL: "http://localhost:4321"}
+	} else if in.ImageStorage.PluginPath != "" && in.ImageStorage.Name != "" {
+		imgSym, err := loadPlugin(in.Database.PluginPath, in.Database.Name)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to load plugin")
+		}
+		if _, ok := imgSym.(images.ImageStorer); !ok {
+			return nil, errors.New("Symbol provided in database plugin does not satisfy the database.Storer interface")
+		}
+
+		config.ImageStorer = imgSym.(images.ImageStorer)
+	}
+
+	return config, nil
+}
+
+func validateServerConfig() DairyConfig {
+	viper.SetConfigName("dairyconfig")
+	if len(os.Args) >= 2 {
+		viper.SetConfigName(os.Args[1])
+	}
+	viper.AddConfigPath(".")
+
+	viper.SetDefault("port", DefaultPort)
+	viper.SetDefault("domain", "http://localhost")
+
+	viper.SetDefault("database", PluginConfig{Name: DefaultDatabaseProvider})
+	viper.SetDefault("imagestorage", ImageStorageConfig{
+		PluginConfig: PluginConfig{
+			Name: DefaultImageStorageProvider,
+		},
+		Domain: fmt.Sprintf("http://localhost:%d", DefaultPort),
+	})
+	if err := viper.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			log.Fatal(err)
+		}
+	}
+
+	var config DairyConfig
+	viper.Unmarshal(&config)
+
+	return config
+}
+
+func buildServerConfig() *RouterConfig {
 	// Connect to the database
 	dbChoice := strings.ToLower(os.Getenv("DB_TO_USE"))
 	switch dbChoice {
@@ -41,9 +156,9 @@ func buildServerConfig() *ServerConfig {
 			logrus.Fatalf("error encountered migrating database: %v", err)
 		}
 
-		return &ServerConfig{
+		return &RouterConfig{
 			DB:              db,
-			Dairyclient:     postgres.NewPostgres(),
+			DatabaseClient:  postgres.NewPostgres(),
 			WebhookExecutor: &webhookExecutor{Client: http.DefaultClient},
 			ImageStorer:     &local.LocalImageStorer{BaseURL: "http://localhost:4321"},
 		}
@@ -51,14 +166,6 @@ func buildServerConfig() *ServerConfig {
 		logrus.Fatalf("invalid database choice: '%s'", dbChoice)
 	}
 	return nil
-}
-
-func setupCookieStorage() *sessions.CookieStore {
-	secret := os.Getenv("DAIRYSECRET")
-	if len(secret) < 32 {
-		logrus.Fatalf("Something is up with your app secret: `%s`", secret)
-	}
-	return sessions.NewCookieStore([]byte(secret))
 }
 
 func fileServer(r chi.Router, path string, root http.FileSystem) {
@@ -79,29 +186,21 @@ func fileServer(r chi.Router, path string, root http.FileSystem) {
 	}))
 }
 
-func createPhotoDirectory(path string) {
-	os.MkdirAll(path, os.ModePerm)
-}
-
 func main() {
 	logrus.SetOutput(os.Stdout)
 	logrus.SetLevel(logrus.InfoLevel)
 
-	config := buildServerConfig()
-	config.CookieStore = setupCookieStorage()
-	config.Router = chi.NewRouter()
+	cfg := validateServerConfig()
 
+	config := buildDefaultConfig()
 	config.Router.Use(middleware.RequestID)
 	config.Router.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{Logger: log.New(os.Stdout, "", log.LstdFlags)}))
-	SetupAPIRoutes(config)
+	SetupAPIRouter(config)
 
-	photoDir := "product_images"
-	createPhotoDirectory(photoDir)
-	fileServer(config.Router, fmt.Sprintf("/%s/", photoDir), http.Dir(photoDir))
+	fileServer(config.Router, fmt.Sprintf("/%s/", DefaultPhotoDir), http.Dir(DefaultPhotoDir))
 
-	port := 4321
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "healthy!") })
 	http.Handle("/", context.ClearHandler(config.Router))
-	log.Printf("API now listening for requests on port %d\n", port)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
+	log.Printf("API now listening for requests on port %d\n", cfg.Port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), nil))
 }

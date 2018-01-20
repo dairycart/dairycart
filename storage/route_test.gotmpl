@@ -30,7 +30,7 @@ func Test{{ $modelName }}RetrievalHandler(t *testing.T) {
 		testUtil.MockDB.On("Get{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
 			Return(example{{ $modelName }}, nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/{{ $lowerName }}/1", nil)
 		assert.NoError(t, err)
@@ -44,7 +44,7 @@ func Test{{ $modelName }}RetrievalHandler(t *testing.T) {
 		testUtil.MockDB.On("Get{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
 			Return(example{{ $modelName }}, sql.ErrNoRows)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/{{ $lowerName }}/1", nil)
 		assert.NoError(t, err)
@@ -58,7 +58,7 @@ func Test{{ $modelName }}RetrievalHandler(t *testing.T) {
 		testUtil.MockDB.On("Get{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
 			Return(example{{ $modelName }}, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/{{ $lowerName }}/1", nil)
 		assert.NoError(t, err)
@@ -78,7 +78,7 @@ func Test{{ $modelName }}ListHandler(t *testing.T) {
 		testUtil.MockDB.On("Get{{ $modelName }}List", mock.Anything, mock.Anything).
 			Return([]models.{{ $modelName }}{example{{ $modelName }}}, nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/{{ $lowerName }}s", nil)
 		assert.NoError(t, err)
@@ -92,7 +92,7 @@ func Test{{ $modelName }}ListHandler(t *testing.T) {
 		testUtil.MockDB.On("Get{{ $modelName }}Count", mock.Anything, mock.Anything).
 			Return(uint64(3), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/{{ $lowerName }}s", nil)
 		assert.NoError(t, err)
@@ -108,7 +108,7 @@ func Test{{ $modelName }}ListHandler(t *testing.T) {
 		testUtil.MockDB.On("Get{{ $modelName }}List", mock.Anything, mock.Anything).
 			Return([]models.{{ $modelName }}{}, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/{{ $lowerName }}s", nil)
 		assert.NoError(t, err)
@@ -130,7 +130,7 @@ func Test{{ $modelName }}CreationHandler(t *testing.T) {
 		testUtil.MockDB.On("Create{{ $modelName }}", mock.Anything, mock.Anything).
 			Return(uint64(1), buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/{{ $lowerName }}", strings.NewReader(example{{ $modelName }}CreationInput))
 		assert.NoError(t, err)
@@ -142,7 +142,7 @@ func Test{{ $modelName }}CreationHandler(t *testing.T) {
 	t.Run("with invalid input", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/{{ $lowerName }}", strings.NewReader(exampleGarbageInput))
 		assert.NoError(t, err)
@@ -156,7 +156,7 @@ func Test{{ $modelName }}CreationHandler(t *testing.T) {
 		testUtil.MockDB.On("Create{{ $modelName }}", mock.Anything, mock.Anything).
 			Return(uint64(1), buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/{{ $lowerName }}", strings.NewReader(example{{ $modelName }}CreationInput))
 		assert.NoError(t, err)
@@ -176,7 +176,7 @@ func Test{{ $modelName }}DeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("Delete{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
 			Return(buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/{{ $lowerName }}/%d", example{{ $modelName }}.ID), nil)
 		assert.NoError(t, err)
@@ -190,7 +190,7 @@ func Test{{ $modelName }}DeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("Get{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
 			Return(example{{ $modelName }}, sql.ErrNoRows)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/{{ $lowerName }}/%d", example{{ $modelName }}.ID), nil)
 		assert.NoError(t, err)
@@ -204,7 +204,7 @@ func Test{{ $modelName }}DeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("Get{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
 			Return(example{{ $modelName }}, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/{{ $lowerName }}/%d", example{{ $modelName }}.ID), nil)
 		assert.NoError(t, err)
@@ -220,7 +220,7 @@ func Test{{ $modelName }}DeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("Delete{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
 			Return(buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/{{ $lowerName }}/%d", example{{ $modelName }}.ID), nil)
 		assert.NoError(t, err)
@@ -246,7 +246,7 @@ func Test{{ $modelName }}UpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("Update{{ $modelName }}", mock.Anything, mock.Anything).
 			Return(buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, "/v1/{{ $lowerName }}/1", strings.NewReader(example{{ $modelName }}UpdateInput))
 		assert.NoError(t, err)
@@ -258,7 +258,7 @@ func Test{{ $modelName }}UpdateHandler(t *testing.T) {
 	t.Run("with invalid input", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, "/v1/{{ $lowerName }}/1", strings.NewReader(exampleGarbageInput))
 		assert.NoError(t, err)
@@ -272,7 +272,7 @@ func Test{{ $modelName }}UpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("Get{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
 			Return(example{{ $modelName }}, sql.ErrNoRows)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, "/v1/{{ $lowerName }}/1", strings.NewReader(example{{ $modelName }}UpdateInput))
 		assert.NoError(t, err)
@@ -286,7 +286,7 @@ func Test{{ $modelName }}UpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("Get{{ $modelName }}", mock.Anything, example{{ $modelName }}.ID).
 			Return(example{{ $modelName }}, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, "/v1/{{ $lowerName }}/1", strings.NewReader(example{{ $modelName }}UpdateInput))
 		assert.NoError(t, err)
@@ -302,7 +302,7 @@ func Test{{ $modelName }}UpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("Update{{ $modelName }}", mock.Anything, mock.Anything).
 			Return(buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, "/v1/{{ $lowerName }}/1", strings.NewReader(example{{ $modelName }}UpdateInput))
 		assert.NoError(t, err)
