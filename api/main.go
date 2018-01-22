@@ -5,7 +5,6 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -22,7 +21,6 @@ import (
 	"github.com/gorilla/context"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 
 	_ "github.com/lib/pq"
 	_ "github.com/mattes/migrate/source/file"
@@ -30,29 +28,16 @@ import (
 
 const (
 	DefaultPort                 = 4321
-	DefaultPhotoDir             = "product_images"
 	DefaultImageStorageProvider = "local"
 	DefaultDatabaseProvider     = "postgres"
 )
 
-type ImageStorageConfig struct {
-	PluginConfig
-	Domain string `json:"domain,omitempty"`
-}
-
-type DairyConfig struct {
-	Secret       string             `json:"-"`
-	Port         uint16             `json:"port,omitempty"`
-	Database     PluginConfig       `json:"database,omitempty"`
-	ImageStorage ImageStorageConfig `json:"image_storage,omitempty"`
-}
-
 func loadPlugin(pluginPath string, symbolName string) (plugin.Symbol, error) {
 	if pluginPath == "" {
-		return nil, errors.New("plugin path may not be empty")
+		return nil, errors.New("plugin path cannot be empty")
 	}
 	if symbolName == "" {
-		return nil, errors.New("symbol name may not be empty")
+		return nil, errors.New("symbol name cannot be empty")
 	}
 
 	p, err := plugin.Open(pluginPath)
@@ -72,14 +57,20 @@ func loadPlugin(pluginPath string, symbolName string) (plugin.Symbol, error) {
 	return sym, nil
 }
 
-func convertDairyConfigToRouterConfig(in DairyConfig) (*RouterConfig, error) {
-	config := &RouterConfig{
+func convertDairyConfigToRouterConfig(in DairyConfig) (*ServerConfig, error) {
+	db, err := sql.Open(strings.ToLower(in.Database.Name), in.Database.ConnectionString)
+	if err != nil {
+		logrus.Fatalf("error encountered connecting to database: %v", err)
+	}
+
+	config := &ServerConfig{
 		Router:          chi.NewRouter(),
+		DB:              db,
 		CookieStore:     setupCookieStorage(in.Secret),
 		WebhookExecutor: &webhookExecutor{Client: http.DefaultClient},
 	}
 
-	if strings.ToLower(in.Database.Name) == "postgres" && in.Database.PluginPath == "" {
+	if strings.ToLower(in.Database.Name) == DefaultDatabaseProvider && in.Database.PluginPath == "" {
 		config.DatabaseClient = postgres.NewPostgres()
 	} else if in.Database.PluginPath != "" && in.Database.Name != "" {
 		dbSym, err := loadPlugin(in.Database.PluginPath, in.Database.Name)
@@ -93,7 +84,7 @@ func convertDairyConfigToRouterConfig(in DairyConfig) (*RouterConfig, error) {
 		config.DatabaseClient = dbSym.(database.Storer)
 	}
 
-	if strings.ToLower(in.ImageStorage.Name) == "local" && in.ImageStorage.PluginPath == "" {
+	if strings.ToLower(in.ImageStorage.Name) == DefaultImageStorageProvider && in.ImageStorage.PluginPath == "" {
 		config.ImageStorer = &local.LocalImageStorer{BaseURL: "http://localhost:4321"}
 	} else if in.ImageStorage.PluginPath != "" && in.ImageStorage.Name != "" {
 		imgSym, err := loadPlugin(in.Database.PluginPath, in.Database.Name)
@@ -110,65 +101,10 @@ func convertDairyConfigToRouterConfig(in DairyConfig) (*RouterConfig, error) {
 	return config, nil
 }
 
-func validateServerConfig() DairyConfig {
-	viper.SetConfigName("dairyconfig")
-	if len(os.Args) >= 2 {
-		viper.SetConfigName(os.Args[1])
-	}
-	viper.AddConfigPath(".")
-
-	viper.SetDefault("port", DefaultPort)
-	viper.SetDefault("domain", "http://localhost")
-
-	viper.SetDefault("database", PluginConfig{Name: DefaultDatabaseProvider})
-	viper.SetDefault("imagestorage", ImageStorageConfig{
-		PluginConfig: PluginConfig{
-			Name: DefaultImageStorageProvider,
-		},
-		Domain: fmt.Sprintf("http://localhost:%d", DefaultPort),
-	})
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			log.Fatal(err)
-		}
-	}
-
-	var config DairyConfig
-	viper.Unmarshal(&config)
-
-	return config
-}
-
-func buildServerConfig() *RouterConfig {
-	// Connect to the database
-	dbChoice := strings.ToLower(os.Getenv("DB_TO_USE"))
-	switch dbChoice {
-	case "postgres":
-		dbURL := os.Getenv("DAIRYCART_DB_URL")
-		db, err := sql.Open("postgres", dbURL)
-		if err != nil {
-			logrus.Fatalf("error encountered connecting to database: %v", err)
-		}
-
-		loadExampleData := os.Getenv("MIGRATE_EXAMPLE_DATA") == "YES"
-		pg := postgres.NewPostgres()
-		if err = pg.Migrate(db, dbURL, loadExampleData); err != nil {
-			logrus.Fatalf("error encountered migrating database: %v", err)
-		}
-
-		return &RouterConfig{
-			DB:              db,
-			DatabaseClient:  postgres.NewPostgres(),
-			WebhookExecutor: &webhookExecutor{Client: http.DefaultClient},
-			ImageStorer:     &local.LocalImageStorer{BaseURL: "http://localhost:4321"},
-		}
-	default:
-		logrus.Fatalf("invalid database choice: '%s'", dbChoice)
-	}
-	return nil
-}
-
 func fileServer(r chi.Router, path string, root http.FileSystem) {
+	// path := fmt.Sprintf("/%s/", local.LocalProductImagesDirectory)
+	// root := http.Dir(local.LocalProductImagesDirectory)
+
 	if strings.ContainsAny(path, "{}*") {
 		panic("fileServer does not permit URL parameters.")
 	}
@@ -190,16 +126,19 @@ func main() {
 	logrus.SetOutput(os.Stdout)
 	logrus.SetLevel(logrus.InfoLevel)
 
-	cfg := validateServerConfig()
+	setConfigDefaults()
+	cfg := loadConfigFile()
+	config, err := convertDairyConfigToRouterConfig(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	config := buildDefaultConfig()
 	config.Router.Use(middleware.RequestID)
 	config.Router.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{Logger: log.New(os.Stdout, "", log.LstdFlags)}))
 	SetupAPIRouter(config)
 
-	fileServer(config.Router, fmt.Sprintf("/%s/", DefaultPhotoDir), http.Dir(DefaultPhotoDir))
+	fileServer(config.Router, fmt.Sprintf("/%s/", local.LocalProductImagesDirectory), http.Dir(local.LocalProductImagesDirectory))
 
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "healthy!") })
 	http.Handle("/", context.ClearHandler(config.Router))
 	log.Printf("API now listening for requests on port %d\n", cfg.Port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), nil))

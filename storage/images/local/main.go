@@ -15,9 +15,9 @@ import (
 const LocalProductImagesDirectory = "product_images"
 
 type LocalImageStorageConfig struct {
-	Filepath string
-	Domain   string
-	Port     uint16
+	StoragePath string
+	Domain      string
+	Port        uint16
 }
 
 type LocalImageStorer struct {
@@ -44,9 +44,9 @@ func saveImage(in image.Image, path string) error {
 
 func buildDefaultConfig() *LocalImageStorageConfig {
 	return &LocalImageStorageConfig{
-		Domain:   "http://localhost",
-		Port:     4321,
-		Filepath: LocalProductImagesDirectory,
+		Domain:      "http://localhost",
+		Port:        4321,
+		StoragePath: LocalProductImagesDirectory,
 	}
 }
 

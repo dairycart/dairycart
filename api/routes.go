@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
 
 	// external dependencies
@@ -20,7 +22,9 @@ func buildRoute(routeVersion string, routeParts ...string) string {
 }
 
 // SetupAPIRouter takes a mux router and a database connection and creates all the API routes for the API
-func SetupAPIRouter(config *RouterConfig) {
+func SetupAPIRouter(config *ServerConfig) {
+	// health check
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "healthy!") })
 
 	// Auth
 	config.Router.Post("/login", buildUserLoginHandler(config.DB, config.DatabaseClient, config.CookieStore))
