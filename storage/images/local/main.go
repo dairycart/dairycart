@@ -4,33 +4,35 @@ import (
 	"fmt"
 	"image"
 	"image/png"
+	"net"
+	"net/url"
 	"os"
 
 	"github.com/dairycart/dairycart/storage/images"
 
 	"github.com/nfnt/resize"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 )
 
-const LocalProductImagesDirectory = "product_images"
+const (
+	portKey                     = "image_storage.port"
+	baseURLKey                  = "image_storage.base_url"
+	storageDirKey               = "image_storage.storage_dir"
+	LocalProductImagesDirectory = "product_images"
+)
 
-type LocalImageStorageConfig struct {
-	StoragePath string
-	Domain      string
-	Port        uint16
+type localImageStorer struct {
+	BaseURL    string
+	StorageDir string
 }
 
-type LocalImageStorer struct {
-	BaseURL string
-}
+var _ images.ImageStorer = (*localImageStorer)(nil)
 
-var _ images.ImageStorer = (*LocalImageStorer)(nil)
-
-func (lis *LocalImageStorer) CreateThumbnails(in image.Image) images.ProductImageSet {
-	return images.ProductImageSet{
-		Thumbnail: resize.Thumbnail(100, 100, in, resize.NearestNeighbor),
-		Main:      resize.Thumbnail(500, 500, in, resize.NearestNeighbor),
-		Original:  in,
+func NewLocalImageStorer() *localImageStorer {
+	return &localImageStorer{
+		BaseURL:    "http://localhost:4321",
+		StorageDir: LocalProductImagesDirectory,
 	}
 }
 
@@ -42,44 +44,51 @@ func saveImage(in image.Image, path string) error {
 	return png.Encode(f, in)
 }
 
-func buildDefaultConfig() *LocalImageStorageConfig {
-	return &LocalImageStorageConfig{
-		Domain:      "http://localhost",
-		Port:        4321,
-		StoragePath: LocalProductImagesDirectory,
+func ensureDomainHasNoPort(domain string) (string, error) {
+	u, err := url.Parse(domain)
+	if err != nil {
+		return "", err
 	}
+	u.Host, _, _ = net.SplitHostPort(u.Host)
+
+	return u.String(), nil
 }
 
-func (lis *LocalImageStorer) Init(cfg interface{}) error {
-	var config *LocalImageStorageConfig
-	if x, _ := cfg.(*LocalImageStorageConfig); x == nil {
-		config = buildDefaultConfig()
-	} else {
-		if _, ok := cfg.(*LocalImageStorageConfig); !ok {
-			return errors.New("invalid configuration type, expected *LocalImageStorageConfig")
-		}
-		config = cfg.(*LocalImageStorageConfig)
+func (l *localImageStorer) Init(cfg *viper.Viper) error {
+	port := cfg.GetInt(portKey)
+
+	domain, err := ensureDomainHasNoPort(cfg.GetString(baseURLKey))
+	if err != nil {
+		return errors.Wrap(err, "error parsing provided image storage url")
 	}
 
-	if config.Port == 0 {
-		lis.BaseURL = config.Domain
+	if port == 0 {
+		l.BaseURL = domain
 	} else {
-		lis.BaseURL = fmt.Sprintf("%s:%d", config.Domain, config.Port)
+		l.BaseURL = fmt.Sprintf("%s:%d", domain, port)
 	}
 
-	if _, err := os.Stat(LocalProductImagesDirectory); os.IsNotExist(err) {
-		return os.MkdirAll(LocalProductImagesDirectory, os.ModePerm)
+	storageDir := cfg.GetString(storageDirKey)
+	if storageDir != "" {
+		l.StorageDir = storageDir
+	}
+
+	if _, err := os.Stat(l.StorageDir); os.IsNotExist(err) {
+		return os.MkdirAll(l.StorageDir, os.ModePerm)
 	}
 	return nil
 }
 
-func (lis *LocalImageStorer) StoreImages(in images.ProductImageSet, sku string, id uint) (*images.ProductImageLocations, error) {
-	baseURL := lis.BaseURL
-	if baseURL == "" {
-		baseURL = "http://localhost:4321"
+func (l *localImageStorer) CreateThumbnails(in image.Image) images.ProductImageSet {
+	return images.ProductImageSet{
+		Thumbnail: resize.Thumbnail(100, 100, in, resize.NearestNeighbor),
+		Main:      resize.Thumbnail(500, 500, in, resize.NearestNeighbor),
+		Original:  in,
 	}
+}
 
-	photoDir := fmt.Sprintf("%s/%s/%d", LocalProductImagesDirectory, sku, id)
+func (l *localImageStorer) StoreImages(in images.ProductImageSet, sku string, id uint) (*images.ProductImageLocations, error) {
+	photoDir := fmt.Sprintf("%s/%s/%d", l.StorageDir, sku, id)
 
 	var err error
 	if _, err = os.Stat(photoDir); os.IsNotExist(err) {
@@ -95,21 +104,21 @@ func (lis *LocalImageStorer) StoreImages(in images.ProductImageSet, sku string, 
 	if err != nil {
 		return nil, err
 	}
-	out.Thumbnail = fmt.Sprintf("%s/%s", baseURL, thumbnailPath)
+	out.Thumbnail = fmt.Sprintf("%s/%s", l.BaseURL, thumbnailPath)
 
 	mainPath := fmt.Sprintf("%s/main.png", photoDir)
 	err = saveImage(in.Main, mainPath)
 	if err != nil {
 		return out, err
 	}
-	out.Main = fmt.Sprintf("%s/%s", baseURL, mainPath)
+	out.Main = fmt.Sprintf("%s/%s", l.BaseURL, mainPath)
 
 	originalPath := fmt.Sprintf("%s/original.png", photoDir)
 	err = saveImage(in.Original, originalPath)
 	if err != nil {
 		return out, err
 	}
-	out.Original = fmt.Sprintf("%s/%s", baseURL, originalPath)
+	out.Original = fmt.Sprintf("%s/%s", l.BaseURL, originalPath)
 
 	return out, nil
 }
