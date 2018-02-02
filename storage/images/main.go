@@ -3,6 +3,7 @@ package images
 import (
 	"image"
 
+	"github.com/go-chi/chi"
 	"github.com/spf13/viper"
 )
 
@@ -19,7 +20,7 @@ type ProductImageLocations struct {
 }
 
 type ImageStorer interface {
-	Init(config *viper.Viper) error
+	Init(config *viper.Viper, router chi.Router) error
 	CreateThumbnails(img image.Image) ProductImageSet
 	StoreImages(imgset ProductImageSet, sku string, id uint) (*ProductImageLocations, error)
 }

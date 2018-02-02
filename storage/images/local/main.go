@@ -5,11 +5,14 @@ import (
 	"image"
 	"image/png"
 	"net"
+	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/dairycart/dairycart/storage/images"
 
+	"github.com/go-chi/chi"
 	"github.com/nfnt/resize"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -19,20 +22,23 @@ const (
 	portKey                     = "image_storage.port"
 	baseURLKey                  = "image_storage.base_url"
 	storageDirKey               = "image_storage.storage_dir"
+	routePrefixKey              = "image_storage.route_prefix"
 	LocalProductImagesDirectory = "product_images"
 )
 
 type localImageStorer struct {
-	BaseURL    string
-	StorageDir string
+	BaseURL     string
+	StorageDir  string
+	RoutePrefix string
 }
 
 var _ images.ImageStorer = (*localImageStorer)(nil)
 
 func NewLocalImageStorer() *localImageStorer {
 	return &localImageStorer{
-		BaseURL:    "http://localhost:4321",
-		StorageDir: LocalProductImagesDirectory,
+		BaseURL:     "http://localhost:4321",
+		StorageDir:  LocalProductImagesDirectory,
+		RoutePrefix: LocalProductImagesDirectory,
 	}
 }
 
@@ -54,7 +60,28 @@ func ensureDomainHasNoPort(domain string) (string, error) {
 	return u.String(), nil
 }
 
-func (l *localImageStorer) Init(cfg *viper.Viper) error {
+func fileServer(r chi.Router, path string, root http.FileSystem) {
+	// path := fmt.Sprintf("/%s/", local.LocalProductImagesDirectory)
+	// root := http.Dir(local.LocalProductImagesDirectory)
+
+	if strings.ContainsAny(path, "{}*") {
+		panic("fileServer does not permit URL parameters.")
+	}
+
+	fs := http.StripPrefix(path, http.FileServer(root))
+
+	if path != "/" && path[len(path)-1] != '/' {
+		r.Get(path, http.RedirectHandler(path+"/", 301).ServeHTTP)
+		path += "/"
+	}
+	path += "*"
+
+	r.Get(path, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fs.ServeHTTP(w, r)
+	}))
+}
+
+func (l *localImageStorer) Init(cfg *viper.Viper, router chi.Router) error {
 	port := cfg.GetInt(portKey)
 
 	domain, err := ensureDomainHasNoPort(cfg.GetString(baseURLKey))
@@ -76,6 +103,14 @@ func (l *localImageStorer) Init(cfg *viper.Viper) error {
 	if _, err := os.Stat(l.StorageDir); os.IsNotExist(err) {
 		return os.MkdirAll(l.StorageDir, os.ModePerm)
 	}
+
+	routePrefix := cfg.GetString(routePrefixKey)
+	if routePrefix == "" {
+		l.RoutePrefix = storageDir
+	}
+
+	path := fmt.Sprintf("/%s/", l.RoutePrefix)
+	fileServer(router, path, http.Dir(l.StorageDir))
 	return nil
 }
 

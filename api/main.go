@@ -7,9 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
-
-	"github.com/dairycart/dairycart/storage/images/local"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -20,27 +17,6 @@ import (
 	_ "github.com/lib/pq"
 	_ "github.com/mattes/migrate/source/file"
 )
-
-func fileServer(r chi.Router, path string, root http.FileSystem) {
-	// path := fmt.Sprintf("/%s/", local.LocalProductImagesDirectory)
-	// root := http.Dir(local.LocalProductImagesDirectory)
-
-	if strings.ContainsAny(path, "{}*") {
-		panic("fileServer does not permit URL parameters.")
-	}
-
-	fs := http.StripPrefix(path, http.FileServer(root))
-
-	if path != "/" && path[len(path)-1] != '/' {
-		r.Get(path, http.RedirectHandler(path+"/", 301).ServeHTTP)
-		path += "/"
-	}
-	path += "*"
-
-	r.Get(path, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fs.ServeHTTP(w, r)
-	}))
-}
 
 func main() {
 	logrus.SetOutput(os.Stdout)
@@ -61,14 +37,12 @@ func main() {
 	config.Router.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{Logger: log.New(os.Stdout, "", log.LstdFlags)}))
 	SetupAPIRouter(config)
 
-	// config.Router.Route("/v1", func(r chi.Router) {
-	// 	config.ImageStorer.Init(r)
-	// })
-
-	fileServer(config.Router, fmt.Sprintf("/%s/", local.LocalProductImagesDirectory), http.Dir(local.LocalProductImagesDirectory))
-	http.Handle("/", context.ClearHandler(config.Router))
+	config.Router.Route("/v1", func(r chi.Router) {
+		config.ImageStorer.Init(cfg, r)
+	})
 
 	port := cfg.GetInt("port")
+	http.Handle("/", context.ClearHandler(config.Router))
 	log.Printf("API now listening for requests on port %d\n", port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }
