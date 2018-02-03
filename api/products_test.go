@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dairycart/dairycart/api/storage"
+	"github.com/dairycart/dairycart/storage/images"
 	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/stretchr/testify/assert"
@@ -169,7 +169,7 @@ func TestProductExistenceHandler(t *testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("ProductWithSKUExists", mock.Anything, exampleSKU).Return(true, nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest("HEAD", "/v1/product/example", nil)
 		assert.NoError(t, err)
@@ -181,7 +181,7 @@ func TestProductExistenceHandler(t *testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("ProductWithSKUExists", mock.Anything, exampleSKU).Return(false, nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest("HEAD", "/v1/product/example", nil)
 		assert.NoError(t, err)
@@ -193,7 +193,7 @@ func TestProductExistenceHandler(t *testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("ProductWithSKUExists", mock.Anything, exampleSKU).Return(false, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest("HEAD", "/v1/product/example", nil)
 		assert.NoError(t, err)
@@ -229,7 +229,7 @@ func TestProductRetrievalHandler(t *testing.T) {
 
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).Return(exampleProduct, nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), nil)
 		assert.NoError(t, err)
@@ -243,7 +243,7 @@ func TestProductRetrievalHandler(t *testing.T) {
 
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).Return(exampleProduct, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), nil)
 		assert.NoError(t, err)
@@ -257,7 +257,7 @@ func TestProductRetrievalHandler(t *testing.T) {
 
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).Return(exampleProduct, sql.ErrNoRows)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product/%s", exampleProduct.SKU), nil)
 		assert.NoError(t, err)
@@ -297,7 +297,7 @@ func TestProductListHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductList", mock.Anything, mock.Anything).
 			Return([]models.Product{exampleProduct, exampleProduct, exampleProduct}, nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/products", nil)
 		assert.NoError(t, err)
@@ -310,7 +310,7 @@ func TestProductListHandler(t *testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("GetProductCount", mock.Anything, mock.Anything).Return(exampleLength, sql.ErrNoRows)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/products", nil)
 		assert.NoError(t, err)
@@ -325,7 +325,7 @@ func TestProductListHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductList", mock.Anything, mock.Anything).
 			Return([]models.Product{exampleProduct, exampleProduct, exampleProduct}, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/products", nil)
 		assert.NoError(t, err)
@@ -379,7 +379,7 @@ func TestProductUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetWebhooksByEventType", mock.Anything, ProductUpdatedWebhookEvent).
 			Return([]models.Webhook{exampleWebhook}, nil).Once()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(
 			http.MethodPatch,
@@ -398,7 +398,7 @@ func TestProductUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).
 			Return(exampleProduct, sql.ErrNoRows).Once()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(
 			http.MethodPatch,
@@ -416,7 +416,7 @@ func TestProductUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).
 			Return(exampleProduct, generateArbitraryError()).Once()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch,
 			fmt.Sprintf("/v1/product/%s", exampleProduct.SKU),
@@ -431,7 +431,7 @@ func TestProductUpdateHandler(t *testing.T) {
 	t.Run("with input validation error", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(
 			http.MethodPatch,
@@ -449,7 +449,7 @@ func TestProductUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).
 			Return(exampleProduct, nil).Once()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(
 			http.MethodPatch,
@@ -469,7 +469,7 @@ func TestProductUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("UpdateProduct", mock.Anything, mock.Anything).
 			Return(buildTestTime(), generateArbitraryError()).Once()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(
 			http.MethodPatch,
@@ -491,7 +491,7 @@ func TestProductUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetWebhooksByEventType", mock.Anything, ProductUpdatedWebhookEvent).
 			Return([]models.Webhook{}, generateArbitraryError()).Once()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(
 			http.MethodPatch,
@@ -530,7 +530,7 @@ func TestProductDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetWebhooksByEventType", mock.Anything, ProductArchivedWebhookEvent).
 			Return([]models.Webhook{exampleWebhook}, nil).Once()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 		assert.NoError(t, err)
@@ -544,7 +544,7 @@ func TestProductDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).
 			Return(exampleProduct, sql.ErrNoRows).Once()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 		assert.NoError(t, err)
@@ -558,7 +558,7 @@ func TestProductDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).
 			Return(exampleProduct, generateArbitraryError()).Once()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 		assert.NoError(t, err)
@@ -573,7 +573,7 @@ func TestProductDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductBySKU", mock.Anything, exampleProduct.SKU).
 			Return(exampleProduct, nil).Once()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 		assert.NoError(t, err)
@@ -591,7 +591,7 @@ func TestProductDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("DeleteProductVariantBridgeByProductID", mock.Anything, exampleProduct.ID).
 			Return(buildTestTime(), generateArbitraryError()).Once()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 		assert.NoError(t, err)
@@ -613,7 +613,7 @@ func TestProductDeletionHandler(t *testing.T) {
 			Return(buildTestTime(), generateArbitraryError()).
 			Once()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 		assert.NoError(t, err)
@@ -633,7 +633,7 @@ func TestProductDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("DeleteProduct", mock.Anything, exampleProduct.ID).
 			Return(buildTestTime(), nil).Once()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 		assert.NoError(t, err)
@@ -655,7 +655,7 @@ func TestProductDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetWebhooksByEventType", mock.Anything, ProductArchivedWebhookEvent).
 			Return([]models.Webhook{}, generateArbitraryError()).Once()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, "/v1/product/example", nil)
 		assert.NoError(t, err)
@@ -863,7 +863,7 @@ func TestProductCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("GetWebhooksByEventType", mock.Anything, ProductCreatedWebhookEvent).
 			Return([]models.Webhook{exampleWebhook}, nil).Once()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
 		assert.NoError(t, err)
@@ -887,7 +887,7 @@ func TestProductCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("GetWebhooksByEventType", mock.Anything, ProductCreatedWebhookEvent).
 			Return([]models.Webhook{exampleWebhook}, nil).Once()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInput))
 		assert.NoError(t, err)
@@ -900,7 +900,7 @@ func TestProductCreationHandler(t *testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("ProductRootWithSKUPrefixExists", mock.Anything, exampleProduct.SKU).Return(false, nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleGarbageInput))
 		assert.NoError(t, err)
@@ -913,7 +913,7 @@ func TestProductCreationHandler(t *testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("ProductRootWithSKUPrefixExists", mock.Anything, exampleProduct.SKU).Return(false, nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(badSKUUpdateJSON))
 		assert.NoError(t, err)
@@ -926,7 +926,7 @@ func TestProductCreationHandler(t *testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		testUtil.MockDB.On("ProductRootWithSKUPrefixExists", mock.Anything, exampleProduct.SKU).Return(true, nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
 		assert.NoError(t, err)
@@ -941,7 +941,7 @@ func TestProductCreationHandler(t *testing.T) {
 			Return(false, nil)
 		testUtil.Mock.ExpectBegin().WillReturnError(generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
 		assert.NoError(t, err)
@@ -959,7 +959,7 @@ func TestProductCreationHandler(t *testing.T) {
 			Return(exampleRoot.ID, buildTestTime(), generateArbitraryError())
 		testUtil.Mock.ExpectRollback()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
 		assert.NoError(t, err)
@@ -978,12 +978,12 @@ func TestProductCreationHandler(t *testing.T) {
 		testUtil.Mock.ExpectRollback()
 
 		testUtil.MockImageStorage.On("CreateThumbnails", mock.Anything).
-			Return(storage.ProductImageSet{})
+			Return(images.ProductImageSet{})
 		testUtil.MockImageStorage.On("StoreImages", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("uint")).
-			Return(&storage.ProductImageLocations{}, generateArbitraryError())
+			Return(&images.ProductImageLocations{}, generateArbitraryError())
 
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithImages))
 		assert.NoError(t, err)
@@ -1003,7 +1003,7 @@ func TestProductCreationHandler(t *testing.T) {
 			Return(exampleProduct.ID, buildTestTime(), buildTestTime(), generateArbitraryError())
 		testUtil.Mock.ExpectRollback()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInput))
 		assert.NoError(t, err)
@@ -1032,16 +1032,16 @@ func TestProductCreationHandler(t *testing.T) {
 			Return([]models.Webhook{exampleWebhook}, nil).Once()
 
 		testUtil.MockImageStorage.On("CreateThumbnails", mock.Anything).
-			Return(storage.ProductImageSet{})
+			Return(images.ProductImageSet{})
 		testUtil.MockImageStorage.On("StoreImages", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("uint")).
-			Return(&storage.ProductImageLocations{}, nil)
+			Return(&images.ProductImageLocations{}, nil)
 		testUtil.MockDB.On("CreateProductImage", mock.Anything, mock.Anything).
 			Return(uint64(1), buildTestTime(), nil)
 		testUtil.MockDB.On("SetPrimaryProductImageForProduct", mock.Anything, mock.AnythingOfType("uint64"), mock.Anything).
 			Return(buildTestTime(), nil)
 
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithNoPrimaryImages))
 		assert.NoError(t, err)
@@ -1070,16 +1070,16 @@ func TestProductCreationHandler(t *testing.T) {
 			Return([]models.Webhook{exampleWebhook}, nil).Once()
 
 		testUtil.MockImageStorage.On("CreateThumbnails", mock.Anything).
-			Return(storage.ProductImageSet{})
+			Return(images.ProductImageSet{})
 		testUtil.MockImageStorage.On("StoreImages", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("uint")).
-			Return(&storage.ProductImageLocations{}, nil)
+			Return(&images.ProductImageLocations{}, nil)
 		testUtil.MockDB.On("CreateProductImage", mock.Anything, mock.Anything).
 			Return(uint64(1), buildTestTime(), nil)
 		testUtil.MockDB.On("SetPrimaryProductImageForProduct", mock.Anything, mock.AnythingOfType("uint64"), mock.Anything).
 			Return(buildTestTime(), nil)
 
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithImages))
 		assert.NoError(t, err)
@@ -1108,16 +1108,16 @@ func TestProductCreationHandler(t *testing.T) {
 			Return([]models.Webhook{exampleWebhook}, nil).Once()
 
 		testUtil.MockImageStorage.On("CreateThumbnails", mock.Anything).
-			Return(storage.ProductImageSet{})
+			Return(images.ProductImageSet{})
 		testUtil.MockImageStorage.On("StoreImages", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("uint")).
-			Return(&storage.ProductImageLocations{}, nil)
+			Return(&images.ProductImageLocations{}, nil)
 		testUtil.MockDB.On("CreateProductImage", mock.Anything, mock.Anything).
 			Return(uint64(1), buildTestTime(), nil)
 		testUtil.MockDB.On("SetPrimaryProductImageForProduct", mock.Anything, mock.AnythingOfType("uint64"), mock.Anything).
 			Return(buildTestTime(), generateArbitraryError())
 
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithNoPrimaryImages))
 		assert.NoError(t, err)
@@ -1138,7 +1138,7 @@ func TestProductCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("CreateProductOption", mock.Anything, mock.Anything).
 			Return(expectedCreatedProductOption.ID, buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
 		assert.NoError(t, err)
@@ -1159,7 +1159,7 @@ func TestProductCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("CreateProductOption", mock.Anything, mock.Anything).
 			Return(expectedCreatedProductOption.ID, buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
 		assert.NoError(t, err)
@@ -1185,7 +1185,7 @@ func TestProductCreationHandler(t *testing.T) {
 			Return(generateArbitraryError())
 		testUtil.Mock.ExpectRollback()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
 		assert.NoError(t, err)
@@ -1211,7 +1211,7 @@ func TestProductCreationHandler(t *testing.T) {
 			Return(expectedCreatedProductOption.Values[0].ID, buildTestTime(), nil)
 		testUtil.Mock.ExpectCommit().WillReturnError(generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
 		assert.NoError(t, err)
@@ -1239,7 +1239,7 @@ func TestProductCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("GetWebhooksByEventType", mock.Anything, ProductCreatedWebhookEvent).
 			Return([]models.Webhook{}, generateArbitraryError()).Once()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/product", strings.NewReader(exampleProductCreationInputWithOptions))
 		assert.NoError(t, err)

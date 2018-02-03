@@ -14,8 +14,8 @@ import (
 	"time"
 
 	// local dependencies
-	"github.com/dairycart/dairycart/api/storage/images/mock"
-	"github.com/dairycart/dairycart/api/storage/mock"
+	"github.com/dairycart/dairycart/storage/database/mock"
+	"github.com/dairycart/dairycart/storage/images/mock"
 	"github.com/dairycart/dairymodels/v1"
 
 	// external dependencies
@@ -125,7 +125,7 @@ func buildServerConfigFromTestUtil(testUtil *TestUtil) *ServerConfig {
 		Router:          testUtil.Router,
 		DB:              testUtil.PlainDB,
 		CookieStore:     testUtil.Store,
-		Dairyclient:     testUtil.MockDB,
+		DatabaseClient:  testUtil.MockDB,
 		ImageStorer:     testUtil.MockImageStorage,
 		WebhookExecutor: whe,
 	}

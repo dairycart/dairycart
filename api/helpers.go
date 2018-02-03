@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,12 +11,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dairycart/dairycart/api/storage"
 	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/fatih/structs"
-	"github.com/go-chi/chi"
-	"github.com/gorilla/sessions"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -43,15 +39,6 @@ type ListResponse struct {
 type ErrorResponse struct {
 	Status  int    `json:"status"`
 	Message string `json:"message"`
-}
-
-type ServerConfig struct {
-	Router          *chi.Mux
-	DB              *sql.DB
-	CookieStore     *sessions.CookieStore
-	Dairyclient     storage.Storer
-	WebhookExecutor WebhookExecutor
-	ImageStorer     storage.ImageStorer
 }
 
 func parseRawFilterParams(rawFilterParams url.Values) *models.QueryFilter {

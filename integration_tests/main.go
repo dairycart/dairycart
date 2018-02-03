@@ -45,7 +45,7 @@ func (r *Requester) ExecuteRequestAsRegularUser(req *http.Request) (*http.Respon
 }
 
 func init() {
-	baseURL = os.Getenv("INTEGRATION_API_URL")
+	baseURL = os.Getenv("DAIRYCART_API_URL")
 	dbURL := os.Getenv("DAIRYCART_DB_URL")
 	if dbURL == "" {
 		// running outside of docker, and therefore debugging

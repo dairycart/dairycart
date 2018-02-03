@@ -1,1 +1,1 @@
-(cd api/storage && ./generate.sh)
+(cd storage && gnorm gen)

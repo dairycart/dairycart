@@ -12,7 +12,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/dairycart/dairycart/api/storage"
+	"github.com/dairycart/dairycart/storage/database"
 	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/dchest/uniuri"
@@ -165,7 +165,7 @@ func validateUserCreationInput(in *models.UserCreationInput) error {
 	return nil
 }
 
-func buildUserCreationHandler(db *sql.DB, client storage.Storer, store *sessions.CookieStore) http.HandlerFunc {
+func buildUserCreationHandler(db *sql.DB, client database.Storer, store *sessions.CookieStore) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		userInput := &models.UserCreationInput{}
 		err := validateRequestInput(req, userInput)
@@ -237,7 +237,7 @@ func buildUserCreationHandler(db *sql.DB, client storage.Storer, store *sessions
 	}
 }
 
-func buildUserLoginHandler(db *sql.DB, client storage.Storer, store *sessions.CookieStore) http.HandlerFunc {
+func buildUserLoginHandler(db *sql.DB, client database.Storer, store *sessions.CookieStore) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		loginInput := &UserLoginInput{}
 		err := validateRequestInput(req, loginInput)
@@ -310,7 +310,7 @@ func buildUserLogoutHandler(store *sessions.CookieStore) http.HandlerFunc {
 	}
 }
 
-func buildUserDeletionHandler(db *sql.DB, client storage.Storer, store *sessions.CookieStore) http.HandlerFunc {
+func buildUserDeletionHandler(db *sql.DB, client database.Storer, store *sessions.CookieStore) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		userID := chi.URLParam(req, "user_id")
 		// we can eat this error because Mux takes care of validating route params for us
@@ -356,7 +356,7 @@ func buildUserDeletionHandler(db *sql.DB, client storage.Storer, store *sessions
 	}
 }
 
-func buildUserForgottenPasswordHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildUserForgottenPasswordHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		loginInput := &UserLoginInput{}
 		err := validateRequestInput(req, loginInput)
@@ -397,7 +397,7 @@ func buildUserForgottenPasswordHandler(db *sql.DB, client storage.Storer) http.H
 }
 
 // TODO: rethinking having this as a mere validation handler, instead of a password resetting handler
-func buildUserPasswordResetTokenValidationHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildUserPasswordResetTokenValidationHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		resetToken := chi.URLParam(req, "reset_token")
 
@@ -411,7 +411,7 @@ func buildUserPasswordResetTokenValidationHandler(db *sql.DB, client storage.Sto
 	}
 }
 
-func buildUserUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildUserUpdateHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		userID := chi.URLParam(req, "user_id")
 		// eating these errors because Chi should validate these for us.

@@ -6,8 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/dairycart/dairycart/api/storage"
-	"github.com/dairycart/dairycart/api/storage/mock"
+	"github.com/dairycart/dairycart/storage/database"
+	"github.com/dairycart/dairycart/storage/database/mock"
 	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/stretchr/testify/mock"
@@ -19,7 +19,7 @@ type mockWebhookExecutor struct{}
 
 var _ WebhookExecutor = (*mockWebhookExecutor)(nil)
 
-func (m *mockWebhookExecutor) CallWebhook(wh models.Webhook, object interface{}, db storage.Querier, client storage.Storer) {
+func (m *mockWebhookExecutor) CallWebhook(wh models.Webhook, object interface{}, db database.Querier, client database.Storer) {
 }
 
 type testBreakableStruct struct {

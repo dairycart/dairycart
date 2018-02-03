@@ -33,7 +33,7 @@ func TestDiscountRetrievalHandler(t *testing.T) {
 		testUtil.MockDB.On("GetDiscount", mock.Anything, exampleDiscount.ID).
 			Return(exampleDiscount, nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/discount/1", nil)
 		assert.NoError(t, err)
@@ -47,7 +47,7 @@ func TestDiscountRetrievalHandler(t *testing.T) {
 		testUtil.MockDB.On("GetDiscount", mock.Anything, exampleDiscount.ID).
 			Return(exampleDiscount, sql.ErrNoRows)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/discount/1", nil)
 		assert.NoError(t, err)
@@ -61,7 +61,7 @@ func TestDiscountRetrievalHandler(t *testing.T) {
 		testUtil.MockDB.On("GetDiscount", mock.Anything, exampleDiscount.ID).
 			Return(exampleDiscount, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/discount/1", nil)
 		assert.NoError(t, err)
@@ -87,7 +87,7 @@ func TestDiscountListHandler(t *testing.T) {
 		testUtil.MockDB.On("GetDiscountList", mock.Anything, mock.Anything).
 			Return([]models.Discount{exampleDiscount}, nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/discounts", nil)
 		assert.NoError(t, err)
@@ -101,7 +101,7 @@ func TestDiscountListHandler(t *testing.T) {
 		testUtil.MockDB.On("GetDiscountCount", mock.Anything, mock.Anything).
 			Return(uint64(3), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/discounts", nil)
 		assert.NoError(t, err)
@@ -117,7 +117,7 @@ func TestDiscountListHandler(t *testing.T) {
 		testUtil.MockDB.On("GetDiscountList", mock.Anything, mock.Anything).
 			Return([]models.Discount{}, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/discounts", nil)
 		assert.NoError(t, err)
@@ -144,7 +144,7 @@ func TestDiscountCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("CreateDiscount", mock.Anything, mock.Anything).
 			Return(uint64(1), buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/discount", strings.NewReader(exampleDiscountCreationInput))
 		assert.NoError(t, err)
@@ -156,7 +156,7 @@ func TestDiscountCreationHandler(t *testing.T) {
 	t.Run("with invalid input", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/discount", strings.NewReader(exampleGarbageInput))
 		assert.NoError(t, err)
@@ -170,7 +170,7 @@ func TestDiscountCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("CreateDiscount", mock.Anything, mock.Anything).
 			Return(uint64(1), buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/discount", strings.NewReader(exampleDiscountCreationInput))
 		assert.NoError(t, err)
@@ -196,7 +196,7 @@ func TestDiscountDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("DeleteDiscount", mock.Anything, exampleDiscount.ID).
 			Return(buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/discount/%d", exampleDiscount.ID), nil)
 		assert.NoError(t, err)
@@ -210,7 +210,7 @@ func TestDiscountDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetDiscount", mock.Anything, exampleDiscount.ID).
 			Return(exampleDiscount, sql.ErrNoRows)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/discount/%d", exampleDiscount.ID), nil)
 		assert.NoError(t, err)
@@ -224,7 +224,7 @@ func TestDiscountDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetDiscount", mock.Anything, exampleDiscount.ID).
 			Return(exampleDiscount, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/discount/%d", exampleDiscount.ID), nil)
 		assert.NoError(t, err)
@@ -240,7 +240,7 @@ func TestDiscountDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("DeleteDiscount", mock.Anything, exampleDiscount.ID).
 			Return(buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/discount/%d", exampleDiscount.ID), nil)
 		assert.NoError(t, err)
@@ -274,7 +274,7 @@ func TestDiscountUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("UpdateDiscount", mock.Anything, mock.Anything).
 			Return(buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
 		assert.NoError(t, err)
@@ -286,7 +286,7 @@ func TestDiscountUpdateHandler(t *testing.T) {
 	t.Run("with invalid input", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, "/v1/discount/1", strings.NewReader(exampleGarbageInput))
 		assert.NoError(t, err)
@@ -300,7 +300,7 @@ func TestDiscountUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetDiscount", mock.Anything, exampleDiscount.ID).
 			Return(exampleDiscount, sql.ErrNoRows)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
 		assert.NoError(t, err)
@@ -314,7 +314,7 @@ func TestDiscountUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetDiscount", mock.Anything, exampleDiscount.ID).
 			Return(exampleDiscount, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
 		assert.NoError(t, err)
@@ -330,7 +330,7 @@ func TestDiscountUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("UpdateDiscount", mock.Anything, mock.Anything).
 			Return(buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, "/v1/discount/1", strings.NewReader(exampleDiscountUpdateInput))
 		assert.NoError(t, err)

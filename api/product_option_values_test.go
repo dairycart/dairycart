@@ -45,7 +45,7 @@ func TestProductOptionValueCreationHandler(t *testing.T) {
 			Return(exampleProductOptionValue.ID, buildTestTime(), nil)
 		testUtil.Mock.ExpectCommit()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_options/%d/value", exampleProductOption.ID), strings.NewReader(exampleProductOptionValueCreationBody))
 		assert.NoError(t, err)
@@ -57,7 +57,7 @@ func TestProductOptionValueCreationHandler(t *testing.T) {
 	t.Run("with invalid input", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_options/%d/value", exampleProductOption.ID), strings.NewReader(exampleGarbageInput))
 		assert.NoError(t, err)
 
@@ -70,7 +70,7 @@ func TestProductOptionValueCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("ProductOptionExists", mock.Anything, exampleProductOption.ID).
 			Return(false, sql.ErrNoRows)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_options/%d/value", exampleProductOption.ID), strings.NewReader(exampleProductOptionValueCreationBody))
 		assert.NoError(t, err)
@@ -84,7 +84,7 @@ func TestProductOptionValueCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("ProductOptionExists", mock.Anything, exampleProductOption.ID).
 			Return(true, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_options/%d/value", exampleProductOption.ID), strings.NewReader(exampleProductOptionValueCreationBody))
 		assert.NoError(t, err)
@@ -100,7 +100,7 @@ func TestProductOptionValueCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("ProductOptionValueForOptionIDExists", mock.Anything, exampleProductOption.ID, exampleProductOptionValue.Value).
 			Return(true, nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_options/%d/value", exampleProductOption.ID), strings.NewReader(exampleProductOptionValueCreationBody))
 		assert.NoError(t, err)
@@ -116,7 +116,7 @@ func TestProductOptionValueCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("ProductOptionValueForOptionIDExists", mock.Anything, exampleProductOption.ID, exampleProductOptionValue.Value).
 			Return(false, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_options/%d/value", exampleProductOption.ID), strings.NewReader(exampleProductOptionValueCreationBody))
 		assert.NoError(t, err)
@@ -133,7 +133,7 @@ func TestProductOptionValueCreationHandler(t *testing.T) {
 			Return(false, nil)
 		testUtil.Mock.ExpectBegin().WillReturnError(generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_options/%d/value", exampleProductOption.ID), strings.NewReader(exampleProductOptionValueCreationBody))
 		assert.NoError(t, err)
@@ -153,7 +153,7 @@ func TestProductOptionValueCreationHandler(t *testing.T) {
 			Return(exampleProductOptionValue.ID, buildTestTime(), generateArbitraryError())
 		testUtil.Mock.ExpectRollback()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_options/%d/value", exampleProductOption.ID), strings.NewReader(exampleProductOptionValueCreationBody))
 		assert.NoError(t, err)
@@ -173,7 +173,7 @@ func TestProductOptionValueCreationHandler(t *testing.T) {
 			Return(exampleProductOptionValue.ID, buildTestTime(), nil)
 		testUtil.Mock.ExpectCommit().WillReturnError(generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_options/%d/value", exampleProductOption.ID), strings.NewReader(exampleProductOptionValueCreationBody))
 		assert.NoError(t, err)
@@ -200,7 +200,7 @@ func TestProductOptionValueUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("UpdateProductOptionValue", mock.Anything, mock.Anything).
 			Return(buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product_option_values/%d", exampleProductOptionValue.ID), strings.NewReader(exampleProductOptionValueUpdateBody))
 		assert.NoError(t, err)
@@ -212,7 +212,7 @@ func TestProductOptionValueUpdateHandler(t *testing.T) {
 	t.Run("with invalid input", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product_option_values/%d", exampleProductOptionValue.ID), strings.NewReader(exampleGarbageInput))
 		assert.NoError(t, err)
@@ -226,7 +226,7 @@ func TestProductOptionValueUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductOptionValue", mock.Anything, exampleProductOptionValue.ID).
 			Return(exampleProductOptionValue, sql.ErrNoRows)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product_option_values/%d", exampleProductOptionValue.ID), strings.NewReader(exampleProductOptionValueUpdateBody))
 		assert.NoError(t, err)
@@ -240,7 +240,7 @@ func TestProductOptionValueUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductOptionValue", mock.Anything, exampleProductOptionValue.ID).
 			Return(exampleProductOptionValue, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product_option_values/%d", exampleProductOptionValue.ID), strings.NewReader(exampleProductOptionValueUpdateBody))
 		assert.NoError(t, err)
@@ -256,7 +256,7 @@ func TestProductOptionValueUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("UpdateProductOptionValue", mock.Anything, mock.Anything).
 			Return(buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/product_option_values/%d", exampleProductOptionValue.ID), strings.NewReader(exampleProductOptionValueUpdateBody))
 		assert.NoError(t, err)
@@ -281,7 +281,7 @@ func TestProductOptionValueDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("DeleteProductOptionValue", mock.Anything, exampleProductOptionValue.ID).
 			Return(buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/product_option_values/%d", exampleProductOptionValue.ID), nil)
 		assert.NoError(t, err)
@@ -295,7 +295,7 @@ func TestProductOptionValueDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductOptionValue", mock.Anything, exampleProductOptionValue.ID).
 			Return(exampleProductOptionValue, sql.ErrNoRows)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/product_option_values/%d", exampleProductOptionValue.ID), nil)
 		assert.NoError(t, err)
@@ -309,7 +309,7 @@ func TestProductOptionValueDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductOptionValue", mock.Anything, exampleProductOptionValue.ID).
 			Return(exampleProductOptionValue, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/product_option_values/%d", exampleProductOptionValue.ID), nil)
 		assert.NoError(t, err)
@@ -325,7 +325,7 @@ func TestProductOptionValueDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("DeleteProductOptionValue", mock.Anything, exampleProductOptionValue.ID).
 			Return(buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/product_option_values/%d", exampleProductOptionValue.ID), nil)
 		assert.NoError(t, err)
