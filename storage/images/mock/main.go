@@ -5,6 +5,8 @@ import (
 
 	"github.com/dairycart/dairycart/storage/images"
 
+	"github.com/go-chi/chi"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -14,8 +16,8 @@ type MockImageStorer struct {
 
 var _ images.ImageStorer = (*MockImageStorer)(nil)
 
-func (m *MockImageStorer) Init(config interface{}) error {
-	args := m.Called(config)
+func (m *MockImageStorer) Init(config *viper.Viper, router chi.Router) error {
+	args := m.Called(config, router)
 
 	return args.Error(0)
 }

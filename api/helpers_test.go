@@ -125,7 +125,7 @@ func buildServerConfigFromTestUtil(testUtil *TestUtil) *ServerConfig {
 		Router:          testUtil.Router,
 		DB:              testUtil.PlainDB,
 		CookieStore:     testUtil.Store,
-		Dairyclient:     testUtil.MockDB,
+		DatabaseClient:  testUtil.MockDB,
 		ImageStorer:     testUtil.MockImageStorage,
 		WebhookExecutor: whe,
 	}

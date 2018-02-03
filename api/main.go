@@ -37,7 +37,7 @@ func main() {
 	config.Router.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{Logger: log.New(os.Stdout, "", log.LstdFlags)}))
 	SetupAPIRouter(config)
 
-	config.Router.Route("/v1", func(r chi.Router) {
+	config.Router.Route("/product_images", func(r chi.Router) {
 		config.ImageStorer.Init(cfg, r)
 	})
 
