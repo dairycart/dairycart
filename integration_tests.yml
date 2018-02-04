@@ -21,17 +21,13 @@ services:
   api:
     build:
       context: .
-      dockerfile: api/Dockerfile
+      dockerfile: api/integration_test.Dockerfile
     ports:
       - "4321:4321"
     depends_on:
       - database
     links:
       - database
-    environment:
-      DB_TO_USE: "postgres"
-      MIGRATE_EXAMPLE_DATA: "YES"
-      DAIRYCART_DB_URL: postgres://dairytest:hunter2@database:5432/dairytest?sslmode=disable
     logging:
       driver: "none"
 

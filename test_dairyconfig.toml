@@ -1,0 +1,13 @@
+# Example Dairycart configuration
+
+port = 4321
+migrate_example_data = true
+secret =  "do-not-use-secrets-like-this-plz"
+
+[database]
+type = "postgres"
+connection_details = "postgres://dairytest:hunter2@database:5432/dairytest?sslmode=disable"
+
+[image_storage]
+type = "local"
+base_url = "http://localhost"

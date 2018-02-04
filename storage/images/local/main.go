@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	portKey                     = "image_storage.port"
+	portKey                     = "port"
 	baseURLKey                  = "image_storage.base_url"
 	storageDirKey               = "image_storage.storage_dir"
 	routePrefixKey              = "image_storage.route_prefix"
@@ -55,7 +55,11 @@ func ensureDomainHasNoPort(domain string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	u.Host, _, _ = net.SplitHostPort(u.Host)
+	h, p, _ := net.SplitHostPort(u.Host)
+
+	if p != "" {
+		u.Host = h
+	}
 
 	return u.String(), nil
 }
@@ -84,7 +88,8 @@ func fileServer(r chi.Router, path string, root http.FileSystem) {
 func (l *localImageStorer) Init(cfg *viper.Viper, router chi.Router) error {
 	port := cfg.GetInt(portKey)
 
-	domain, err := ensureDomainHasNoPort(cfg.GetString(baseURLKey))
+	cfgDomain := cfg.GetString(baseURLKey)
+	domain, err := ensureDomainHasNoPort(cfgDomain)
 	if err != nil {
 		return errors.Wrap(err, "error parsing provided image storage url")
 	}
@@ -106,11 +111,10 @@ func (l *localImageStorer) Init(cfg *viper.Viper, router chi.Router) error {
 
 	routePrefix := cfg.GetString(routePrefixKey)
 	if routePrefix == "" {
-		l.RoutePrefix = storageDir
+		l.RoutePrefix = l.StorageDir
 	}
 
-	path := fmt.Sprintf("/%s/", l.RoutePrefix)
-	fileServer(router, path, http.Dir(l.StorageDir))
+	fileServer(router, "/", http.Dir(l.StorageDir))
 	return nil
 }
 

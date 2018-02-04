@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"github.com/dairycart/dairycart/storage/images/local"
 	"log"
 	"net/http"
@@ -24,22 +25,25 @@ const (
 	DefaultImageStorageProvider = "local"
 	DefaultDatabaseProvider     = "postgres"
 
-	// Config keys
-	// ===========
+	// Config keys //
+	// =========== //
+
+	// basic stuff
+	migrateExampleDataKey = "migrate_example_data"
+	portKey               = "port"
+	domainKey             = "domain"
+	secretKey             = "secret"
+
 	// databases
-	databaseKey       = "database"
-	databaseTypeKey   = "database.type"
-	databasePluginKey = "database.plugin_path"
-	connectionKey     = "database.connection_details"
+	databaseKey           = "database"
+	databaseTypeKey       = "database.type"
+	databasePluginKey     = "database.plugin_path"
+	databaseConnectionKey = "database.connection_details"
 
 	// image storage
 	imageStorageKey       = "image_storage"
 	imageStorageTypeKey   = "image_storage.type"
 	imageStoragePluginKey = "image_storage.plugin_path"
-
-	// defaults
-	defaultDatabaseType     = "postgres"
-	defaultImageStorageType = "local"
 )
 
 type ServerConfig struct {
@@ -90,11 +94,13 @@ func setConfigDefaults(config *viper.Viper) {
 	}
 	config.AddConfigPath(".")
 
-	config.SetDefault("port", defaultPort)
-	config.SetDefault("domain", "http://localhost")
+	config.SetDefault(portKey, defaultPort)
+	config.SetDefault(domainKey, fmt.Sprintf("http://localhost:%d", defaultPort))
+	config.SetDefault(migrateExampleDataKey, false)
 
-	// config.SetDefault("database", DatabaseConfig{PluginConfig: PluginConfig{Name: "postgres"}})
-	// config.SetDefault("imagestorage", ImageStorageConfig{PluginConfig: PluginConfig{Name: "local"}})
+	config.SetDefault(databaseTypeKey, "postgres")
+	config.SetDefault(imageStorageTypeKey, "local")
+	config.BindEnv(secretKey, "DAIRYSECRET")
 }
 
 func validateServerConfig(config *viper.Viper) error {
@@ -102,19 +108,21 @@ func validateServerConfig(config *viper.Viper) error {
 
 	if err := config.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return err
+			return errors.Wrap(err, "error validating server config")
 		}
 	}
 	return nil
 }
 
-func buildServerConfig(cfg *viper.Viper) (*ServerConfig, error) {
-	db, dbClient, err := buildDatabaseFromConfig(cfg)
+func buildServerConfig(config *viper.Viper) (*ServerConfig, error) {
+	log.Println("parsing database stuff")
+	db, dbClient, err := buildDatabaseFromConfig(config)
 	if err != nil {
 		return nil, errors.Wrap(err, "error configuring database")
 	}
 
-	imageStorer, err := buildImageStorerFromConfig(cfg)
+	log.Println("parsing image storage stuff")
+	imageStorer, err := buildImageStorerFromConfig(config)
 	if err != nil {
 		return nil, errors.Wrap(err, "error configuring image storage")
 	}
@@ -122,7 +130,7 @@ func buildServerConfig(cfg *viper.Viper) (*ServerConfig, error) {
 	return &ServerConfig{
 		Router:          chi.NewMux(),
 		DB:              db,
-		CookieStore:     setupCookieStorage(cfg.GetString("secret")),
+		CookieStore:     setupCookieStorage(config.GetString(secretKey)),
 		DatabaseClient:  dbClient,
 		WebhookExecutor: &webhookExecutor{Client: http.DefaultClient},
 		ImageStorer:     imageStorer,
@@ -136,18 +144,18 @@ func buildDatabaseFromConfig(cfg *viper.Viper) (*sql.DB, database.Storer, error)
 		err    error
 	)
 
-	if !cfg.IsSet(databaseKey) || cfg.GetString(connectionKey) == "" {
+	if !cfg.IsSet(databaseKey) || cfg.GetString(databaseConnectionKey) == "" {
 		return nil, nil, errors.New("no database type specified in config")
 	}
 
 	dbType := cfg.GetString(databaseTypeKey)
-	connectionStr := cfg.GetString(connectionKey)
+	connectionStr := cfg.GetString(databaseConnectionKey)
 	db, err = sql.Open(dbType, connectionStr)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "issue opening sql connection")
 	}
 
-	if dbType == defaultDatabaseType {
+	if dbType == DefaultDatabaseProvider {
 		client = postgres.NewPostgres()
 	} else {
 		missingPluginErr := errors.New("non-default database selected without complimentary plugin path, please check your configuration file")
@@ -184,15 +192,15 @@ func buildImageStorerFromConfig(cfg *viper.Viper) (images.ImageStorer, error) {
 		err    error
 	)
 
-	if !cfg.IsSet(databaseKey) || cfg.GetString(connectionKey) == "" {
-		return nil, errors.New("no database type specified in config")
+	if !cfg.IsSet(imageStorageKey) {
+		return nil, errors.New("no image storer type specified in config")
 	}
 
 	storageType := cfg.GetString(imageStorageTypeKey)
-	if storageType == defaultImageStorageType {
+	if storageType == DefaultImageStorageProvider {
 		storer = local.NewLocalImageStorer()
 	} else {
-		missingPluginErr := errors.New("non-default database selected without complimentary plugin path, please check your configuration file")
+		missingPluginErr := errors.New("non-default image storer selected without complimentary plugin path, please check your configuration file")
 		if !cfg.IsSet(imageStoragePluginKey) {
 			return nil, missingPluginErr
 		}
@@ -201,6 +209,12 @@ func buildImageStorerFromConfig(cfg *viper.Viper) (images.ImageStorer, error) {
 		if pluginPath == "" {
 			return nil, missingPluginErr
 		}
+
+		log.Printf(`
+
+			loading image storage plugin: '%s'
+
+		`, pluginPath)
 
 		storer, err = loadImageStoragePlugin(pluginPath, storageType)
 	}
@@ -214,7 +228,7 @@ func loadImageStoragePlugin(pluginPath string, name string) (images.ImageStorer,
 		return nil, errors.Wrap(err, "failed to load plugin")
 	}
 	if _, ok := imgSym.(images.ImageStorer); !ok {
-		return nil, errors.New("Symbol provided in database plugin does not satisfy the database.Storer interface")
+		return nil, errors.New("Symbol provided in image storage plugin does not satisfy the images.ImageStorer interface")
 	}
 
 	return imgSym.(images.ImageStorer), nil

@@ -15,7 +15,6 @@ import (
 	"github.com/spf13/viper"
 
 	_ "github.com/lib/pq"
-	_ "github.com/mattes/migrate/source/file"
 )
 
 func main() {
@@ -38,8 +37,18 @@ func main() {
 	SetupAPIRouter(config)
 
 	config.Router.Route("/product_images", func(r chi.Router) {
-		config.ImageStorer.Init(cfg, r)
+		err := config.ImageStorer.Init(cfg, r)
+		if err != nil {
+			logrus.Fatalf("error migrating database: %v\n", err)
+		}
 	})
+
+	dbConnStr := cfg.GetString(databaseConnectionKey)
+	migrateExampleData := cfg.GetBool(migrateExampleDataKey)
+	err = config.DatabaseClient.Migrate(config.DB, dbConnStr, migrateExampleData)
+	if err != nil {
+		logrus.Fatalf("error migrating database: %v\n", err)
+	}
 
 	port := cfg.GetInt("port")
 	http.Handle("/", context.ClearHandler(config.Router))
