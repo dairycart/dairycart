@@ -20,7 +20,7 @@ before_install:
   - sudo apt-get -y install docker-ce
   # this stays after the above goes away
   - dep ensure -v
-  - docker build -t api_test -f api/test.Dockerfile .
+  - docker build -t api_test -f test.Dockerfile .
 
 script:
   # unit tests
