@@ -15,6 +15,8 @@ const (
 	ValidURLCharactersPattern = `[a-zA-Z\-_]+`
 	// NumericPattern repesents numeric values
 	NumericPattern = `[0-9]+`
+	// HealthCheckEndpointBody is what we respond to health check requests with
+	HealthCheckEndpointBody = "healthy!"
 )
 
 func buildRoute(routeVersion string, routeParts ...string) string {
@@ -24,7 +26,7 @@ func buildRoute(routeVersion string, routeParts ...string) string {
 // SetupAPIRouter takes a mux router and a database connection and creates all the API routes for the API
 func SetupAPIRouter(config *ServerConfig) {
 	// health check
-	config.Router.Get("/health", func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "healthy!") })
+	config.Router.Get("/health", func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, HealthCheckEndpointBody) })
 
 	// Auth
 	config.Router.Post("/login", buildUserLoginHandler(config.DB, config.DatabaseClient, config.CookieStore))

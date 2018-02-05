@@ -80,11 +80,11 @@ func loadPlugin(pluginPath string, symbolName string) (plugin.Symbol, error) {
 	return sym, nil
 }
 
-func setupCookieStorage(secret string) *sessions.CookieStore {
+func setupCookieStorage(secret string) (*sessions.CookieStore, error) {
 	if len(secret) < 32 {
-		log.Fatalf("Something is up with your app secret: `%s`", secret)
+		return nil, fmt.Errorf("Something is up with your app secret: `%s`", secret)
 	}
-	return sessions.NewCookieStore([]byte(secret))
+	return sessions.NewCookieStore([]byte(secret)), nil
 }
 
 func setConfigDefaults(config *viper.Viper) {
@@ -101,6 +101,7 @@ func setConfigDefaults(config *viper.Viper) {
 	config.SetDefault(databaseTypeKey, "postgres")
 	config.SetDefault(imageStorageTypeKey, "local")
 	config.BindEnv(secretKey, "DAIRYSECRET")
+	// TODO: generate secret as default in case user doesn't provide one
 }
 
 func LoadServerConfig() (*viper.Viper, error) {
@@ -128,10 +129,15 @@ func BuildServerConfig(config *viper.Viper) (*ServerConfig, error) {
 		return nil, errors.Wrap(err, "error configuring image storage")
 	}
 
+	cookieStorer, err := setupCookieStorage(config.GetString(secretKey))
+	if err != nil {
+		return nil, errors.Wrap(err, "error configuring cookie storage")
+	}
+
 	return &ServerConfig{
 		Router:          chi.NewMux(),
 		DB:              db,
-		CookieStore:     setupCookieStorage(config.GetString(secretKey)),
+		CookieStore:     cookieStorer,
 		DatabaseClient:  dbClient,
 		WebhookExecutor: &webhookExecutor{Client: http.DefaultClient},
 		ImageStorer:     imageStorer,
