@@ -13,11 +13,6 @@ before_install:
   - go get -u github.com/golang/dep/cmd/dep
   # install goveralls
   - go get github.com/mattn/goveralls
-  # dump this step once multi-stage builds hit Travis
-  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-  - sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-  - sudo apt-get update
-  - sudo apt-get -y install docker-ce
   # this stays after the above goes away
   - dep ensure -v
   - docker build -t api_test -f test.Dockerfile .
@@ -28,18 +23,8 @@ script:
   # integration tests
   - docker-compose --file integration_tests.yml up --abort-on-container-exit --build --remove-orphans --force-recreate
   # coverage output
-  - go test github.com/dairycart/dairycart/api -coverprofile=coverage.out -tags test
-  # # ensure README is up to date
-  # - go run tools/integration_tests_checklist/main.go
+  - go test github.com/dairycart/dairycart/api -coverprofile=coverage.out -parallel=1
 
 after_success:
   # send coverage report to coveralls
   - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
-  # yuge thanks to this blog post: https://sebest.github.io/post/using-travis-ci-to-build-docker-images/
-  # I'm only doing pre-alpha tags for the moment, but if I were doing versioned tags, it might look something like this:
-  #   - export TAG=`if [ `git rev-parse --abbrev-ref HEAD` = "master" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi`
-  - if [ `git rev-parse --abbrev-ref HEAD` = "master" ]; then
-      (cd api; docker build --no-cache --tag dairycart/api-server:pre-alpha .);
-      docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD";
-      docker push dairycart/api-server:pre-alpha;
-    fi
