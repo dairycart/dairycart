@@ -21,7 +21,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: api/integration_test.Dockerfile
+      dockerfile: integration_test.Dockerfile
     ports:
       - "4321:4321"
     depends_on:

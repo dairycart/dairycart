@@ -8,11 +8,11 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/go-chi/chi"
+	dairyserver "github.com/dairycart/dairycart/api"
+
 	"github.com/go-chi/chi/middleware"
 	"github.com/gorilla/context"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 
 	_ "github.com/lib/pq"
 )
@@ -21,33 +21,23 @@ func main() {
 	logrus.SetOutput(os.Stdout)
 	logrus.SetLevel(logrus.InfoLevel)
 
-	cfg := viper.New()
-	err := validateServerConfig(cfg)
+	cfg, err := dairyserver.LoadServerConfig()
 	if err != nil {
 		logrus.Fatalf("error validating server configuration: %v\n", err)
 	}
 
-	config, err := buildServerConfig(cfg)
+	config, err := dairyserver.BuildServerConfig(cfg)
 	if err != nil {
 		logrus.Fatalf("error configuring server: %v\n", err)
 	}
 
 	config.Router.Use(middleware.RequestID)
 	config.Router.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{Logger: log.New(os.Stdout, "", log.LstdFlags)}))
-	SetupAPIRouter(config)
+	dairyserver.SetupAPIRouter(config)
 
-	config.Router.Route("/product_images", func(r chi.Router) {
-		err := config.ImageStorer.Init(cfg, r)
-		if err != nil {
-			logrus.Fatalf("error migrating database: %v\n", err)
-		}
-	})
-
-	dbConnStr := cfg.GetString(databaseConnectionKey)
-	migrateExampleData := cfg.GetBool(migrateExampleDataKey)
-	err = config.DatabaseClient.Migrate(config.DB, dbConnStr, migrateExampleData)
+	err = dairyserver.InitializeServerComponents(cfg, config)
 	if err != nil {
-		logrus.Fatalf("error migrating database: %v\n", err)
+		logrus.Fatalf("error initializing server: %v\n", err)
 	}
 
 	port := cfg.GetInt("port")

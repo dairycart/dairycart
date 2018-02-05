@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"database/sql"
@@ -103,18 +103,19 @@ func setConfigDefaults(config *viper.Viper) {
 	config.BindEnv(secretKey, "DAIRYSECRET")
 }
 
-func validateServerConfig(config *viper.Viper) error {
+func LoadServerConfig() (*viper.Viper, error) {
+	config := viper.New()
 	setConfigDefaults(config)
 
 	if err := config.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return errors.Wrap(err, "error validating server config")
+			return nil, errors.Wrap(err, "error validating server config")
 		}
 	}
-	return nil
+	return config, nil
 }
 
-func buildServerConfig(config *viper.Viper) (*ServerConfig, error) {
+func BuildServerConfig(config *viper.Viper) (*ServerConfig, error) {
 	log.Println("parsing database stuff")
 	db, dbClient, err := buildDatabaseFromConfig(config)
 	if err != nil {
@@ -232,4 +233,24 @@ func loadImageStoragePlugin(pluginPath string, name string) (images.ImageStorer,
 	}
 
 	return imgSym.(images.ImageStorer), nil
+}
+
+// InitializeServerComponents calls Init on all the relevant server components, and migrates the database.
+func InitializeServerComponents(cfg *viper.Viper, config *ServerConfig) error {
+	var err error
+	config.Router.Route("/product_images", func(r chi.Router) {
+		err = config.ImageStorer.Init(cfg, r)
+	})
+	if err != nil {
+		return errors.Wrap(err, "error migrating database")
+	}
+
+	dbConnStr := cfg.GetString(databaseConnectionKey)
+	migrateExampleData := cfg.GetBool(migrateExampleDataKey)
+	err = config.DatabaseClient.Migrate(config.DB, dbConnStr, migrateExampleData)
+	if err != nil {
+		return errors.Wrap(err, "error migrating database")
+	}
+
+	return nil
 }
