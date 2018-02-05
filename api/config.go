@@ -3,8 +3,6 @@ package api
 import (
 	"database/sql"
 	"fmt"
-	"github.com/dairycart/dairycart/storage/images/local"
-	"log"
 	"net/http"
 	"os"
 	"plugin"
@@ -12,6 +10,7 @@ import (
 
 	"github.com/dairycart/dairycart/storage/database"
 	"github.com/dairycart/dairycart/storage/images"
+	"github.com/dairycart/dairycart/storage/images/local"
 	"github.com/dairycart/postgres"
 
 	"github.com/go-chi/chi"
@@ -117,13 +116,11 @@ func LoadServerConfig() (*viper.Viper, error) {
 }
 
 func BuildServerConfig(config *viper.Viper) (*ServerConfig, error) {
-	log.Println("parsing database stuff")
 	db, dbClient, err := buildDatabaseFromConfig(config)
 	if err != nil {
 		return nil, errors.Wrap(err, "error configuring database")
 	}
 
-	log.Println("parsing image storage stuff")
 	imageStorer, err := buildImageStorerFromConfig(config)
 	if err != nil {
 		return nil, errors.Wrap(err, "error configuring image storage")
@@ -151,13 +148,14 @@ func buildDatabaseFromConfig(cfg *viper.Viper) (*sql.DB, database.Storer, error)
 		err    error
 	)
 
-	if !cfg.IsSet(databaseKey) || cfg.GetString(databaseConnectionKey) == "" {
+	dbConnStr := cfg.GetString(databaseConnectionKey)
+
+	if !cfg.IsSet(databaseKey) || dbConnStr == "" {
 		return nil, nil, errors.New("no database type specified in config")
 	}
 
 	dbType := cfg.GetString(databaseTypeKey)
-	connectionStr := cfg.GetString(databaseConnectionKey)
-	db, err = sql.Open(dbType, connectionStr)
+	db, err = sql.Open(dbType, dbConnStr)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "issue opening sql connection")
 	}
@@ -216,12 +214,6 @@ func buildImageStorerFromConfig(cfg *viper.Viper) (images.ImageStorer, error) {
 		if pluginPath == "" {
 			return nil, missingPluginErr
 		}
-
-		log.Printf(`
-
-			loading image storage plugin: '%s'
-
-		`, pluginPath)
 
 		storer, err = loadImageStoragePlugin(pluginPath, storageType)
 	}
