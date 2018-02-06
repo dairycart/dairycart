@@ -13,6 +13,7 @@ import (
 	"github.com/dairycart/dairycart/storage/images/local"
 	"github.com/dairycart/postgres"
 
+	"github.com/dchest/uniuri"
 	"github.com/go-chi/chi"
 	"github.com/gorilla/sessions"
 	"github.com/pkg/errors"
@@ -20,6 +21,7 @@ import (
 )
 
 const (
+	mandatorySecretLength       = 32
 	defaultPort                 = 4321
 	DefaultImageStorageProvider = "local"
 	DefaultDatabaseProvider     = "postgres"
@@ -67,12 +69,11 @@ func loadPlugin(pluginPath string, symbolName string) (plugin.Symbol, error) {
 		return nil, errors.Wrap(err, "failed to open plugin")
 	}
 
-	symbolToLookup := symbolName
 	if symbolName[:1] == strings.ToLower(symbolName[:1]) {
-		symbolToLookup = strings.Title(symbolToLookup)
+		symbolName = strings.Title(symbolName)
 	}
 
-	sym, err := p.Lookup(symbolToLookup)
+	sym, err := p.Lookup(symbolName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to locate appropriate plugin symbol")
 	}
@@ -97,9 +98,12 @@ func setConfigDefaults(config *viper.Viper) {
 	config.SetDefault(domainKey, fmt.Sprintf("http://localhost:%d", defaultPort))
 	config.SetDefault(migrateExampleDataKey, false)
 
-	config.SetDefault(databaseTypeKey, "postgres")
-	config.SetDefault(imageStorageTypeKey, "local")
+	config.SetDefault(databaseTypeKey, DefaultDatabaseProvider)
+	config.SetDefault(imageStorageTypeKey, DefaultImageStorageProvider)
+
+	// Secret stuff
 	config.BindEnv(secretKey, "DAIRYSECRET")
+	config.SetDefault(secretKey, uniuri.NewLen(mandatorySecretLength))
 	// TODO: generate secret as default in case user doesn't provide one
 }
 

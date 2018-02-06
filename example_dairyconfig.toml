@@ -2,7 +2,6 @@
 
 port = 4321
 migrate_example_data = false
-secret =  "do-not-use-secrets-like-this-plz"
 
 [database]
 type = "postgres"

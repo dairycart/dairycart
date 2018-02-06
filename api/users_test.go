@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -24,7 +23,6 @@ const (
 )
 
 func init() {
-	os.Setenv("DAIRYSECRET", "do-not-use-secrets-like-this-plz")
 	dummySalt = []byte("farts")
 }
 

@@ -11,6 +11,7 @@ function removeCoverageOut () {
 }
 
 removeCoverageOut
-DAIRYSECRET="do-not-use-secrets-like-this-plz" go test github.com/dairycart/dairycart/api -coverprofile=coverage.out -parallel=1
+docker build -t dairycoverage --file coverage.Dockerfile .
+docker run --volume=$GOPATH/src/github.com/dairycart/dairycart:/output --rm -t dairycoverage
 go tool cover -html=coverage.out
 removeCoverageOut

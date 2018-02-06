@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -19,6 +18,7 @@ import (
 	"github.com/dairycart/dairymodels/v1"
 
 	// external dependencies
+	"github.com/dchest/uniuri"
 	"github.com/go-chi/chi"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
@@ -115,7 +115,7 @@ func setupTestVariablesWithMock(t *testing.T) *TestUtil {
 		Mock:             mock,
 		MockDB:           &dairymock.MockDB{},
 		MockImageStorage: &imgmock.MockImageStorer{},
-		Store:            sessions.NewCookieStore([]byte(os.Getenv("DAIRYSECRET"))),
+		Store:            sessions.NewCookieStore([]byte(uniuri.NewLen(mandatorySecretLength))),
 	}
 }
 

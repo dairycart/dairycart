@@ -13,11 +13,17 @@ before_install:
   - go get -u github.com/golang/dep/cmd/dep
   # install goveralls
   - go get github.com/mattn/goveralls
-  # this stays after the above goes away
+  # install dependencies
   - dep ensure -v
+  # build relevant dockerfiles
   - docker build -t api_test -f test.Dockerfile .
+  # remove this once we build a makefile
+  - docker build -t plugins --file plugin.Dockerfile .
+
 
 script:
+  # remove this once we build a makefile
+  - docker run --volume=$GOPATH/src/github.com/dairycart/dairycart/api/example_files/plugins:/output --rm -t plugins
   # unit tests
   - docker run --name api_test --rm api_test
   # integration tests
