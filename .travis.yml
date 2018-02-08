@@ -1,5 +1,8 @@
 sudo: required
 
+install:
+  - echo hi
+
 language: go
 
 services:
