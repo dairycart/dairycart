@@ -17,7 +17,7 @@
   branch = "master"
   name = "github.com/dairycart/postgres"
   packages = [".","migrations"]
-  revision = "7d54fef144d1bcc1c9410f77b0d856486cf90a52"
+  revision = "dc264cbb61449f94ecccdebac305ca3e0b395bc0"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -197,7 +197,7 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["bcrypt","blowfish","ssh/terminal"]
-  revision = "1875d0a70c90e57f11972aefd42276df65e895b9"
+  revision = "d9133f5469342136e669e85192a26056b587f503"
 
 [[projects]]
   branch = "master"
