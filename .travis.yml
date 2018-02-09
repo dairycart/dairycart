@@ -1,7 +1,7 @@
 sudo: required
 
 install:
-  - echo hi
+  -
 
 language: go
 
@@ -27,6 +27,7 @@ before_install:
 script:
   # remove this once we build a makefile
   - docker run --volume=$GOPATH/src/github.com/dairycart/dairycart/api/example_files/plugins:/output --rm -t plugins
+  - ls $GOPATH/src/github.com/dairycart/dairycart/api/example_files/plugins
   # unit tests
   - docker run --name api_test --rm api_test
   # integration tests
