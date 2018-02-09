@@ -18,15 +18,15 @@ before_install:
   - go get github.com/mattn/goveralls
   # install dependencies
   - dep ensure -v
-  # build relevant dockerfiles
-  - docker build -t api_test -f test.Dockerfile .
   # remove this once we build a makefile
   - docker build -t plugins --file plugin.Dockerfile .
+  - docker run --volume=$GOPATH/src/github.com/dairycart/dairycart/api/example_files/plugins:/output --rm -t plugins
+  # build relevant dockerfiles
+  - docker build -t api_test -f test.Dockerfile .
 
 
 script:
   # remove this once we build a makefile
-  - docker run --volume=$GOPATH/src/github.com/dairycart/dairycart/api/example_files/plugins:/output --rm -t plugins
   - ls $GOPATH/src/github.com/dairycart/dairycart/api/example_files/plugins
   # unit tests
   - docker run --name api_test --rm api_test
