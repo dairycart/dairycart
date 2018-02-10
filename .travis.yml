@@ -18,22 +18,12 @@ before_install:
   - go get github.com/mattn/goveralls
   # install dependencies
   - dep ensure -v
-  # remove this once we build a makefile
-  - docker build -t plugins --file plugin.Dockerfile .
-  - docker run --volume=$GOPATH/src/github.com/dairycart/dairycart/api/example_files/plugins:/output --rm -t plugins
-  # build relevant dockerfiles
-  - docker build -t api_test -f test.Dockerfile .
-
 
 script:
-  # remove this once we build a makefile
-  - ls $GOPATH/src/github.com/dairycart/dairycart/api/example_files/plugins
-  # unit tests
-  - docker run --name api_test --rm api_test
-  # integration tests
-  - docker-compose --file integration_tests.yml up --abort-on-container-exit --build --remove-orphans --force-recreate
-  # coverage output
-  - go test github.com/dairycart/dairycart/api -coverprofile=coverage.out -parallel=1
+  - make example-plugins
+  - make unit-tests
+  - make integration-tests
+  - make ci-coverage
 
 after_success:
   # send coverage report to coveralls
