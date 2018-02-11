@@ -41,7 +41,7 @@ revendor:
 .PHONY: example-plugins
 example-plugins:
 	docker build -t plugins --file plugin.Dockerfile .
-	docker run --volume=$GOPATH/src/github.com/dairycart/dairycart/api/example_files/plugins:/output --rm -t plugins
+	docker run --volume=$(GOPATH)/src/github.com/dairycart/dairycart/api/example_files/plugins:/output --rm -t plugins
 
 
 .PHONY: storage
