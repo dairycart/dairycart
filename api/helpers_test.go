@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"database/sql"
@@ -8,17 +8,17 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
 	"strings"
 	"testing"
 	"time"
 
 	// local dependencies
-	"github.com/dairycart/dairycart/api/storage/images/mock"
-	"github.com/dairycart/dairycart/api/storage/mock"
+	"github.com/dairycart/dairycart/storage/database/mock"
+	"github.com/dairycart/dairycart/storage/images/mock"
 	"github.com/dairycart/dairymodels/v1"
 
 	// external dependencies
+	"github.com/dchest/uniuri"
 	"github.com/go-chi/chi"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
@@ -115,7 +115,7 @@ func setupTestVariablesWithMock(t *testing.T) *TestUtil {
 		Mock:             mock,
 		MockDB:           &dairymock.MockDB{},
 		MockImageStorage: &imgmock.MockImageStorer{},
-		Store:            sessions.NewCookieStore([]byte(os.Getenv("DAIRYSECRET"))),
+		Store:            sessions.NewCookieStore([]byte(uniuri.NewLen(mandatorySecretLength))),
 	}
 }
 
@@ -125,7 +125,7 @@ func buildServerConfigFromTestUtil(testUtil *TestUtil) *ServerConfig {
 		Router:          testUtil.Router,
 		DB:              testUtil.PlainDB,
 		CookieStore:     testUtil.Store,
-		Dairyclient:     testUtil.MockDB,
+		DatabaseClient:  testUtil.MockDB,
 		ImageStorer:     testUtil.MockImageStorage,
 		WebhookExecutor: whe,
 	}

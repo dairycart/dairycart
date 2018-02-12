@@ -1,4 +1,4 @@
-# Dairycart  [![Build Status](https://travis-ci.org/dairycart/dairycart.svg?branch=master)](https://travis-ci.org/dairycart/dairycart) [![Coverage Status](https://coveralls.io/repos/github/dairycart/dairycart/badge.svg?branch=master)](https://coveralls.io/github/dairycart/dairycart?branch=master) [![Go Report Card](https://goreportcard.com/badge/github.com/dairycart/dairycart)](https://goreportcard.com/report/github.com/dairycart/dairycart)
+# Dairycart [![Build Status](https://travis-ci.org/dairycart/dairycart.svg?branch=master)](https://travis-ci.org/dairycart/dairycart) [![Coverage Status](https://coveralls.io/repos/github/dairycart/dairycart/badge.svg?branch=master)](https://coveralls.io/github/dairycart/dairycart?branch=master) [![Go Report Card](https://goreportcard.com/badge/github.com/dairycart/dairycart)](https://goreportcard.com/report/github.com/dairycart/dairycart)
 
 Dairycart is an open-source eCommerce platform written in Go.
 
@@ -12,11 +12,11 @@ To run Dairycart locally, all you need is Docker, and a bash terminal. 🙂
 
 ## Running
 
-To run the Dairycart API server, simply execute `debug.sh` after cloning this repository locally.
+To run the Dairycart API server, simply execute `make run` after cloning this repository locally.
 
 ## Testing
 
-There are two test suites, currently, a set of unit tests for the API server, and a suite of integration tests, which attempt to test the API server with real-world style requests. You can run the unit tests by executing `run_unit_tests.sh`, and you can run the integraiton tests similarly by executing `run_integration_tests.sh`
+There are two test suites, currently, a set of unit tests for the API server, and a suite of integration tests, which attempt to test the API server with real-world style requests. You can run the unit tests by executing `make unit-tests`, and you can run the integraiton tests similarly by executing `make integration-tests`.
 
 ## Reporting Issues
 

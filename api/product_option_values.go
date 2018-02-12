@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"database/sql"
@@ -7,13 +7,13 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/dairycart/dairycart/api/storage"
+	"github.com/dairycart/dairycart/storage/database"
 	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/go-chi/chi"
 )
 
-func buildProductOptionValueUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildProductOptionValueUpdateHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	// ProductOptionValueUpdateHandler is a request handler that can update product option values
 	return func(res http.ResponseWriter, req *http.Request) {
 		optionValueIDStr := chi.URLParam(req, "option_value_id")
@@ -49,7 +49,7 @@ func buildProductOptionValueUpdateHandler(db *sql.DB, client storage.Storer) htt
 	}
 }
 
-func buildProductOptionValueCreationHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildProductOptionValueCreationHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	// productOptionValueCreationHandler is a product creation handler
 	return func(res http.ResponseWriter, req *http.Request) {
 		optionIDStr := chi.URLParam(req, "option_id")
@@ -108,7 +108,7 @@ func buildProductOptionValueCreationHandler(db *sql.DB, client storage.Storer) h
 	}
 }
 
-func buildProductOptionValueDeletionHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildProductOptionValueDeletionHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	// ProductOptionValueDeletionHandler is a request handler that can delete product option values
 	return func(res http.ResponseWriter, req *http.Request) {
 		optionValueIDStr := chi.URLParam(req, "option_value_id")

@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"database/sql"
@@ -6,14 +6,14 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/dairycart/dairycart/api/storage"
+	"github.com/dairycart/dairycart/storage/database"
 	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/go-chi/chi"
 	"github.com/imdario/mergo"
 )
 
-func buildDiscountRetrievalHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildDiscountRetrievalHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	// DiscountRetrievalHandler is a request handler that returns a single Discount
 	return func(res http.ResponseWriter, req *http.Request) {
 		discountIDStr := chi.URLParam(req, "discount_id")
@@ -33,7 +33,7 @@ func buildDiscountRetrievalHandler(db *sql.DB, client storage.Storer) http.Handl
 	}
 }
 
-func buildDiscountListRetrievalHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildDiscountListRetrievalHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	// DiscountListRetrievalHandler is a request handler that returns a list of Discounts
 	return func(res http.ResponseWriter, req *http.Request) {
 		rawFilterParams := req.URL.Query()
@@ -61,7 +61,7 @@ func buildDiscountListRetrievalHandler(db *sql.DB, client storage.Storer) http.H
 	}
 }
 
-func buildDiscountCreationHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildDiscountCreationHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	// DiscountCreationHandler is a request handler that creates a Discount from user input
 	return func(res http.ResponseWriter, req *http.Request) {
 		newDiscount := &models.Discount{}
@@ -82,7 +82,7 @@ func buildDiscountCreationHandler(db *sql.DB, client storage.Storer) http.Handle
 	}
 }
 
-func buildDiscountDeletionHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildDiscountDeletionHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	// DiscountDeletionHandler is a request handler that deletes a single discount
 	return func(res http.ResponseWriter, req *http.Request) {
 		discountIDStr := chi.URLParam(req, "discount_id")
@@ -109,7 +109,7 @@ func buildDiscountDeletionHandler(db *sql.DB, client storage.Storer) http.Handle
 	}
 }
 
-func buildDiscountUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildDiscountUpdateHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	// DiscountUpdateHandler is a request handler that can update discounts
 	return func(res http.ResponseWriter, req *http.Request) {
 		discountIDStr := chi.URLParam(req, "discount_id")

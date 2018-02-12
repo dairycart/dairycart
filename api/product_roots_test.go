@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"database/sql"
@@ -97,7 +97,7 @@ func TestSingleProductRootRetrievalHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductOptionsByProductRootID", mock.Anything, exampleProductRoot.ID).
 			Return([]models.ProductOption{exampleProductOption}, nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
 		assert.NoError(t, err)
@@ -111,7 +111,7 @@ func TestSingleProductRootRetrievalHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductRoot", mock.Anything, exampleProductRoot.ID).
 			Return(exampleProductRoot, sql.ErrNoRows)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
 		assert.NoError(t, err)
@@ -125,7 +125,7 @@ func TestSingleProductRootRetrievalHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductRoot", mock.Anything, exampleProductRoot.ID).
 			Return(exampleProductRoot, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
 		assert.NoError(t, err)
@@ -141,7 +141,7 @@ func TestSingleProductRootRetrievalHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductsByProductRootID", mock.Anything, exampleProductRoot.ID).
 			Return([]models.Product{exampleProduct}, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
 		assert.NoError(t, err)
@@ -159,7 +159,7 @@ func TestSingleProductRootRetrievalHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductOptionsByProductRootID", mock.Anything, exampleProductRoot.ID).
 			Return([]models.ProductOption{exampleProductOption}, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
 		assert.NoError(t, err)
@@ -177,7 +177,7 @@ func TestSingleProductRootRetrievalHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductOptionsByProductRootID", mock.Anything, exampleProductRoot.ID).
 			Return([]models.ProductOption{exampleProductOption}, nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
 		assert.NoError(t, err)
@@ -220,7 +220,7 @@ func TestProductRootListRetrievalHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductsByProductRootID", mock.Anything, exampleProductRoot.ID).
 			Return([]models.Product{exampleProduct}, nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/product_roots", nil)
 		assert.NoError(t, err)
@@ -234,7 +234,7 @@ func TestProductRootListRetrievalHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductRootCount", mock.Anything, mock.Anything).
 			Return(uint64(3), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/product_roots", nil)
 		assert.NoError(t, err)
@@ -250,7 +250,7 @@ func TestProductRootListRetrievalHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductRootList", mock.Anything, mock.Anything).
 			Return([]models.ProductRoot{exampleProductRoot}, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/product_roots", nil)
 		assert.NoError(t, err)
@@ -268,7 +268,7 @@ func TestProductRootListRetrievalHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductsByProductRootID", mock.Anything, exampleProductRoot.ID).
 			Return([]models.Product{exampleProduct}, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/product_roots", nil)
 		assert.NoError(t, err)
@@ -307,7 +307,7 @@ func TestProductRootDeletionHandler(t *testing.T) {
 			Return(buildTestTime(), nil)
 		testUtil.Mock.ExpectCommit()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
 		assert.NoError(t, err)
@@ -321,7 +321,7 @@ func TestProductRootDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductRoot", mock.Anything, exampleProductRoot.ID).
 			Return(exampleProductRoot, sql.ErrNoRows)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
 		assert.NoError(t, err)
@@ -335,7 +335,7 @@ func TestProductRootDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetProductRoot", mock.Anything, exampleProductRoot.ID).
 			Return(exampleProductRoot, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
 		assert.NoError(t, err)
@@ -350,7 +350,7 @@ func TestProductRootDeletionHandler(t *testing.T) {
 			Return(exampleProductRoot, nil)
 		testUtil.Mock.ExpectBegin().WillReturnError(generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
 		assert.NoError(t, err)
@@ -368,7 +368,7 @@ func TestProductRootDeletionHandler(t *testing.T) {
 			Return(buildTestTime(), generateArbitraryError())
 		testUtil.Mock.ExpectRollback()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
 		assert.NoError(t, err)
@@ -388,7 +388,7 @@ func TestProductRootDeletionHandler(t *testing.T) {
 			Return(buildTestTime(), generateArbitraryError())
 		testUtil.Mock.ExpectRollback()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
 		assert.NoError(t, err)
@@ -410,7 +410,7 @@ func TestProductRootDeletionHandler(t *testing.T) {
 			Return(buildTestTime(), generateArbitraryError())
 		testUtil.Mock.ExpectRollback()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
 		assert.NoError(t, err)
@@ -434,7 +434,7 @@ func TestProductRootDeletionHandler(t *testing.T) {
 			Return(buildTestTime(), generateArbitraryError())
 		testUtil.Mock.ExpectRollback()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
 		assert.NoError(t, err)
@@ -460,7 +460,7 @@ func TestProductRootDeletionHandler(t *testing.T) {
 			Return(buildTestTime(), generateArbitraryError())
 		testUtil.Mock.ExpectRollback()
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
 		assert.NoError(t, err)
@@ -486,7 +486,7 @@ func TestProductRootDeletionHandler(t *testing.T) {
 			Return(buildTestTime(), nil)
 		testUtil.Mock.ExpectCommit().WillReturnError(generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/product_root/%d", exampleProductRoot.ID), nil)
 		assert.NoError(t, err)

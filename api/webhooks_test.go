@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"database/sql"
@@ -32,7 +32,7 @@ func TestWebhookListByEventTypeHandler(t *testing.T) {
 		testUtil.MockDB.On("GetWebhooksByEventType", mock.Anything, mock.Anything).
 			Return([]models.Webhook{exampleWebhook}, nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/webhooks/%s", exampleWebhook.EventType), nil)
 		assert.NoError(t, err)
@@ -46,7 +46,7 @@ func TestWebhookListByEventTypeHandler(t *testing.T) {
 		testUtil.MockDB.On("GetWebhooksByEventType", mock.Anything, mock.Anything).
 			Return([]models.Webhook{exampleWebhook}, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/webhooks/%s", exampleWebhook.EventType), nil)
 		assert.NoError(t, err)
@@ -71,7 +71,7 @@ func TestWebhookListHandler(t *testing.T) {
 		testUtil.MockDB.On("GetWebhookList", mock.Anything, mock.Anything).
 			Return([]models.Webhook{exampleWebhook}, nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/webhooks", nil)
 		assert.NoError(t, err)
@@ -85,7 +85,7 @@ func TestWebhookListHandler(t *testing.T) {
 		testUtil.MockDB.On("GetWebhookCount", mock.Anything, mock.Anything).
 			Return(uint64(3), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/webhooks", nil)
 		assert.NoError(t, err)
@@ -101,7 +101,7 @@ func TestWebhookListHandler(t *testing.T) {
 		testUtil.MockDB.On("GetWebhookList", mock.Anything, mock.Anything).
 			Return([]models.Webhook{}, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodGet, "/v1/webhooks", nil)
 		assert.NoError(t, err)
@@ -124,7 +124,7 @@ func TestWebhookCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("CreateWebhook", mock.Anything, mock.Anything).
 			Return(uint64(1), buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/webhook", strings.NewReader(exampleWebhookCreationInput))
 		assert.NoError(t, err)
@@ -136,7 +136,7 @@ func TestWebhookCreationHandler(t *testing.T) {
 	t.Run("with invalid input", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/webhook", strings.NewReader(exampleGarbageInput))
 		assert.NoError(t, err)
@@ -150,7 +150,7 @@ func TestWebhookCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("CreateWebhook", mock.Anything, mock.Anything).
 			Return(uint64(1), buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/v1/webhook", strings.NewReader(exampleWebhookCreationInput))
 		assert.NoError(t, err)
@@ -175,7 +175,7 @@ func TestWebhookDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("DeleteWebhook", mock.Anything, exampleWebhook.ID).
 			Return(buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/webhook/%d", exampleWebhook.ID), nil)
 		assert.NoError(t, err)
@@ -189,7 +189,7 @@ func TestWebhookDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetWebhook", mock.Anything, exampleWebhook.ID).
 			Return(exampleWebhook, sql.ErrNoRows)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/webhook/%d", exampleWebhook.ID), nil)
 		assert.NoError(t, err)
@@ -203,7 +203,7 @@ func TestWebhookDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetWebhook", mock.Anything, exampleWebhook.ID).
 			Return(exampleWebhook, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/webhook/%d", exampleWebhook.ID), nil)
 		assert.NoError(t, err)
@@ -219,7 +219,7 @@ func TestWebhookDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("DeleteWebhook", mock.Anything, exampleWebhook.ID).
 			Return(buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/webhook/%d", exampleWebhook.ID), nil)
 		assert.NoError(t, err)
@@ -250,7 +250,7 @@ func TestWebhookUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("UpdateWebhook", mock.Anything, mock.Anything).
 			Return(buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, "/v1/webhook/1", strings.NewReader(exampleWebhookUpdateInput))
 		assert.NoError(t, err)
@@ -262,7 +262,7 @@ func TestWebhookUpdateHandler(t *testing.T) {
 	t.Run("with invalid input", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, "/v1/webhook/1", strings.NewReader(exampleGarbageInput))
 		assert.NoError(t, err)
@@ -276,7 +276,7 @@ func TestWebhookUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetWebhook", mock.Anything, exampleWebhook.ID).
 			Return(exampleWebhook, sql.ErrNoRows)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, "/v1/webhook/1", strings.NewReader(exampleWebhookUpdateInput))
 		assert.NoError(t, err)
@@ -290,7 +290,7 @@ func TestWebhookUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetWebhook", mock.Anything, exampleWebhook.ID).
 			Return(exampleWebhook, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, "/v1/webhook/1", strings.NewReader(exampleWebhookUpdateInput))
 		assert.NoError(t, err)
@@ -306,7 +306,7 @@ func TestWebhookUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("UpdateWebhook", mock.Anything, mock.Anything).
 			Return(buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, "/v1/webhook/1", strings.NewReader(exampleWebhookUpdateInput))
 		assert.NoError(t, err)

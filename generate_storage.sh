@@ -1,1 +1,0 @@
-(cd api/storage && ./generate.sh)

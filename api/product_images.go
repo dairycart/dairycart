@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"database/sql"
@@ -11,7 +11,8 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 
-	"github.com/dairycart/dairycart/api/storage"
+	"github.com/dairycart/dairycart/storage/database"
+	"github.com/dairycart/dairycart/storage/images"
 	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/fatih/set"
@@ -29,7 +30,7 @@ func loadImage(in io.Reader) (image.Image, error) {
 	return img, err
 }
 
-func handleProductCreationImages(tx *sql.Tx, client storage.Storer, imager storage.ImageStorer, images []models.ProductImageCreationInput, sku string, rootID uint64) ([]models.ProductImage, *uint64, error) {
+func handleProductCreationImages(tx *sql.Tx, client database.Storer, imager images.ImageStorer, images []models.ProductImageCreationInput, sku string, rootID uint64) ([]models.ProductImage, *uint64, error) {
 	var (
 		primaryImageID *uint64
 		imagesToCreate []models.ProductImageCreationInput
@@ -48,8 +49,8 @@ func handleProductCreationImages(tx *sql.Tx, client storage.Storer, imager stora
 	// FIXME: Make this whole process concurrent
 	for i, imageInput := range imagesToCreate {
 		var (
-			img    image.Image
-			err    error
+			img image.Image
+			err error
 		)
 		imageType := strings.ToLower(imageInput.Type)
 

@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"database/sql"
@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/dairycart/dairycart/api/storage"
+	"github.com/dairycart/dairycart/storage/database"
 	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/go-chi/chi"
@@ -36,7 +36,7 @@ func createProductRootFromProduct(p *models.Product) *models.ProductRoot {
 	return r
 }
 
-func buildProductRootListHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildProductRootListHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	// productRootListHandler is a request handler that returns a list of product roots
 	return func(res http.ResponseWriter, req *http.Request) {
 		rawFilterParams := req.URL.Query()
@@ -72,7 +72,7 @@ func buildProductRootListHandler(db *sql.DB, client storage.Storer) http.Handler
 	}
 }
 
-func buildSingleProductRootHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildSingleProductRootHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	// SingleProductRootHandler is a request handler that returns a single product root
 	return func(res http.ResponseWriter, req *http.Request) {
 		productRootIDStr := chi.URLParam(req, "product_root_id")
@@ -106,7 +106,7 @@ func buildSingleProductRootHandler(db *sql.DB, client storage.Storer) http.Handl
 	}
 }
 
-func buildProductRootDeletionHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildProductRootDeletionHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	// ProductDeletionHandler is a request handler that deletes a single product
 	return func(res http.ResponseWriter, req *http.Request) {
 		productRootIDStr := chi.URLParam(req, "product_root_id")

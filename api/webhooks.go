@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"database/sql"
@@ -6,14 +6,14 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/dairycart/dairycart/api/storage"
+	"github.com/dairycart/dairycart/storage/database"
 	"github.com/dairycart/dairymodels/v1"
 
 	"github.com/go-chi/chi"
 	"github.com/imdario/mergo"
 )
 
-func buildWebhookListRetrievalHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildWebhookListRetrievalHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	// WebhookListRetrievalHandler is a request handler that returns a list of Webhooks
 	return func(res http.ResponseWriter, req *http.Request) {
 		rawFilterParams := req.URL.Query()
@@ -41,7 +41,7 @@ func buildWebhookListRetrievalHandler(db *sql.DB, client storage.Storer) http.Ha
 	}
 }
 
-func buildWebhookListRetrievalByEventTypeHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildWebhookListRetrievalByEventTypeHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	// WebhookListRetrievalHandler is a request handler that returns a list of Webhooks
 	return func(res http.ResponseWriter, req *http.Request) {
 		eventType := chi.URLParam(req, "event_type")
@@ -56,7 +56,7 @@ func buildWebhookListRetrievalByEventTypeHandler(db *sql.DB, client storage.Stor
 	}
 }
 
-func buildWebhookCreationHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildWebhookCreationHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	// WebhookCreationHandler is a request handler that creates a Webhook from user input
 	return func(res http.ResponseWriter, req *http.Request) {
 		newWebhook := &models.Webhook{}
@@ -77,7 +77,7 @@ func buildWebhookCreationHandler(db *sql.DB, client storage.Storer) http.Handler
 	}
 }
 
-func buildWebhookDeletionHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildWebhookDeletionHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	// WebhookDeletionHandler is a request handler that deletes a single webhook
 	return func(res http.ResponseWriter, req *http.Request) {
 		webhookIDStr := chi.URLParam(req, "webhook_id")
@@ -104,7 +104,7 @@ func buildWebhookDeletionHandler(db *sql.DB, client storage.Storer) http.Handler
 	}
 }
 
-func buildWebhookUpdateHandler(db *sql.DB, client storage.Storer) http.HandlerFunc {
+func buildWebhookUpdateHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	// WebhookUpdateHandler is a request handler that can update webhooks
 	return func(res http.ResponseWriter, req *http.Request) {
 		webhookIDStr := chi.URLParam(req, "webhook_id")

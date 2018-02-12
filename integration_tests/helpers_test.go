@@ -72,7 +72,9 @@ func convertCreationInputToProduct(in models.ProductCreationInput) models.Produc
 		PackageHeight:      in.PackageHeight,
 		PackageWidth:       in.PackageWidth,
 		PackageLength:      in.PackageLength,
-		AvailableOn:        in.AvailableOn,
+	}
+	if in.AvailableOn != nil {
+		np.AvailableOn = in.AvailableOn.Time
 	}
 	return np
 }

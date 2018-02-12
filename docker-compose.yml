@@ -2,18 +2,18 @@ version: "3.2"
 
 services:
   database:
-    image: postgres:alpine
+    image: postgres:latest
     ports:
     - "2345:5432"
     environment:
       - POSTGRES_USER=dairycart
       - POSTGRES_PASSWORD=hunter2
-    # logging:
-    #   driver: none
+    logging:
+      driver: none
 
   api:
     build:
-      context: api
+      context: .
       dockerfile: Dockerfile
     ports:
       - "4321:4321"
@@ -21,11 +21,6 @@ services:
       - database
     links:
       - database
-    environment:
-      - DB_TO_USE=postgres
-      - VIRTUAL_HOST=api.dairycart.com
-      - DAIRYCART_MIGRATIONS_DIR=file:///migrations
-      - DAIRYCART_DB_URL=postgres://dairycart:hunter2@database:5432/dairycart?sslmode=disable
 
 #  admin:
 #    build:

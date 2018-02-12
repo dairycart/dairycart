@@ -1,10 +1,9 @@
-package main
+package api
 
 import (
 	"database/sql"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -24,7 +23,6 @@ const (
 )
 
 func init() {
-	os.Setenv("DAIRYSECRET", "do-not-use-secrets-like-this-plz")
 	dummySalt = []byte("farts")
 }
 
@@ -340,7 +338,7 @@ func TestUserCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("CreateUser", mock.Anything, mock.Anything).
 			Return(exampleUser.ID, buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
 		assert.NoError(t, err)
@@ -355,7 +353,7 @@ func TestUserCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("CreateUser", mock.Anything, mock.Anything).
 			Return(exampleUser.ID, buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		badUserCreationInput := `
 			{
@@ -374,7 +372,7 @@ func TestUserCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("UserWithUsernameExists", mock.Anything, exampleUser.Username).
 			Return(true, nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
 		assert.NoError(t, err)
@@ -387,7 +385,7 @@ func TestUserCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("UserWithUsernameExists", mock.Anything, exampleUser.Username).
 			Return(false, nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleAdminInput))
 		assert.NoError(t, err)
@@ -398,7 +396,7 @@ func TestUserCreationHandler(t *testing.T) {
 	t.Run("with invalid input", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleGarbageInput))
 		assert.NoError(t, err)
@@ -409,7 +407,7 @@ func TestUserCreationHandler(t *testing.T) {
 	t.Run("with invalid cookie", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
 		assert.NoError(t, err)
@@ -425,7 +423,7 @@ func TestUserCreationHandler(t *testing.T) {
 		testUtil.MockDB.On("CreateUser", mock.Anything, mock.Anything).
 			Return(exampleUser.ID, buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/user", strings.NewReader(exampleInput))
 		assert.NoError(t, err)
@@ -463,7 +461,7 @@ func TestUserLoginHandler(t *testing.T) {
 		testUtil.MockDB.On("CreateLoginAttempt", mock.Anything, mock.Anything).
 			Return(uint64(0), buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
 		assert.NoError(t, err)
@@ -481,7 +479,7 @@ func TestUserLoginHandler(t *testing.T) {
 		testUtil.MockDB.On("CreateLoginAttempt", mock.Anything, mock.Anything).
 			Return(uint64(0), buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleGarbageInput))
 		assert.NoError(t, err)
@@ -495,7 +493,7 @@ func TestUserLoginHandler(t *testing.T) {
 		testUtil.MockDB.On("LoginAttemptsHaveBeenExhausted", mock.Anything, exampleUser.Username).
 			Return(true, nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
 		assert.NoError(t, err)
@@ -509,7 +507,7 @@ func TestUserLoginHandler(t *testing.T) {
 		testUtil.MockDB.On("LoginAttemptsHaveBeenExhausted", mock.Anything, exampleUser.Username).
 			Return(false, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
 		assert.NoError(t, err)
@@ -525,7 +523,7 @@ func TestUserLoginHandler(t *testing.T) {
 		testUtil.MockDB.On("GetUserByUsername", mock.Anything, exampleUser.Username).
 			Return(exampleUser, sql.ErrNoRows)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
 		assert.NoError(t, err)
@@ -541,7 +539,7 @@ func TestUserLoginHandler(t *testing.T) {
 		testUtil.MockDB.On("GetUserByUsername", mock.Anything, exampleUser.Username).
 			Return(exampleUser, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
 		assert.NoError(t, err)
@@ -559,7 +557,7 @@ func TestUserLoginHandler(t *testing.T) {
 		testUtil.MockDB.On("CreateLoginAttempt", mock.Anything, mock.Anything).
 			Return(uint64(0), buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
 		assert.NoError(t, err)
@@ -585,7 +583,7 @@ func TestUserLoginHandler(t *testing.T) {
 		testUtil.MockDB.On("CreateLoginAttempt", mock.Anything, mock.Anything).
 			Return(uint64(0), buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(invalidInput))
 		assert.NoError(t, err)
@@ -604,7 +602,7 @@ func TestUserLoginHandler(t *testing.T) {
 		testUtil.MockDB.On("CreateLoginAttempt", mock.Anything, mock.Anything).
 			Return(uint64(0), buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(exampleInput))
 		assert.NoError(t, err)
@@ -619,7 +617,7 @@ func TestUserLogoutHandler(t *testing.T) {
 	t.Run("optimal conditions", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/logout", nil)
 		assert.NoError(t, err)
@@ -632,7 +630,7 @@ func TestUserLogoutHandler(t *testing.T) {
 	t.Run("with invalid cookie", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/logout", nil)
 		assert.NoError(t, err)
@@ -663,7 +661,7 @@ func TestUserDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("DeleteUser", mock.Anything, exampleID).
 			Return(buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
 		assert.NoError(t, err)
@@ -681,7 +679,7 @@ func TestUserDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetUser", mock.Anything, exampleID).
 			Return(exampleUser, sql.ErrNoRows)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
 		assert.NoError(t, err)
@@ -695,7 +693,7 @@ func TestUserDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("GetUser", mock.Anything, exampleID).
 			Return(exampleUser, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
 		assert.NoError(t, err)
@@ -711,7 +709,7 @@ func TestUserDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("DeleteUser", mock.Anything, exampleID).
 			Return(buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
 		assert.NoError(t, err)
@@ -728,7 +726,7 @@ func TestUserDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("DeleteUser", mock.Anything, exampleID).
 			Return(buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
 		assert.NoError(t, err)
@@ -747,7 +745,7 @@ func TestUserDeletionHandler(t *testing.T) {
 		testUtil.MockDB.On("DeleteUser", mock.Anything, exampleID).
 			Return(buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodDelete, buildRoute("v1", "user", exampleIDString), nil)
 		assert.NoError(t, err)
@@ -788,7 +786,7 @@ func TestUserForgottenPasswordHandler(t *testing.T) {
 		testUtil.MockDB.On("CreatePasswordResetToken", mock.Anything, mock.Anything).
 			Return(exampleUser.ID, buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleInput))
 		assert.NoError(t, err)
@@ -799,7 +797,7 @@ func TestUserForgottenPasswordHandler(t *testing.T) {
 	t.Run("with invalid input", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleGarbageInput))
 		assert.NoError(t, err)
@@ -812,7 +810,7 @@ func TestUserForgottenPasswordHandler(t *testing.T) {
 		testUtil.MockDB.On("GetUserByUsername", mock.Anything, exampleUser.Username).
 			Return(exampleUser, sql.ErrNoRows)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleInput))
 		assert.NoError(t, err)
@@ -825,7 +823,7 @@ func TestUserForgottenPasswordHandler(t *testing.T) {
 		testUtil.MockDB.On("GetUserByUsername", mock.Anything, exampleUser.Username).
 			Return(exampleUser, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleInput))
 		assert.NoError(t, err)
@@ -840,7 +838,7 @@ func TestUserForgottenPasswordHandler(t *testing.T) {
 		testUtil.MockDB.On("PasswordResetTokenForUserIDExists", mock.Anything, mock.Anything).
 			Return(true, nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleInput))
 		assert.NoError(t, err)
@@ -857,7 +855,7 @@ func TestUserForgottenPasswordHandler(t *testing.T) {
 		testUtil.MockDB.On("CreatePasswordResetToken", mock.Anything, mock.Anything).
 			Return(exampleUser.ID, buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPost, "/password_reset", strings.NewReader(exampleInput))
 		assert.NoError(t, err)
@@ -873,7 +871,7 @@ func TestPasswordResetValidationHandler(t *testing.T) {
 		testUtil.MockDB.On("PasswordResetTokenWithTokenExists", mock.Anything, exampleResetToken).
 			Return(true, nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodHead, fmt.Sprintf("/password_reset/%s", exampleResetToken), nil)
 		assert.NoError(t, err)
@@ -887,7 +885,7 @@ func TestPasswordResetValidationHandler(t *testing.T) {
 		testUtil.MockDB.On("PasswordResetTokenWithTokenExists", mock.Anything, exampleResetToken).
 			Return(false, nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodHead, fmt.Sprintf("/password_reset/%s", exampleResetToken), nil)
 		assert.NoError(t, err)
@@ -924,7 +922,7 @@ func TestUserUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("UpdateUser", mock.Anything, mock.Anything).
 			Return(buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/user/%d", exampleUser.ID), strings.NewReader(exampleUserUpdateInput))
 		assert.NoError(t, err)
@@ -936,7 +934,7 @@ func TestUserUpdateHandler(t *testing.T) {
 	t.Run("with invalid input", func(*testing.T) {
 		testUtil := setupTestVariablesWithMock(t)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/user/%d", exampleUser.ID), strings.NewReader(exampleGarbageInput))
 		assert.NoError(t, err)
@@ -957,7 +955,7 @@ func TestUserUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetUser", mock.Anything, exampleUser.ID).
 			Return(exampleUser, nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/user/%d", exampleUser.ID), strings.NewReader(exampleInvalidUserUpdateInput))
 		assert.NoError(t, err)
@@ -971,7 +969,7 @@ func TestUserUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetUser", mock.Anything, exampleUser.ID).
 			Return(exampleUser, sql.ErrNoRows)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/user/%d", exampleUser.ID), strings.NewReader(exampleUserUpdateInput))
 		assert.NoError(t, err)
@@ -985,7 +983,7 @@ func TestUserUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("GetUser", mock.Anything, exampleUser.ID).
 			Return(exampleUser, generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/user/%d", exampleUser.ID), strings.NewReader(exampleUserUpdateInput))
 		assert.NoError(t, err)
@@ -1008,7 +1006,7 @@ func TestUserUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("UpdateUser", mock.Anything, mock.Anything).
 			Return(buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/user/%d", exampleUser.ID), strings.NewReader(exampleInvalidUserUpdateInput))
 		assert.NoError(t, err)
@@ -1033,7 +1031,7 @@ func TestUserUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("UpdateUser", mock.Anything, mock.Anything).
 			Return(buildTestTime(), nil)
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/user/%d", exampleUser.ID), strings.NewReader(exampleUserUpdateInput))
 		assert.NoError(t, err)
@@ -1049,7 +1047,7 @@ func TestUserUpdateHandler(t *testing.T) {
 		testUtil.MockDB.On("UpdateUser", mock.Anything, mock.Anything).
 			Return(buildTestTime(), generateArbitraryError())
 		config := buildServerConfigFromTestUtil(testUtil)
-		SetupAPIRoutes(config)
+		SetupAPIRouter(config)
 
 		req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("/user/%d", exampleUser.ID), strings.NewReader(exampleUserUpdateInput))
 		assert.NoError(t, err)

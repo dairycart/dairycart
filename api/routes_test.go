@@ -1,6 +1,7 @@
-package main
+package api
 
 import (
+	"net/http"
 	"strings"
 	"testing"
 
@@ -28,4 +29,23 @@ func TestBuildRoute(t *testing.T) {
 		actual := buildRoute("v1", input...)
 		assert.Equal(t, expected, actual, `buildRoute with input of ["%s"] should equal %s`, strings.Join(input, `", "`), expected)
 	}
+}
+
+////////////////////////////////////////////////////////
+//                                                    //
+//                 HTTP Handler Tests                 //
+//                                                    //
+////////////////////////////////////////////////////////
+
+func TestHealthCheckHandler(t *testing.T) {
+	t.Run("optimal conditions", func(*testing.T) {
+		testUtil := setupTestVariablesWithMock(t)
+		config := buildServerConfigFromTestUtil(testUtil)
+		SetupAPIRouter(config)
+
+		req, err := http.NewRequest(http.MethodGet, "/health", nil)
+		assert.NoError(t, err)
+		testUtil.Router.ServeHTTP(testUtil.Response, req)
+		assertStatusCode(t, testUtil, http.StatusOK)
+	})
 }
