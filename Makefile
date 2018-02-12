@@ -3,7 +3,7 @@ GIT_HASH   := $(shell git describe --tags --always --dirty)
 BUILD_TIME := $(shell date -u '+%Y-%m-%d_%I:%M:%S%p')
 
 .PHONY: coverage
-coverage:
+coverage: | example-plugins
 	if [ -f coverage.out ]; then rm coverage.out; fi
 	docker build -t dairycoverage --file coverage.Dockerfile .
 	docker run --volume=$(GOPATH)/src/github.com/dairycart/dairycart:/output --rm -t dairycoverage
@@ -12,18 +12,22 @@ coverage:
 
 
 .PHONY: ci-coverage
-ci-coverage:
+ci-coverage: | example-plugins
 	docker build -t dairycoverage --file coverage.Dockerfile .
 	docker run --volume=$(GOPATH)/src/github.com/dairycart/dairycart:/output --rm -t dairycoverage
 
 .PHONY: unit-tests
-unit-tests:
+unit-tests: | example-plugins
 	docker build -t api_test -f test.Dockerfile .
 	docker run --name api_test --rm api_test
 
 .PHONY: integration-tests
 integration-tests:
 	docker-compose --file integration_tests.yml up --abort-on-container-exit --build --remove-orphans --force-recreate
+
+.PHONY: tests
+tests:
+	make unit-tests integration-tests
 
 .PHONY: vendor
 vendor:

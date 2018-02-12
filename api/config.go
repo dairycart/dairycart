@@ -29,13 +29,13 @@ const (
 	// =========== //
 
 	// basic stuff
-	migrateExampleDataKey = "migrate_example_data"
-	portKey               = "port"
-	domainKey             = "domain"
-	secretKey             = "secret"
+	portKey   = "port"
+	domainKey = "domain"
+	secretKey = "secret"
 
 	// databases
 	databaseKey           = "database"
+	migrateExampleDataKey = "database.migrate_example_data"
 	databaseTypeKey       = "database.type"
 	databasePluginKey     = "database.plugin_path"
 	databaseConnectionKey = "database.connection_details"
@@ -237,15 +237,15 @@ func loadImageStoragePlugin(pluginPath string, name string) (images.ImageStorer,
 func InitializeServerComponents(cfg *viper.Viper, config *ServerConfig) error {
 	var err error
 	config.Router.Route("/product_images", func(r chi.Router) {
-		err = config.ImageStorer.Init(cfg, r)
+		imageConfig := cfg.Sub(imageStorageKey)
+		err = config.ImageStorer.Init(imageConfig, r)
 	})
 	if err != nil {
 		return errors.Wrap(err, "error migrating database")
 	}
 
-	dbConnStr := cfg.GetString(databaseConnectionKey)
-	migrateExampleData := cfg.GetBool(migrateExampleDataKey)
-	err = config.DatabaseClient.Migrate(config.DB, dbConnStr, migrateExampleData)
+	dbConfig := cfg.Sub(databaseKey)
+	err = config.DatabaseClient.Migrate(config.DB, dbConfig)
 	if err != nil {
 		return errors.Wrap(err, "error migrating database")
 	}

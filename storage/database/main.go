@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/dairycart/dairymodels/v1"
+	"github.com/spf13/viper"
 )
 
 // NOTE: this file "changes" a lot because Go iterates over maps in random order
@@ -17,7 +18,7 @@ type Querier interface {
 }
 
 type Storer interface {
-	Migrate(db *sql.DB, dbURL string, loadExampleData bool) error
+	Migrate(db *sql.DB, cfg *viper.Viper) error
 
 	// ProductOptionValues
 	GetProductOptionValue(Querier, uint64) (*models.ProductOptionValue, error)

@@ -59,15 +59,11 @@
 
 [[constraint]]
   name = "github.com/imdario/mergo"
-  version = "0.3.0"
+  version = "0.3.2"
 
 [[constraint]]
   branch = "master"
   name = "github.com/lib/pq"
-
-[[constraint]]
-  name = "github.com/mattes/migrate"
-  version = "3.0.1"
 
 [[constraint]]
   branch = "master"
@@ -82,8 +78,12 @@
   version = "1.0.4"
 
 [[constraint]]
+  name = "github.com/spf13/viper"
+  version = "1.0.0"
+
+[[constraint]]
   name = "github.com/stretchr/testify"
-  version = "1.2.0"
+  version = "1.2.1"
 
 [[constraint]]
   branch = "master"

@@ -1,11 +1,11 @@
 # Example Dairycart configuration
 
 port = 4321
-migrate_example_data = true
 
 [database]
 type = "postgres"
 connection_details = "postgres://dairytest:hunter2@database:5432/dairytest?sslmode=disable"
+migrate_example_data = false
 
 [image_storage]
 type = "local"

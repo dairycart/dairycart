@@ -5,6 +5,7 @@ import (
 
 	"github.com/dairycart/dairycart/storage/database"
 
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -20,8 +21,8 @@ func (m *MockDB) Begin() (*sql.Tx, error) {
 	return args.Get(0).(*sql.Tx), args.Error(1)
 }
 
-func (m *MockDB) Migrate(db *sql.DB, dbURL string, loadExampleData bool) error {
-	args := m.Called(db, dbURL, loadExampleData)
+func (m *MockDB) Migrate(db *sql.DB, cfg *viper.Viper) error {
+	args := m.Called(db, cfg)
 
 	return args.Error(0)
 }

@@ -17,7 +17,7 @@
   branch = "master"
   name = "github.com/dairycart/postgres"
   packages = [".","migrations"]
-  revision = "dc264cbb61449f94ecccdebac305ca3e0b395bc0"
+  revision = "b2d6d18f77dea4d85259d70423402ea17a07d0aa"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -197,7 +197,7 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["bcrypt","blowfish","ssh/terminal"]
-  revision = "d9133f5469342136e669e85192a26056b587f503"
+  revision = "9de5f2eaf759b4c4550b3db39fed2e9e5f86f45c"
 
 [[projects]]
   branch = "master"
@@ -209,7 +209,7 @@
   branch = "master"
   name = "golang.org/x/text"
   packages = ["internal/gen","internal/triegen","internal/ucd","transform","unicode/cldr","unicode/norm"]
-  revision = "e19ae1496984b1c655b8044a65c0300a3c878dd3"
+  revision = "4e4a3210bb54bb31f6ab2cdca2edcc0b50c420c1"
 
 [[projects]]
   name = "gopkg.in/DATA-DOG/go-sqlmock.v1"
@@ -226,6 +226,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e5df694c1b6cc54091ba6c571c4b9c874a2fc26c32655f7f0594c9a35014a31f"
+  inputs-digest = "cebbf2c344888e0e30175bedb41a77c2d1110e1e828e2818a9c15d03095a3b2a"
   solver-name = "gps-cdcl"
   solver-version = 1
