@@ -19,7 +19,12 @@ func main() {
 	logrus.SetOutput(os.Stdout)
 	logrus.SetLevel(logrus.InfoLevel)
 
-	cfg, err := dairyserver.LoadServerConfig()
+	configPath := ""
+	if len(os.Args) >= 2 {
+		configPath = os.Args[1]
+	}
+
+	cfg, err := dairyserver.LoadServerConfig(configPath)
 	if err != nil {
 		logrus.Fatalf("error validating server configuration: %v\n", err)
 	}
