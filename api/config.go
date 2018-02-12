@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
-	"os"
 	"plugin"
 	"strings"
 
@@ -87,10 +86,10 @@ func setupCookieStorage(secret string) (*sessions.CookieStore, error) {
 	return sessions.NewCookieStore([]byte(secret)), nil
 }
 
-func setConfigDefaults(config *viper.Viper) {
+func setConfigDefaults(config *viper.Viper, altCfgFilePath string) {
 	config.SetConfigName("dairyconfig")
-	if len(os.Args) >= 2 {
-		config.SetConfigName(os.Args[1])
+	if altCfgFilePath != "" {
+		config.SetConfigFile(altCfgFilePath)
 	}
 	config.AddConfigPath(".")
 
@@ -107,9 +106,9 @@ func setConfigDefaults(config *viper.Viper) {
 	// TODO: generate secret as default in case user doesn't provide one
 }
 
-func LoadServerConfig() (*viper.Viper, error) {
+func LoadServerConfig(altCfgFilePath string) (*viper.Viper, error) {
 	config := viper.New()
-	setConfigDefaults(config)
+	setConfigDefaults(config, altCfgFilePath)
 
 	if err := config.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
@@ -168,12 +167,9 @@ func buildDatabaseFromConfig(cfg *viper.Viper) (*sql.DB, database.Storer, error)
 		client = postgres.NewPostgres()
 	} else {
 		missingPluginErr := errors.New("non-default database selected without complimentary plugin path, please check your configuration file")
-		if !cfg.IsSet(databasePluginKey) {
-			return nil, nil, missingPluginErr
-		}
-
 		pluginPath := cfg.GetString(databasePluginKey)
-		if pluginPath == "" {
+
+		if !cfg.IsSet(databasePluginKey) || pluginPath == "" {
 			return nil, nil, missingPluginErr
 		}
 

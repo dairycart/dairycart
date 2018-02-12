@@ -4,4 +4,4 @@ import (
 	"github.com/dairycart/dairycart/storage/database/mock"
 )
 
-var Example = &dairymock.MockDB{}
+var Example = dairymock.MockDB{}
