@@ -10,7 +10,6 @@ import (
 	"net/mail"
 	"strconv"
 	"time"
-	"unicode"
 
 	"github.com/dairycart/dairycart/storage/database"
 	"github.com/dairycart/dairymodels/v1"
@@ -27,7 +26,7 @@ const (
 	hashCost                 = bcrypt.DefaultCost + 3
 	saltSize                 = 32
 	resetTokenSize           = 128
-	minimumPasswordSize      = 64
+	minimumPasswordSize      = 32
 	dairycartCookieName      = "dairycart"
 	sessionAdminKeyName      = "is_admin"
 	sessionUserIDKeyName     = "user_id"
@@ -70,20 +69,7 @@ func validateSessionCookieMiddleware(res http.ResponseWriter, req *http.Request,
 }
 
 func passwordIsValid(s string) bool {
-	var hasNumber bool
-	var hasUpper bool
-	var hasSpecial bool
-	for _, letter := range s {
-		switch {
-		case unicode.IsNumber(letter):
-			hasNumber = true
-		case unicode.IsUpper(letter):
-			hasUpper = true
-		case unicode.IsPunct(letter) || unicode.IsSymbol(letter):
-			hasSpecial = true
-		}
-	}
-	return len(s) >= minimumPasswordSize && hasNumber && hasUpper && hasSpecial
+	return len(s) >= minimumPasswordSize
 }
 
 func createUserFromInput(in *models.UserCreationInput) (*models.User, error) {

@@ -946,7 +946,7 @@ func TestUserUpdateHandler(t *testing.T) {
 	t.Run("with invalid new password", func(*testing.T) {
 		exampleInvalidUserUpdateInput := fmt.Sprintf(`
 			{
-				"new_password": "passwordpasswordpasswordpasswordpasswordpasswordpasswordpassword",
+				"new_password": "password",
 				"current_password": "%s"
 			}
 		`, examplePassword)
@@ -1017,7 +1017,6 @@ func TestUserUpdateHandler(t *testing.T) {
 
 	t.Run("optimal conditions", func(*testing.T) {
 		exampleNewPassword := "P@ssw0rdP@ssw0rdP@ssw0rdP@ssw0rdP@ssw0rdP@ssw0rdP@ssw0rdP@ssw0rd"
-		// exampleNewPasswordHashed := "$2a$13$xhhweT6OnsU7l6GyPGdin.YDANUGnFEu7xJQb7eU/zv4KBCiRwWbC"
 		exampleUserUpdateInput := fmt.Sprintf(`
 			{
 				"new_password": "%s",
