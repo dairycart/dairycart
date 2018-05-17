@@ -161,7 +161,7 @@ func respondThatRowDoesNotExist(req *http.Request, res http.ResponseWriter, item
 }
 
 func notifyOfInvalidRequestCookie(res http.ResponseWriter) {
-	log.Printf("Encountered error reading request cookie")
+	log.Println("Encountered error reading request cookie")
 	res.WriteHeader(http.StatusBadRequest)
 	err := errors.New("invalid request cookie")
 	errRes := &ErrorResponse{
@@ -192,7 +192,7 @@ func notifyOfInternalIssue(res http.ResponseWriter, err error, attemptedTask str
 }
 
 func notifyOfInvalidAuthenticationAttempt(res http.ResponseWriter) {
-	log.Printf("Invalid login attempt")
+	log.Println("Invalid login attempt")
 	res.WriteHeader(http.StatusUnauthorized)
 	errRes := &ErrorResponse{
 		Status:  http.StatusUnauthorized,
@@ -202,7 +202,7 @@ func notifyOfInvalidAuthenticationAttempt(res http.ResponseWriter) {
 }
 
 func notifyOfExaustedAuthenticationAttempts(res http.ResponseWriter) {
-	log.Printf("Invalid login attempt")
+	log.Println("Invalid login attempt")
 	res.WriteHeader(http.StatusUnauthorized)
 	errRes := &ErrorResponse{
 		Status:  http.StatusUnauthorized,

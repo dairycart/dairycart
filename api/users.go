@@ -1,7 +1,6 @@
 package api
 
 import (
-	"crypto/rand"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -73,14 +72,7 @@ func passwordIsValid(s string) bool {
 }
 
 func createUserFromInput(in *models.UserCreationInput) (*models.User, error) {
-	salt, err := generateSalt()
-	// COVERAGE NOTE: I cannot seem to synthesize this error for the sake of testing, so if you're
-	// seeing this in a coverage report and the line below is red, just know that I tried. :(
-	if err != nil {
-		return nil, err
-	}
-
-	saltedAndHashedPassword, err := saltAndHashPassword(in.Password, salt)
+	hashedPass, err := hashPassword([]byte(in.Password))
 	// COVERAGE NOTE: see above
 	if err != nil {
 		return nil, err
@@ -91,8 +83,7 @@ func createUserFromInput(in *models.UserCreationInput) (*models.User, error) {
 		LastName:  in.LastName,
 		Email:     in.Email,
 		Username:  in.Username,
-		Password:  string(saltedAndHashedPassword),
-		Salt:      salt,
+		Password:  string(hashedPass),
 		IsAdmin:   in.IsAdmin,
 	}
 	return user, nil
@@ -109,22 +100,27 @@ func createUserFromUpdateInput(in *models.UserUpdateInput, hashedPassword string
 	return out
 }
 
-func generateSalt() ([]byte, error) {
-	b := make([]byte, saltSize)
-	_, err := rand.Read(b)
-	return b, err
+func hashPassword(password []byte) (string, error) {
+	hashedPass, err := bcrypt.GenerateFromPassword(password, hashCost)
+	return string(hashedPass), err
 }
 
-func saltAndHashPassword(password string, salt []byte) (string, error) {
-	passwordToHash := append(salt, password...)
-	saltedAndHashedPassword, err := bcrypt.GenerateFromPassword(passwordToHash, hashCost)
-	return string(saltedAndHashedPassword), err
-}
+func passwordMatches(providedPassword, userPassword []byte) bool {
+	err := bcrypt.CompareHashAndPassword(userPassword, providedPassword)
 
-func passwordMatches(password string, u *models.User) bool {
-	saltedInputPassword := append(u.Salt, password...)
-	err := bcrypt.CompareHashAndPassword([]byte(u.Password), saltedInputPassword)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+
 	return err == nil
+}
+
+func passwordIsTooWeak(hashedPassword []byte) (bool, error) {
+	cost, err := bcrypt.Cost(hashedPassword)
+	if err != nil {
+		return false, nil
+	}
+	return cost != hashCost, nil
 }
 
 func validateUserCreationInput(in *models.UserCreationInput) error {
@@ -253,7 +249,7 @@ func buildUserLoginHandler(db *sql.DB, client database.Storer, store *sessions.C
 			return
 		}
 
-		loginValid := passwordMatches(loginInput.Password, user)
+		loginValid := passwordMatches([]byte(loginInput.Password), []byte(user.Password))
 		_, _, err = client.CreateLoginAttempt(db, &models.LoginAttempt{Username: username, Successful: loginValid})
 		if err != nil {
 			notifyOfInternalIssue(res, err, "create login attempt entry")
@@ -263,6 +259,16 @@ func buildUserLoginHandler(db *sql.DB, client database.Storer, store *sessions.C
 		if !loginValid {
 			notifyOfInvalidAuthenticationAttempt(res)
 			return
+		}
+
+		tooWeak, err := passwordIsTooWeak([]byte(user.Password))
+		if err != nil {
+			notifyOfInvalidRequestBody(res, err)
+			return
+		}
+
+		if tooWeak {
+			// updatedPassword, err := saltAndHashPassword([]byte(user.Password))
 		}
 
 		session, err := store.Get(req, dairycartCookieName)
@@ -427,8 +433,16 @@ func buildUserUpdateHandler(db *sql.DB, client database.Storer) http.HandlerFunc
 			return
 		}
 
-		loginValid := passwordMatches(updatedUserInfo.CurrentPassword, existingUser)
+		loginValid := passwordMatches([]byte(updatedUserInfo.CurrentPassword), []byte(existingUser.Password))
 		if !loginValid {
+
+			log.Printf(`
+
+	updatedUserInfo.CurrentPassword: '%s'
+	existingUser.Password:           '%s'
+
+			`, updatedUserInfo.CurrentPassword, existingUser.Password)
+
 			notifyOfInvalidAuthenticationAttempt(res)
 			return
 		}
@@ -437,7 +451,7 @@ func buildUserUpdateHandler(db *sql.DB, client database.Storer) http.HandlerFunc
 		hashedPassword := existingUser.Password
 		if passwordChanged {
 			var err error
-			hashedPassword, err = saltAndHashPassword(newPassword, existingUser.Salt)
+			hashedPassword, err = hashPassword([]byte(newPassword))
 			// COVERAGE NOTE: see note in createUserFromInput
 			if err != nil {
 				notifyOfInternalIssue(res, err, "update user")
