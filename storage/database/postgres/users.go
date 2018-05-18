@@ -18,7 +18,6 @@ const userQueryByUsername = `
         username,
         email,
         password,
-        salt,
         is_admin,
         password_last_changed_on,
         created_on,
@@ -34,7 +33,7 @@ const userQueryByUsername = `
 
 func (pg *postgres) GetUserByUsername(db database.Querier, username string) (*models.User, error) {
 	u := &models.User{}
-	err := db.QueryRow(userQueryByUsername, username).Scan(&u.ID, &u.FirstName, &u.LastName, &u.Username, &u.Email, &u.Password, &u.Salt, &u.IsAdmin, &u.PasswordLastChangedOn, &u.CreatedOn, &u.UpdatedOn, &u.ArchivedOn)
+	err := db.QueryRow(userQueryByUsername, username).Scan(&u.ID, &u.FirstName, &u.LastName, &u.Username, &u.Email, &u.Password, &u.IsAdmin, &u.PasswordLastChangedOn, &u.CreatedOn, &u.UpdatedOn, &u.ArchivedOn)
 	return u, err
 }
 
@@ -51,6 +50,14 @@ func (pg *postgres) UserWithUsernameExists(db database.Querier, sku string) (boo
 	}
 
 	return exists == "true", err
+}
+
+const updateUserPasswordQuery = `UPDATE users set password=$1, updated_on=NOW() where id = $2 RETURNING updated_on`
+
+func (pg *postgres) UpdatePasswordForUser(db database.Querier, userID uint64, password string) (time.Time, error) {
+	var t time.Time
+	err := db.QueryRow(userWithUsernameExistenceQuery, password, userID).Scan(&t)
+	return t, err
 }
 
 const userExistenceQuery = `SELECT EXISTS(SELECT id FROM users WHERE id = $1 and archived_on IS NULL);`
@@ -76,7 +83,6 @@ const userSelectionQuery = `
         username,
         email,
         password,
-        salt,
         is_admin,
         password_last_changed_on,
         created_on,
@@ -93,7 +99,7 @@ const userSelectionQuery = `
 func (pg *postgres) GetUser(db database.Querier, id uint64) (*models.User, error) {
 	u := &models.User{}
 
-	err := db.QueryRow(userSelectionQuery, id).Scan(&u.ID, &u.FirstName, &u.LastName, &u.Username, &u.Email, &u.Password, &u.Salt, &u.IsAdmin, &u.PasswordLastChangedOn, &u.CreatedOn, &u.UpdatedOn, &u.ArchivedOn)
+	err := db.QueryRow(userSelectionQuery, id).Scan(&u.ID, &u.FirstName, &u.LastName, &u.Username, &u.Email, &u.Password, &u.IsAdmin, &u.PasswordLastChangedOn, &u.CreatedOn, &u.UpdatedOn, &u.ArchivedOn)
 
 	return u, err
 }
@@ -108,7 +114,6 @@ func buildUserListRetrievalQuery(qf *models.QueryFilter) (string, []interface{})
 			"username",
 			"email",
 			"password",
-			"salt",
 			"is_admin",
 			"password_last_changed_on",
 			"created_on",
@@ -139,7 +144,6 @@ func (pg *postgres) GetUserList(db database.Querier, qf *models.QueryFilter) ([]
 			&u.Username,
 			&u.Email,
 			&u.Password,
-			&u.Salt,
 			&u.IsAdmin,
 			&u.PasswordLastChangedOn,
 			&u.CreatedOn,
@@ -178,18 +182,18 @@ func (pg *postgres) GetUserCount(db database.Querier, qf *models.QueryFilter) (u
 const userCreationQuery = `
     INSERT INTO users
         (
-            first_name, last_name, username, email, password, salt, is_admin, password_last_changed_on
+            first_name, last_name, username, email, password, is_admin, password_last_changed_on
         )
     VALUES
         (
-            $1, $2, $3, $4, $5, $6, $7, $8
+            $1, $2, $3, $4, $5, $6, $7
         )
     RETURNING
         id, created_on;
 `
 
 func (pg *postgres) CreateUser(db database.Querier, nu *models.User) (createdID uint64, createdOn time.Time, err error) {
-	err = db.QueryRow(userCreationQuery, &nu.FirstName, &nu.LastName, &nu.Username, &nu.Email, &nu.Password, &nu.Salt, &nu.IsAdmin, &nu.PasswordLastChangedOn).Scan(&createdID, &createdOn)
+	err = db.QueryRow(userCreationQuery, &nu.FirstName, &nu.LastName, &nu.Username, &nu.Email, &nu.Password, &nu.IsAdmin, &nu.PasswordLastChangedOn).Scan(&createdID, &createdOn)
 	return createdID, createdOn, err
 }
 
@@ -201,17 +205,16 @@ const userUpdateQuery = `
         username = $3,
         email = $4,
         password = $5,
-        salt = $6,
-        is_admin = $7,
-        password_last_changed_on = $8,
+        is_admin = $6,
+        password_last_changed_on = $7,
         updated_on = NOW()
-    WHERE id = $9
+    WHERE id = $8
     RETURNING updated_on;
 `
 
 func (pg *postgres) UpdateUser(db database.Querier, updated *models.User) (time.Time, error) {
 	var t time.Time
-	err := db.QueryRow(userUpdateQuery, &updated.FirstName, &updated.LastName, &updated.Username, &updated.Email, &updated.Password, &updated.Salt, &updated.IsAdmin, &updated.PasswordLastChangedOn, &updated.ID).Scan(&t)
+	err := db.QueryRow(userUpdateQuery, &updated.FirstName, &updated.LastName, &updated.Username, &updated.Email, &updated.Password, &updated.IsAdmin, &updated.PasswordLastChangedOn, &updated.ID).Scan(&t)
 	return t, err
 }
 

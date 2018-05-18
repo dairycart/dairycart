@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dairycart/postgres/migrations"
+	"github.com/dairycart/dairycart/storage/database/postgres/migrations"
 
 	"github.com/mattes/migrate"
 	_ "github.com/mattes/migrate/database/postgres"
@@ -23,12 +23,21 @@ const (
 )
 
 func loadMigrationData(dbURL string, loadExampleData bool) (*migrate.Migrate, error) {
+	log.Printf(`
+	loadMigrationData called:
+		dbURL:          '%s'
+		loadExampleData: %v
+	`, dbURL, loadExampleData)
+
 	s := bindata.Resource(migrations.AssetNames(), func(name string) ([]byte, error) {
 		if strings.Contains(name, "example_data") && loadExampleData {
 			return migrations.Asset(name)
+		} else if strings.Contains(name, "example_data") && !loadExampleData {
+			return nil, nil
 		}
 		return migrations.Asset(name)
 	})
+
 	d, err := bindata.WithInstance(s)
 	if err != nil {
 		return nil, err
@@ -44,12 +53,7 @@ func prepareForMigration(db *sql.DB, dbURL string, loadExampleData bool) (*migra
 		return nil, err
 	}
 
-	m, err := loadMigrationData(dbURL, loadExampleData)
-	if err != nil {
-		return nil, err
-	}
-
-	return m, nil
+	return loadMigrationData(dbURL, loadExampleData)
 }
 
 func databaseIsAvailable(db *sql.DB) error {

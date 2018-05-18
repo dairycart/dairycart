@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"net/http"
 	"plugin"
 	"strings"
@@ -158,6 +159,8 @@ func buildDatabaseFromConfig(cfg *viper.Viper) (*sql.DB, database.Storer, error)
 	}
 
 	dbType := cfg.GetString(databaseTypeKey)
+	log.Printf("dbType: '%s'\n", dbType)
+
 	db, err = sql.Open(dbType, dbConnStr)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "issue opening sql connection")

@@ -4,7 +4,7 @@ set -e
 
 gnorm gen # --verbose
 if [ -z "$1" ]; then
-    go test github.com/dairycart/postgres -cover
+    go test github.com/dairycart/dairycart/storage/database/postgres -cover
 else
-    go test github.com/dairycart/postgres -coverprofile=coverage.out && go tool cover -html=coverage.out && rm coverage.out
+    go test github.com/dairycart/dairycart/storage/database/postgres -coverprofile=coverage.out && go tool cover -html=coverage.out && rm coverage.out
 fi

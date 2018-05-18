@@ -40,6 +40,7 @@ revendor:
 	dep init -v
 
 .PHONY: example-plugins
+# $(GOPATH)/src/github.com/dairycart/dairycart/api/example_files/plugins/mock_db.so $(GOPATH)/src/github.com/dairycart/dairycart/api/example_files/plugins/mock_img.so:
 example-plugins:
 	docker build -t plugins --file plugin.Dockerfile .
 	docker run --volume=$(GOPATH)/src/github.com/dairycart/dairycart/api/example_files/plugins:/output --rm -t plugins
@@ -47,7 +48,7 @@ example-plugins:
 
 .PHONY: storage
 storage:
-	(cd storage && gnorm gen)
+	(cd storage/database && gnorm gen)
 
 .PHONY: run
 run:
