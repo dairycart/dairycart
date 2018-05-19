@@ -23,7 +23,7 @@ unit-tests: | example-plugins
 
 .PHONY: integration-tests
 integration-tests:
-	docker-compose --file integration_tests.yml up --abort-on-container-exit --build --remove-orphans --force-recreate
+	docker-compose --file integration-tests.yml up --abort-on-container-exit --build --remove-orphans --force-recreate
 
 .PHONY: tests
 tests:
