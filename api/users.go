@@ -23,9 +23,8 @@ import (
 
 const (
 	hashCost                 = bcrypt.DefaultCost + 3
-	saltSize                 = 32
 	resetTokenSize           = 128
-	minimumPasswordSize      = 32
+	minimumPasswordSize      = 16
 	dairycartCookieName      = "dairycart"
 	sessionAdminKeyName      = "is_admin"
 	sessionUserIDKeyName     = "user_id"
@@ -268,7 +267,18 @@ func buildUserLoginHandler(db *sql.DB, client database.Storer, store *sessions.C
 		}
 
 		if tooWeak {
-			// updatedPassword, err := saltAndHashPassword([]byte(user.Password))
+			updatedPassword, err := hashPassword([]byte(user.Password))
+			if err != nil {
+				notifyOfInvalidRequestBody(res, err)
+				return
+			}
+
+			user.Password = updatedPassword
+			_, err = client.UpdateUser(db, user)
+			if err != nil {
+				notifyOfInternalIssue(res, err, "retrieve user")
+				return
+			}
 		}
 
 		session, err := store.Get(req, dairycartCookieName)

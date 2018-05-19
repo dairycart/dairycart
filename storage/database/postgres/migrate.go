@@ -63,9 +63,8 @@ func databaseIsAvailable(db *sql.DB) error {
 		err := db.Ping()
 		if err != nil {
 			log.Printf("ping failed, waiting half a second for the database")
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(1 * time.Second)
 			numberOfUnsuccessfulAttempts++
-
 			if numberOfUnsuccessfulAttempts == maxConnectionAttempts {
 				return fmt.Errorf("failed to connect to the database: %v\n", err)
 			}

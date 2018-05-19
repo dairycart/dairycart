@@ -52,4 +52,4 @@ storage:
 
 .PHONY: run
 run:
-	docker-compose --file docker-compose.yml up --build --remove-orphans --force-recreate # --abort-on-container-exit
+	docker-compose --file docker-compose.yml up --build --remove-orphans --force-recreate --abort-on-container-exit
