@@ -1,7 +1,6 @@
 package api
 
 import (
-	"crypto/rand"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -10,7 +9,6 @@ import (
 	"net/mail"
 	"strconv"
 	"time"
-	"unicode"
 
 	"github.com/dairycart/dairycart/storage/database"
 	"github.com/dairycart/dairymodels/v1"
@@ -25,9 +23,8 @@ import (
 
 const (
 	hashCost                 = bcrypt.DefaultCost + 3
-	saltSize                 = 32
 	resetTokenSize           = 128
-	minimumPasswordSize      = 64
+	minimumPasswordSize      = 16
 	dairycartCookieName      = "dairycart"
 	sessionAdminKeyName      = "is_admin"
 	sessionUserIDKeyName     = "user_id"
@@ -70,32 +67,12 @@ func validateSessionCookieMiddleware(res http.ResponseWriter, req *http.Request,
 }
 
 func passwordIsValid(s string) bool {
-	var hasNumber bool
-	var hasUpper bool
-	var hasSpecial bool
-	for _, letter := range s {
-		switch {
-		case unicode.IsNumber(letter):
-			hasNumber = true
-		case unicode.IsUpper(letter):
-			hasUpper = true
-		case unicode.IsPunct(letter) || unicode.IsSymbol(letter):
-			hasSpecial = true
-		}
-	}
-	return len(s) >= minimumPasswordSize && hasNumber && hasUpper && hasSpecial
+	return len(s) >= minimumPasswordSize
 }
 
 func createUserFromInput(in *models.UserCreationInput) (*models.User, error) {
-	salt, err := generateSalt()
-	// COVERAGE NOTE: I cannot seem to synthesize this error for the sake of testing, so if you're
-	// seeing this in a coverage report and the line below is red, just know that I tried. :(
-	if err != nil {
-		return nil, err
-	}
-
-	saltedAndHashedPassword, err := saltAndHashPassword(in.Password, salt)
-	// COVERAGE NOTE: see above
+	hashedPass, err := hashPassword([]byte(in.Password))
+	// COVERAGE NOTE: see note in hashPassword
 	if err != nil {
 		return nil, err
 	}
@@ -105,8 +82,7 @@ func createUserFromInput(in *models.UserCreationInput) (*models.User, error) {
 		LastName:  in.LastName,
 		Email:     in.Email,
 		Username:  in.Username,
-		Password:  string(saltedAndHashedPassword),
-		Salt:      salt,
+		Password:  string(hashedPass),
 		IsAdmin:   in.IsAdmin,
 	}
 	return user, nil
@@ -123,22 +99,26 @@ func createUserFromUpdateInput(in *models.UserUpdateInput, hashedPassword string
 	return out
 }
 
-func generateSalt() ([]byte, error) {
-	b := make([]byte, saltSize)
-	_, err := rand.Read(b)
-	return b, err
+func hashPassword(password []byte) (string, error) {
+	// COVERAGE NOTE: I cannot seem to synthesize this error for the sake of testing, so if you're
+	// seeing this in a coverage report and the line below is red, just know that I tried. :(
+	hashedPass, err := bcrypt.GenerateFromPassword(password, hashCost)
+	return string(hashedPass), err
 }
 
-func saltAndHashPassword(password string, salt []byte) (string, error) {
-	passwordToHash := append(salt, password...)
-	saltedAndHashedPassword, err := bcrypt.GenerateFromPassword(passwordToHash, hashCost)
-	return string(saltedAndHashedPassword), err
-}
+func passwordMatches(providedPassword, userPassword []byte) bool {
+	err := bcrypt.CompareHashAndPassword(userPassword, providedPassword)
 
-func passwordMatches(password string, u *models.User) bool {
-	saltedInputPassword := append(u.Salt, password...)
-	err := bcrypt.CompareHashAndPassword([]byte(u.Password), saltedInputPassword)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+
 	return err == nil
+}
+
+func passwordIsTooWeak(hashedPassword []byte) (bool, error) {
+	cost, err := bcrypt.Cost(hashedPassword)
+	return cost != hashCost, err
 }
 
 func validateUserCreationInput(in *models.UserCreationInput) error {
@@ -207,7 +187,7 @@ func buildUserCreationHandler(db *sql.DB, client database.Storer, store *session
 		}
 
 		newUser, err := createUserFromInput(userInput)
-		// COVERAGE NOTE: see note in createUserFromInput
+		// COVERAGE NOTE: see note in hashPassword
 		if err != nil {
 			notifyOfInternalIssue(res, err, "creating user")
 			return
@@ -251,7 +231,8 @@ func buildUserLoginHandler(db *sql.DB, client database.Storer, store *sessions.C
 		if exhaustedAttempts {
 			notifyOfExaustedAuthenticationAttempts(res)
 			return
-		} else if err != nil {
+		}
+		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve user")
 			return
 		}
@@ -262,12 +243,13 @@ func buildUserLoginHandler(db *sql.DB, client database.Storer, store *sessions.C
 		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "user", username)
 			return
-		} else if err != nil {
+		}
+		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve user")
 			return
 		}
 
-		loginValid := passwordMatches(loginInput.Password, user)
+		loginValid := passwordMatches([]byte(loginInput.Password), []byte(user.Password))
 		_, _, err = client.CreateLoginAttempt(db, &models.LoginAttempt{Username: username, Successful: loginValid})
 		if err != nil {
 			notifyOfInternalIssue(res, err, "create login attempt entry")
@@ -277,6 +259,29 @@ func buildUserLoginHandler(db *sql.DB, client database.Storer, store *sessions.C
 		if !loginValid {
 			notifyOfInvalidAuthenticationAttempt(res)
 			return
+		}
+
+		tooWeak, err := passwordIsTooWeak([]byte(user.Password))
+		if err != nil {
+			// COVERAGE NOTE: see note in hashPassword
+			notifyOfInvalidRequestBody(res, err)
+			return
+		}
+
+		if tooWeak {
+			updatedPassword, err := hashPassword([]byte(user.Password))
+			if err != nil {
+				// COVERAGE NOTE: see note in hashPassword
+				notifyOfInvalidRequestBody(res, err)
+				return
+			}
+
+			user.Password = updatedPassword
+			_, err = client.UpdateUser(db, user)
+			if err != nil {
+				notifyOfInternalIssue(res, err, "retrieve user")
+				return
+			}
 		}
 
 		session, err := store.Get(req, dairycartCookieName)
@@ -322,7 +327,8 @@ func buildUserDeletionHandler(db *sql.DB, client database.Storer, store *session
 		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "user", userID)
 			return
-		} else if err != nil {
+		}
+		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve user")
 			return
 		}
@@ -370,7 +376,8 @@ func buildUserForgottenPasswordHandler(db *sql.DB, client database.Storer) http.
 		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "user", username)
 			return
-		} else if err != nil {
+		}
+		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve user")
 			return
 		}
@@ -436,13 +443,22 @@ func buildUserUpdateHandler(db *sql.DB, client database.Storer) http.HandlerFunc
 		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "user ID", userID)
 			return
-		} else if err != nil {
+		}
+		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve user")
 			return
 		}
 
-		loginValid := passwordMatches(updatedUserInfo.CurrentPassword, existingUser)
+		loginValid := passwordMatches([]byte(updatedUserInfo.CurrentPassword), []byte(existingUser.Password))
 		if !loginValid {
+
+			log.Printf(`
+
+	updatedUserInfo.CurrentPassword: '%s'
+	existingUser.Password:           '%s'
+
+			`, updatedUserInfo.CurrentPassword, existingUser.Password)
+
 			notifyOfInvalidAuthenticationAttempt(res)
 			return
 		}
@@ -451,8 +467,8 @@ func buildUserUpdateHandler(db *sql.DB, client database.Storer) http.HandlerFunc
 		hashedPassword := existingUser.Password
 		if passwordChanged {
 			var err error
-			hashedPassword, err = saltAndHashPassword(newPassword, existingUser.Salt)
-			// COVERAGE NOTE: see note in createUserFromInput
+			hashedPassword, err = hashPassword([]byte(newPassword))
+			// COVERAGE NOTE: see note in hashPassword
 			if err != nil {
 				notifyOfInternalIssue(res, err, "update user")
 				return

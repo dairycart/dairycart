@@ -23,7 +23,7 @@ unit-tests: | example-plugins
 
 .PHONY: integration-tests
 integration-tests:
-	docker-compose --file integration_tests.yml up --abort-on-container-exit --build --remove-orphans --force-recreate
+	docker-compose --file integration-tests.yml up --abort-on-container-exit --build --remove-orphans --force-recreate
 
 .PHONY: tests
 tests:
@@ -41,12 +41,15 @@ revendor:
 
 .PHONY: example-plugins
 example-plugins:
+	make api/example_files/plugins/mock_db.so api/example_files/plugins/mock_img.so
+
+api/example_files/plugins/mock_db.so api/example_files/plugins/mock_img.so:
 	docker build -t plugins --file plugin.Dockerfile .
 	docker run --volume=$(GOPATH)/src/github.com/dairycart/dairycart/api/example_files/plugins:/output --rm -t plugins
 
 .PHONY: storage
 storage:
-	(cd storage && gnorm gen)
+	(cd storage/database && gnorm gen)
 
 .PHONY: run
 run:

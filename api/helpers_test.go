@@ -105,6 +105,7 @@ func generateArbitraryError() error {
 	return errors.New("pineapple on pizza")
 }
 
+// TODO: remove t from the argument list here
 func setupTestVariablesWithMock(t *testing.T) *TestUtil {
 	t.Helper()
 	mockDB, mock, _ := sqlmock.New()

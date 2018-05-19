@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"github.com/dairycart/dairycart/storage/database"
+	"github.com/dairycart/dairycart/storage/database/postgres"
 	"github.com/dairycart/dairycart/storage/images"
 	"github.com/dairycart/dairycart/storage/images/local"
-	"github.com/dairycart/postgres"
 
 	"github.com/dchest/uniuri"
 	"github.com/go-chi/chi"

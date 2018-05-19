@@ -77,7 +77,7 @@ func TestUserCreationRoute(t *testing.T) {
 
 		expected := models.ErrorResponse{
 			Status:  http.StatusBadRequest,
-			Message: "password must be at least 64 characters",
+			Message: fmt.Sprintf("password must be at least %d characters", 16),
 		}
 		var actual models.ErrorResponse
 		unmarshalBody(_t, resp, &actual)

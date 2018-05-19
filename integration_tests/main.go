@@ -111,12 +111,12 @@ func createUsers(dbURL string) {
 		log.Fatalf("error encountered deleting existing users: %v", err)
 	}
 
-	_, err = db.Exec(`INSERT INTO users ("first_name", "last_name", "username", "email", "password", "salt", "is_admin") VALUES ('admin', 'user', 'admin', 'admin@user.com', '$2a$13$NSHE6gf1FlATM3YUgVWGIe9Ao4DUUHydreuE7eZoc8DNbxq1rw.yq', 'fake_salt_here'::bytea, 'true')`)
+	_, err = db.Exec(`INSERT INTO users ("first_name", "last_name", "username", "email", "password", "is_admin") VALUES ('admin', 'user', 'admin', 'admin@user.com', '$2a$13$z/UdoqskgKnL9nwQTrP0SOMSD/3wEPkfS6dhcboJWJ4PTuhBoX4iS', 'true')`)
 	if err != nil {
 		log.Fatalf("error encountered creating super user: %v", err)
 	}
 
-	_, err = db.Exec(`INSERT INTO users ("first_name", "last_name", "username", "email", "password", "salt", "is_admin") VALUES ('admin', 'user', 'regular', 'regular@user.com', '$2a$13$NSHE6gf1FlATM3YUgVWGIe9Ao4DUUHydreuE7eZoc8DNbxq1rw.yq', 'fake_salt_here'::bytea, 'false')`)
+	_, err = db.Exec(`INSERT INTO users ("first_name", "last_name", "username", "email", "password", "is_admin") VALUES ('admin', 'user', 'regular', 'regular@user.com', '$2a$13$z/UdoqskgKnL9nwQTrP0SOMSD/3wEPkfS6dhcboJWJ4PTuhBoX4iS', 'false')`)
 	if err != nil {
 		log.Fatalf("error encountered creating regular user: %v", err)
 	}
@@ -127,12 +127,14 @@ func getUserCookies() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	requester.RegularAuthCookie = resp.Cookies()[0]
 
 	resp, err = loginUser("admin", validPassword)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	requester.AdminAuthCookie = resp.Cookies()[0]
 }
 
