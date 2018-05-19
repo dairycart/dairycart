@@ -72,7 +72,7 @@ func passwordIsValid(s string) bool {
 
 func createUserFromInput(in *models.UserCreationInput) (*models.User, error) {
 	hashedPass, err := hashPassword([]byte(in.Password))
-	// COVERAGE NOTE: see above
+	// COVERAGE NOTE: see note in hashPassword
 	if err != nil {
 		return nil, err
 	}
@@ -100,6 +100,8 @@ func createUserFromUpdateInput(in *models.UserUpdateInput, hashedPassword string
 }
 
 func hashPassword(password []byte) (string, error) {
+	// COVERAGE NOTE: I cannot seem to synthesize this error for the sake of testing, so if you're
+	// seeing this in a coverage report and the line below is red, just know that I tried. :(
 	hashedPass, err := bcrypt.GenerateFromPassword(password, hashCost)
 	return string(hashedPass), err
 }
@@ -116,10 +118,7 @@ func passwordMatches(providedPassword, userPassword []byte) bool {
 
 func passwordIsTooWeak(hashedPassword []byte) (bool, error) {
 	cost, err := bcrypt.Cost(hashedPassword)
-	if err != nil {
-		return false, nil
-	}
-	return cost != hashCost, nil
+	return cost != hashCost, err
 }
 
 func validateUserCreationInput(in *models.UserCreationInput) error {
@@ -188,7 +187,7 @@ func buildUserCreationHandler(db *sql.DB, client database.Storer, store *session
 		}
 
 		newUser, err := createUserFromInput(userInput)
-		// COVERAGE NOTE: see note in createUserFromInput
+		// COVERAGE NOTE: see note in hashPassword
 		if err != nil {
 			notifyOfInternalIssue(res, err, "creating user")
 			return
@@ -232,7 +231,8 @@ func buildUserLoginHandler(db *sql.DB, client database.Storer, store *sessions.C
 		if exhaustedAttempts {
 			notifyOfExaustedAuthenticationAttempts(res)
 			return
-		} else if err != nil {
+		}
+		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve user")
 			return
 		}
@@ -243,7 +243,8 @@ func buildUserLoginHandler(db *sql.DB, client database.Storer, store *sessions.C
 		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "user", username)
 			return
-		} else if err != nil {
+		}
+		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve user")
 			return
 		}
@@ -262,6 +263,7 @@ func buildUserLoginHandler(db *sql.DB, client database.Storer, store *sessions.C
 
 		tooWeak, err := passwordIsTooWeak([]byte(user.Password))
 		if err != nil {
+			// COVERAGE NOTE: see note in hashPassword
 			notifyOfInvalidRequestBody(res, err)
 			return
 		}
@@ -269,6 +271,7 @@ func buildUserLoginHandler(db *sql.DB, client database.Storer, store *sessions.C
 		if tooWeak {
 			updatedPassword, err := hashPassword([]byte(user.Password))
 			if err != nil {
+				// COVERAGE NOTE: see note in hashPassword
 				notifyOfInvalidRequestBody(res, err)
 				return
 			}
@@ -324,7 +327,8 @@ func buildUserDeletionHandler(db *sql.DB, client database.Storer, store *session
 		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "user", userID)
 			return
-		} else if err != nil {
+		}
+		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve user")
 			return
 		}
@@ -372,7 +376,8 @@ func buildUserForgottenPasswordHandler(db *sql.DB, client database.Storer) http.
 		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "user", username)
 			return
-		} else if err != nil {
+		}
+		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve user")
 			return
 		}
@@ -438,7 +443,8 @@ func buildUserUpdateHandler(db *sql.DB, client database.Storer) http.HandlerFunc
 		if err == sql.ErrNoRows {
 			respondThatRowDoesNotExist(req, res, "user ID", userID)
 			return
-		} else if err != nil {
+		}
+		if err != nil {
 			notifyOfInternalIssue(res, err, "retrieve user")
 			return
 		}
@@ -462,7 +468,7 @@ func buildUserUpdateHandler(db *sql.DB, client database.Storer) http.HandlerFunc
 		if passwordChanged {
 			var err error
 			hashedPassword, err = hashPassword([]byte(newPassword))
-			// COVERAGE NOTE: see note in createUserFromInput
+			// COVERAGE NOTE: see note in hashPassword
 			if err != nil {
 				notifyOfInternalIssue(res, err, "update user")
 				return
