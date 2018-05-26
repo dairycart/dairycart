@@ -5,4 +5,4 @@ WORKDIR /go/src/github.com/dairycart/dairycart
 ADD . .
 RUN mkdir /output
 
-CMD ["go", "test", "-coverprofile=/output/coverage.out", "github.com/dairycart/dairycart/api", "-parallel=1"]
+CMD ["go", "test", "-coverprofile=/output/coverage.out", "github.com/dairycart/dairycart/api/v1", "-parallel=1"]

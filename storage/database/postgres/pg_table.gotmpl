@@ -551,7 +551,7 @@ const {{ $creationQueryVarName }} = `
             ${{ inc $x }}{{ if ne $lastCol $x }}, {{ end }}{{ end }}
         )
     RETURNING
-        id, created_on{{ if $isProduct }}, available_on{{ end }};
+        id, {{ if $isWebhook }}executed_on{{ else }}created_on{{ if $isProduct }}, available_on{{ end }}{{ end }};
 `
 
 func (pg *postgres) Create{{ $modelName }}(db database.Querier, nu *models.{{ $modelName }}) (createdID uint64, createdOn time.Time, {{- if $isProduct }}availableOn time.Time, {{ end }}err error) {

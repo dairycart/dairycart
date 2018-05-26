@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	dairyserver "github.com/dairycart/dairycart/api"
+	dairyserver "github.com/dairycart/dairycart/api/v1"
 
 	"github.com/go-chi/chi/middleware"
 	"github.com/gorilla/context"

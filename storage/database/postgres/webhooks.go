@@ -174,7 +174,7 @@ const webhookCreationQuery = `
             $1, $2, $3
         )
     RETURNING
-        id, created_on;
+        id, executed_on;
 `
 
 func (pg *postgres) CreateWebhook(db database.Querier, nu *models.Webhook) (createdID uint64, createdOn time.Time, err error) {

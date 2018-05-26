@@ -2,6 +2,8 @@ GOPATH     := $(GOPATH)
 GIT_HASH   := $(shell git describe --tags --always --dirty)
 BUILD_TIME := $(shell date -u '+%Y-%m-%d_%I:%M:%S%p')
 
+all: tests run
+
 .PHONY: coverage
 coverage: | example-plugins
 	if [ -f coverage.out ]; then rm coverage.out; fi
@@ -23,6 +25,7 @@ unit-tests: | example-plugins
 
 .PHONY: integration-tests
 integration-tests:
+	docker system prune -f --all
 	docker-compose --file integration-tests.yml up --abort-on-container-exit --build --remove-orphans --force-recreate
 
 .PHONY: tests
@@ -41,11 +44,11 @@ revendor:
 
 .PHONY: example-plugins
 example-plugins:
-	make api/example_files/plugins/mock_db.so api/example_files/plugins/mock_img.so
+	make api/v1/example_files/plugins/mock_db.so api/v1/example_files/plugins/mock_img.so
 
-api/example_files/plugins/mock_db.so api/example_files/plugins/mock_img.so:
+api/v1/example_files/plugins/mock_db.so api/v1/example_files/plugins/mock_img.so:
 	docker build -t plugins --file plugin.Dockerfile .
-	docker run --volume=$(GOPATH)/src/github.com/dairycart/dairycart/api/example_files/plugins:/output --rm -t plugins
+	docker run --volume=$(GOPATH)/src/github.com/dairycart/dairycart/api/v1/example_files/plugins:/output --rm -t plugins
 
 .PHONY: storage
 storage:
