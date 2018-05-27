@@ -14,7 +14,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: dockerfiles/main.Dockerfile
     ports:
       - "4321:4321"
     depends_on:
