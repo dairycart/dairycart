@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/dairycart/dairycart/client/v1"
-	"github.com/dairycart/dairymodels/v1"
+	"github.com/dairycart/dairycart/models/v1"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

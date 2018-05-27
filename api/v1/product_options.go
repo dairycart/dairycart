@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dairycart/dairycart/storage/database"
-	"github.com/dairycart/dairymodels/v1"
+	"github.com/dairycart/dairycart/models/v1"
+	"github.com/dairycart/dairycart/storage/v1/database"
 
 	"github.com/go-chi/chi"
 	"github.com/imdario/mergo"

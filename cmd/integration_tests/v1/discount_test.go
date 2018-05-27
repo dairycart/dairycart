@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/dairycart/dairymodels/v1"
+	"github.com/dairycart/dairycart/models/v1"
 
 	"github.com/stretchr/testify/assert"
 )

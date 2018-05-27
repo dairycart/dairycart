@@ -13,9 +13,9 @@ import (
 	"time"
 
 	// local dependencies
-	"github.com/dairycart/dairycart/storage/database/mock"
-	"github.com/dairycart/dairycart/storage/images/mock"
-	"github.com/dairycart/dairymodels/v1"
+	"github.com/dairycart/dairycart/models/v1"
+	"github.com/dairycart/dairycart/storage/v1/database/mock"
+	"github.com/dairycart/dairycart/storage/v1/images/mock"
 
 	// external dependencies
 	"github.com/dchest/uniuri"

@@ -9,7 +9,7 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/dairycart/dairymodels"
+  name = "github.com/dairycart/dairycart/models/v1"
   packages = ["v1"]
   revision = "eaff8712d25ae445c6cb1a72caaa898f9913c872"
 

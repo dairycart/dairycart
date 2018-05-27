@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dairycart/dairymodels/v1"
+	"github.com/dairycart/dairycart/models/v1"
 
 	"github.com/fatih/structs"
 	log "github.com/sirupsen/logrus"

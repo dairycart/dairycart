@@ -7,10 +7,10 @@ import (
 	"plugin"
 	"strings"
 
-	"github.com/dairycart/dairycart/storage/database"
-	"github.com/dairycart/dairycart/storage/database/postgres"
-	"github.com/dairycart/dairycart/storage/images"
-	"github.com/dairycart/dairycart/storage/images/local"
+	"github.com/dairycart/dairycart/storage/v1/database"
+	"github.com/dairycart/dairycart/storage/v1/database/postgres"
+	"github.com/dairycart/dairycart/storage/v1/images"
+	"github.com/dairycart/dairycart/storage/v1/images/local"
 
 	"github.com/dchest/uniuri"
 	"github.com/go-chi/chi"

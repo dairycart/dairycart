@@ -3,7 +3,7 @@ package dairyclient
 import (
 	"net/http"
 
-	"github.com/dairycart/dairymodels/v1"
+	"github.com/dairycart/dairycart/models/v1"
 )
 
 ////////////////////////////////////////////////////////

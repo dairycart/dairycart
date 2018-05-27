@@ -11,9 +11,9 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 
-	"github.com/dairycart/dairycart/storage/database"
-	"github.com/dairycart/dairycart/storage/images"
-	"github.com/dairycart/dairymodels/v1"
+	"github.com/dairycart/dairycart/models/v1"
+	"github.com/dairycart/dairycart/storage/v1/database"
+	"github.com/dairycart/dairycart/storage/v1/images"
 
 	"github.com/fatih/set"
 	"github.com/pkg/errors"

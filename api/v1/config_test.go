@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/dairycart/dairycart/storage/database/mock"
-	"github.com/dairycart/dairycart/storage/images/mock"
+	"github.com/dairycart/dairycart/storage/v1/database/mock"
+	"github.com/dairycart/dairycart/storage/v1/images/mock"
 
 	"github.com/dchest/uniuri"
 	"github.com/go-chi/chi"

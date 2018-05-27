@@ -7,8 +7,8 @@ BUILD_TIME := $(shell date -u '+%Y-%m-%d_%I:%M:%S%p')
 all: tests run
 
 clean:
-	rm api/v1/example_files/plugins/mock_db.so
-	rm api/v1/example_files/plugins/mock_img.so
+	rm -f api/v1/example_files/plugins/mock_db.so
+	rm -f api/v1/example_files/plugins/mock_img.so
 
 .PHONY: tools
 tools:
@@ -67,7 +67,7 @@ models-unit-tests:
 
 .PHONY: storage-unit-tests
 storage-unit-tests:
-	go test -cover github.com/dairycart/dairycart/storage/database/postgres
+	go test -cover github.com/dairycart/dairycart/storage/v1/database/postgres
 
 .PHONY: integration-tests
 integration-tests:
