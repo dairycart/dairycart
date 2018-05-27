@@ -163,6 +163,12 @@
   version = "v1.0.0"
 
 [[projects]]
+  name = "github.com/rakyll/statik"
+  packages = ["fs"]
+  revision = "fd36b3595eb2ec8da4b8153b107f7ea08504899d"
+  version = "v0.1.1"
+
+[[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   revision = "c155da19408a8799da419ed3eeb0cb5db0ad5dbc"
@@ -264,6 +270,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ed40f8e0b03039bfc044eb422b740f56d8962e3bfcecf4b061a7e39a301c0a60"
+  inputs-digest = "3125c831f83704df3fda108be1d89ac4e92097e9a62c37ff2b8ec83fd8005780"
   solver-name = "gps-cdcl"
   solver-version = 1

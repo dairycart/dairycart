@@ -82,6 +82,10 @@
   version = "0.8.0"
 
 [[constraint]]
+  name = "github.com/rakyll/statik"
+  version = "0.1.1"
+
+[[constraint]]
   name = "github.com/sirupsen/logrus"
   version = "1.0.5"
 

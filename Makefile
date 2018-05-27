@@ -10,6 +10,11 @@ clean:
 	rm api/v1/example_files/plugins/mock_db.so
 	rm api/v1/example_files/plugins/mock_img.so
 
+.PHONY: tools
+tools:
+	go get -u gnorm.org/gnorm
+	go get -u github.com/rakyll/statik
+
 # Coverage Reports
 
 .PHONY: coverage-report
@@ -92,8 +97,16 @@ models:
 storage:
 	(cd storage/database && gnorm gen)
 
+.PHONY: assets
+assets:
+	statik -src=cmd/admin/v1/server/html -dest=cmd/admin/v1/server/html -f
+
 # What we're all here for
 
 .PHONY: run
 run:
 	docker-compose --file docker-compose.yml up --build --remove-orphans --force-recreate --abort-on-container-exit
+
+.PHONY: run-admin
+run-admin:
+	docker-compose --file admin/docker-compose.yml up --abort-on-container-exit --build --remove-orphans

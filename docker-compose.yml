@@ -22,25 +22,25 @@ services:
     links:
       - database
 
-#  admin:
-#    build:
-#      context: admin
-#      dockerfile: Dockerfile
-#    ports:
-#      - "1234:1234"
-#    links:
-#      - api
-#    depends_on:
-#      - api
-#    environment:
-#      - VIRTUAL_HOST=admin.dairycart.com
-#      - DAIRYCART_API_URL=http://api:4321
-#
-#  nginx-proxy:
-#    image: jwilder/nginx-proxy
-#    ports:
-#      - "80:80"
-#    depends_on:
-#      - admin
-#    volumes:
-#      - /var/run/docker.sock:/tmp/docker.sock:ro
+ admin:
+   build:
+     context: admin
+     dockerfile: dockerfiles/admin.Dockerfile
+   ports:
+     - "1234:1234"
+   links:
+     - api
+   depends_on:
+     - api
+   environment:
+     - VIRTUAL_HOST=admin.dairycart.com
+     - DAIRYCART_API_URL=http://api:4321
+
+ nginx-proxy:
+   image: jwilder/nginx-proxy
+   ports:
+     - "80:80"
+   depends_on:
+     - admin
+   volumes:
+     - /var/run/docker.sock:/tmp/docker.sock:ro
