@@ -21,7 +21,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: dockerfiles/integration_test.Dockerfile
+      dockerfile: dockerfiles/integration-server.Dockerfile
     ports:
       - "4321:4321"
     depends_on:
@@ -34,7 +34,7 @@ services:
   test:
     build:
       context: .
-      dockerfile: cmd/integration_tests/v1/Dockerfile
+      dockerfile: dockerfiles/integration-tests.Dockerfile
     links:
       - api
       - httpbin
