@@ -1,15 +1,12 @@
 sudo: required
 
-install:
-  -
-
 language: go
 
 services:
   - docker
 
 go:
-  - master
+  - "1.10.x"
 
 before_install:
   # install dep
@@ -20,9 +17,7 @@ before_install:
   - dep ensure -v
 
 script:
-  - make example-plugins
-  - make unit-tests
-  - make integration-tests
+  - make tests
   - make ci-coverage
 
 after_success:

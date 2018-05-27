@@ -32,7 +32,7 @@ coverage.out
 dairycart
 
 # this folder contains generated starter templates of routes for new models, and is unnecessary to commit into source control
-storage/routes
+storage/database/routes
 
 # this folder is created automatically by the local image storage interface and shouldn't be committed into source control
 api/product_images
