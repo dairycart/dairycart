@@ -45,13 +45,21 @@ ci-coverage: | example-plugins
 
 .PHONY: tests
 tests:
-	make models-unit-tests api-unit-tests storage-unit-tests integration-tests
+	make unit-tests integration-tests
+
+.PHONY: unit-tests
+unit-tests:
+	make models-unit-tests api-unit-tests client-unit-tests storage-unit-tests
 
 .PHONY: api-unit-tests
 api-unit-tests: | example-plugins
 	# api unit tests
 	docker build -t api_test -f dockerfiles/unittest.Dockerfile .
 	docker run --name api_test --rm api_test
+
+.PHONY: client-unit-tests
+client-unit-tests:
+	go test -cover github.com/dairycart/dairycart/client/v1
 
 .PHONY: models-unit-tests
 models-unit-tests:

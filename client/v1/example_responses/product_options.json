@@ -1,0 +1,75 @@
+{
+    "count": 2,
+    "limit": 25,
+    "page": 1,
+    "product_options": [
+        {
+            "id": 1,
+            "name": "color",
+            "product_root_id": 1,
+            "created_on": "2017-12-10T15:58:43.136458Z",
+            "updated_on": null,
+            "archived_on": null,
+            "values": [
+                {
+                    "id": 1,
+                    "product_option_id": 1,
+                    "value": "red",
+                    "created_on": "2017-12-10T15:58:43.136458Z",
+                    "archived_on": null,
+                    "updated_on": null
+                },
+                {
+                    "id": 2,
+                    "product_option_id": 1,
+                    "value": "green",
+                    "created_on": "2017-12-10T15:58:43.136458Z",
+                    "archived_on": null,
+                    "updated_on": null
+                },
+                {
+                    "id": 3,
+                    "product_option_id": 1,
+                    "value": "blue",
+                    "created_on": "2017-12-10T15:58:43.136458Z",
+                    "archived_on": null,
+                    "updated_on": null
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "name": "size",
+            "product_root_id": 1,
+            "created_on": "2017-12-10T15:58:43.136458Z",
+            "updated_on": null,
+            "archived_on": null,
+            "values": [
+                {
+                    "id": 4,
+                    "product_option_id": 2,
+                    "value": "small",
+                    "created_on": "2017-12-10T15:58:43.136458Z",
+                    "archived_on": null,
+                    "updated_on": null
+                },
+                {
+                    "id": 5,
+                    "product_option_id": 2,
+                    "value": "medium",
+                    "created_on": "2017-12-10T15:58:43.136458Z",
+                    "archived_on": null,
+                    "updated_on": null
+                },
+                {
+                    "id": 6,
+                    "product_option_id": 2,
+                    "value": "large",
+                    "created_on": "2017-12-10T15:58:43.136458Z",
+                    "archived_on": null,
+                    "updated_on": null
+                }
+            ]
+        }
+    ]
+}

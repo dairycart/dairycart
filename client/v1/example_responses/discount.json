@@ -1,0 +1,13 @@
+{
+    "id": 1,
+    "name": "10 percent off",
+    "discount_type": "percentage",
+    "amount": 10,
+    "starts_on": "2017-12-10T15:58:43.136458Z",
+    "expires_on": "2017-12-10T15:58:43.136458Z",
+    "requires_code": false,
+    "limited_use": false,
+    "number_of_uses": 0,
+    "login_required": false,
+    "created_on": "2017-12-10T15:58:43.136458Z"
+}

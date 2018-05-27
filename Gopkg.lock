@@ -224,6 +224,26 @@
   version = "v1.2.1"
 
 [[projects]]
+  name = "github.com/tdewolff/minify"
+  packages = [
+    ".",
+    "json"
+  ]
+  revision = "222672169d634c440a73abc47685074e1a9daa60"
+  version = "v2.3.4"
+
+[[projects]]
+  name = "github.com/tdewolff/parse"
+  packages = [
+    ".",
+    "buffer",
+    "json",
+    "strconv"
+  ]
+  revision = "639f6272aec6b52094db77b9ec488214b0b4b1a1"
+  version = "v2.3.2"
+
+[[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
   packages = [
@@ -270,6 +290,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3125c831f83704df3fda108be1d89ac4e92097e9a62c37ff2b8ec83fd8005780"
+  inputs-digest = "36a8ac071d48c7e7ec7f7b0629e33fc3321c513e5c0974e9718e115b3587e49d"
   solver-name = "gps-cdcl"
   solver-version = 1
