@@ -31,10 +31,6 @@
 
 [[constraint]]
   branch = "master"
-  name = "github.com/dairycart/dairycart/models/v1"
-
-[[constraint]]
-  branch = "master"
   name = "github.com/dchest/uniuri"
 
 [[constraint]]
