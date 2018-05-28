@@ -89,14 +89,4 @@ func main() {
 		log.Printf("%+v", err)
 		panic(err)
 	}
-
-	log.Println(`
-
-
-
-		I guess gnorm gen got called?
-
-
-
-	`)
 }

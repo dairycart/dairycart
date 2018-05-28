@@ -34,4 +34,6 @@ services:
       DAIRYCART_API_URL: http://api:4321
       DAIRYCART_DB_URL: postgres://dairytest:hunter2@database:5432/dairytest?sslmode=disable
     volumes:
-      - "storage/v1/database:/go/src/github.com/dairycart/dairycart/storage/v1/database"
+      - type: bind
+        source: $GOPATH/src/github.com/dairycart/dairycart/storage/v1/database
+        target: /go/src/github.com/dairycart/dairycart/storage/v1/database
