@@ -1,5 +1,5 @@
 # ConnStr is the connection string for the database.
-ConnStr = "postgresql://dairycart:hunter2@localhost:2345/dairycart?sslmode=disable"
+ConnStr = "postgres://dairytest:hunter2@database:5432/dairytest?sslmode=disable"
 
 # DBType holds the type of db you're connecting to.  Possible values are
 # "postgres" or "mysql".

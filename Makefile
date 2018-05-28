@@ -1,4 +1,5 @@
 GOPATH     := $(GOPATH)
+BRANCH     := $(shell git rev-parse --abbrev-ref HEAD)
 GIT_HASH   := $(shell git describe --tags --always --dirty)
 BUILD_TIME := $(shell date -u '+%Y-%m-%d_%I:%M:%S%p')
 
@@ -103,11 +104,19 @@ models:
 
 .PHONY: storage
 storage:
-	(cd storage/database && gnorm gen)
+	# (cd storage/database && gnorm gen)
+	docker-compose --file storage-gen.yml up --build --remove-orphans --force-recreate --abort-on-container-exit
 
 .PHONY: assets
 assets:
 	statik -src=cmd/admin/v1/server/html -dest=cmd/admin/v1/server/html -f
+
+# Docker images
+
+.PHONY: dairydev
+dairydev:
+	docker build --tag dairycart/dairydev:latest --file=dockerfiles/dairydev.Dockerfile .
+	docker push dairycart/dairydev:latest
 
 # What we're all here for
 
@@ -115,6 +124,3 @@ assets:
 run:
 	docker-compose --file docker-compose.yml up --build --remove-orphans --force-recreate --abort-on-container-exit
 
-.PHONY: run-admin
-run-admin:
-	docker-compose --file admin/docker-compose.yml up --abort-on-container-exit --build --remove-orphans
