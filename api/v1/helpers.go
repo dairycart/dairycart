@@ -48,7 +48,7 @@ func parseRawFilterParams(rawFilterParams url.Values) *models.QueryFilter {
 	}
 
 	page := rawFilterParams["page"]
-	if len(page) == 1 {
+	if len(page) >= 1 {
 		i, err := strconv.ParseUint(page[0], 10, 64)
 		if err != nil {
 			log.Printf("encountered error when trying to parse query filter param %s: %v", `Page`, err)
@@ -58,7 +58,7 @@ func parseRawFilterParams(rawFilterParams url.Values) *models.QueryFilter {
 	}
 
 	limit := rawFilterParams["limit"]
-	if len(limit) == 1 {
+	if len(limit) >= 1 {
 		i, err := strconv.ParseFloat(limit[0], 64)
 		if err != nil {
 			log.Printf("encountered error when trying to parse query filter param %s: %v", `Limit`, err)
@@ -68,7 +68,7 @@ func parseRawFilterParams(rawFilterParams url.Values) *models.QueryFilter {
 	}
 
 	updatedAfter := rawFilterParams["updated_after"]
-	if len(updatedAfter) == 1 {
+	if len(updatedAfter) >= 1 {
 		i, err := strconv.ParseUint(updatedAfter[0], 10, 64)
 		if err != nil {
 			log.Printf("encountered error when trying to parse query filter param %s: %v", `UpdatedAfter`, err)
@@ -78,7 +78,7 @@ func parseRawFilterParams(rawFilterParams url.Values) *models.QueryFilter {
 	}
 
 	updatedBefore := rawFilterParams["updated_before"]
-	if len(updatedBefore) == 1 {
+	if len(updatedBefore) >= 1 {
 		i, err := strconv.ParseUint(updatedBefore[0], 10, 64)
 		if err != nil {
 			log.Printf("encountered error when trying to parse query filter param %s: %v", `UpdatedBefore`, err)
@@ -88,7 +88,7 @@ func parseRawFilterParams(rawFilterParams url.Values) *models.QueryFilter {
 	}
 
 	createdAfter := rawFilterParams["created_after"]
-	if len(createdAfter) == 1 {
+	if len(createdAfter) >= 1 {
 		i, err := strconv.ParseUint(createdAfter[0], 10, 64)
 		if err != nil {
 			log.Printf("encountered error when trying to parse query filter param %s: %v", `CreatedAfter`, err)
@@ -98,7 +98,7 @@ func parseRawFilterParams(rawFilterParams url.Values) *models.QueryFilter {
 	}
 
 	createdBefore := rawFilterParams["created_before"]
-	if len(createdBefore) == 1 {
+	if len(createdBefore) >= 1 {
 		i, err := strconv.ParseUint(createdBefore[0], 10, 64)
 		if err != nil {
 			log.Printf("encountered error when trying to parse query filter param %s: %v", `CreatedBefore`, err)

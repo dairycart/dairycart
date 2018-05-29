@@ -22,9 +22,6 @@ func TestBuildProductsFromOptions(t *testing.T) {
 	red := models.ProductOptionValue{ID: 4, Value: "red"}
 	green := models.ProductOptionValue{ID: 5, Value: "green"}
 	blue := models.ProductOptionValue{ID: 6, Value: "blue"}
-	// xtraLarge := models.ProductOptionValue{ID: 7, Value: "xtra-large"}
-	// polyester := models.ProductOptionValue{ID: 8, Value: "polyester"}
-	// cotton := models.ProductOptionValue{ID: 9, Value: "cotton"}
 
 	tt := []struct {
 		input     *models.ProductCreationInput
@@ -201,7 +198,7 @@ func TestProductOptionListHandler(t *testing.T) {
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRouter(config)
 
-		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product/%d/options", exampleProductRootID), nil)
+		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d/options", exampleProductRootID), nil)
 		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -215,7 +212,7 @@ func TestProductOptionListHandler(t *testing.T) {
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRouter(config)
 
-		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product/%d/options", exampleProductRootID), nil)
+		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d/options", exampleProductRootID), nil)
 		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -231,7 +228,7 @@ func TestProductOptionListHandler(t *testing.T) {
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRouter(config)
 
-		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product/%d/options", exampleProductRootID), nil)
+		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/product_root/%d/options", exampleProductRootID), nil)
 		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -273,7 +270,7 @@ func TestProductOptionCreationHandler(t *testing.T) {
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRouter(config)
 
-		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product/%d/options", exampleProductOption.ProductRootID), strings.NewReader(exampleProductOptionCreationBody))
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_root/%d/options", exampleProductOption.ProductRootID), strings.NewReader(exampleProductOptionCreationBody))
 		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -285,7 +282,7 @@ func TestProductOptionCreationHandler(t *testing.T) {
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRouter(config)
 
-		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product/%d/options", exampleProductOption.ProductRootID), strings.NewReader(exampleGarbageInput))
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_root/%d/options", exampleProductOption.ProductRootID), strings.NewReader(exampleGarbageInput))
 		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -299,7 +296,7 @@ func TestProductOptionCreationHandler(t *testing.T) {
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRouter(config)
 
-		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product/%d/options", exampleProductOption.ProductRootID), strings.NewReader(exampleProductOptionCreationBody))
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_root/%d/options", exampleProductOption.ProductRootID), strings.NewReader(exampleProductOptionCreationBody))
 		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -313,7 +310,7 @@ func TestProductOptionCreationHandler(t *testing.T) {
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRouter(config)
 
-		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product/%d/options", exampleProductOption.ProductRootID), strings.NewReader(exampleProductOptionCreationBody))
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_root/%d/options", exampleProductOption.ProductRootID), strings.NewReader(exampleProductOptionCreationBody))
 		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -329,7 +326,7 @@ func TestProductOptionCreationHandler(t *testing.T) {
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRouter(config)
 
-		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product/%d/options", exampleProductOption.ProductRootID), strings.NewReader(exampleProductOptionCreationBody))
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_root/%d/options", exampleProductOption.ProductRootID), strings.NewReader(exampleProductOptionCreationBody))
 		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -345,7 +342,7 @@ func TestProductOptionCreationHandler(t *testing.T) {
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRouter(config)
 
-		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product/%d/options", exampleProductOption.ProductRootID), strings.NewReader(exampleProductOptionCreationBody))
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_root/%d/options", exampleProductOption.ProductRootID), strings.NewReader(exampleProductOptionCreationBody))
 		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -362,7 +359,7 @@ func TestProductOptionCreationHandler(t *testing.T) {
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRouter(config)
 
-		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product/%d/options", exampleProductOption.ProductRootID), strings.NewReader(exampleProductOptionCreationBody))
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_root/%d/options", exampleProductOption.ProductRootID), strings.NewReader(exampleProductOptionCreationBody))
 		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -382,7 +379,7 @@ func TestProductOptionCreationHandler(t *testing.T) {
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRouter(config)
 
-		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product/%d/options", exampleProductOption.ProductRootID), strings.NewReader(exampleProductOptionCreationBody))
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_root/%d/options", exampleProductOption.ProductRootID), strings.NewReader(exampleProductOptionCreationBody))
 		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)
@@ -404,7 +401,7 @@ func TestProductOptionCreationHandler(t *testing.T) {
 		config := buildServerConfigFromTestUtil(testUtil)
 		SetupAPIRouter(config)
 
-		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product/%d/options", exampleProductOption.ProductRootID), strings.NewReader(exampleProductOptionCreationBody))
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/v1/product_root/%d/options", exampleProductOption.ProductRootID), strings.NewReader(exampleProductOptionCreationBody))
 		assert.NoError(t, err)
 
 		testUtil.Router.ServeHTTP(testUtil.Response, req)

@@ -16,7 +16,7 @@ const (
 	// NumericPattern repesents numeric values
 	NumericPattern = `[0-9]+`
 	// HealthCheckEndpointBody is what we respond to health check requests with
-	HealthCheckEndpointBody = "healthy!"
+	healthCheckEndpointBody = "healthy!"
 )
 
 func buildRoute(routeVersion string, routeParts ...string) string {
@@ -26,7 +26,7 @@ func buildRoute(routeVersion string, routeParts ...string) string {
 // SetupAPIRouter takes a mux router and a database connection and creates all the API routes for the API
 func SetupAPIRouter(config *ServerConfig) {
 	// health check
-	config.Router.Get("/health", func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, HealthCheckEndpointBody) })
+	config.Router.Get("/health", func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, healthCheckEndpointBody) })
 
 	// Auth
 	config.Router.Post("/login", buildUserLoginHandler(config.DB, config.DatabaseClient, config.CookieStore))
@@ -58,12 +58,12 @@ func SetupAPIRouter(config *ServerConfig) {
 		r.Delete(specificProductRoute, buildProductDeletionHandler(config.DB, config.DatabaseClient, config.WebhookExecutor))
 
 		// Product Options
-		optionsListRoute := fmt.Sprintf("/product/{product_root_id:%s}/options", NumericPattern)
 		specificOptionRoute := fmt.Sprintf("/product_options/{option_id:%s}", NumericPattern)
-		r.Get(optionsListRoute, buildProductOptionListHandler(config.DB, config.DatabaseClient))
-		r.Post(optionsListRoute, buildProductOptionCreationHandler(config.DB, config.DatabaseClient))
 		r.Patch(specificOptionRoute, buildProductOptionUpdateHandler(config.DB, config.DatabaseClient))
 		r.Delete(specificOptionRoute, buildProductOptionDeletionHandler(config.DB, config.DatabaseClient))
+		productRootOptionsRoute := fmt.Sprintf("/product_root/{product_root_id:%s}/options", NumericPattern)
+		r.Get(productRootOptionsRoute, buildProductOptionListHandler(config.DB, config.DatabaseClient))
+		r.Post(productRootOptionsRoute, buildProductOptionCreationHandler(config.DB, config.DatabaseClient))
 
 		// Product Option Values
 		specificOptionValueRoute := fmt.Sprintf("/product_option_values/{option_value_id:%s}", NumericPattern)

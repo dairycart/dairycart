@@ -13,7 +13,7 @@ services:
 
   api:
     build:
-      context: .
+      context: ../
       dockerfile: dockerfiles/integration-server.Dockerfile
     ports:
       - "4321:4321"
@@ -26,7 +26,7 @@ services:
 
   gen:
     build:
-      context: .
+      context: ../
       dockerfile: dockerfiles/storage-generation.Dockerfile
     links:
       - api

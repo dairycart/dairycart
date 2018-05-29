@@ -118,7 +118,7 @@ func buildProductOptionUpdateHandler(db *sql.DB, client database.Storer) http.Ha
 		// eating this error because the router should have ensured this is an integer
 		optionID, _ := strconv.ParseUint(optionIDStr, 10, 64)
 
-		updatedOptionData := &models.ProductOption{}
+		updatedOptionData := &models.ProductOptionUpdateInput{}
 		err := validateRequestInput(req, updatedOptionData)
 		if err != nil {
 			notifyOfInvalidRequestBody(res, err)

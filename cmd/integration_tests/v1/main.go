@@ -279,7 +279,7 @@ func deleteProductRoot(rootID uint64) (*http.Response, error) {
 ////////////////////////////////////////////////////////
 
 func retrieveProductOptions(productID uint64, queryFilter map[string]string) (*http.Response, error) {
-	path := buildPath("product", productID, "options")
+	path := buildPath("product_root", productID, "options")
 	u := buildURL(path, queryFilter)
 	req, _ := http.NewRequest(http.MethodGet, u, nil)
 	return requester.ExecuteRequestAsRegularUser(req)

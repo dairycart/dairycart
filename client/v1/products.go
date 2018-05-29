@@ -112,7 +112,7 @@ func (dc *V1Client) DeleteProductRoot(rootID uint64) error {
 
 func (dc *V1Client) GetProductOptions(productID uint64, queryFilter map[string]string) ([]models.ProductOption, error) {
 	productIDString := convertIDToString(productID)
-	u := dc.buildURL(queryFilter, "product", productIDString, "options")
+	u := dc.buildURL(queryFilter, "product_root", productIDString, "options")
 	ol := &models.ProductOptionListResponse{}
 
 	err := dc.get(u, &ol)

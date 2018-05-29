@@ -99,6 +99,21 @@ func createUserFromUpdateInput(in *models.UserUpdateInput, hashedPassword string
 	return out
 }
 
+func createUserResponseFromUser(in *models.User) *models.UserResponse {
+	return &models.UserResponse{
+		ID:                    in.ID,
+		FirstName:             in.FirstName,
+		LastName:              in.LastName,
+		Username:              in.Username,
+		Email:                 in.Email,
+		IsAdmin:               in.IsAdmin,
+		PasswordLastChangedOn: in.PasswordLastChangedOn,
+		CreatedOn:             in.CreatedOn,
+		UpdatedOn:             in.UpdatedOn,
+		ArchivedOn:            in.ArchivedOn,
+	}
+}
+
 func hashPassword(password []byte) (string, error) {
 	// COVERAGE NOTE: I cannot seem to synthesize this error for the sake of testing, so if you're
 	// seeing this in a coverage report and the line below is red, just know that I tried. :(
@@ -358,7 +373,7 @@ func buildUserDeletionHandler(db *sql.DB, client database.Storer, store *session
 			}
 		}
 
-		json.NewEncoder(res).Encode(user)
+		json.NewEncoder(res).Encode(createUserResponseFromUser(user))
 	}
 }
 

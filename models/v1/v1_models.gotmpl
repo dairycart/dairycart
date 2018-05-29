@@ -158,12 +158,27 @@ type {{ $modelName }}UpdateInput struct {
 {{ end }}
 
 {{ if eq $modelName "User" }}
+type {{ $modelName }}Response struct {
+    {{- range .Table.Columns }}
+        {{- if ne (pascal .Name) "Password" -}}
+            {{ $jsonTag := printf "`json:\"%s\"`" (snake .Name) }}
+            {{- if eq .Type "" }}
+                /* putting this here so that go fmt/build/etc will barf when they encounter it and I'll know to fix it */
+                ({{ pascal .Name }} {{ .Type }} {{ $jsonTag }} // {{ .DBName }}
+                something bad has happened here
+            {{- else }}
+                {{ pascal .Name }} {{ .Type }} {{ $jsonTag }} // {{ .DBName }}
+            {{- end -}}
+        {{- end }}
+    {{- end }}
+}
+
 // {{ $modelName }}CreationInput is a struct to use for creating {{ $modelName }}s
 type {{ $modelName }}CreationInput struct {
         {{- range .Table.Columns }}
-        {{- $notSaltOrID := (and (ne (pascal .Name) "Salt") (ne (pascal .Name) "ID")) -}}
+        {{- $notID := ne (pascal .Name) "ID" -}}
         {{- $notATimeField := and (and (ne (pascal .Name) "ArchivedOn") (ne (pascal .Name) "CreatedOn")) (and (ne (pascal .Name) "UpdatedOn") (ne (pascal .Name) "PasswordLastChangedOn")) -}}
-        {{- if and $notSaltOrID $notATimeField -}}
+        {{- if and $notID $notATimeField -}}
             {{ $jsonTag := printf "`json:\"%s,omitempty\"`" (snake .Name) }}
             {{- if eq .Type "" }}
                 /* putting this here so that go fmt/build/etc will barf when they encounter it and I'll know to fix it */

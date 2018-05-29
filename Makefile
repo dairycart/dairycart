@@ -104,8 +104,7 @@ models:
 
 .PHONY: storage
 storage:
-	# (cd storage/database && gnorm gen)
-	docker-compose --file storage-gen.yml up --build --remove-orphans --force-recreate --abort-on-container-exit
+	docker-compose --file compose-files/storage-gen.yml up --build --remove-orphans --force-recreate --abort-on-container-exit
 
 .PHONY: assets
 assets:

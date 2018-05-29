@@ -89,4 +89,11 @@ func main() {
 		log.Printf("%+v", err)
 		panic(err)
 	}
+
+	log.Println(`
+
+	ran:
+		gnorm gen (for database objects)
+
+	`)
 }
