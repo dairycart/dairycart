@@ -9,8 +9,8 @@ go:
   - "1.10.x"
 
 script:
-  - make tests
   - make ci-coverage
+  - make integration-tests
 
 after_success:
   # send coverage report to codecov
