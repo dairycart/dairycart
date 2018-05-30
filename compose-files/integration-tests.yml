@@ -20,7 +20,7 @@ services:
 
   api:
     build:
-      context: .
+      context: ../
       dockerfile: dockerfiles/integration-server.Dockerfile
     ports:
       - "4321:4321"
@@ -33,7 +33,7 @@ services:
 
   test:
     build:
-      context: .
+      context: ../
       dockerfile: dockerfiles/integration-tests.Dockerfile
     links:
       - api

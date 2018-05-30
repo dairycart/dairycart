@@ -13,7 +13,7 @@ services:
 
   api:
     build:
-      context: .
+      context: ../
       dockerfile: dockerfiles/main.Dockerfile
     ports:
       - "4321:4321"

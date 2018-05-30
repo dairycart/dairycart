@@ -72,7 +72,7 @@ storage-unit-tests:
 
 .PHONY: integration-tests
 integration-tests:
-	docker-compose --file integration-tests.yml up --build --remove-orphans --force-recreate --abort-on-container-exit
+	docker-compose --file compose-files/integration-tests.yml up --build --remove-orphans --force-recreate --abort-on-container-exit
 
 # Dependency management
 
@@ -121,5 +121,5 @@ dairydev:
 
 .PHONY: run
 run:
-	docker-compose --file docker-compose.yml up --build --remove-orphans --force-recreate --abort-on-container-exit
+	docker-compose --file compose-files/docker-compose.yml up --build --remove-orphans --force-recreate --abort-on-container-exit
 
