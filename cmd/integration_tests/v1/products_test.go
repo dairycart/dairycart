@@ -1006,7 +1006,7 @@ func TestProductOptionCreation(t *testing.T) {
 			Values: []string{"one", "two", "three"},
 		}
 		newOptionJSON := createJSONBody(t, testOption)
-		resp, err = createProductOptionForProduct(createdProductRoot.ID, newOptionJSON)
+		resp, err = createProductOptionForProductRoot(createdProductRoot.ID, newOptionJSON)
 
 		assert.NoError(_t, err)
 		assertStatusCode(_t, resp, http.StatusCreated)
@@ -1040,7 +1040,7 @@ func TestProductOptionCreation(t *testing.T) {
 			Values: []string{"one", "two", "three"},
 		}
 		newOptionJSON := createJSONBody(t, testOption)
-		resp, err = createProductOptionForProduct(createdProductRoot.ID, newOptionJSON)
+		resp, err = createProductOptionForProductRoot(createdProductRoot.ID, newOptionJSON)
 
 		assert.NoError(_t, err)
 		assertStatusCode(_t, resp, http.StatusCreated)
@@ -1054,13 +1054,13 @@ func TestProductOptionCreation(t *testing.T) {
 		compareProductOptions(t, expected, actual)
 
 		// create option again
-		resp, err = createProductOptionForProduct(createdProductRoot.ID, newOptionJSON)
+		resp, err = createProductOptionForProductRoot(createdProductRoot.ID, newOptionJSON)
 		assert.NoError(_t, err)
 		assertStatusCode(_t, resp, http.StatusBadRequest)
 	})
 
 	t.Run("with invalid input", func(_t *testing.T) {
-		resp, err := createProductOptionForProduct(existentID, exampleGarbageInput)
+		resp, err := createProductOptionForProductRoot(existentID, exampleGarbageInput)
 		assert.NoError(_t, err)
 		assertStatusCode(_t, resp, http.StatusBadRequest)
 
@@ -1081,7 +1081,7 @@ func TestProductOptionCreation(t *testing.T) {
 			Values: []string{"one", "two", "three"},
 		}
 		newOptionJSON := createJSONBody(t, testOption)
-		resp, err := createProductOptionForProduct(nonexistentID, newOptionJSON)
+		resp, err := createProductOptionForProductRoot(nonexistentID, newOptionJSON)
 
 		assert.NoError(_t, err)
 		assertStatusCode(_t, resp, http.StatusNotFound)
@@ -1119,7 +1119,7 @@ func TestProductOptionDeletion(t *testing.T) {
 			Values: []string{"one", "two", "three"},
 		}
 		newOptionJSON := createJSONBody(_t, testOption)
-		resp, err = createProductOptionForProduct(createdProductRoot.ID, newOptionJSON)
+		resp, err = createProductOptionForProductRoot(createdProductRoot.ID, newOptionJSON)
 		assert.NoError(_t, err)
 		assertStatusCode(_t, resp, http.StatusCreated)
 
@@ -1166,7 +1166,7 @@ func TestProductOptionUpdate(t *testing.T) {
 			Values: []string{"one", "two", "three"},
 		}
 		newOptionJSON := createJSONBody(t, testOption)
-		resp, err := createProductOptionForProduct(createdProductRoot.ID, newOptionJSON)
+		resp, err := createProductOptionForProductRoot(createdProductRoot.ID, newOptionJSON)
 		assert.NoError(_t, err)
 		assertStatusCode(_t, resp, http.StatusCreated)
 
@@ -1174,9 +1174,11 @@ func TestProductOptionUpdate(t *testing.T) {
 		unmarshalBody(_t, resp, &createdOption)
 
 		// update product option
-		optionUpdate := models.ProductOption{Name: "not_the_same"} // `{"name": "not_the_same"}`
+		optionUpdate := models.ProductOptionUpdateInput{Name: "not_the_same"}
 		optionUpdateJSON := createJSONBody(t, optionUpdate)
 		resp, err = updateProductOption(createdOption.ID, optionUpdateJSON)
+
+		logBodyAndResetResponse(t, resp)
 
 		assert.NoError(_t, err)
 		assertStatusCode(_t, resp, http.StatusOK)
@@ -1243,7 +1245,7 @@ func TestProductOptionValueCreation(t *testing.T) {
 		// create option
 		testOption := models.ProductOptionCreationInput{Name: testOptionName, Values: []string{"one", "two", "three"}}
 		newOptionJSON := createJSONBody(t, testOption)
-		resp, err := createProductOptionForProduct(createdProductRoot.ID, newOptionJSON)
+		resp, err := createProductOptionForProductRoot(createdProductRoot.ID, newOptionJSON)
 		require.Nil(t, err)
 
 		var option models.ProductOption
@@ -1274,7 +1276,7 @@ func TestProductOptionValueCreation(t *testing.T) {
 		// create option
 		testOption := models.ProductOptionCreationInput{Name: testOptionName, Values: []string{"one", "two", "three"}}
 		newOptionJSON := createJSONBody(t, testOption)
-		resp, err := createProductOptionForProduct(createdProductRoot.ID, newOptionJSON)
+		resp, err := createProductOptionForProductRoot(createdProductRoot.ID, newOptionJSON)
 		require.Nil(t, err)
 
 		var option models.ProductOption
@@ -1319,7 +1321,7 @@ func TestProductOptionValueCreation(t *testing.T) {
 		// create option
 		testOption := models.ProductOptionCreationInput{Name: testOptionName, Values: []string{"one", "two", "three"}}
 		newOptionJSON := createJSONBody(t, testOption)
-		resp, err := createProductOptionForProduct(createdProductRoot.ID, newOptionJSON)
+		resp, err := createProductOptionForProductRoot(createdProductRoot.ID, newOptionJSON)
 		require.Nil(t, err)
 
 		var option models.ProductOption
@@ -1355,7 +1357,7 @@ func createTestProductOptionValue(t *testing.T, sku, optionName string, value mo
 
 	// create option
 	newOptionJSON := createJSONBody(t, models.ProductOptionCreationInput{Name: optionName, Values: []string{"one", "two", "three"}})
-	resp, err := createProductOptionForProduct(createdProductRoot.ID, newOptionJSON)
+	resp, err := createProductOptionForProductRoot(createdProductRoot.ID, newOptionJSON)
 	require.Nil(t, err)
 
 	var option models.ProductOption

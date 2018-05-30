@@ -936,8 +936,8 @@ func TestGetProductOptions(t *testing.T) {
 	exampleResponseJSON := loadExampleResponse(t, "product_options")
 
 	handlers := map[string]http.HandlerFunc{
-		fmt.Sprintf("/v1/product/%d/options", existentID):    generateGetHandler(t, exampleResponseJSON, http.StatusOK),
-		fmt.Sprintf("/v1/product/%d/options", nonexistentID): generateGetHandler(t, buildNotFoundProductOptionResponse(nonexistentID), http.StatusNotFound),
+		fmt.Sprintf("/v1/product_root/%d/options", existentID):    generateGetHandler(t, exampleResponseJSON, http.StatusOK),
+		fmt.Sprintf("/v1/product_root/%d/options", nonexistentID): generateGetHandler(t, buildNotFoundProductOptionResponse(nonexistentID), http.StatusNotFound),
 	}
 
 	ts := httptest.NewTLSServer(handlerGenerator(handlers))

@@ -111,6 +111,13 @@ func buildProductOptionListHandler(db *sql.DB, client database.Storer) http.Hand
 	}
 }
 
+func buildProductOptionFromUpdateInfo(in *models.ProductOptionUpdateInput) *models.ProductOption {
+	return &models.ProductOption{
+		Name:          in.Name,
+		ProductRootID: in.ProductRootID,
+	}
+}
+
 func buildProductOptionUpdateHandler(db *sql.DB, client database.Storer) http.HandlerFunc {
 	// ProductOptionUpdateHandler is a request handler that can update product options
 	return func(res http.ResponseWriter, req *http.Request) {
@@ -134,7 +141,7 @@ func buildProductOptionUpdateHandler(db *sql.DB, client database.Storer) http.Ha
 			return
 		}
 
-		mergo.MergeWithOverwrite(existingOption, updatedOptionData)
+		mergo.MergeWithOverwrite(existingOption, buildProductOptionFromUpdateInfo(updatedOptionData))
 
 		updatedOn, err := client.UpdateProductOption(db, existingOption)
 		if err != nil {

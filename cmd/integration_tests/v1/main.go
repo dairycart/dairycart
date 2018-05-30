@@ -285,9 +285,9 @@ func retrieveProductOptions(productID uint64, queryFilter map[string]string) (*h
 	return requester.ExecuteRequestAsRegularUser(req)
 }
 
-func createProductOptionForProduct(productID uint64, JSONBody string) (*http.Response, error) {
+func createProductOptionForProductRoot(productRootID uint64, JSONBody string) (*http.Response, error) {
 	body := strings.NewReader(JSONBody)
-	u := buildPath("product", productID, "options")
+	u := buildPath("product_root", productRootID, "options")
 	req, _ := http.NewRequest(http.MethodPost, u, body)
 	return requester.ExecuteRequestAsRegularUser(req)
 }
