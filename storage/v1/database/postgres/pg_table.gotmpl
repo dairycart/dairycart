@@ -297,7 +297,7 @@ func (pg *postgres) {{ $modelName }}WithUsernameExists(db database.Querier, sku 
 const {{ $updateUserPasswordQueryVarName }} = `UPDATE {{ .Table.Name }} set password=$1, updated_on=NOW() where id = $2 RETURNING updated_on`
 func (pg *postgres) UpdatePasswordFor{{ $modelName }}(db database.Querier, userID uint64, password string) (time.Time, error) {
     var t time.Time
-	err := db.QueryRow({{ $existenceByUsernameQueryVarName }}, password, userID).Scan(&t)
+	err := db.QueryRow({{ $updateUserPasswordQueryVarName }}, password, userID).Scan(&t)
     return t, err
 }
 {{- end }}

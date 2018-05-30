@@ -66,6 +66,35 @@ func TestGetUserByUsername(t *testing.T) {
 	})
 }
 
+func setUserPasswordUpdateQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, password string, id uint64, err error) {
+	t.Helper()
+	query := formatQueryForSQLMock(updateUserPasswordQuery)
+
+	mock.ExpectQuery(query).
+		WithArgs(password, id).
+		WillReturnRows(sqlmock.NewRows([]string{"updated_on"}).AddRow(buildTestTime(t))).
+		WillReturnError(err)
+}
+
+func TestUpdatePasswordForUser(t *testing.T) {
+	t.Parallel()
+	mockDB, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer mockDB.Close()
+	exampleInput := &models.User{ID: uint64(1), Password: "example_password"}
+	client := NewPostgres()
+
+	t.Run("optimal behavior", func(t *testing.T) {
+		setUserPasswordUpdateQueryExpectation(t, mock, exampleInput.Password, exampleInput.ID, nil)
+		expected := buildTestTime(t)
+		actual, err := client.UpdatePasswordForUser(mockDB, exampleInput.ID, exampleInput.Password)
+
+		assert.NoError(t, err)
+		assert.Equal(t, expected, actual, "expected update time did not match actual update time time")
+		assert.Nil(t, mock.ExpectationsWereMet(), "not all database expectations were met")
+	})
+}
+
 func setUserWithUsernameExistenceQueryExpectation(t *testing.T, mock sqlmock.Sqlmock, username string, shouldExist bool, err error) {
 	t.Helper()
 	query := formatQueryForSQLMock(userWithUsernameExistenceQuery)

@@ -55,8 +55,8 @@ PostRun = ["gofmt", "-s", "-w", "$GNORMFILE"]
 "postgres/{{snake .Table}}.go" = "postgres/pg_table.gotmpl"
 "postgres/{{snake .Table}}_test.go" = "postgres/pg_table_test.gotmpl"
 "mock/{{snake .Table}}.go" = "mock_table.gotmpl"
-"routes/{{snake .Table}}.go" = "route.gotmpl"
-"routes/{{snake .Table}}_test.go" = "route_test.gotmpl"
+# "routes/{{snake .Table}}.go" = "route.gotmpl"
+# "routes/{{snake .Table}}_test.go" = "route_test.gotmpl"
 
 # SchemaPaths iis a map of output paths to template paths that tells Gnorm how
 # to render and output its schema info.  Each template will be rendered with

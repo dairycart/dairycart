@@ -23,12 +23,6 @@ const (
 )
 
 func loadMigrationData(dbURL string, loadExampleData bool) (*migrate.Migrate, error) {
-	log.Printf(`
-	loadMigrationData called:
-		dbURL:          '%s'
-		loadExampleData: %v
-	`, dbURL, loadExampleData)
-
 	s := bindata.Resource(migrations.AssetNames(), func(name string) ([]byte, error) {
 		if strings.Contains(name, "example_data") && loadExampleData {
 			return migrations.Asset(name)
@@ -47,7 +41,6 @@ func loadMigrationData(dbURL string, loadExampleData bool) (*migrate.Migrate, er
 }
 
 func prepareForMigration(db *sql.DB, dbURL string, loadExampleData bool) (*migrate.Migrate, error) {
-	log.Printf("preparing to migrate postgres database at url: '%s'\n", dbURL)
 	err := databaseIsAvailable(db)
 	if err != nil {
 		return nil, err

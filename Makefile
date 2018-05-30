@@ -37,6 +37,13 @@ models-coverage-report:
 	go tool cover -html=coverage.out
 	if [ -f coverage.out ]; then rm coverage.out; fi
 
+.PHONY: storage-postgres-coverage-report
+storage-postgres-coverage-report:
+	if [ -f coverage.out ]; then rm coverage.out; fi
+	go test -coverprofile=coverage.out github.com/dairycart/dairycart/storage/v1/database/postgres
+	go tool cover -html=coverage.out
+	if [ -f coverage.out ]; then rm coverage.out; fi
+
 .PHONY: ci-coverage
 ci-coverage: | example-plugins
 	docker build -t dairycoverage --file dockerfiles/coverage.Dockerfile .
@@ -50,7 +57,7 @@ tests:
 
 .PHONY: unit-tests
 unit-tests:
-	make models-unit-tests api-unit-tests client-unit-tests storage-unit-tests
+	make models-unit-tests api-unit-tests client-unit-tests storage-postgres-unit-tests
 
 .PHONY: api-unit-tests
 api-unit-tests: | example-plugins
@@ -66,13 +73,26 @@ client-unit-tests:
 models-unit-tests:
 	go test -cover github.com/dairycart/dairycart/models/v1
 
-.PHONY: storage-unit-tests
-storage-unit-tests:
+.PHONY: storage-postgres-unit-tests
+storage-postgres-unit-tests:
 	go test -cover github.com/dairycart/dairycart/storage/v1/database/postgres
+
+.PHONY: storage-local-image-unit-tests
+storage-local-image-unit-tests:
+	go test -cover github.com/dairycart/dairycart/storage/v1/images/local
 
 .PHONY: integration-tests
 integration-tests:
 	docker-compose --file compose-files/integration-tests.yml up --build --remove-orphans --force-recreate --abort-on-container-exit
+
+.PHONY: quick-coverage
+quick-coverage:
+	go test -cover \
+		github.com/dairycart/dairycart/api/v1 \
+		github.com/dairycart/dairycart/client/v1 \
+		github.com/dairycart/dairycart/cmd/admin/v1/server \
+		github.com/dairycart/dairycart/storage/v1/database/postgres \
+		github.com/dairycart/dairycart/storage/v1/images/local \
 
 # Dependency management
 

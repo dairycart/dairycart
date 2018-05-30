@@ -56,7 +56,7 @@ const updateUserPasswordQuery = `UPDATE users set password=$1, updated_on=NOW() 
 
 func (pg *postgres) UpdatePasswordForUser(db database.Querier, userID uint64, password string) (time.Time, error) {
 	var t time.Time
-	err := db.QueryRow(userWithUsernameExistenceQuery, password, userID).Scan(&t)
+	err := db.QueryRow(updateUserPasswordQuery, password, userID).Scan(&t)
 	return t, err
 }
 
