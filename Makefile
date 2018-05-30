@@ -20,9 +20,18 @@ tools:
 
 # Coverage Reports
 
-.PHONY: coverage-report
-coverage-report:
-	make api-coverage-report models-coverage-report
+.PHONY: coverage
+coverage:
+	if [ -f coverage.out ]; then rm coverage.out; fi
+	echo "mode: set" > coverage.out
+
+	for pkg in $(TESTABLE_PACKAGES); do \
+		go test -coverprofile=profile.out $$pkg; \
+		cat profile.out | grep -v "mode: set" >> coverage.out; \
+	done
+	rm profile.out
+	go tool cover -html=coverage.out
+	if [ -f coverage.out ]; then rm coverage.out; fi
 
 .PHONY: api-coverage-report
 api-coverage-report: | example-plugins
@@ -48,8 +57,14 @@ storage-postgres-coverage-report:
 
 .PHONY: ci-coverage
 ci-coverage: | example-plugins
-	docker build -t dairycoverage --file dockerfiles/coverage.Dockerfile .
-	docker run --volume=$(GOPATH)/src/github.com/dairycart/dairycart:/output --rm -t dairycoverage
+	if [ -f coverage.out ]; then rm coverage.out; fi
+	echo "mode: set" > coverage.out
+
+	for pkg in $(TESTABLE_PACKAGES); do \
+		go test -coverprofile=profile.out $$pkg; \
+		cat profile.out | grep -v "mode: set" >> coverage.out; \
+	done
+	rm profile.out
 
 # Testing
 
@@ -96,20 +111,6 @@ quick-coverage:
 		github.com/dairycart/dairycart/storage/v1/database/postgres \
 		github.com/dairycart/dairycart/storage/v1/images/local \
 
-.PHONY: globalcoverage
-globalcoverage:
-	if [ -f coverage.out ]; then rm coverage.out; fi
-	echo "mode: set" > coverage.out
-
-	for pkg in $(TESTABLE_PACKAGES); do \
-		go test -coverprofile=profile.out $$pkg; \
-		cat profile.out | grep -v "mode: set" >> coverage.out; \
-	done
-	rm profile.out
-
-	go tool cover -html=coverage.out
-
-	if [ -f coverage.out ]; then rm coverage.out; fi
 
 # Dependency management
 
