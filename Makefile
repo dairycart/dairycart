@@ -3,6 +3,8 @@ BRANCH     := $(shell git rev-parse --abbrev-ref HEAD)
 GIT_HASH   := $(shell git describe --tags --always --dirty)
 BUILD_TIME := $(shell date -u '+%Y-%m-%d_%I:%M:%S%p')
 
+TESTABLE_PACKAGES = github.com/dairycart/dairycart/api/v1 github.com/dairycart/dairycart/client/v1 github.com/dairycart/dairycart/cmd/admin/v1/server github.com/dairycart/dairycart/storage/v1/database/postgres github.com/dairycart/dairycart/storage/v1/images/local
+
 # Basics
 
 all: tests run
@@ -93,6 +95,21 @@ quick-coverage:
 		github.com/dairycart/dairycart/cmd/admin/v1/server \
 		github.com/dairycart/dairycart/storage/v1/database/postgres \
 		github.com/dairycart/dairycart/storage/v1/images/local \
+
+.PHONY: globalcoverage
+globalcoverage:
+	if [ -f coverage.out ]; then rm coverage.out; fi
+	echo "mode: set" > coverage.out
+
+	for pkg in $(TESTABLE_PACKAGES); do \
+		go test -coverprofile=profile.out $$pkg; \
+		cat profile.out | grep -v "mode: set" >> coverage.out; \
+	done
+	rm profile.out
+
+	go tool cover -html=coverage.out
+
+	if [ -f coverage.out ]; then rm coverage.out; fi
 
 # Dependency management
 
