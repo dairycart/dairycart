@@ -1,0 +1,43 @@
+version: "3.3"
+
+services:
+  database:
+    image: postgres:latest
+    ports:
+    - "2345:5432"
+    environment:
+      POSTGRES_USER: dairytest
+      POSTGRES_PASSWORD: hunter2
+    logging:
+      driver: "none"
+
+  httpbin:
+    image: kennethreitz/httpbin:latest
+    ports:
+    - "80:8080"
+    logging:
+      driver: "none"
+
+  api:
+    build:
+      context: ../
+      dockerfile: dockerfiles/integration-server.Dockerfile
+    ports:
+      - "4321:4321"
+    depends_on:
+      - database
+    links:
+      - database
+    logging:
+      driver: "none"
+
+  test:
+    build:
+      context: ../
+      dockerfile: dockerfiles/integration-tests.Dockerfile
+    links:
+      - api
+      - httpbin
+    environment:
+      DAIRYCART_API_URL: http://api:4321
+      DAIRYCART_DB_URL: postgres://dairytest:hunter2@database:5432/dairytest?sslmode=disable

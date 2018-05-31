@@ -1,0 +1,26 @@
+{
+    "id": 3,
+    "name": "example_option_updated",
+    "product_root_id": 1,
+    "created_on": "2017-12-10T15:58:43.136458Z",
+    "values": [
+        {
+            "id": 7,
+            "product_option_id": 3,
+            "value": "one",
+            "created_on": "2017-12-10T15:58:43.136458Z"
+        },
+        {
+            "id": 8,
+            "product_option_id": 3,
+            "value": "two",
+            "created_on": "2017-12-10T15:58:43.136458Z"
+        },
+        {
+            "id": 9,
+            "product_option_id": 3,
+            "value": "three",
+            "created_on": "2017-12-10T15:58:43.136458Z"
+        }
+    ]
+}

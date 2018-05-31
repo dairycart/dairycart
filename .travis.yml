@@ -1,30 +1,17 @@
 sudo: required
 
-install:
-  -
-
 language: go
 
 services:
   - docker
 
 go:
-  - master
-
-before_install:
-  # install dep
-  - go get -u github.com/golang/dep/cmd/dep
-  # install goveralls
-  - go get github.com/mattn/goveralls
-  # install dependencies
-  - dep ensure -v
+  - "1.10.x"
 
 script:
-  - make example-plugins
-  - make unit-tests
-  - make integration-tests
   - make ci-coverage
+  - make integration-tests
 
 after_success:
-  # send coverage report to coveralls
-  - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
+  # send coverage report to codecov
+  - bash <(curl -s https://codecov.io/bash)

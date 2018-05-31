@@ -8,12 +8,6 @@
   version = "v1.0"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/dairycart/dairymodels"
-  packages = ["v1"]
-  revision = "eaff8712d25ae445c6cb1a72caaa898f9913c872"
-
-[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
@@ -112,7 +106,7 @@
     ".",
     "oid"
   ]
-  revision = "d34b9ff171c21ad295489235aec8b6626023cd04"
+  revision = "90697d60dd844d5ef6ff15135d0203f65d2f53b8"
 
 [[projects]]
   name = "github.com/magiconair/properties"
@@ -161,6 +155,12 @@
   packages = ["difflib"]
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
   version = "v1.0.0"
+
+[[projects]]
+  name = "github.com/rakyll/statik"
+  packages = ["fs"]
+  revision = "fd36b3595eb2ec8da4b8153b107f7ea08504899d"
+  version = "v0.1.1"
 
 [[projects]]
   name = "github.com/sirupsen/logrus"
@@ -218,6 +218,26 @@
   version = "v1.2.1"
 
 [[projects]]
+  name = "github.com/tdewolff/minify"
+  packages = [
+    ".",
+    "json"
+  ]
+  revision = "222672169d634c440a73abc47685074e1a9daa60"
+  version = "v2.3.4"
+
+[[projects]]
+  name = "github.com/tdewolff/parse"
+  packages = [
+    ".",
+    "buffer",
+    "json",
+    "strconv"
+  ]
+  revision = "639f6272aec6b52094db77b9ec488214b0b4b1a1"
+  version = "v2.3.2"
+
+[[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
   packages = [
@@ -225,7 +245,7 @@
     "blowfish",
     "ssh/terminal"
   ]
-  revision = "1a580b3eff7814fc9b40602fd35256c63b50f491"
+  revision = "ab813273cd59e1333f7ae7bff5d027d4aadf528c"
 
 [[projects]]
   branch = "master"
@@ -234,7 +254,7 @@
     "unix",
     "windows"
   ]
-  revision = "7c87d13f8e835d2fb3a70a2912c811ed0c1d241b"
+  revision = "c11f84a56e43e20a78cee75a7c034031ecf57d1f"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -264,6 +284,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ed40f8e0b03039bfc044eb422b740f56d8962e3bfcecf4b061a7e39a301c0a60"
+  inputs-digest = "94f731d52eb5a598cfdd18665a1bb13f9759882985afa72cc6cc2f24b114f643"
   solver-name = "gps-cdcl"
   solver-version = 1

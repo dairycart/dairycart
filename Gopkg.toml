@@ -31,10 +31,6 @@
 
 [[constraint]]
   branch = "master"
-  name = "github.com/dairycart/dairymodels"
-
-[[constraint]]
-  branch = "master"
   name = "github.com/dchest/uniuri"
 
 [[constraint]]
@@ -82,6 +78,10 @@
   version = "0.8.0"
 
 [[constraint]]
+  name = "github.com/rakyll/statik"
+  version = "0.1.1"
+
+[[constraint]]
   name = "github.com/sirupsen/logrus"
   version = "1.0.5"
 
@@ -92,6 +92,10 @@
 [[constraint]]
   name = "github.com/stretchr/testify"
   version = "1.2.1"
+
+[[constraint]]
+  name = "github.com/tdewolff/minify"
+  version = "2.3.4"
 
 [[constraint]]
   branch = "master"

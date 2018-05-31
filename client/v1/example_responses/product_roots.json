@@ -1,0 +1,51 @@
+{
+    "count": 11,
+    "limit": 2,
+    "page": 3,
+    "product_roots": [
+        {
+            "id": 5,
+            "name": "Animals As Leaders - The Joy Of Motion",
+            "subtitle": "A solid prog metal album",
+            "description": "Arbitrary description can go here because real product descriptions are technically copywritten.",
+            "sku_prefix": "the-joy-of-motion",
+            "manufacturer": "Record Company",
+            "brand": "Animals As Leaders",
+            "taxable": true,
+            "cost": 5,
+            "product_weight": 1,
+            "product_height": 12,
+            "product_width": 12,
+            "product_length": 0.5,
+            "package_weight": 1,
+            "package_height": 12,
+            "package_width": 12,
+            "package_length": 0.5,
+            "quantity_per_package": 1,
+            "available_on": "2017-12-10T15:58:43.136458Z",
+            "created_on": "2017-12-10T15:58:43.136458Z"
+        },
+        {
+            "id": 6,
+            "name": "Mort Garson - Mother Earth's Plantasia",
+            "subtitle": "A solid synth album",
+            "description": "Arbitrary description can go here because real product descriptions are technically copywritten.",
+            "sku_prefix": "mother-earths-plantasia",
+            "manufacturer": "Record Company",
+            "brand": "Mort Garson",
+            "taxable": true,
+            "cost": 5,
+            "product_weight": 1,
+            "product_height": 12,
+            "product_width": 12,
+            "product_length": 0.5,
+            "package_weight": 1,
+            "package_height": 12,
+            "package_width": 12,
+            "package_length": 0.5,
+            "quantity_per_package": 1,
+            "available_on": "2017-12-10T15:58:43.136458Z",
+            "created_on": "2017-12-10T15:58:43.136458Z"
+        }
+    ]
+}
