@@ -26,7 +26,7 @@ _testmain.go
 # miscellaneous noise we don't want in git
 .idea
 .DS_STORE
-coverage.out
+*.out
 
 # this originally started as a way to avoid committing compiled binaries, but now serves the purpose of keeping dairycart repos from being duplicated in vendor folders
 dairycart
