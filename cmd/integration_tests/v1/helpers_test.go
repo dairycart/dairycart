@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/dairycart/dairycart/models/v1"
@@ -37,6 +38,14 @@ func unmarshalBody(t *testing.T, res *http.Response, dest interface{}) {
 	require.Nil(t, json.Unmarshal(bodyBytes, &dest))
 }
 
+func turnResponseBodyIntoString(t *testing.T, res *http.Response) string {
+	t.Helper()
+	bodyBytes, err := ioutil.ReadAll(res.Body)
+	require.Nil(t, err)
+	res.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+	return strings.TrimSpace(string(bodyBytes))
+}
+
 func logBodyAndResetResponse(t *testing.T, resp *http.Response) {
 	t.Helper()
 	respStr := turnResponseBodyIntoString(t, resp)
@@ -45,7 +54,6 @@ func logBodyAndResetResponse(t *testing.T, resp *http.Response) {
 		'%s'
 
 	`, respStr)
-	resp.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(respStr)))
 }
 
 func convertCreationInputToProduct(in models.ProductCreationInput) models.Product {

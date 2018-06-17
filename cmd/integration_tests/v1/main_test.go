@@ -1,14 +1,10 @@
 package dairytest
 
 import (
-	"bytes"
-	"io/ioutil"
 	"net/http"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -21,14 +17,6 @@ const (
 	expectedBadRequestResponse    = `Invalid input provided in request body`
 	expectedInternalErrorResponse = `Unexpected internal error occurred`
 )
-
-func turnResponseBodyIntoString(t *testing.T, res *http.Response) string {
-	t.Helper()
-	bodyBytes, err := ioutil.ReadAll(res.Body)
-	require.Nil(t, err)
-	res.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-	return strings.TrimSpace(string(bodyBytes))
-}
 
 func assertStatusCode(t *testing.T, resp *http.Response, statusCode int) {
 	t.Helper()
