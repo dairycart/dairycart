@@ -150,17 +150,6 @@ storage:
 admin-assets:
 	statik -src=cmd/admin/v1/server/html -dest=cmd/admin/v1/server/html -f
 
-.PHONY: swagger
-swagger:
-	rm -rf ./generated
-	mkdir ./generated
-	swagger generate server \
-		--spec=./swagger/specs/v1.yml \
-		--config-file=./swagger/misc/v1_config.yml \
-		--template-dir=./swagger/templates/v1/server \
-		--server-package=v1 \
-		--target=./generated
-
 # Docker images
 
 .PHONY: dairydev
