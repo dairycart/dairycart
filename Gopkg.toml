@@ -55,11 +55,11 @@
 
 [[constraint]]
   name = "github.com/gorilla/sessions"
-  version = "1.1.0"
+  version = "1.1.1"
 
 [[constraint]]
   name = "github.com/imdario/mergo"
-  version = "0.3.4"
+  version = "0.3.5"
 
 [[constraint]]
   branch = "master"
@@ -91,11 +91,11 @@
 
 [[constraint]]
   name = "github.com/stretchr/testify"
-  version = "1.2.1"
+  version = "1.2.2"
 
 [[constraint]]
   name = "github.com/tdewolff/minify"
-  version = "2.3.4"
+  version = "2.3.5"
 
 [[constraint]]
   branch = "master"

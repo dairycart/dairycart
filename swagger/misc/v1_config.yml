@@ -1,0 +1,21 @@
+layout:
+  application:
+    - name:
+      source: asset:application
+      target: "{{joinFilePath .Target \"application\"}}"
+      file_name: "{{.Name}}.go"
+  models:
+    - name:
+      source: asset:models
+      target: "{{joinFilePath .Target \"models\"}}"
+      file_name: "{{.Name}}.go"
+    - name:
+      source: asset:models
+      target: "{{joinFilePath .Target \"migrations\"}}"
+      file_name: "{{.Name}}.go"
+  operations:
+    - name:
+      source: asset:operations
+      target: "{{joinFilePath .Target \"operations\"}}"
+      file_name: "{{.Name}}.go"
+operation_groups:
